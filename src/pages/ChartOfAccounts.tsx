@@ -1,64 +1,211 @@
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOrganization } from "@/hooks/useOrganization";
+import { Account, AccountType } from "@/types/accounting";
+import {
+  getAccounts,
+  getJournalLinesForBalances,
+  createAccount,
+  updateAccount,
+} from "@/lib/supabase-queries";
+import {
+  buildAccountTree,
+  calculateAccountBalances,
+  aggregateParentBalances,
+  toggleNode,
+  expandAll,
+  collapseAll,
+  filterAccountTree,
+  filterByAccountType,
+  AccountNode,
+} from "@/lib/account-tree-utils";
+import { AccountTreeTable } from "@/components/accounts/AccountTreeTable";
+import { AccountFormDialog } from "@/components/accounts/AccountFormDialog";
+import { toast } from "sonner";
 
 const ChartOfAccounts = () => {
-  const accounts = [
-    { code: "100", name: "Capital Social", type: "PN", balance: 50000.0 },
-    { code: "170", name: "Deudas a largo plazo", type: "P", balance: 25000.0 },
-    { code: "210", name: "Construcciones", type: "A", balance: 120000.0 },
-    { code: "430", name: "Clientes", type: "A", balance: 15234.56 },
-    { code: "400", name: "Proveedores", type: "P", balance: 8765.43 },
-    { code: "472", name: "HP IVA Soportado", type: "A", balance: 3456.78 },
-    { code: "477", name: "HP IVA Repercutido", type: "P", balance: 5678.90 },
-    { code: "572", name: "Bancos c/c", type: "A", balance: 45678.90 },
-    { code: "600", name: "Compras de mercaderías", type: "GAS", balance: 23456.78 },
-    { code: "621", name: "Arrendamientos", type: "GAS", balance: 12000.0 },
-    { code: "640", name: "Sueldos y salarios", type: "GAS", balance: 34567.89 },
-    { code: "642", name: "Seguridad Social", type: "GAS", balance: 8765.43 },
-    { code: "700", name: "Ventas de mercaderías", type: "ING", balance: 89012.34 },
-  ];
+  const { currentMembership } = useOrganization();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountTree, setAccountTree] = useState<AccountNode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<AccountType | "all">("all");
+  const [showInactive, setShowInactive] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
-  const getAccountTypeBadge = (type: string) => {
-    const types: Record<string, { label: string; variant: string }> = {
-      A: { label: "Activo", variant: "default" },
-      P: { label: "Pasivo", variant: "secondary" },
-      PN: { label: "Patrimonio", variant: "outline" },
-      ING: { label: "Ingreso", variant: "success" },
-      GAS: { label: "Gasto", variant: "destructive" },
+  const organizationId = currentMembership?.organization?.id;
+  const canEdit = currentMembership?.role === "admin";
+
+  // Cargar cuentas
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const loadAccounts = async () => {
+      setLoading(true);
+      try {
+        // 1. Cargar cuentas
+        const { data: accountsData, error: accountsError } = await getAccounts(
+          organizationId,
+          !showInactive
+        );
+
+        if (accountsError) throw accountsError;
+        if (!accountsData) {
+          setAccounts([]);
+          setAccountTree([]);
+          return;
+        }
+
+        // 2. Cargar journal_lines para calcular saldos
+        const { data: linesData } = await getJournalLinesForBalances(
+          organizationId
+        );
+
+        // 3. Calcular saldos por cuenta
+        const balances = calculateAccountBalances(linesData || []);
+
+        // 4. Construir árbol
+        const tree = buildAccountTree(accountsData, balances);
+
+        // 5. Agregar saldos a padres
+        aggregateParentBalances(tree);
+
+        setAccounts(accountsData);
+        setAccountTree(tree);
+      } catch (error: any) {
+        toast.error("Error al cargar cuentas: " + error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const config = types[type] || { label: type, variant: "default" };
+    loadAccounts();
+  }, [organizationId, showInactive]);
 
-    return (
-      <Badge
-        className={
-          config.variant === "success"
-            ? "bg-success-light text-success hover:bg-success-light"
-            : config.variant === "destructive"
-            ? "bg-destructive/10 text-destructive hover:bg-destructive/10"
-            : ""
-        }
-        variant={
-          config.variant === "success" || config.variant === "destructive"
-            ? "outline"
-            : (config.variant as any)
-        }
-      >
-        {config.label}
-      </Badge>
-    );
+  // Filtrar árbol
+  const filteredTree = useMemo(() => {
+    let tree = accountTree;
+
+    // Filtro por búsqueda
+    if (searchTerm) {
+      tree = filterAccountTree(tree, searchTerm);
+    }
+
+    // Filtro por tipo
+    if (typeFilter !== "all") {
+      tree = filterByAccountType(tree, typeFilter);
+    }
+
+    return tree;
+  }, [accountTree, searchTerm, typeFilter]);
+
+  // Calcular totales por tipo
+  const totals = useMemo(() => {
+    const calculateTotal = (type: AccountType) => {
+      return accounts
+        .filter((acc) => acc.account_type === type && acc.is_detail)
+        .reduce((sum, acc) => {
+          // Buscar saldo en el árbol
+          const findBalance = (nodes: AccountNode[]): number => {
+            for (const node of nodes) {
+              if (node.id === acc.id) return node.balance;
+              const childBalance = findBalance(node.children);
+              if (childBalance !== 0) return childBalance;
+            }
+            return 0;
+          };
+          return sum + findBalance(accountTree);
+        }, 0);
+    };
+
+    return {
+      activo: calculateTotal("A"),
+      pasivo: calculateTotal("P"),
+      patrimonio: calculateTotal("PN"),
+      ingresos: calculateTotal("ING"),
+      gastos: calculateTotal("GAS"),
+    };
+  }, [accounts, accountTree]);
+
+  // Handlers
+  const handleToggle = (accountId: string) => {
+    setAccountTree((prev) => toggleNode(prev, accountId));
   };
+
+  const handleExpandAll = () => {
+    setAccountTree((prev) => expandAll(prev));
+  };
+
+  const handleCollapseAll = () => {
+    setAccountTree((prev) => collapseAll(prev));
+  };
+
+  const handleEdit = (account: AccountNode) => {
+    setEditingAccount(account);
+    setIsDialogOpen(true);
+  };
+
+  const handleCreate = () => {
+    setEditingAccount(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async (data: Partial<Account>) => {
+    if (!organizationId) return;
+
+    try {
+      if (editingAccount) {
+        // Actualizar
+        await updateAccount(editingAccount.id, data);
+      } else {
+        // Crear
+        await createAccount(data as Omit<Account, "id" | "created_at" | "updated_at">);
+      }
+
+      // Recargar cuentas
+      const { data: accountsData } = await getAccounts(organizationId, !showInactive);
+      const { data: linesData } = await getJournalLinesForBalances(organizationId);
+      const balances = calculateAccountBalances(linesData || []);
+      const tree = buildAccountTree(accountsData || [], balances);
+      aggregateParentBalances(tree);
+
+      setAccounts(accountsData || []);
+      setAccountTree(tree);
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  if (!organizationId) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <p className="text-muted-foreground">
+          Selecciona una organización para ver el plan de cuentas
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -69,122 +216,182 @@ const ChartOfAccounts = () => {
               Plan de Cuentas
             </h1>
             <p className="text-muted-foreground mt-2">
-              Plan General Contable Español (PGC)
+              Gestión del Plan General Contable
             </p>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva Cuenta
-          </Button>
+          {canEdit && (
+            <Button className="gap-2" onClick={handleCreate}>
+              <Plus className="h-4 w-4" />
+              Nueva Cuenta
+            </Button>
+          )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Activo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">180,913€</div>
-              <p className="text-xs text-muted-foreground mt-1">Total activos</p>
-            </CardContent>
-          </Card>
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-5">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-3">
+                  <Skeleton className="h-4 w-20" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-3 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-5">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Activo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totals.activo)}€
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total activos
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Pasivo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">39,444€</div>
-              <p className="text-xs text-muted-foreground mt-1">Total pasivos</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Pasivo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totals.pasivo)}€
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total pasivos
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Patrimonio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">50,000€</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Capital y reservas
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Patrimonio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totals.patrimonio)}€
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Capital y reservas
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">89,012€</div>
-              <p className="text-xs text-muted-foreground mt-1">Este periodo</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success">
+                  {formatCurrency(totals.ingresos)}€
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este periodo
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Gastos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">78,790€</div>
-              <p className="text-xs text-muted-foreground mt-1">Este periodo</p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Gastos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">
+                  {formatCurrency(totals.gastos)}€
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este periodo
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <CardTitle>Cuentas Contables</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Buscar cuenta..."
                     className="pl-9 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                </div>
+
+                <Select
+                  value={typeFilter}
+                  onValueChange={(value) =>
+                    setTypeFilter(value as AccountType | "all")
+                  }
+                >
+                  <SelectTrigger className="w-40">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="A">Activo</SelectItem>
+                    <SelectItem value="P">Pasivo</SelectItem>
+                    <SelectItem value="PN">Patrimonio</SelectItem>
+                    <SelectItem value="ING">Ingreso</SelectItem>
+                    <SelectItem value="GAS">Gasto</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-inactive"
+                    checked={showInactive}
+                    onCheckedChange={setShowInactive}
+                  />
+                  <Label htmlFor="show-inactive" className="text-sm">
+                    Mostrar inactivas
+                  </Label>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Código</TableHead>
-                  <TableHead>Nombre de Cuenta</TableHead>
-                  <TableHead className="w-32">Tipo</TableHead>
-                  <TableHead className="text-right w-40">Saldo</TableHead>
-                  <TableHead className="w-32"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => (
-                  <TableRow key={account.code}>
-                    <TableCell className="font-mono font-medium">
-                      {account.code}
-                    </TableCell>
-                    <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell>{getAccountTypeBadge(account.type)}</TableCell>
-                    <TableCell className="text-right font-mono font-semibold">
-                      {account.balance.toLocaleString("es-ES", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                      €
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        Ver Movimientos
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+            {loading ? (
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <AccountTreeTable
+                tree={filteredTree}
+                onToggle={handleToggle}
+                onEdit={canEdit ? handleEdit : undefined}
+                onExpandAll={handleExpandAll}
+                onCollapseAll={handleCollapseAll}
+                canEdit={canEdit}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <AccountFormDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        account={editingAccount}
+        accounts={accounts}
+        organizationId={organizationId}
+        onSave={handleSave}
+      />
     </div>
   );
 };

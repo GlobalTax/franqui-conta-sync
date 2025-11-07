@@ -284,3 +284,90 @@ export async function getCostCenters(
   const { data, error } = await query;
   return { data: (data as unknown) as CostCenter[] | null, error };
 }
+
+/**
+ * Crea una nueva cuenta contable
+ */
+export async function createAccount(
+  account: Omit<Account, "id" | "created_at" | "updated_at">
+) {
+  const { data, error } = await supabase
+    .from("accounts" as any)
+    .insert(account)
+    .select()
+    .single();
+
+  return {
+    data: (data as unknown) as Account | null,
+    error,
+  };
+}
+
+/**
+ * Actualiza una cuenta contable existente
+ */
+export async function updateAccount(id: string, updates: Partial<Account>) {
+  const { data, error } = await supabase
+    .from("accounts" as any)
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  return {
+    data: (data as unknown) as Account | null,
+    error,
+  };
+}
+
+/**
+ * Desactiva una cuenta (no la elimina)
+ */
+export async function deactivateAccount(id: string) {
+  return updateAccount(id, { active: false });
+}
+
+/**
+ * Obtiene líneas de asientos contables para calcular saldos
+ */
+export async function getJournalLinesForBalances(
+  organizationId: string,
+  startDate?: string,
+  endDate?: string
+) {
+  let query = supabase
+    .from("journal_lines" as any)
+    .select(
+      `
+      account_id,
+      debit,
+      credit,
+      journal_entries!inner(
+        organization_id,
+        entry_date,
+        status
+      )
+    `
+    )
+    .eq("journal_entries.organization_id", organizationId)
+    .eq("journal_entries.status", "posted");
+
+  if (startDate) {
+    query = query.gte("journal_entries.entry_date", startDate);
+  }
+
+  if (endDate) {
+    query = query.lte("journal_entries.entry_date", endDate);
+  }
+
+  const { data, error } = await query;
+
+  return {
+    data: (data as unknown) as Array<{
+      account_id: string;
+      debit: number;
+      credit: number;
+    }> | null,
+    error,
+  };
+}

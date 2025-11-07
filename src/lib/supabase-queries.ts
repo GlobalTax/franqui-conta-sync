@@ -373,3 +373,84 @@ export async function getJournalLinesForBalances(
     error,
   };
 }
+
+// ============= Admin Panel Functions =============
+
+/**
+ * Get all users with their roles
+ */
+export async function getAllUsersWithRoles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(`
+      *,
+      user_roles (
+        id,
+        role,
+        centro,
+        franchisee_id,
+        franchisees (id, name)
+      )
+    `)
+    .order("apellidos", { ascending: true });
+  return { data, error };
+}
+
+/**
+ * Create or update user role
+ */
+export async function upsertUserRole(
+  userId: string, 
+  role: string, 
+  centro?: string, 
+  franchiseeId?: string
+) {
+  const { data, error } = await supabase
+    .from("user_roles" as any)
+    .upsert({
+      user_id: userId,
+      role,
+      centro,
+      franchisee_id: franchiseeId
+    } as any)
+    .select();
+  return { data, error };
+}
+
+/**
+ * Revoke specific user role
+ */
+export async function revokeUserRole(userRoleId: string) {
+  const { error } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("id", userRoleId);
+  return { error };
+}
+
+/**
+ * Get audit logs with optional filters
+ */
+export async function getAuditLogs(
+  filters?: {
+    userId?: string;
+    action?: string;
+    tableName?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+) {
+  let query = supabase
+    .from("audit_logs" as any)
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (filters?.userId) query = query.eq("user_id", filters.userId);
+  if (filters?.action) query = query.eq("action", filters.action as any);
+  if (filters?.tableName) query = query.eq("table_name", filters.tableName);
+  if (filters?.startDate) query = query.gte("created_at", filters.startDate);
+  if (filters?.endDate) query = query.lte("created_at", filters.endDate);
+
+  const { data, error } = await query.limit(100);
+  return { data, error };
+}

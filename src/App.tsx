@@ -17,6 +17,9 @@ import JournalEntries from "@/pages/JournalEntries";
 import ChartOfAccounts from "@/pages/ChartOfAccounts";
 import ProfitAndLoss from "@/pages/ProfitAndLoss";
 import NotFound from "@/pages/NotFound";
+import Admin from "@/pages/Admin";
+import AcceptInvite from "@/pages/AcceptInvite";
+import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +65,10 @@ const App = () => {
               element={session ? <Navigate to="/" /> : <Login />}
             />
             <Route
+              path="/accept-invite"
+              element={<AcceptInvite />}
+            />
+            <Route
               element={session ? <Layout /> : <Navigate to="/login" />}
             >
               <Route path="/" element={<Dashboard />} />
@@ -72,6 +79,7 @@ const App = () => {
               <Route path="/accounts" element={<ChartOfAccounts />} />
               <Route path="/pnl" element={<ProfitAndLoss />} />
               <Route path="/settings" element={<Dashboard />} />
+              <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -10,14 +10,17 @@ import {
   LogOut,
   BookOpen,
   FileSpreadsheet,
+  Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { isAdmin } = useAdminCheck();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -37,6 +40,7 @@ const Layout = () => {
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: TrendingUp, label: "P&L", path: "/pnl" },
     { icon: Settings, label: "Configuración", path: "/settings" },
+    ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 
   return (

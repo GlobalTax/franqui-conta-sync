@@ -28,25 +28,8 @@ export function useOrganization() {
         .from("memberships" as any)
         .select(`
           *,
-          organization:franchisees!organization_id(
-            id,
-            name,
-            email,
-            company_tax_id,
-            created_at,
-            updated_at
-          ),
-          restaurant:centres!restaurant_id(
-            id,
-            codigo,
-            nombre,
-            direccion,
-            ciudad,
-            pais,
-            activo,
-            created_at,
-            updated_at
-          )
+          organization:franchisees(*),
+          restaurant:centres(*)
         `)
         .eq("user_id", user.id)
         .eq("active", true);

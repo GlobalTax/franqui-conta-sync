@@ -213,6 +213,50 @@ export type Database = {
         }
         Relationships: []
       }
+      centre_companies: {
+        Row: {
+          activo: boolean
+          centre_id: string
+          cif: string
+          created_at: string
+          es_principal: boolean
+          id: string
+          razon_social: string
+          tipo_sociedad: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          centre_id: string
+          cif: string
+          created_at?: string
+          es_principal?: boolean
+          id?: string
+          razon_social: string
+          tipo_sociedad?: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          centre_id?: string
+          cif?: string
+          created_at?: string
+          es_principal?: boolean
+          id?: string
+          razon_social?: string
+          tipo_sociedad?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centre_companies_centre_id_fkey"
+            columns: ["centre_id"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centres: {
         Row: {
           activo: boolean
@@ -1236,6 +1280,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_primary_company: {
+        Args: { _centre_id: string; _company_id: string }
+        Returns: undefined
       }
       user_can_access_centro: {
         Args: { _centro_code: string; _user_id: string }

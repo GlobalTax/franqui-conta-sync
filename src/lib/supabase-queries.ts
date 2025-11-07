@@ -374,6 +374,193 @@ export async function getJournalLinesForBalances(
   };
 }
 
+// ============= Centre Management Functions =============
+
+/**
+ * Get users assigned to a centre
+ */
+export async function getCentreUsers(centroCodigo: string) {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select(`
+      id,
+      role,
+      user_id,
+      profiles!inner(id, nombre, apellidos, email)
+    `)
+    .eq('centro', centroCodigo);
+  
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get all users in the system
+ */
+export async function getAllUsers() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, nombre, apellidos, email')
+    .order('apellidos', { ascending: true });
+  
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Add a user to a centre
+ */
+export async function addUserToCentre(
+  userId: string,
+  role: string,
+  centroCodigo: string,
+  franchiseeId?: string
+) {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .insert({
+      user_id: userId,
+      role: role as any,
+      centro: centroCodigo,
+      franchisee_id: franchiseeId
+    } as any)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Update a user's role
+ */
+export async function updateUserRole(userRoleId: string, newRole: string) {
+  const { error } = await supabase
+    .from('user_roles')
+    .update({ role: newRole as any } as any)
+    .eq('id', userRoleId);
+  
+  if (error) throw error;
+}
+
+/**
+ * Revoke a user's access to a centre
+ */
+export async function revokeUserFromCentre(userRoleId: string) {
+  const { error } = await supabase
+    .from('user_roles')
+    .delete()
+    .eq('id', userRoleId);
+  
+  if (error) throw error;
+}
+
+/**
+ * Toggle centre active status
+ */
+export async function toggleCentreStatus(centreId: string, newStatus: boolean) {
+  const { error } = await supabase
+    .from('centres')
+    .update({ activo: newStatus })
+    .eq('id', centreId);
+  
+  if (error) throw error;
+}
+
+/**
+ * Get companies (CIFs) for a centre
+ */
+export async function getCentreCompanies(centreId: string) {
+  const { data, error } = await supabase
+    .from('centre_companies')
+    .select('*')
+    .eq('centre_id', centreId)
+    .eq('activo', true)
+    .order('es_principal', { ascending: false });
+  
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Add a new company to a centre
+ */
+export async function addCentreCompany(
+  centreId: string,
+  cif: string,
+  razonSocial: string,
+  tipoSociedad: string,
+  esPrincipal: boolean
+) {
+  // If setting as principal, unmark others first
+  if (esPrincipal) {
+    await supabase
+      .from('centre_companies')
+      .update({ es_principal: false })
+      .eq('centre_id', centreId);
+  }
+
+  const { data, error } = await supabase
+    .from('centre_companies')
+    .insert({
+      centre_id: centreId,
+      cif: cif.toUpperCase(),
+      razon_social: razonSocial,
+      tipo_sociedad: tipoSociedad,
+      es_principal: esPrincipal
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Update a centre company
+ */
+export async function updateCentreCompany(
+  companyId: string,
+  cif: string,
+  razonSocial: string,
+  tipoSociedad: string
+) {
+  const { error } = await supabase
+    .from('centre_companies')
+    .update({
+      cif: cif.toUpperCase(),
+      razon_social: razonSocial,
+      tipo_sociedad: tipoSociedad
+    })
+    .eq('id', companyId);
+  
+  if (error) throw error;
+}
+
+/**
+ * Set a company as principal for a centre
+ */
+export async function setPrincipalCompany(centreId: string, companyId: string) {
+  const { error } = await supabase.rpc('set_primary_company', {
+    _centre_id: centreId,
+    _company_id: companyId
+  });
+  
+  if (error) throw error;
+}
+
+/**
+ * Delete (soft delete) a centre company
+ */
+export async function deleteCentreCompany(companyId: string) {
+  const { error } = await supabase
+    .from('centre_companies')
+    .update({ activo: false })
+    .eq('id', companyId);
+  
+  if (error) throw error;
+}
+
 // ============= Admin Panel Functions =============
 
 /**

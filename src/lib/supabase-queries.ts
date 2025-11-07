@@ -285,6 +285,8 @@ export async function getCostCenters(
   return { data: (data as unknown) as CostCenter[] | null, error };
 }
 
+// ============= Account Management Functions =============
+
 /**
  * Crea una nueva cuenta contable
  */

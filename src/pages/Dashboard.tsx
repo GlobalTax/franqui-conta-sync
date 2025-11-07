@@ -1,7 +1,84 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Euro, FileText, CreditCard, CheckCircle2 } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const { currentMembership, loading } = useOrganization();
+  const [stats, setStats] = useState({
+    pendingInvoices: 0,
+    monthlyTotal: 0,
+    bankTransactions: 0,
+    reconciliationRate: 0,
+  });
+
+  useEffect(() => {
+    if (!currentMembership) return;
+
+    const fetchStats = async () => {
+      try {
+        // Fetch pending invoices
+        const { count: invoiceCount } = await supabase
+          .from("invoices")
+          .select("*", { count: "exact", head: true })
+          .eq("organization_id", currentMembership.organization_id)
+          .eq("status", "pending");
+
+        // Fetch monthly total
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        const { data: monthlyInvoices } = await supabase
+          .from("invoices")
+          .select("total")
+          .eq("organization_id", currentMembership.organization_id)
+          .gte("issue_date", startOfMonth.toISOString().split("T")[0]);
+
+        const monthlyTotal = monthlyInvoices?.reduce((sum, inv) => sum + Number(inv.total), 0) || 0;
+
+        // Fetch bank transactions
+        const { count: bankCount } = await supabase
+          .from("bank_transactions")
+          .select("*", { count: "exact", head: true })
+          .eq("organization_id", currentMembership.organization_id)
+          .eq("status", "pending");
+
+        setStats({
+          pendingInvoices: invoiceCount || 0,
+          monthlyTotal,
+          bankTransactions: bankCount || 0,
+          reconciliationRate: 0, // TODO: Calculate actual rate
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, [currentMembership]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentMembership) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-medium">No tienes acceso a ninguna organización</p>
+          <p className="text-muted-foreground mt-2">Contacta con un administrador para obtener acceso</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -10,7 +87,7 @@ const Dashboard = () => {
             Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Resumen de actividad contable
+            {currentMembership.organization?.name || "Cargando..."} - {currentMembership.restaurant?.nombre || "Todas las ubicaciones"}
           </p>
         </div>
 
@@ -23,7 +100,7 @@ const Dashboard = () => {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{stats.pendingInvoices}</div>
               <p className="text-xs text-muted-foreground">
                 Requieren revisión
               </p>
@@ -38,9 +115,9 @@ const Dashboard = () => {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">156</div>
+              <div className="text-2xl font-bold">{stats.bankTransactions}</div>
               <p className="text-xs text-muted-foreground">
-                Este mes
+                Sin conciliar
               </p>
             </CardContent>
           </Card>
@@ -48,14 +125,14 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Conciliaciones Pendientes
+                Tasa Conciliación
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8</div>
+              <div className="text-2xl font-bold">{stats.reconciliationRate}%</div>
               <p className="text-xs text-muted-foreground">
-                Requieren acción
+                Objetivo: 95%
               </p>
             </CardContent>
           </Card>
@@ -68,9 +145,11 @@ const Dashboard = () => {
               <Euro className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">24,567€</div>
+              <div className="text-2xl font-bold">
+                {stats.monthlyTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+              </div>
               <p className="text-xs text-muted-foreground">
-                +12% vs mes anterior
+                Mes actual
               </p>
             </CardContent>
           </Card>
@@ -88,31 +167,9 @@ const Dashboard = () => {
                     <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Factura aprobada</p>
+                    <p className="text-sm font-medium">Sistema configurado</p>
                     <p className="text-xs text-muted-foreground">
-                      FACT-2024-001 • Hace 2 horas
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-warning-light">
-                    <FileText className="h-5 w-5 text-warning" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Factura en revisión</p>
-                    <p className="text-xs text-muted-foreground">
-                      FACT-2024-002 • Hace 3 horas
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Transacción bancaria</p>
-                    <p className="text-xs text-muted-foreground">
-                      1,234.56€ • Hace 5 horas
+                      Listo para empezar • Ahora
                     </p>
                   </div>
                 </div>
@@ -122,30 +179,27 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Restaurantes</CardTitle>
+              <CardTitle>Próximos Pasos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Madrid Centro</p>
-                    <p className="text-xs text-muted-foreground">MCD-001</p>
+                    <p className="text-sm font-medium">Crear Plan de Cuentas</p>
+                    <p className="text-xs text-muted-foreground">Configure su estructura contable</p>
                   </div>
-                  <div className="text-sm font-medium">12,456€</div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Barcelona Gracia</p>
-                    <p className="text-xs text-muted-foreground">MCD-002</p>
+                    <p className="text-sm font-medium">Subir Primera Factura</p>
+                    <p className="text-xs text-muted-foreground">Pruebe el sistema OCR</p>
                   </div>
-                  <div className="text-sm font-medium">8,234€</div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Valencia Puerto</p>
-                    <p className="text-xs text-muted-foreground">MCD-003</p>
+                    <p className="text-sm font-medium">Importar Extractos Bancarios</p>
+                    <p className="text-xs text-muted-foreground">Comience la conciliación</p>
                   </div>
-                  <div className="text-sm font-medium">9,877€</div>
                 </div>
               </div>
             </CardContent>

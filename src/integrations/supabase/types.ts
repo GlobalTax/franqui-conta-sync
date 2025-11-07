@@ -1090,6 +1090,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_user_roles_centro"
+            columns: ["centro"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
             foreignKeyName: "user_roles_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false

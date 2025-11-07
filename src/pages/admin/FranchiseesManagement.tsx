@@ -68,12 +68,12 @@ const FranchiseesManagement = () => {
               <TableCell>{franchisee.company_tax_id || "—"}</TableCell>
               <TableCell>
                 <Badge variant="secondary">
-                  {franchisee.centres?.[0]?.count || 0} centros
+                  {franchisee.centres?.length || 0} centros
                 </Badge>
               </TableCell>
               <TableCell>
                 <Badge variant="outline">
-                  {franchisee.user_roles?.[0]?.count || 0} usuarios
+                  {franchisee.user_roles?.length || 0} usuarios
                 </Badge>
               </TableCell>
               <TableCell>

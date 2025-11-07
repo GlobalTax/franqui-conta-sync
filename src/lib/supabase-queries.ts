@@ -389,6 +389,7 @@ export async function getAllUsersWithRoles() {
         role,
         centro,
         franchisee_id,
+        centres!fk_user_roles_centro(codigo, nombre),
         franchisees (id, name)
       )
     `)

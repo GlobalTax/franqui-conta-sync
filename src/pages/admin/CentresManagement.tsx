@@ -23,12 +23,13 @@ const CentresManagement = () => {
       .select(`
         *,
         franchisees(name),
-        user_roles:user_roles(count)
+        user_roles(count)
       `)
       .eq("activo", true)
       .order("nombre");
 
     if (error) {
+      console.error("Error al cargar centros:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los centros",

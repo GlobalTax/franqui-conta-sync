@@ -134,7 +134,8 @@ const UsersManagement = () => {
                         variant={getRoleBadgeVariant(role.role)}
                       >
                         {getRoleIcon(role.role)} {role.role}
-                        {role.centro && ` - ${role.centro}`}
+                        {role.centres && ` - ${role.centres.nombre} (${role.centres.codigo})`}
+                        {!role.centres && role.centro && ` - ${role.centro}`}
                       </Badge>
                     )) || <span className="text-muted-foreground">Sin roles</span>}
                   </div>

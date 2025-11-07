@@ -27,7 +27,7 @@ const Invoices = () => {
     const fetchInvoices = async () => {
       try {
         let query = supabase
-          .from("invoices")
+          .from("invoices" as any)
           .select("*")
           .eq("organization_id", currentMembership.organization_id)
           .order("issue_date", { ascending: false });
@@ -39,7 +39,7 @@ const Invoices = () => {
         const { data, error } = await query;
         if (error) throw error;
 
-        setInvoices(data as Invoice[] || []);
+        setInvoices((data as unknown) as Invoice[]);
       } catch (error) {
         console.error("Error fetching invoices:", error);
       } finally {

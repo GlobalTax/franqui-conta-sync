@@ -2,15 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface MembershipData {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  role: string;
-  restaurant_id: string | null;
-  active: boolean;
-}
-
 export interface Organization {
   id: string;
   name: string;
@@ -55,8 +46,9 @@ export function useOrganization() {
         return;
       }
 
+      // Using direct query with type assertion
       const { data, error } = await supabase
-        .from("memberships")
+        .from("memberships" as any)
         .select("*")
         .eq("user_id", user.id)
         .eq("active", true);
@@ -65,17 +57,16 @@ export function useOrganization() {
 
       // Fetch related data manually
       const membershipsWithData = await Promise.all(
-        (data as MembershipData[]).map(async (membership) => {
+        (data || []).map(async (membership: any) => {
           const [orgResult, restaurantResult] = await Promise.all([
-            supabase.from("franchisees").select("*").eq("id", membership.organization_id).maybeSingle(),
+            supabase.from("franchisees" as any).select("*").eq("id", membership.organization_id).maybeSingle(),
             membership.restaurant_id
-              ? supabase.from("centres").select("*").eq("id", membership.restaurant_id).maybeSingle()
+              ? supabase.from("centres" as any).select("*").eq("id", membership.restaurant_id).maybeSingle()
               : Promise.resolve({ data: null, error: null }),
           ]);
 
           return {
             ...membership,
-            role: membership.role as "admin" | "contable" | "gerente_restaurante",
             organization: orgResult.data,
             restaurant: restaurantResult.data,
           } as Membership;

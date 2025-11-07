@@ -20,7 +20,7 @@ const Dashboard = () => {
       try {
         // Fetch pending invoices
         const { count: invoiceCount } = await supabase
-          .from("invoices")
+          .from("invoices" as any)
           .select("*", { count: "exact", head: true })
           .eq("organization_id", currentMembership.organization_id)
           .eq("status", "pending");
@@ -29,16 +29,16 @@ const Dashboard = () => {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         const { data: monthlyInvoices } = await supabase
-          .from("invoices")
+          .from("invoices" as any)
           .select("total")
           .eq("organization_id", currentMembership.organization_id)
           .gte("issue_date", startOfMonth.toISOString().split("T")[0]);
 
-        const monthlyTotal = monthlyInvoices?.reduce((sum, inv) => sum + Number(inv.total), 0) || 0;
+        const monthlyTotal = (monthlyInvoices as any[] || []).reduce((sum: number, inv: any) => sum + Number(inv.total), 0);
 
         // Fetch bank transactions
         const { count: bankCount } = await supabase
-          .from("bank_transactions")
+          .from("bank_transactions" as any)
           .select("*", { count: "exact", head: true })
           .eq("organization_id", currentMembership.organization_id)
           .eq("status", "pending");

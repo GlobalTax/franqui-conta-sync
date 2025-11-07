@@ -26,37 +26,38 @@ export function useOrganization() {
 
       const { data, error } = await supabase
         .from("memberships" as any)
-        .select("*")
+        .select(`
+          *,
+          organization:franchisees!organization_id(
+            id,
+            name,
+            email,
+            company_tax_id,
+            created_at,
+            updated_at
+          ),
+          restaurant:centres!restaurant_id(
+            id,
+            codigo,
+            nombre,
+            direccion,
+            ciudad,
+            pais,
+            activo,
+            created_at,
+            updated_at
+          )
+        `)
         .eq("user_id", user.id)
         .eq("active", true);
 
       if (error) throw error;
 
-      // Fetch related data manually
-      const membershipsWithData = await Promise.all(
-        ((data || []) as any[]).map(async (membership) => {
-          const [orgResult, restaurantResult] = await Promise.all([
-            supabase
-              .from("franchisees" as any)
-              .select("*")
-              .eq("id", membership.organization_id)
-              .maybeSingle(),
-            membership.restaurant_id
-              ? supabase
-                  .from("centres" as any)
-                  .select("*")
-                  .eq("id", membership.restaurant_id)
-                  .maybeSingle()
-              : Promise.resolve({ data: null, error: null }),
-          ]);
-
-          return {
-            ...membership,
-            organization: (orgResult.data as unknown) as Organization | null,
-            restaurant: (restaurantResult.data as unknown) as Restaurant | null,
-          } as Membership;
-        })
-      );
+      const membershipsWithData = (data || []).map((membership: any) => ({
+        ...membership,
+        organization: membership.organization as Organization | null,
+        restaurant: membership.restaurant as Restaurant | null,
+      })) as Membership[];
 
       setMemberships(membershipsWithData);
       if (membershipsWithData.length > 0) {

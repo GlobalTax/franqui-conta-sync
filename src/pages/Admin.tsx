@@ -6,6 +6,7 @@ import FranchiseesManagement from "./admin/FranchiseesManagement";
 import CentresManagement from "./admin/CentresManagement";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
+import PermissionsManagement from "./admin/PermissionsManagement";
 
 const Admin = () => {
   return (
@@ -19,11 +20,12 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
+          <TabsTrigger value="permissions">Permisos</TabsTrigger>
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
           <TabsTrigger value="settings">Configuración</TabsTrigger>
         </TabsList>
@@ -42,6 +44,10 @@ const Admin = () => {
 
         <TabsContent value="centres" className="mt-6">
           <CentresManagement />
+        </TabsContent>
+
+        <TabsContent value="permissions" className="mt-6">
+          <PermissionsManagement />
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">

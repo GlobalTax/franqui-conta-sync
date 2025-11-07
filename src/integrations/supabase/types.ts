@@ -908,6 +908,36 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          granted: boolean
+          id: string
+          permission: Database["public"]["Enums"]["permission_action"]
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          granted?: boolean
+          id?: string
+          permission: Database["public"]["Enums"]["permission_action"]
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          granted?: boolean
+          id?: string
+          permission?: Database["public"]["Enums"]["permission_action"]
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       schedules: {
         Row: {
           created_at: string | null
@@ -1107,6 +1137,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_centre_permissions: {
+        Row: {
+          centro: string
+          created_at: string | null
+          granted: boolean
+          granted_by: string | null
+          id: string
+          notes: string | null
+          permission: Database["public"]["Enums"]["permission_action"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          centro: string
+          created_at?: string | null
+          granted: boolean
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          permission: Database["public"]["Enums"]["permission_action"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          centro?: string
+          created_at?: string | null
+          granted?: boolean
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          permission?: Database["public"]["Enums"]["permission_action"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           centro: string | null
@@ -1274,6 +1340,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_user_permissions: {
+        Args: { _centro?: string; _user_id: string }
+        Returns: {
+          centro: string
+          permission: Database["public"]["Enums"]["permission_action"]
+          role: Database["public"]["Enums"]["app_role"]
+          source: string
+        }[]
+      }
+      has_permission: {
+        Args: {
+          _centro?: string
+          _permission: Database["public"]["Enums"]["permission_action"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1294,6 +1377,49 @@ export type Database = {
       app_role: "admin" | "gestor" | "franquiciado" | "asesoria"
       audit_action: "INSERT" | "UPDATE" | "DELETE"
       dq_severity: "critica" | "alta" | "media" | "baja"
+      permission_action:
+        | "employees.view"
+        | "employees.create"
+        | "employees.edit"
+        | "employees.delete"
+        | "employees.export"
+        | "schedules.view"
+        | "schedules.create"
+        | "schedules.edit"
+        | "schedules.delete"
+        | "schedules.import"
+        | "payrolls.view"
+        | "payrolls.create"
+        | "payrolls.edit"
+        | "payrolls.delete"
+        | "payrolls.import"
+        | "payrolls.export"
+        | "absences.view"
+        | "absences.create"
+        | "absences.edit"
+        | "absences.delete"
+        | "centres.view"
+        | "centres.edit"
+        | "centres.manage_users"
+        | "centres.manage_companies"
+        | "reports.view"
+        | "reports.export"
+        | "dq_issues.view"
+        | "dq_issues.resolve"
+        | "alerts.view"
+        | "alerts.create"
+        | "alerts.edit"
+        | "alerts.delete"
+        | "users.manage"
+        | "roles.manage"
+        | "franchisees.manage"
+        | "settings.view"
+        | "settings.edit"
+        | "audit_logs.view"
+        | "import.payrolls"
+        | "import.schedules"
+        | "import.employees"
+        | "import.absences"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1424,6 +1550,50 @@ export const Constants = {
       app_role: ["admin", "gestor", "franquiciado", "asesoria"],
       audit_action: ["INSERT", "UPDATE", "DELETE"],
       dq_severity: ["critica", "alta", "media", "baja"],
+      permission_action: [
+        "employees.view",
+        "employees.create",
+        "employees.edit",
+        "employees.delete",
+        "employees.export",
+        "schedules.view",
+        "schedules.create",
+        "schedules.edit",
+        "schedules.delete",
+        "schedules.import",
+        "payrolls.view",
+        "payrolls.create",
+        "payrolls.edit",
+        "payrolls.delete",
+        "payrolls.import",
+        "payrolls.export",
+        "absences.view",
+        "absences.create",
+        "absences.edit",
+        "absences.delete",
+        "centres.view",
+        "centres.edit",
+        "centres.manage_users",
+        "centres.manage_companies",
+        "reports.view",
+        "reports.export",
+        "dq_issues.view",
+        "dq_issues.resolve",
+        "alerts.view",
+        "alerts.create",
+        "alerts.edit",
+        "alerts.delete",
+        "users.manage",
+        "roles.manage",
+        "franchisees.manage",
+        "settings.view",
+        "settings.edit",
+        "audit_logs.view",
+        "import.payrolls",
+        "import.schedules",
+        "import.employees",
+        "import.absences",
+      ],
     },
   },
 } as const

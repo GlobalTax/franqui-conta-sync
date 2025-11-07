@@ -642,3 +642,106 @@ export async function getAuditLogs(
   const { data, error } = await query.limit(100);
   return { data, error };
 }
+
+// =====================================================
+// PERMISSION MANAGEMENT
+// =====================================================
+
+export async function getRolePermissions(role: string) {
+  const { data, error } = await supabase
+    .from('role_permissions')
+    .select('*')
+    .eq('role', role as any)
+    .order('permission');
+  return { data, error };
+}
+
+export async function updateRolePermission(
+  role: string,
+  permission: string,
+  granted: boolean
+) {
+  const { error } = await supabase
+    .from('role_permissions')
+    .upsert({
+      role: role as any,
+      permission: permission as any,
+      granted,
+      updated_at: new Date().toISOString()
+    } as any, {
+      onConflict: 'role,permission'
+    });
+  return { error };
+}
+
+export async function getUserCustomPermissions(
+  userId: string,
+  centro?: string
+) {
+  let query = supabase
+    .from('user_centre_permissions')
+    .select('*')
+    .eq('user_id', userId);
+  
+  if (centro) {
+    query = query.eq('centro', centro);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  return { data, error };
+}
+
+export async function addCustomPermission(
+  userId: string,
+  centro: string,
+  permission: string,
+  granted: boolean,
+  notes?: string
+) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { error } = await supabase
+    .from('user_centre_permissions')
+    .insert({
+      user_id: userId,
+      centro,
+      permission: permission as any,
+      granted,
+      notes,
+      granted_by: user?.id
+    } as any);
+  
+  return { error };
+}
+
+export async function revokeCustomPermission(permissionId: string) {
+  const { error } = await supabase
+    .from('user_centre_permissions')
+    .delete()
+    .eq('id', permissionId);
+  
+  return { error };
+}
+
+export async function getUserAllPermissions(userId: string, centro?: string) {
+  const { data, error } = await supabase
+    .rpc('get_user_permissions', {
+      _user_id: userId,
+      _centro: centro || null
+    });
+  
+  return { data, error };
+}
+
+export async function checkPermission(permission: string, centro?: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { hasPermission: false };
+
+  const { data, error } = await supabase.rpc('has_permission', {
+    _user_id: user.id,
+    _permission: permission as any,
+    _centro: centro || null
+  });
+
+  return { hasPermission: data === true && !error, error };
+}

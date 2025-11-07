@@ -1,32 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Membership, Organization, Restaurant } from "@/types/accounting";
 
-export interface Organization {
-  id: string;
-  name: string;
-  email: string;
-  company_tax_id: string | null;
-  cif: string | null;
-}
-
-export interface Restaurant {
-  id: string;
-  codigo: string;
-  nombre: string;
-  franchisee_id: string;
-}
-
-export interface Membership {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  role: "admin" | "contable" | "gerente_restaurante";
-  restaurant_id: string | null;
-  active: boolean;
-  organization: Organization | null;
-  restaurant: Restaurant | null;
-}
+// Re-export types for convenience
+export type { Membership, Organization, Restaurant };
 
 export function useOrganization() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
@@ -46,7 +24,6 @@ export function useOrganization() {
         return;
       }
 
-      // Using direct query with type assertion
       const { data, error } = await supabase
         .from("memberships" as any)
         .select("*")
@@ -57,18 +34,26 @@ export function useOrganization() {
 
       // Fetch related data manually
       const membershipsWithData = await Promise.all(
-        (data || []).map(async (membership: any) => {
+        ((data || []) as any[]).map(async (membership) => {
           const [orgResult, restaurantResult] = await Promise.all([
-            supabase.from("franchisees" as any).select("*").eq("id", membership.organization_id).maybeSingle(),
+            supabase
+              .from("franchisees" as any)
+              .select("*")
+              .eq("id", membership.organization_id)
+              .maybeSingle(),
             membership.restaurant_id
-              ? supabase.from("centres" as any).select("*").eq("id", membership.restaurant_id).maybeSingle()
+              ? supabase
+                  .from("centres" as any)
+                  .select("*")
+                  .eq("id", membership.restaurant_id)
+                  .maybeSingle()
               : Promise.resolve({ data: null, error: null }),
           ]);
 
           return {
             ...membership,
-            organization: orgResult.data,
-            restaurant: restaurantResult.data,
+            organization: (orgResult.data as unknown) as Organization | null,
+            restaurant: (restaurantResult.data as unknown) as Restaurant | null,
           } as Membership;
         })
       );

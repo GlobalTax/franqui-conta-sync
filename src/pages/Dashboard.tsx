@@ -2,7 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Euro, FileText, CreditCard, CheckCircle2 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useEffect, useState } from "react";
+import { getInvoiceCount, getBankTransactionCount } from "@/lib/supabase-queries";
 import { supabase } from "@/integrations/supabase/client";
+import type { Invoice } from "@/types/accounting";
 
 const Dashboard = () => {
   const { currentMembership, loading } = useOrganization();
@@ -18,12 +20,12 @@ const Dashboard = () => {
 
     const fetchStats = async () => {
       try {
-        // Fetch pending invoices
-        const { count: invoiceCount } = await supabase
-          .from("invoices" as any)
-          .select("*", { count: "exact", head: true })
-          .eq("organization_id", currentMembership.organization_id)
-          .eq("status", "pending");
+        // Fetch pending invoices count
+        const { count: invoiceCount } = await getInvoiceCount(
+          currentMembership.organization_id,
+          "pending",
+          currentMembership.restaurant_id || undefined
+        );
 
         // Fetch monthly total
         const startOfMonth = new Date();
@@ -34,14 +36,16 @@ const Dashboard = () => {
           .eq("organization_id", currentMembership.organization_id)
           .gte("issue_date", startOfMonth.toISOString().split("T")[0]);
 
-        const monthlyTotal = (monthlyInvoices as any[] || []).reduce((sum: number, inv: any) => sum + Number(inv.total), 0);
+        const monthlyTotal = ((monthlyInvoices as unknown as Invoice[]) || []).reduce(
+          (sum, inv) => sum + Number(inv.total),
+          0
+        );
 
-        // Fetch bank transactions
-        const { count: bankCount } = await supabase
-          .from("bank_transactions" as any)
-          .select("*", { count: "exact", head: true })
-          .eq("organization_id", currentMembership.organization_id)
-          .eq("status", "pending");
+        // Fetch bank transactions count
+        const { count: bankCount } = await getBankTransactionCount(
+          currentMembership.organization_id,
+          "pending"
+        );
 
         setStats({
           pendingInvoices: invoiceCount || 0,

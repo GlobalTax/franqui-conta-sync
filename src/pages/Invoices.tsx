@@ -4,17 +4,8 @@ import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Invoice {
-  id: string;
-  invoice_number: string;
-  issue_date: string;
-  total: number;
-  status: string;
-  supplier_id: string | null;
-  restaurant_id: string;
-}
+import { getInvoices } from "@/lib/supabase-queries";
+import type { Invoice } from "@/types/accounting";
 
 const Invoices = () => {
   const { currentMembership, loading } = useOrganization();
@@ -26,20 +17,14 @@ const Invoices = () => {
 
     const fetchInvoices = async () => {
       try {
-        let query = supabase
-          .from("invoices" as any)
-          .select("*")
-          .eq("organization_id", currentMembership.organization_id)
-          .order("issue_date", { ascending: false });
+        const { data, error } = await getInvoices(
+          currentMembership.organization_id,
+          currentMembership.restaurant_id || undefined
+        );
 
-        if (currentMembership.restaurant_id) {
-          query = query.eq("restaurant_id", currentMembership.restaurant_id);
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
 
-        setInvoices((data as unknown) as Invoice[]);
+        setInvoices(data || []);
       } catch (error) {
         console.error("Error fetching invoices:", error);
       } finally {

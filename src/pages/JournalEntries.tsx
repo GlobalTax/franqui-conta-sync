@@ -1,0 +1,263 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Plus, FileText, CheckCircle2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const JournalEntries = () => {
+  const entries = [
+    {
+      id: "1",
+      date: "2024-01-17",
+      number: "AS-2024-001",
+      description: "Compra mercaderías FACT-2024-001",
+      restaurant: "Madrid Centro",
+      status: "posted",
+      debit: 1234.56,
+      credit: 1234.56,
+    },
+    {
+      id: "2",
+      date: "2024-01-16",
+      number: "AS-2024-002",
+      description: "Nóminas enero 2024",
+      restaurant: "Barcelona Gracia",
+      status: "posted",
+      debit: 8765.43,
+      credit: 8765.43,
+    },
+    {
+      id: "3",
+      date: "2024-01-15",
+      number: "AS-2024-003",
+      description: "Factura servicios electricidad",
+      restaurant: "Valencia Puerto",
+      status: "draft",
+      debit: 567.89,
+      credit: 567.89,
+    },
+  ];
+
+  const journalLines = [
+    { account: "600", accountName: "Compras mercaderías", debit: 1019.80, credit: 0 },
+    { account: "472", accountName: "HP IVA Soportado", debit: 214.76, credit: 0 },
+    { account: "400", accountName: "Proveedores", debit: 0, credit: 1234.56 },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Asientos Contables
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Registro de operaciones contables
+            </p>
+          </div>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nuevo Asiento
+          </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Asientos del Mes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">156</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Enero 2024
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Contabilizados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">142</div>
+              <p className="text-xs text-muted-foreground mt-1">91% del total</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Borradores</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">14</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Pendientes de contabilizar
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Total Movimientos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">234,567€</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Suma debe/haber
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Asientos Recientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Restaurante</TableHead>
+                  <TableHead className="text-right">Debe</TableHead>
+                  <TableHead className="text-right">Haber</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="font-medium">{entry.date}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {entry.number}
+                    </TableCell>
+                    <TableCell>{entry.description}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{entry.restaurant}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {entry.debit.toFixed(2)}€
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {entry.credit.toFixed(2)}€
+                    </TableCell>
+                    <TableCell>
+                      {entry.status === "posted" ? (
+                        <Badge className="bg-success-light text-success hover:bg-success-light">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          Contabilizado
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <FileText className="mr-1 h-3 w-3" />
+                          Borrador
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        Ver Detalle
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Detalle: AS-2024-001</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  Editar
+                </Button>
+                <Button size="sm">Contabilizar</Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground mb-1">Fecha:</p>
+                  <p className="font-medium">17/01/2024</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Restaurante:</p>
+                  <p className="font-medium">Madrid Centro</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Origen:</p>
+                  <p className="font-medium">FACT-2024-001</p>
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-24">Cuenta</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead className="text-right">Debe</TableHead>
+                    <TableHead className="text-right">Haber</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {journalLines.map((line, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-mono font-medium">
+                        {line.account}
+                      </TableCell>
+                      <TableCell>{line.accountName}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {line.debit > 0 ? `${line.debit.toFixed(2)}€` : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {line.credit > 0 ? `${line.credit.toFixed(2)}€` : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={2}>TOTALES</TableCell>
+                    <TableCell className="text-right font-mono">
+                      1,234.56€
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      1,234.56€
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+
+              <div className="flex items-center justify-center p-4 bg-success-light rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-success mr-2" />
+                <span className="text-sm font-medium text-success">
+                  Asiento cuadrado: Debe = Haber
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default JournalEntries;

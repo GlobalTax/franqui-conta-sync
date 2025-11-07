@@ -12,6 +12,10 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
 import Banks from "@/pages/Banks";
+import Reconciliation from "@/pages/Reconciliation";
+import JournalEntries from "@/pages/JournalEntries";
+import ChartOfAccounts from "@/pages/ChartOfAccounts";
+import ProfitAndLoss from "@/pages/ProfitAndLoss";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,8 +67,10 @@ const App = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/banks" element={<Banks />} />
-              <Route path="/reconciliation" element={<Dashboard />} />
-              <Route path="/pnl" element={<Dashboard />} />
+              <Route path="/reconciliation" element={<Reconciliation />} />
+              <Route path="/journal" element={<JournalEntries />} />
+              <Route path="/accounts" element={<ChartOfAccounts />} />
+              <Route path="/pnl" element={<ProfitAndLoss />} />
               <Route path="/settings" element={<Dashboard />} />
             </Route>
             <Route path="*" element={<NotFound />} />

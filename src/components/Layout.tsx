@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -8,12 +8,15 @@ import {
   TrendingUp,
   Settings,
   LogOut,
+  BookOpen,
+  FileSpreadsheet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const Layout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -30,6 +33,8 @@ const Layout = () => {
     { icon: FileText, label: "Facturas", path: "/invoices" },
     { icon: CreditCard, label: "Bancos", path: "/banks" },
     { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
+    { icon: FileSpreadsheet, label: "Asientos", path: "/journal" },
+    { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: TrendingUp, label: "P&L", path: "/pnl" },
     { icon: Settings, label: "Configuración", path: "/settings" },
   ];
@@ -42,17 +47,22 @@ const Layout = () => {
           <h1 className="text-lg font-bold text-foreground">FranquiContaSync</h1>
         </div>
         <nav className="space-y-1 p-4">
-          {navItems.map((item) => (
-            <Link key={item.path} to={item.path}>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 hover:bg-accent"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Button>
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link key={item.path} to={item.path}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start gap-3 hover:bg-accent ${
+                    isActive ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Button>
+              </Link>
+            );
+          })}
         </nav>
         <div className="absolute bottom-4 left-4 right-4">
           <Button

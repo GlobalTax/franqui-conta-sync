@@ -36,7 +36,7 @@ const Layout = () => {
     { icon: FileText, label: "Facturas", path: "/invoices" },
     { icon: CreditCard, label: "Bancos", path: "/banks" },
     { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
-    { icon: FileSpreadsheet, label: "Asientos", path: "/journal" },
+    { icon: FileSpreadsheet, label: "Apuntes Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: TrendingUp, label: "P&L", path: "/pnl" },
     { icon: Settings, label: "Configuración", path: "/settings" },

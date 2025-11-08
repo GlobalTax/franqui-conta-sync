@@ -19,6 +19,8 @@ import ProfitAndLoss from "@/pages/ProfitAndLoss";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
 import AcceptInvite from "@/pages/AcceptInvite";
+import AccountingEntries from "@/pages/accounting/AccountingEntries";
+import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -78,6 +80,8 @@ const App = () => {
               <Route path="/journal" element={<JournalEntries />} />
               <Route path="/accounts" element={<ChartOfAccounts />} />
               <Route path="/pnl" element={<ProfitAndLoss />} />
+              <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
+              <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             </Route>

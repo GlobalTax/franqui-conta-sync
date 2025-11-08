@@ -52,6 +52,117 @@ export type Database = {
           },
         ]
       }
+      accounting_entries: {
+        Row: {
+          centro_code: string
+          created_at: string
+          created_by: string | null
+          description: string
+          entry_date: string
+          entry_number: number
+          fiscal_year_id: string | null
+          id: string
+          status: Database["public"]["Enums"]["accounting_entry_status"]
+          total_credit: number
+          total_debit: number
+          updated_at: string
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          entry_date: string
+          entry_number: number
+          fiscal_year_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["accounting_entry_status"]
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          entry_date?: string
+          entry_number?: number
+          fiscal_year_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["accounting_entry_status"]
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "accounting_entries_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounting_transactions: {
+        Row: {
+          account_code: string
+          amount: number
+          created_at: string
+          description: string | null
+          document_ref: string | null
+          entry_id: string
+          id: string
+          line_number: number
+          movement_type: Database["public"]["Enums"]["movement_type"]
+        }
+        Insert: {
+          account_code: string
+          amount: number
+          created_at?: string
+          description?: string | null
+          document_ref?: string | null
+          entry_id: string
+          id?: string
+          line_number: number
+          movement_type: Database["public"]["Enums"]["movement_type"]
+        }
+        Update: {
+          account_code?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          document_ref?: string | null
+          entry_id?: string
+          id?: string
+          line_number?: number
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_transactions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_notifications: {
         Row: {
           alert_id: string | null
@@ -448,6 +559,54 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      fiscal_years: {
+        Row: {
+          centro_code: string | null
+          created_at: string
+          end_date: string
+          id: string
+          start_date: string
+          status: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          centro_code?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          centro_code?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_years_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "fiscal_years_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
       }
       franchisees: {
         Row: {
@@ -1490,9 +1649,11 @@ export type Database = {
       }
     }
     Enums: {
+      accounting_entry_status: "draft" | "posted" | "closed"
       app_role: "admin" | "gestor" | "franquiciado" | "asesoria" | "contable"
       audit_action: "INSERT" | "UPDATE" | "DELETE"
       dq_severity: "critica" | "alta" | "media" | "baja"
+      movement_type: "debit" | "credit"
       permission_action:
         | "employees.view"
         | "employees.create"
@@ -1663,9 +1824,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      accounting_entry_status: ["draft", "posted", "closed"],
       app_role: ["admin", "gestor", "franquiciado", "asesoria", "contable"],
       audit_action: ["INSERT", "UPDATE", "DELETE"],
       dq_severity: ["critica", "alta", "media", "baja"],
+      movement_type: ["debit", "credit"],
       permission_action: [
         "employees.view",
         "employees.create",

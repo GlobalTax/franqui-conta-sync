@@ -3,17 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  GitCompare, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  XCircle,
-  ArrowRight
-} from "lucide-react";
+import { Check, X, Clock, CheckCircle2, XCircle, Sparkles, ArrowRight, AlertCircle } from "lucide-react";
+import { useReconciliation } from "@/hooks/useReconciliation";
+import { useOrganization } from "@/hooks/useOrganization";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Reconciliation = () => {
   const [selectedTab, setSelectedTab] = useState("pending");
+  const { currentMembership } = useOrganization();
+  const selectedCentro = currentMembership?.restaurant?.codigo;
+
+  const {
+    pendingMatches,
+    approvedMatches,
+    isLoading,
+    approveMatch,
+    rejectMatch,
+  } = useReconciliation(selectedCentro);
 
   const mockReconciliations = [
     {
@@ -237,10 +243,18 @@ const Reconciliation = () => {
               ¿Confirmar esta conciliación?
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => rejectMatch(recon.id)}
+              >
                 Rechazar
               </Button>
-              <Button size="sm" className="gap-2">
+              <Button
+                size="sm"
+                className="gap-2"
+                onClick={() => approveMatch(recon.id)}
+              >
                 <CheckCircle2 className="h-4 w-4" />
                 Aprobar
               </Button>
@@ -324,14 +338,85 @@ const Reconciliation = () => {
           </TabsList>
 
           <TabsContent value="pending" className="space-y-4 mt-6">
-            {mockReconciliations.map((recon) =>
-              renderReconciliationCard(recon, true)
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-40" />
+                ))}
+              </div>
+            ) : pendingMatches.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay conciliaciones pendientes</p>
+                <p className="text-sm mt-2">
+                  Usa el botón "Sugerir Conciliaciones" en la página de Bancos
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingMatches.map((match) => {
+                  const tx = match.bank_transactions;
+                  const recon = {
+                    id: match.id,
+                    transactionId: match.transaction_id,
+                    date: tx.transaction_date,
+                    amount: tx.amount,
+                    bankDescription: tx.description,
+                    status: match.status,
+                    match: match.match_type ? {
+                      type: match.match_type,
+                      reference: match.match_type === "invoice" ? "FAC-001" : "ASI-001",
+                      amount: Math.abs(tx.amount),
+                      date: tx.transaction_date,
+                    } : null,
+                    score: match.confidence_score || 0,
+                  };
+                  return renderReconciliationCard(recon, true);
+                })}
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="approved" className="space-y-4 mt-6">
-            {approvedReconciliations.map((recon) =>
-              renderReconciliationCard(recon, false)
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-40" />
+                ))}
+              </div>
+            ) : approvedMatches.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-sm text-muted-foreground">
+                    No hay conciliaciones aprobadas
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {approvedMatches.map((match) => {
+                  const tx = match.bank_transactions;
+                  const recon = {
+                    id: match.id,
+                    transactionId: match.transaction_id,
+                    date: tx.transaction_date,
+                    amount: tx.amount,
+                    bankDescription: tx.description,
+                    status: match.status,
+                    match: {
+                      type: match.match_type,
+                      reference: match.match_type === "invoice" ? "FAC-001" : "ASI-001",
+                      amount: Math.abs(tx.amount),
+                      date: tx.transaction_date,
+                    },
+                    score: match.confidence_score || 0,
+                    approvedBy: "Usuario",
+                    approvedAt: match.approved_at ? new Date(match.approved_at).toLocaleDateString("es-ES") : "",
+                  };
+                  return renderReconciliationCard(recon, false);
+                })}
+              </div>
             )}
           </TabsContent>
 

@@ -57,7 +57,7 @@ export const KPICard = ({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {subtitle && (
-              <p className="text-xs text-accent font-medium uppercase tracking-wide mb-2">{subtitle}</p>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1.5">{subtitle}</p>
             )}
             
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">

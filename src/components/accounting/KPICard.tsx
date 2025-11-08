@@ -30,48 +30,41 @@ export function KPICard({
 
   return (
     <Card>
-      <CardContent className="p-8">
-        <div className="flex items-start justify-between mb-6">
-          <div className={cn(
-            "flex items-center justify-center w-12 h-12 rounded-xl",
-            variant === "success" && "bg-success/10",
-            variant === "warning" && "bg-warning/10",
-            variant === "danger" && "bg-destructive/10",
-            variant === "default" && "bg-primary/10"
-          )}>
-            <Icon className={cn("h-6 w-6", iconColors[variant])} strokeWidth={2} />
-          </div>
-        </div>
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {title}
-          </p>
-          <div className="text-4xl font-bold tracking-tight text-foreground">
-            {value}
-          </div>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
-          )}
-          {trend && trendValue && (
-            <div className="flex items-center gap-2 text-sm pt-2">
-              {trend === "up" && (
-                <span className="text-success font-semibold flex items-center gap-1">
-                  ↑ {trendValue}
-                </span>
-              )}
-              {trend === "down" && (
-                <span className="text-destructive font-semibold flex items-center gap-1">
-                  ↓ {trendValue}
-                </span>
-              )}
-              {trend === "neutral" && (
-                <span className="text-muted-foreground font-semibold flex items-center gap-1">
-                  → {trendValue}
-                </span>
-              )}
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              {title}
+            </p>
+            <div className="text-3xl font-bold text-foreground mb-1">
+              {value}
             </div>
-          )}
+            {subtitle && (
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
+          <Icon className={cn("h-5 w-5", iconColors[variant])} strokeWidth={1.5} />
         </div>
+        
+        {trend && trendValue && (
+          <div className="flex items-center gap-2 text-xs pt-2 border-t border-border/40">
+            {trend === "up" && (
+              <span className="text-success font-semibold flex items-center gap-1">
+                ↑ {trendValue}
+              </span>
+            )}
+            {trend === "down" && (
+              <span className="text-destructive font-semibold flex items-center gap-1">
+                ↓ {trendValue}
+              </span>
+            )}
+            {trend === "neutral" && (
+              <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                → {trendValue}
+              </span>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

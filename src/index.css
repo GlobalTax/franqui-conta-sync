@@ -64,6 +64,11 @@ All colors MUST be HSL.
     --ring: 217 91% 40%;
 
     --radius: 0.5rem;
+    
+    /* Card system variables */
+    --card-padding: 1.25rem; /* 20px / p-5 */
+    --card-border-radius: 0.5rem; /* rounded-lg */
+    --card-border-opacity: 0.4;
 
     /* Sidebar - Minimal white */
     --sidebar-background: 0 0% 98%;

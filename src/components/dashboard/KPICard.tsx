@@ -43,31 +43,23 @@ export const KPICard = ({
 
   return (
     <Card>
-      <CardContent className="p-8">
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-6">
-              {Icon && (
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" strokeWidth={2} />
-                </div>
-              )}
-            </div>
-            
             {subtitle && (
-              <p className="text-xs text-accent font-semibold uppercase tracking-wider mb-3">{subtitle}</p>
+              <p className="text-xs text-accent font-medium uppercase tracking-wide mb-2">{subtitle}</p>
             )}
             
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               {title}
             </p>
             
-            <h3 className="text-4xl font-bold mb-4 tracking-tight">
+            <h3 className="text-3xl font-bold mb-3 tracking-tight">
               {formatValue(value)}
             </h3>
             
             {trend !== null && (
-              <div className="flex items-center gap-2 text-sm pt-2">
+              <div className="flex items-center gap-2 text-xs pt-2 border-t border-border/40">
                 {isPositive ? (
                   <>
                     <TrendingUp className="h-4 w-4 text-success" />
@@ -88,16 +80,21 @@ export const KPICard = ({
             )}
           </div>
           
-          {actionLabel && onAction && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary hover:text-primary-700 font-semibold"
-              onClick={onAction}
-            >
-              {actionLabel}
-            </Button>
-          )}
+          <div className="flex flex-col items-end gap-2">
+            {Icon && (
+              <Icon className="h-5 w-5 text-muted-foreground/50" strokeWidth={1.5} />
+            )}
+            {actionLabel && onAction && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary-700 font-semibold h-auto p-0"
+                onClick={onAction}
+              >
+                {actionLabel}
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

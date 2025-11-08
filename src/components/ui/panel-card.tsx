@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const panelCardVariants = cva(
-  "rounded-lg border-l-4 bg-muted/30 transition-all duration-200",
+  "rounded-lg border border-border/40 border-l-4 bg-muted/20 transition-colors hover:border-border",
   {
     variants: {
       variant: {
@@ -41,7 +41,7 @@ const PanelCardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col space-y-1.5 p-5", className)}
     {...props}
   />
 ));
@@ -75,7 +75,7 @@ const PanelCardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-5 pt-0", className)} {...props} />
 ));
 PanelCardContent.displayName = "PanelCardContent";
 
@@ -85,7 +85,7 @@ const PanelCardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    className={cn("flex items-center p-5 pt-0", className)}
     {...props}
   />
 ));

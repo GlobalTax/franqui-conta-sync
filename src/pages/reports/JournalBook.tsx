@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useJournalBook } from "@/hooks/useJournalBook";
 import { useView } from "@/contexts/ViewContext";
+import { useCentres } from "@/hooks/useCentres";
+import { useCentreCompanies } from "@/hooks/useCentreCompanies";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -10,6 +12,8 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
+import { exportJournalBookPDF } from "@/lib/pdf-export";
+import { toast } from "sonner";
 
 export default function JournalBook() {
   const { selectedView } = useView();
@@ -21,6 +25,57 @@ export default function JournalBook() {
   const endDateStr = endDate ? format(endDate, "yyyy-MM-dd") : "";
 
   const { data, isLoading } = useJournalBook(selectedView, startDateStr, endDateStr);
+  const { data: centres } = useCentres();
+  const currentCentre = centres?.find(c => c.id === selectedView?.id);
+  const { principalCompany } = useCentreCompanies(currentCentre?.id);
+
+  const handleExportOfficialPDF = () => {
+    if (!data || data.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    if (!principalCompany) {
+      toast.error("No se encontró información de la empresa");
+      return;
+    }
+
+    // Agrupar datos por asiento
+    const groupedData = data.reduce((acc, line) => {
+      const key = line.entry_id;
+      if (!acc[key]) {
+        acc[key] = {
+          entry_id: line.entry_id,
+          entry_number: line.entry_number,
+          entry_date: line.entry_date,
+          description: line.description,
+          total_debit: line.total_debit,
+          total_credit: line.total_credit,
+          lines: [],
+        };
+      }
+      acc[key].lines.push(line);
+      return acc;
+    }, {} as Record<string, any>);
+
+    const entries = Object.values(groupedData);
+
+    exportJournalBookPDF(
+      entries,
+      {
+        razonSocial: principalCompany.razon_social,
+        cif: principalCompany.cif,
+        direccion: currentCentre?.direccion || undefined,
+      },
+      {
+        start: startDateStr,
+        end: endDateStr,
+      },
+      `libro-diario-oficial-${startDateStr}-${endDateStr}`
+    );
+
+    toast.success("PDF oficial generado correctamente");
+  };
 
   const exportData = data?.map((line) => ({
     Asiento: line.entry_number,
@@ -95,6 +150,8 @@ export default function JournalBook() {
               printRef={printRef}
               data={exportData}
               filename={`diario-${startDateStr}-${endDateStr}`}
+              showOfficialPDF={!!principalCompany}
+              onExportOfficialPDF={handleExportOfficialPDF}
             />
           )
         }

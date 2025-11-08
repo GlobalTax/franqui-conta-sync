@@ -3,9 +3,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import { utils, writeFile } from "xlsx";
 
@@ -14,9 +15,18 @@ interface ExportButtonProps {
   data: any[];
   filename: string;
   headers?: string[];
+  onExportOfficialPDF?: () => void;
+  showOfficialPDF?: boolean;
 }
 
-export const ExportButton = ({ printRef, data, filename, headers }: ExportButtonProps) => {
+export const ExportButton = ({ 
+  printRef, 
+  data, 
+  filename, 
+  headers,
+  onExportOfficialPDF,
+  showOfficialPDF = false
+}: ExportButtonProps) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: filename,
@@ -48,7 +58,16 @@ export const ExportButton = ({ printRef, data, filename, headers }: ExportButton
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handlePrint}>Exportar PDF</DropdownMenuItem>
+        {showOfficialPDF && onExportOfficialPDF && (
+          <>
+            <DropdownMenuItem onClick={onExportOfficialPDF}>
+              <FileText className="mr-2 h-4 w-4" />
+              PDF Oficial (Formato Legal)
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem onClick={handlePrint}>Exportar PDF Simple</DropdownMenuItem>
         <DropdownMenuItem onClick={handleExportExcel}>Exportar Excel</DropdownMenuItem>
         <DropdownMenuItem onClick={handleExportCSV}>Exportar CSV</DropdownMenuItem>
       </DropdownMenuContent>

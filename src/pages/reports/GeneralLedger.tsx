@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useGeneralLedger } from "@/hooks/useGeneralLedger";
 import { useView } from "@/contexts/ViewContext";
+import { useCentres } from "@/hooks/useCentres";
+import { useCentreCompanies } from "@/hooks/useCentreCompanies";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { AccountSelector } from "@/components/accounting/AccountSelector";
@@ -11,6 +13,8 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
+import { exportGeneralLedgerPDF } from "@/lib/pdf-export";
+import { toast } from "sonner";
 
 export default function GeneralLedger() {
   const { selectedView } = useView();
@@ -24,6 +28,53 @@ export default function GeneralLedger() {
   const endDateStr = endDate ? format(endDate, "yyyy-MM-dd") : "";
 
   const { data, isLoading } = useGeneralLedger(selectedView, startDateStr, endDateStr, accountCode);
+  const { data: centres } = useCentres();
+  const currentCentre = centres?.find(c => c.id === selectedView?.id);
+  const { principalCompany } = useCentreCompanies(currentCentre?.id);
+
+  const handleExportOfficialPDF = () => {
+    if (!data || data.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    if (!principalCompany) {
+      toast.error("No se encontró información de la empresa");
+      return;
+    }
+
+    // Agrupar datos por cuenta
+    const groupedData = data.reduce((acc, line) => {
+      const key = line.account_code;
+      if (!acc[key]) {
+        acc[key] = {
+          account_code: line.account_code,
+          account_name: line.account_name,
+          lines: [],
+        };
+      }
+      acc[key].lines.push(line);
+      return acc;
+    }, {} as Record<string, any>);
+
+    const accounts = Object.values(groupedData);
+
+    exportGeneralLedgerPDF(
+      accounts,
+      {
+        razonSocial: principalCompany.razon_social,
+        cif: principalCompany.cif,
+        direccion: currentCentre?.direccion || undefined,
+      },
+      {
+        start: startDateStr,
+        end: endDateStr,
+      },
+      `libro-mayor-oficial-${startDateStr}-${endDateStr}`
+    );
+
+    toast.success("PDF oficial generado correctamente");
+  };
 
   const exportData = data?.map((line) => ({
     Cuenta: line.account_code,
@@ -93,6 +144,8 @@ export default function GeneralLedger() {
               printRef={printRef}
               data={exportData}
               filename={`mayor-${startDateStr}-${endDateStr}`}
+              showOfficialPDF={!!principalCompany}
+              onExportOfficialPDF={handleExportOfficialPDF}
             />
           )
         }

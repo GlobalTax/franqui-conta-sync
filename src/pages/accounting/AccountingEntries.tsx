@@ -51,86 +51,88 @@ export default function AccountingEntries() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Apuntes Contables</h1>
-          <p className="text-muted-foreground">
-            Gestión de asientos contables y movimientos
-          </p>
-        </div>
-        <Button onClick={() => navigate("/contabilidad/nuevo-asiento")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Asiento
-        </Button>
-      </div>
-
-      <FilterPanel onApply={handleApplyFilters} onClear={handleClearFilters}>
-        <div className="space-y-2">
-          <Label>Centro</Label>
-          <RestaurantFilter
-            value={selectedRestaurant}
-            onChange={setSelectedRestaurant}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="startDate">Desde</Label>
-          <Input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="endDate">Hasta</Label>
-          <Input
-            id="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="status">Estado</Label>
-          <Select value={status || 'all'} onValueChange={setStatus}>
-            <SelectTrigger id="status">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="draft">Borrador</SelectItem>
-              <SelectItem value="posted">Contabilizado</SelectItem>
-              <SelectItem value="closed">Cerrado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="search">Buscar</Label>
-          <Input
-            id="search"
-            placeholder="Nº asiento o concepto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </FilterPanel>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              Asientos Contables ({entries.length})
-            </CardTitle>
-            {isLoading && (
-              <span className="text-sm text-muted-foreground">Cargando...</span>
-            )}
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Apuntes Contables</h1>
+            <p className="text-muted-foreground mt-2">
+              Gestión de asientos contables y movimientos
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <AccountingEntriesTable entries={entries} onRefresh={() => refetch()} />
-        </CardContent>
-      </Card>
+          <Button onClick={() => navigate("/contabilidad/nuevo-asiento")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Asiento
+          </Button>
+        </div>
+
+        <FilterPanel onApply={handleApplyFilters} onClear={handleClearFilters}>
+          <div className="space-y-2">
+            <Label>Centro</Label>
+            <RestaurantFilter
+              value={selectedRestaurant}
+              onChange={setSelectedRestaurant}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Desde</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endDate">Hasta</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Estado</Label>
+            <Select value={status || 'all'} onValueChange={setStatus}>
+              <SelectTrigger id="status">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="draft">Borrador</SelectItem>
+                <SelectItem value="posted">Contabilizado</SelectItem>
+                <SelectItem value="closed">Cerrado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="search">Buscar</Label>
+            <Input
+              id="search"
+              placeholder="Nº asiento o concepto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </FilterPanel>
+
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
+                Asientos Contables ({entries.length})
+              </h2>
+              {isLoading && (
+                <span className="text-sm text-muted-foreground">Cargando...</span>
+              )}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <AccountingEntriesTable entries={entries} onRefresh={() => refetch()} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,19 +14,22 @@ export default function Notifications() {
   const readNotifications = notifications?.filter((n) => n.leida) || [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Notificaciones</h1>
-        {unreadCount > 0 && (
-          <Button onClick={() => markAllAsRead.mutate()}>
-            <CheckCheck className="mr-2 h-4 w-4" />
-            Marcar todas como leídas
-          </Button>
-        )}
-      </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Notificaciones</h1>
+            <p className="text-muted-foreground mt-2">Centro de notificaciones y alertas</p>
+          </div>
+          {unreadCount > 0 && (
+            <Button onClick={() => markAllAsRead.mutate()}>
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Marcar todas como leídas
+            </Button>
+          )}
+        </div>
 
-      <Card>
-        <CardContent className="pt-6">
+        <div className="border border-border rounded-lg overflow-hidden">
           <Tabs defaultValue="all">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="all">
@@ -86,8 +89,8 @@ export default function Notifications() {
               )}
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,55 +13,57 @@ export default function InvoicesIssued() {
   const { data: invoices, isLoading } = useInvoicesIssued();
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Facturas Emitidas</h1>
-          <p className="text-muted-foreground mt-1">Gestiona las facturas a clientes</p>
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Facturas Emitidas</h1>
+            <p className="text-muted-foreground mt-2">Gestiona las facturas a clientes</p>
+          </div>
+          <Button onClick={() => navigate('/facturas/emitidas/nueva')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Factura
+          </Button>
         </div>
-        <Button onClick={() => navigate('/facturas/emitidas/nueva')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Factura
-        </Button>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Listado de Facturas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {invoices && invoices.length > 0 ? (
-            <div className="space-y-3">
-              {invoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-start gap-4 flex-1">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{invoice.full_invoice_number}</h3>
-                        <InvoiceStatusBadge status={invoice.status} type="issued" />
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="text-lg font-semibold">Listado de Facturas</h2>
+          </div>
+          <div className="p-4">
+            {invoices && invoices.length > 0 ? (
+              <div className="space-y-3">
+                {invoices.map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-start gap-4 flex-1">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{invoice.full_invoice_number}</h3>
+                          <InvoiceStatusBadge status={invoice.status} type="issued" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">{invoice.customer_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: es })}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{invoice.customer_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: es })}
-                      </p>
                     </div>
+                    <p className="text-lg font-bold">{invoice.total.toFixed(2)} €</p>
                   </div>
-                  <p className="text-lg font-bold">{invoice.total.toFixed(2)} €</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-semibold mb-2">No hay facturas emitidas</h3>
-              <Button onClick={() => navigate('/facturas/emitidas/nueva')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Factura
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-semibold mb-2">No hay facturas emitidas</h3>
+                <Button onClick={() => navigate('/facturas/emitidas/nueva')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Factura
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

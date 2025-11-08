@@ -248,37 +248,34 @@ const Invoices = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b bg-background px-6 py-4">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                Facturas
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Gestión de facturas emitidas y recibidas
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button className="gap-2" onClick={() => navigate('/facturas/nueva')}>
-                <Upload className="h-4 w-4" />
-                Nueva Factura
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2" 
-                onClick={() => navigate('/facturas/nueva-ocr')}
-              >
-                <Scan className="h-4 w-4" />
-                Nueva con OCR
-              </Button>
-            </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Facturas
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Gestión de facturas emitidas y recibidas
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button className="gap-2" onClick={() => navigate('/facturas/nueva')}>
+              <Upload className="h-4 w-4" />
+              Nueva Factura
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={() => navigate('/facturas/nueva-ocr')}
+            >
+              <Scan className="h-4 w-4" />
+              Nueva con OCR
+            </Button>
           </div>
         </div>
-      </div>
 
-      <InvoicesTabs
+        <InvoicesTabs
         children={{
           emitidas: (
             <div className="space-y-4">
@@ -492,6 +489,7 @@ const Invoices = () => {
         invoice={selectedInvoiceForApproval}
         approvalLevel={approvalLevel}
       />
+      </div>
     </div>
   );
 };

@@ -27,66 +27,69 @@ export default function BalanceSheet() {
 
   if (!selectedView) {
     return (
-      <div className="space-y-6">
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <PageHeader
+            breadcrumbs={[
+              { label: "Contabilidad" },
+              { label: "Balance de Situación" }
+            ]}
+            title="Balance de Situación"
+          />
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-center h-64 p-6">
+              <div className="text-center space-y-2">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                <p className="text-muted-foreground">
+                  Selecciona una sociedad o centro para ver el balance
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           breadcrumbs={[
             { label: "Contabilidad" },
             { label: "Balance de Situación" }
           ]}
           title="Balance de Situación"
-        />
-        <Card>
-          <CardContent className="flex items-center justify-center h-64">
-            <div className="text-center space-y-2">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-              <p className="text-muted-foreground">
-                Selecciona una sociedad o centro para ver el balance
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        breadcrumbs={[
-          { label: "Contabilidad" },
-          { label: "Balance de Situación" }
-        ]}
-        title="Balance de Situación"
-        subtitle={
-          selectedView.type === 'company'
-            ? `Vista consolidada: ${selectedView.name}`
-            : `Centro: ${selectedView.name}`
-        }
-        actions={
-          <>
-            <DateRangePicker
-              startDate={fechaCorte}
-              endDate={fechaCorte}
-              onStartDateChange={setFechaCorte}
-              onEndDateChange={setFechaCorte}
-            />
-            {data && (
-              <ExportButton
-                printRef={printRef}
-                data={exportData}
-                filename={`balance-${fechaCorteStr}`}
+          subtitle={
+            selectedView.type === 'company'
+              ? `Vista consolidada: ${selectedView.name}`
+              : `Centro: ${selectedView.name}`
+          }
+          actions={
+            <>
+              <DateRangePicker
+                startDate={fechaCorte}
+                endDate={fechaCorte}
+                onStartDateChange={setFechaCorte}
+                onEndDateChange={setFechaCorte}
               />
-            )}
-          </>
-        }
-      />
+              {data && (
+                <ExportButton
+                  printRef={printRef}
+                  data={exportData}
+                  filename={`balance-${fechaCorteStr}`}
+                />
+              )}
+            </>
+          }
+        />
 
-      <div ref={printRef}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Fecha de corte: {fechaCorte ? format(fechaCorte, "dd/MM/yyyy") : "-"}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div ref={printRef}>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-border bg-muted/30">
+              <h2 className="text-lg font-semibold">Fecha de corte: {fechaCorte ? format(fechaCorte, "dd/MM/yyyy") : "-"}</h2>
+            </div>
+            <div className="overflow-x-auto">
             {isLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-12 w-full" />
@@ -145,8 +148,9 @@ export default function BalanceSheet() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -135,75 +135,65 @@ const ProfitAndLoss = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">
-                  Resultado Neto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${summary.netResult >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {summary.netResult.toLocaleString("es-ES", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {summary.netMargin.toFixed(1)}% margen neto
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Resultado Neto</p>
+              </div>
+              <div className={`text-2xl font-bold ${summary.netResult >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {summary.netResult.toLocaleString("es-ES", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}€
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {summary.netMargin.toFixed(1)}% margen neto
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">EBITDA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${summary.ebitda >= 0 ? '' : 'text-destructive'}`}>
-                  {summary.ebitda.toLocaleString("es-ES", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Margen EBITDA: {summary.ebitdaMargin.toFixed(1)}%
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">EBITDA</p>
+              </div>
+              <div className={`text-2xl font-bold ${summary.ebitda >= 0 ? '' : 'text-destructive'}`}>
+                {summary.ebitda.toLocaleString("es-ES", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}€
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Margen EBITDA: {summary.ebitdaMargin.toFixed(1)}%
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-success">
-                  {summary.totalIncome.toLocaleString("es-ES", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  100% base de cálculo
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Ingresos</p>
+              </div>
+              <div className="text-2xl font-bold text-success">
+                {summary.totalIncome.toLocaleString("es-ES", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}€
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                100% base de cálculo
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Gastos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">
-                  {summary.totalExpenses.toLocaleString("es-ES", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {((summary.totalExpenses / summary.totalIncome) * 100).toFixed(1)}% sobre ingresos
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Gastos</p>
+              </div>
+              <div className="text-2xl font-bold text-destructive">
+                {summary.totalExpenses.toLocaleString("es-ES", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}€
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {((summary.totalExpenses / summary.totalIncome) * 100).toFixed(1)}% sobre ingresos
+              </p>
+            </div>
           </div>
         )}
 

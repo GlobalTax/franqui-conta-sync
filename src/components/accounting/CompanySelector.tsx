@@ -30,7 +30,7 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
 
   if (isLoading) {
     return (
-      <div className="w-[320px] h-10 border border-input rounded-md flex items-center gap-2 px-3 bg-background">
+      <div className="w-full h-10 border border-input rounded-md flex items-center gap-2 px-3 bg-background">
         <Skeleton className="h-4 w-4 rounded-full" />
         <Skeleton className="h-4 flex-1" />
       </div>
@@ -39,7 +39,7 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
 
   if (isError) {
     return (
-      <Alert variant="destructive" className="w-[320px]">
+      <Alert variant="destructive" className="w-full">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error al cargar sociedades</AlertTitle>
         <AlertDescription>
@@ -90,7 +90,7 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
         }
       }}
     >
-      <SelectTrigger className="w-[320px]">
+      <SelectTrigger className="w-full">
         <SelectValue placeholder="Seleccionar vista contable..." />
       </SelectTrigger>
       <SelectContent>

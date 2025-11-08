@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useOrganization } from "@/hooks/useOrganization";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { CompanySelector } from "@/components/accounting/CompanySelector";
+import { CentreSelector } from "@/components/accounting/CentreSelector";
 import { useView } from "@/contexts/ViewContext";
 import { useEnsureDefaultView } from "@/hooks/useEnsureDefaultView";
 import { Badge } from "@/components/ui/badge";
@@ -112,11 +112,11 @@ const Layout = () => {
             <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
               Vista Contable
             </label>
-            <CompanySelector
-              franchiseeId={currentMembership.organization_id}
-              value={selectedView}
-              onChange={setSelectedView}
-            />
+              <CentreSelector
+                franchiseeId={currentMembership.organization_id}
+                value={selectedView}
+                onChange={setSelectedView}
+              />
           </div>
         )}
 
@@ -125,7 +125,7 @@ const Layout = () => {
           {/* View indicator inside sidebar - Always visible when selectedView exists */}
           {selectedView && (
             <div className="mb-4">
-              {selectedView.type === 'company' ? (
+              {selectedView.type === 'all' || selectedView.type === 'company' ? (
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-sm">
                   <Building2 className="h-4 w-4" />
                   <span className="uppercase tracking-wide">Consolidado</span>

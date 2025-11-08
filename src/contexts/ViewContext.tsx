@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface ViewSelection {
-  type: 'company' | 'centre';
+  type: 'all' | 'company' | 'centre';
   id: string;
   name: string;
 }
@@ -17,7 +17,7 @@ const ViewContext = createContext<ViewContextType | undefined>(undefined);
 export const ViewProvider = ({ children }: { children: ReactNode }) => {
   const [selectedView, setSelectedView] = useState<ViewSelection | null>(null);
   
-  const isConsolidated = selectedView?.type === 'company';
+  const isConsolidated = selectedView?.type === 'all' || selectedView?.type === 'company';
 
   // Persistir en localStorage
   useEffect(() => {

@@ -1,93 +1,117 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
-export const useCentres = () => {
+export interface Centre {
+  id: string;
+  codigo: string;
+  nombre: string;
+  franchisee_id: string;
+  company_id?: string;
+  activo: boolean;
+  direccion?: string;
+  ciudad?: string;
+  postal_code?: string;
+  pais?: string;
+  state?: string;
+  opening_date?: string;
+  square_meters?: number;
+  seating_capacity?: number;
+  site_number?: string;
+  franchisee_name?: string;
+  franchisee_email?: string;
+  orquest_service_id?: string;
+  orquest_business_id?: string;
+  company_tax_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  franchisees?: {
+    name: string;
+    email: string;
+  };
+  orquest_service?: {
+    id?: string;
+    nombre?: string;
+    service_name?: string;
+    business_id?: string;
+    zona_horaria?: string;
+  };
+  centre_companies?: Array<{
+    id: string;
+    razon_social: string;
+    cif: string;
+    tipo_sociedad: string;
+    es_principal: boolean;
+  }>;
+}
+
+// Fetch all centres for a franchisee
+export const useCentres = (franchiseeId?: string) => {
   return useQuery({
-    queryKey: ["centres"],
+    queryKey: ["centres", franchiseeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("centres")
-        .select("*, centre_companies(*)")
-        .order("nombre");
-      
+        .select("id, codigo, nombre, franchisee_id, company_id, activo")
+        .eq("activo", true)
+        .order("codigo");
+
+      if (franchiseeId) {
+        query = query.eq("franchisee_id", franchiseeId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       
-      // Load franchisees separately
-      const franchiseeIds = Array.from(new Set(data.map(c => c.franchisee_id).filter(Boolean)));
-      const { data: franchisees } = await supabase
-        .from("franchisees")
-        .select("id, name, email")
-        .in("id", franchiseeIds);
-      
-      const franchiseesMap = new Map((franchisees || []).map(f => [f.id, f]));
-      
-      return data.map(c => ({
-        ...c,
-        franchisees: c.franchisee_id ? franchiseesMap.get(c.franchisee_id) : null
-      }));
+      return (data || []) as Centre[];
     },
+    enabled: !!franchiseeId,
   });
 };
 
+// Fetch a single centre by ID
 export const useCentre = (id: string) => {
   return useQuery({
-    queryKey: ["centres", id],
+    queryKey: ["centre", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("centres")
-        .select("*, centre_companies(*)")
+        .select(`
+          *,
+          franchisees!centres_franchisee_id_fkey (name, email),
+          orquest_services!centres_orquest_service_id_fkey (id, nombre, service_name, business_id, zona_horaria),
+          centre_companies (id, razon_social, cif, tipo_sociedad, es_principal)
+        `)
         .eq("id", id)
         .single();
-      
+
       if (error) throw error;
       
-      // Load franchisee
-      let franchisee = null;
-      if (data.franchisee_id) {
-        const { data: franchiseeData } = await supabase
-          .from("franchisees")
-          .select("*")
-          .eq("id", data.franchisee_id)
-          .single();
-        
-        franchisee = franchiseeData;
+      // Rename orquest_services to orquest_service for compatibility
+      const result: any = { ...data };
+      if (result.orquest_services) {
+        result.orquest_service = result.orquest_services;
+        delete result.orquest_services;
       }
       
-      // Load orquest service
-      let orquestService = null;
-      if (data.orquest_service_id) {
-        const { data: serviceData } = await supabase
-          .from("orquest_services")
-          .select("*")
-          .eq("id", data.orquest_service_id)
-          .single();
-        
-        orquestService = serviceData;
-      }
-      
-      return {
-        ...data,
-        franchisees: franchisee,
-        orquest_service: orquestService
-      };
+      return result;
     },
     enabled: !!id,
   });
 };
 
+// Create a new centre
 export const useCreateCentre = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (centreData: any) => {
+    mutationFn: async (centre: any) => {
       const { data, error } = await supabase
         .from("centres")
-        .insert(centreData)
+        .insert([centre])
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -95,12 +119,12 @@ export const useCreateCentre = () => {
       queryClient.invalidateQueries({ queryKey: ["centres"] });
       toast({
         title: "Centro creado",
-        description: "El centro ha sido creado exitosamente",
+        description: "El centro se ha creado correctamente.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Error al crear centro",
         description: error.message,
         variant: "destructive",
       });
@@ -108,32 +132,33 @@ export const useCreateCentre = () => {
   });
 };
 
+// Update an existing centre
 export const useUpdateCentre = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...centreData }: any) => {
+    mutationFn: async ({ id, ...updates }: Partial<Centre> & { id: string }) => {
       const { data, error } = await supabase
         .from("centres")
-        .update(centreData)
+        .update(updates)
         .eq("id", id)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["centres"] });
+      queryClient.invalidateQueries({ queryKey: ["centre", variables.id] });
       toast({
         title: "Centro actualizado",
-        description: "El centro ha sido actualizado exitosamente",
+        description: "Los cambios se han guardado correctamente.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Error al actualizar centro",
         description: error.message,
         variant: "destructive",
       });

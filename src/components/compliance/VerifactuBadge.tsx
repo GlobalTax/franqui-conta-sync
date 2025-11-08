@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Shield, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface VerifactuBadgeProps {
   hasHash: boolean;
@@ -55,18 +55,16 @@ export function VerifactuBadge({
   const Icon = status.icon;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant={status.variant} className={className}>
-            <Icon className="w-3 h-3 mr-1" />
-            {status.label}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{status.description}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant={status.variant} className={className}>
+          <Icon className="w-3 h-3 mr-1" />
+          {status.label}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{status.description}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

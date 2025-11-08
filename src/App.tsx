@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,54 +72,52 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route
-              path="/login"
-              element={session ? <Navigate to="/" /> : <Login />}
-            />
-            <Route
-              path="/accept-invite"
-              element={<AcceptInvite />}
-            />
-            <Route
-              element={session ? <Layout /> : <Navigate to="/login" />}
-            >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
-              <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />
-              <Route path="/facturas/emitidas" element={<InvoicesIssued />} />
-              <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
-              <Route path="/facturas/:id" element={<InvoiceDetail />} />
-              <Route path="/proveedores" element={<Suppliers />} />
-              <Route path="/banks" element={<Banks />} />
-              <Route path="/reconciliation" element={<Reconciliation />} />
-              <Route path="/journal" element={<JournalEntries />} />
-              <Route path="/accounts" element={<ChartOfAccounts />} />
-              <Route path="/pnl" element={<ProfitAndLoss />} />
-              <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
-              <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
-              <Route path="/reportes/balance" element={<BalanceSheet />} />
-              <Route path="/reportes/mayor" element={<GeneralLedger />} />
-              <Route path="/reportes/diario" element={<JournalBook />} />
-              <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />
-              <Route path="/iva/expedidas" element={<LibroIVARepercutido />} />
-              <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
-              <Route path="/iva/modelo-303" element={<Modelo303 />} />
-              <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
-              <Route path="/settings" element={<Dashboard />} />
-              <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-              <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
-              <Route path="/notificaciones" element={<Notifications />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/login"
+            element={session ? <Navigate to="/" /> : <Login />}
+          />
+          <Route
+            path="/accept-invite"
+            element={<AcceptInvite />}
+          />
+          <Route
+            element={session ? <Layout /> : <Navigate to="/login" />}
+          >
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
+            <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />
+            <Route path="/facturas/emitidas" element={<InvoicesIssued />} />
+            <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
+            <Route path="/facturas/:id" element={<InvoiceDetail />} />
+            <Route path="/proveedores" element={<Suppliers />} />
+            <Route path="/banks" element={<Banks />} />
+            <Route path="/reconciliation" element={<Reconciliation />} />
+            <Route path="/journal" element={<JournalEntries />} />
+            <Route path="/accounts" element={<ChartOfAccounts />} />
+            <Route path="/pnl" element={<ProfitAndLoss />} />
+            <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
+            <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
+            <Route path="/reportes/balance" element={<BalanceSheet />} />
+            <Route path="/reportes/mayor" element={<GeneralLedger />} />
+            <Route path="/reportes/diario" element={<JournalBook />} />
+            <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />
+            <Route path="/iva/expedidas" element={<LibroIVARepercutido />} />
+            <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
+            <Route path="/iva/modelo-303" element={<Modelo303 />} />
+            <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
+            <Route path="/settings" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
+            <Route path="/notificaciones" element={<Notifications />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

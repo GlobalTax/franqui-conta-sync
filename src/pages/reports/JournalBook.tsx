@@ -2,25 +2,25 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useJournalBook } from "@/hooks/useJournalBook";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useView } from "@/contexts/ViewContext";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 
 export default function JournalBook() {
-  const { currentMembership } = useOrganization();
+  const { selectedView } = useView();
   const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(endOfMonth(new Date()));
   const printRef = useRef<HTMLDivElement>(null);
 
-  const centroCode = currentMembership?.restaurant?.id || "";
   const startDateStr = startDate ? format(startDate, "yyyy-MM-dd") : "";
   const endDateStr = endDate ? format(endDate, "yyyy-MM-dd") : "";
 
-  const { data, isLoading } = useJournalBook(centroCode, startDateStr, endDateStr);
+  const { data, isLoading } = useJournalBook(selectedView, startDateStr, endDateStr);
 
   const exportData = data?.map((line) => ({
     Asiento: line.entry_number,
@@ -52,6 +52,30 @@ export default function JournalBook() {
 
   const entries = Object.values(groupedData || {});
 
+  if (!selectedView) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Contabilidad" },
+            { label: "Libro Diario" }
+          ]}
+          title="Libro Diario"
+        />
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center space-y-2">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">
+                Selecciona una sociedad o centro para ver el libro diario
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -60,7 +84,11 @@ export default function JournalBook() {
           { label: "Libro Diario" }
         ]}
         title="Libro Diario"
-        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        subtitle={
+          selectedView.type === 'company'
+            ? `Vista consolidada: ${selectedView.name}`
+            : `Centro: ${selectedView.name}`
+        }
         actions={
           data && (
             <ExportButton

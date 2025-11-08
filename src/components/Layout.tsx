@@ -25,6 +25,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useOrganization } from "@/hooks/useOrganization";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { CompanySelector } from "@/components/accounting/CompanySelector";
+import { useView } from "@/contexts/ViewContext";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +52,7 @@ const Layout = () => {
   const { toast } = useToast();
   const { isAdmin } = useAdminCheck();
   const { currentMembership } = useOrganization();
+  const { selectedView, setSelectedView } = useView();
   const [fiscalYear, setFiscalYear] = useState("2025");
 
   const handleLogout = async () => {
@@ -89,33 +93,19 @@ const Layout = () => {
           <h1 className="text-xl font-bold">FranquiContaSync</h1>
         </div>
 
-        {/* Selector de Restaurante - PROMINENTE */}
-        <div className="p-4 border-b border-white/10">
-          <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
-            Cliente
-          </label>
-          <Select 
-            value={currentMembership?.restaurant?.id || ""} 
-            disabled={!currentMembership}
-          >
-            <SelectTrigger className="bg-white/10 border-white/20 text-white hover:bg-white/15">
-              <SelectValue placeholder="Seleccionar cliente">
-                {currentMembership?.restaurant?.codigo && (
-                  <span>
-                    {currentMembership.restaurant.codigo} - {currentMembership.restaurant.nombre}
-                  </span>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {currentMembership?.restaurant && (
-                <SelectItem value={currentMembership.restaurant.id}>
-                  {currentMembership.restaurant.codigo} - {currentMembership.restaurant.nombre}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Company/Centre Selector - PROMINENTE */}
+        {currentMembership?.organization_id && (
+          <div className="p-4 border-b border-white/10">
+            <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
+              Vista Contable
+            </label>
+            <CompanySelector
+              franchiseeId={currentMembership.organization_id}
+              value={selectedView}
+              onChange={setSelectedView}
+            />
+          </div>
+        )}
 
         {/* Selector de Año Fiscal - PROMINENTE */}
         <div className="px-4 pb-4 border-b border-white/10">
@@ -217,6 +207,18 @@ const Layout = () => {
         <div className="h-16 border-b bg-card px-6 flex items-center justify-end">
           <NotificationBell />
         </div>
+
+        {/* View indicator badge */}
+        {selectedView && (
+          <div className="px-6 py-2 bg-muted/30 border-b">
+            <Badge 
+              variant={selectedView.type === 'company' ? 'default' : 'secondary'}
+              className="text-xs"
+            >
+              {selectedView.type === 'company' ? '📊 Vista Consolidada' : '🏪 Centro Individual'}: {selectedView.name}
+            </Badge>
+          </div>
+        )}
 
         {/* Content */}
         <main className="flex-1 overflow-auto">

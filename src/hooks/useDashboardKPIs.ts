@@ -1,38 +1,67 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "./useOrganization";
+import { ViewSelection } from "@/contexts/ViewContext";
 
-export const useDashboardKPIs = () => {
-  const { currentMembership } = useOrganization();
+export const useDashboardKPIs = (viewSelection: ViewSelection | null) => {
 
   return useQuery({
-    queryKey: ["dashboard-kpis", currentMembership?.restaurant?.id],
+    queryKey: ["dashboard-kpis", viewSelection],
     queryFn: async () => {
-      if (!currentMembership?.restaurant?.id) {
-        throw new Error("No restaurant selected");
+      if (!viewSelection) {
+        throw new Error("No view selected");
       }
 
-      const centroCode = currentMembership.restaurant.id;
+      let centroCodes: string[] = [];
 
-      // Facturas recibidas pendientes
+      if (viewSelection.type === 'company') {
+        // Vista consolidada: obtener todos los centros
+        const { data: centres } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("company_id", viewSelection.id)
+          .eq("activo", true);
+
+        centroCodes = centres?.map(c => c.codigo) || [];
+      } else {
+        // Vista individual
+        const { data: centre } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("id", viewSelection.id)
+          .single();
+
+        if (centre) centroCodes = [centre.codigo];
+      }
+
+      if (centroCodes.length === 0) {
+        return {
+          invoicesReceivedPending: 0,
+          invoicesIssuedPending: 0,
+          unreconciledTransactions: 0,
+          reconciliationRate: 0,
+          monthlyExpenses: 0,
+        };
+      }
+
+      // Facturas recibidas pendientes (suma de todos los centros)
       const { count: invoicesReceivedPending } = await supabase
         .from("invoices_received")
         .select("*", { count: "exact", head: true })
-        .eq("centro_code", centroCode)
+        .in("centro_code", centroCodes)
         .eq("status", "pending");
 
       // Facturas emitidas pendientes
       const { count: invoicesIssuedPending } = await supabase
         .from("invoices_issued")
         .select("*", { count: "exact", head: true })
-        .eq("centro_code", centroCode)
+        .in("centro_code", centroCodes)
         .in("status", ["draft", "sent"]);
 
       // Movimientos bancarios sin conciliar
       const { data: bankAccounts } = await supabase
         .from("bank_accounts")
         .select("id")
-        .eq("centro_code", centroCode)
+        .in("centro_code", centroCodes)
         .eq("active", true);
 
       const accountIds = bankAccounts?.map((a) => a.id) || [];
@@ -66,15 +95,21 @@ export const useDashboardKPIs = () => {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      const { data: expensesData } = await supabase.rpc("calculate_pnl", {
-        p_centro_code: centroCode,
-        p_start_date: startOfMonth.toISOString().split("T")[0],
-        p_end_date: endOfMonth.toISOString().split("T")[0],
-      });
+      // Gastos del mes (consolidar si es necesario)
+      const expensesPromises = centroCodes.map(code =>
+        supabase.rpc("calculate_pnl", {
+          p_centro_code: code,
+          p_start_date: startOfMonth.toISOString().split("T")[0],
+          p_end_date: endOfMonth.toISOString().split("T")[0],
+        })
+      );
 
-      const monthlyExpenses = expensesData
-        ?.filter((item: any) => item.account_type === "expense")
-        .reduce((sum: number, item: any) => sum + Number(item.balance || 0), 0) || 0;
+      const expensesResults = await Promise.all(expensesPromises);
+      
+      const monthlyExpenses = expensesResults
+        .flatMap(r => r.data || [])
+        .filter((item: any) => item.account_type === "expense")
+        .reduce((sum: number, item: any) => sum + Number(item.balance || 0), 0);
 
       return {
         invoicesReceivedPending: invoicesReceivedPending || 0,
@@ -84,6 +119,6 @@ export const useDashboardKPIs = () => {
         monthlyExpenses,
       };
     },
-    enabled: !!currentMembership?.restaurant?.id,
+    enabled: !!viewSelection,
   });
 };

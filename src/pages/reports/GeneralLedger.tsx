@@ -2,26 +2,28 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useGeneralLedger } from "@/hooks/useGeneralLedger";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useView } from "@/contexts/ViewContext";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { AccountSelector } from "@/components/accounting/AccountSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
 
 export default function GeneralLedger() {
+  const { selectedView } = useView();
   const { currentMembership } = useOrganization();
   const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(endOfMonth(new Date()));
   const [accountCode, setAccountCode] = useState<string>("");
   const printRef = useRef<HTMLDivElement>(null);
 
-  const centroCode = currentMembership?.restaurant?.id || "";
   const startDateStr = startDate ? format(startDate, "yyyy-MM-dd") : "";
   const endDateStr = endDate ? format(endDate, "yyyy-MM-dd") : "";
 
-  const { data, isLoading } = useGeneralLedger(centroCode, startDateStr, endDateStr, accountCode);
+  const { data, isLoading } = useGeneralLedger(selectedView, startDateStr, endDateStr, accountCode);
 
   const exportData = data?.map((line) => ({
     Cuenta: line.account_code,
@@ -48,6 +50,30 @@ export default function GeneralLedger() {
     return acc;
   }, {} as Record<string, any>);
 
+  if (!selectedView) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Contabilidad" },
+            { label: "Libro Mayor" }
+          ]}
+          title="Libro Mayor"
+        />
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center space-y-2">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">
+                Selecciona una sociedad o centro para ver el libro mayor
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -56,7 +82,11 @@ export default function GeneralLedger() {
           { label: "Libro Mayor" }
         ]}
         title="Libro Mayor"
-        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        subtitle={
+          selectedView.type === 'company'
+            ? `Vista consolidada: ${selectedView.name}`
+            : `Centro: ${selectedView.name}`
+        }
         actions={
           data && (
             <ExportButton

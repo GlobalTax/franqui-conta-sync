@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ViewSelection } from "@/contexts/ViewContext";
 
 export interface JournalLine {
   entry_id: string;
@@ -16,23 +17,66 @@ export interface JournalLine {
 }
 
 export const useJournalBook = (
-  centroCode: string,
+  viewSelection: ViewSelection | null,
   startDate: string,
   endDate: string
 ) => {
   return useQuery({
-    queryKey: ["journal-book", centroCode, startDate, endDate],
+    queryKey: ["journal-book", viewSelection, startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_journal_book", {
-        p_centro_code: centroCode,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
+      if (!viewSelection) return [];
 
-      if (error) throw error;
+      let allLines: JournalLine[] = [];
 
-      return (data || []) as JournalLine[];
+      if (viewSelection.type === 'company') {
+        // Vista consolidada
+        const { data: centres } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("company_id", viewSelection.id)
+          .eq("activo", true);
+
+        if (!centres || centres.length === 0) return [];
+
+        const promises = centres.map(c =>
+          supabase.rpc("get_journal_book", {
+            p_centro_code: c.codigo,
+            p_start_date: startDate,
+            p_end_date: endDate,
+          })
+        );
+
+        const results = await Promise.all(promises);
+        allLines = results.flatMap(r => (r.data || []) as JournalLine[]);
+        
+        // Ordenar por fecha y número
+        allLines.sort((a, b) => {
+          const dateCompare = a.entry_date.localeCompare(b.entry_date);
+          if (dateCompare !== 0) return dateCompare;
+          return a.entry_number - b.entry_number;
+        });
+      } else {
+        // Vista individual
+        const { data: centre } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("id", viewSelection.id)
+          .single();
+
+        if (!centre) return [];
+
+        const { data, error } = await supabase.rpc("get_journal_book", {
+          p_centro_code: centre.codigo,
+          p_start_date: startDate,
+          p_end_date: endDate,
+        });
+
+        if (error) throw error;
+        allLines = (data || []) as JournalLine[];
+      }
+
+      return allLines;
     },
-    enabled: !!centroCode && !!startDate && !!endDate,
+    enabled: !!viewSelection && !!startDate && !!endDate,
   });
 };

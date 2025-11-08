@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ViewSelection } from "@/contexts/ViewContext";
 
 export interface PLLine {
   code: string;
@@ -22,223 +23,231 @@ interface PLAccountBalance {
   balance: number;
 }
 
-export function useProfitAndLoss(centroCode: string, startDate: string, endDate: string) {
+// Función para consolidar balances de P&L
+const consolidatePLBalances = (balances: PLAccountBalance[][]): PLAccountBalance[] => {
+  const consolidated: Record<string, PLAccountBalance> = {};
+  
+  balances.forEach(balance => {
+    balance?.forEach((item) => {
+      const key = item.account_code;
+      if (!consolidated[key]) {
+        consolidated[key] = { ...item, balance: 0, debit_total: 0, credit_total: 0 };
+      }
+      consolidated[key].balance += Number(item.balance);
+      consolidated[key].debit_total += Number(item.debit_total);
+      consolidated[key].credit_total += Number(item.credit_total);
+    });
+  });
+
+  return Object.values(consolidated);
+};
+
+export function useProfitAndLoss(
+  viewSelection: ViewSelection | null,
+  startDate: string,
+  endDate: string
+) {
   return useQuery({
-    queryKey: ["profit-and-loss", centroCode, startDate, endDate],
+    queryKey: ["profit-and-loss", viewSelection, startDate, endDate],
     queryFn: async () => {
-      // Llamar a la función calculate_pnl
-      const { data: rawData, error } = await supabase.rpc("calculate_pnl", {
-        p_centro_code: centroCode,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
+      if (!viewSelection) return null;
 
-      if (error) throw error;
+      let rawData: PLAccountBalance[] = [];
 
-      const accountBalances = (rawData || []) as PLAccountBalance[];
+      if (viewSelection.type === 'company') {
+        // Vista consolidada
+        const { data: centres } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("company_id", viewSelection.id)
+          .eq("activo", true);
+
+        if (!centres || centres.length === 0) return null;
+
+        const promises = centres.map(c =>
+          supabase.rpc("calculate_pnl", {
+            p_centro_code: c.codigo,
+            p_start_date: startDate,
+            p_end_date: endDate,
+          })
+        );
+
+        const results = await Promise.all(promises);
+        const allBalances = results
+          .map(r => (r.data || []) as PLAccountBalance[])
+          .filter(b => b.length > 0);
+        
+        rawData = consolidatePLBalances(allBalances);
+      } else {
+        // Vista individual
+        const { data: centre } = await supabase
+          .from("centres")
+          .select("codigo")
+          .eq("id", viewSelection.id)
+          .single();
+
+        if (!centre) return null;
+
+        const { data, error } = await supabase.rpc("calculate_pnl", {
+          p_centro_code: centre.codigo,
+          p_start_date: startDate,
+          p_end_date: endDate,
+        });
+
+        if (error) throw error;
+        rawData = (data || []) as PLAccountBalance[];
+      }
+
+      const accounts = rawData;
 
       // Calcular totales por grupo
-      const income70 = accountBalances
+      const income70 = accounts
         .filter((a) => a.account_code.startsWith("70"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const income75 = accountBalances
+      const income75 = accounts
         .filter((a) => a.account_code.startsWith("75"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
       const totalIncome = income70 + income75;
 
-      const expense60 = accountBalances
+      const expenses60 = accounts
         .filter((a) => a.account_code.startsWith("60"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const expense64 = accountBalances
-        .filter((a) => a.account_code.startsWith("64"))
+      const expenses61 = accounts
+        .filter((a) => a.account_code.startsWith("61"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const expense640 = accountBalances
-        .filter((a) => a.account_code.startsWith("640"))
-        .reduce((sum, a) => sum + Number(a.balance), 0);
-
-      const expense642 = accountBalances
-        .filter((a) => a.account_code.startsWith("642"))
-        .reduce((sum, a) => sum + Number(a.balance), 0);
-
-      const expense62 = accountBalances
+      const expenses62 = accounts
         .filter((a) => a.account_code.startsWith("62"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const expense621 = accountBalances
-        .filter((a) => a.account_code.startsWith("621"))
+      const expenses64 = accounts
+        .filter((a) => a.account_code.startsWith("64"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const expense628 = accountBalances
-        .filter((a) => a.account_code.startsWith("628"))
+      const expenses65 = accounts
+        .filter((a) => a.account_code.startsWith("65"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const otherExpenses62 = expense62 - expense621 - expense628;
-
-      const expense68 = accountBalances
+      const expenses68 = accounts
         .filter((a) => a.account_code.startsWith("68"))
         .reduce((sum, a) => sum + Number(a.balance), 0);
 
-      const expense66 = accountBalances
-        .filter((a) => a.account_code.startsWith("66"))
-        .reduce((sum, a) => sum + Number(a.balance), 0);
+      const totalExpenses = expenses60 + expenses61 + expenses62 + expenses64 + expenses65 + expenses68;
 
-      const totalOperatingExpenses = expense60 + expense64 + expense62;
+      const grossResult = totalIncome - expenses60;
+      const operatingResult = grossResult - (expenses61 + expenses62 + expenses64);
+      const ebitda = operatingResult;
+      const ebit = ebitda - expenses68;
+      const netResult = ebit - expenses65;
 
-      const ebitda = totalIncome - totalOperatingExpenses;
-      const ebit = ebitda - expense68;
-      const bai = ebit - expense66;
-      const tax = bai > 0 ? bai * 0.25 : 0;
-      const netResult = bai - tax;
-
-      // Construir estructura de P&L
+      // Construir datos de P&L en formato de presentación
       const plData: PLLine[] = [
+        // INGRESOS
         {
-          code: "I",
-          name: "INGRESOS",
-          isHeader: true,
+          code: "7",
+          name: "INGRESOS DE EXPLOTACIÓN",
           level: 0,
           amount: totalIncome,
           percentage: 100,
+          isHeader: true,
         },
         {
-          code: "I.1",
-          name: "Ventas de mercaderías",
+          code: "70",
+          name: "Ventas de mercaderías, producción propia",
           level: 1,
           amount: income70,
-          percentage: totalIncome > 0 ? (income70 / totalIncome) * 100 : 0,
+          percentage: totalIncome ? (income70 / totalIncome) * 100 : 0,
         },
         {
-          code: "I.2",
-          name: "Otros ingresos",
+          code: "75",
+          name: "Otros ingresos de gestión",
           level: 1,
           amount: income75,
-          percentage: totalIncome > 0 ? (income75 / totalIncome) * 100 : 0,
+          percentage: totalIncome ? (income75 / totalIncome) * 100 : 0,
         },
+
+        // GASTOS OPERATIVOS
         {
-          code: "G",
-          name: "GASTOS OPERATIVOS",
-          isHeader: true,
-          level: 0,
-          amount: -totalOperatingExpenses,
-          percentage: totalIncome > 0 ? (-totalOperatingExpenses / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.1",
-          name: "Compras y aprovisionamientos",
+          code: "60",
+          name: "Compras",
           level: 1,
-          amount: -expense60,
-          percentage: totalIncome > 0 ? (-expense60 / totalIncome) * 100 : 0,
+          amount: -expenses60,
+          percentage: totalIncome ? (expenses60 / totalIncome) * 100 : 0,
         },
         {
-          code: "G.2",
+          code: "",
+          name: "MARGEN BRUTO",
+          level: 0,
+          amount: grossResult,
+          percentage: totalIncome ? (grossResult / totalIncome) * 100 : 0,
+          highlight: true,
+          isHeader: true,
+        },
+        {
+          code: "61",
+          name: "Variación de existencias",
+          level: 1,
+          amount: -expenses61,
+          percentage: totalIncome ? (expenses61 / totalIncome) * 100 : 0,
+        },
+        {
+          code: "62",
+          name: "Servicios exteriores",
+          level: 1,
+          amount: -expenses62,
+          percentage: totalIncome ? (expenses62 / totalIncome) * 100 : 0,
+        },
+        {
+          code: "64",
           name: "Gastos de personal",
           level: 1,
-          amount: -expense64,
-          percentage: totalIncome > 0 ? (-expense64 / totalIncome) * 100 : 0,
+          amount: -expenses64,
+          percentage: totalIncome ? (expenses64 / totalIncome) * 100 : 0,
         },
         {
-          code: "G.2.1",
-          name: "Sueldos y salarios",
-          level: 2,
-          amount: -expense640,
-          percentage: totalIncome > 0 ? (-expense640 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.2.2",
-          name: "Seguridad Social",
-          level: 2,
-          amount: -expense642,
-          percentage: totalIncome > 0 ? (-expense642 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.3",
-          name: "Otros gastos de explotación",
-          level: 1,
-          amount: -expense62,
-          percentage: totalIncome > 0 ? (-expense62 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.3.1",
-          name: "Arrendamientos",
-          level: 2,
-          amount: -expense621,
-          percentage: totalIncome > 0 ? (-expense621 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.3.2",
-          name: "Suministros",
-          level: 2,
-          amount: -expense628,
-          percentage: totalIncome > 0 ? (-expense628 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "G.3.3",
-          name: "Otros servicios",
-          level: 2,
-          amount: -otherExpenses62,
-          percentage: totalIncome > 0 ? (-otherExpenses62 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "EBITDA",
+          code: "",
           name: "EBITDA",
-          isHeader: true,
           level: 0,
           amount: ebitda,
-          percentage: totalIncome > 0 ? (ebitda / totalIncome) * 100 : 0,
+          percentage: totalIncome ? (ebitda / totalIncome) * 100 : 0,
           highlight: true,
-        },
-        {
-          code: "G.4",
-          name: "Amortizaciones",
-          level: 1,
-          amount: -expense68,
-          percentage: totalIncome > 0 ? (-expense68 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "EBIT",
-          name: "EBIT (Resultado de Explotación)",
           isHeader: true,
+        },
+        {
+          code: "68",
+          name: "Dotaciones para amortizaciones",
+          level: 1,
+          amount: -expenses68,
+          percentage: totalIncome ? (expenses68 / totalIncome) * 100 : 0,
+        },
+        {
+          code: "",
+          name: "EBIT (Resultado de Explotación)",
           level: 0,
           amount: ebit,
-          percentage: totalIncome > 0 ? (ebit / totalIncome) * 100 : 0,
+          percentage: totalIncome ? (ebit / totalIncome) * 100 : 0,
           highlight: true,
-        },
-        {
-          code: "F",
-          name: "RESULTADO FINANCIERO",
-          level: 0,
-          amount: -expense66,
-          percentage: totalIncome > 0 ? (-expense66 / totalIncome) * 100 : 0,
-        },
-        {
-          code: "BAI",
-          name: "BAI (Resultado antes de Impuestos)",
           isHeader: true,
-          level: 0,
-          amount: bai,
-          percentage: totalIncome > 0 ? (bai / totalIncome) * 100 : 0,
-          highlight: true,
         },
         {
-          code: "I.T.",
-          name: "Impuesto sobre Sociedades (25%)",
+          code: "65",
+          name: "Gastos financieros",
           level: 1,
-          amount: -tax,
-          percentage: totalIncome > 0 ? (-tax / totalIncome) * 100 : 0,
+          amount: -expenses65,
+          percentage: totalIncome ? (expenses65 / totalIncome) * 100 : 0,
         },
         {
-          code: "NET",
+          code: "",
           name: "RESULTADO NETO",
-          isHeader: true,
           level: 0,
           amount: netResult,
-          percentage: totalIncome > 0 ? (netResult / totalIncome) * 100 : 0,
-          highlight: true,
+          percentage: totalIncome ? (netResult / totalIncome) * 100 : 0,
           final: true,
+          highlight: true,
+          isHeader: true,
         },
       ];
 
@@ -248,14 +257,14 @@ export function useProfitAndLoss(centroCode: string, startDate: string, endDate:
           netResult,
           ebitda,
           totalIncome,
-          totalExpenses: totalOperatingExpenses,
-          ebitdaMargin: totalIncome > 0 ? (ebitda / totalIncome) * 100 : 0,
-          netMargin: totalIncome > 0 ? (netResult / totalIncome) * 100 : 0,
-          grossMargin: totalIncome > 0 ? ((totalIncome - expense60) / totalIncome) * 100 : 0,
-          operatingMargin: totalIncome > 0 ? (ebit / totalIncome) * 100 : 0,
+          totalExpenses,
+          grossMargin: totalIncome ? (grossResult / totalIncome) * 100 : 0,
+          operatingMargin: totalIncome ? (operatingResult / totalIncome) * 100 : 0,
+          ebitdaMargin: totalIncome ? (ebitda / totalIncome) * 100 : 0,
+          netMargin: totalIncome ? (netResult / totalIncome) * 100 : 0,
         },
       };
     },
-    enabled: !!centroCode && !!startDate && !!endDate,
+    enabled: !!viewSelection && !!startDate && !!endDate,
   });
 }

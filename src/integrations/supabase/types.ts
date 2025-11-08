@@ -481,6 +481,7 @@ export type Database = {
           activo: boolean
           ciudad: string | null
           codigo: string
+          company_id: string | null
           company_tax_id: string | null
           created_at: string
           direccion: string | null
@@ -504,6 +505,7 @@ export type Database = {
           activo?: boolean
           ciudad?: string | null
           codigo: string
+          company_id?: string | null
           company_tax_id?: string | null
           created_at?: string
           direccion?: string | null
@@ -527,6 +529,7 @@ export type Database = {
           activo?: boolean
           ciudad?: string | null
           codigo?: string
+          company_id?: string | null
           company_tax_id?: string | null
           created_at?: string
           direccion?: string | null
@@ -548,6 +551,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "centres_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "centres_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
@@ -556,6 +566,47 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_centres_franchisee"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          activo: boolean | null
+          cif: string
+          created_at: string | null
+          franchisee_id: string
+          id: string
+          razon_social: string
+          tipo_sociedad: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          cif: string
+          created_at?: string | null
+          franchisee_id: string
+          id?: string
+          razon_social: string
+          tipo_sociedad?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          cif?: string
+          created_at?: string | null
+          franchisee_id?: string
+          id?: string
+          razon_social?: string
+          tipo_sociedad?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
             referencedRelation: "franchisees"

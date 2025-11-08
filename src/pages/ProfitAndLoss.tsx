@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,16 +9,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useView } from "@/contexts/ViewContext";
 import { useProfitAndLoss } from "@/hooks/useProfitAndLoss";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 
 const ProfitAndLoss = () => {
-  const { currentMembership } = useOrganization();
+  const { selectedView } = useView();
   const [period, setPeriod] = useState("2024-01");
-  
-  const selectedCentro = currentMembership?.restaurant?.codigo || "";
   
   // Calcular fechas del periodo seleccionado
   const [year, month] = period.split("-").map(Number);
@@ -27,7 +25,7 @@ const ProfitAndLoss = () => {
   const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
   const { data, isLoading, isError } = useProfitAndLoss(
-    selectedCentro || "",
+    selectedView,
     startDate,
     endDate
   );
@@ -43,6 +41,32 @@ const ProfitAndLoss = () => {
     grossMargin: 0,
     operatingMargin: 0,
   };
+
+  if (!selectedView) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Contabilidad" },
+            { label: "Cuenta de Pérdidas y Ganancias" }
+          ]}
+          title="Cuenta de Pérdidas y Ganancias"
+        />
+        <div className="mx-auto max-w-7xl p-6">
+          <Card>
+            <CardContent className="flex items-center justify-center h-64">
+              <div className="text-center space-y-2">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                <p className="text-muted-foreground">
+                  Selecciona una sociedad o centro para ver la cuenta de resultados
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (isError) {
     return (
@@ -66,7 +90,11 @@ const ProfitAndLoss = () => {
           { label: "Cuenta de Pérdidas y Ganancias" }
         ]}
         title="Cuenta de Pérdidas y Ganancias"
-        subtitle="Análisis de resultados por periodo"
+        subtitle={
+          selectedView.type === 'company'
+            ? `Vista consolidada: ${selectedView.name}`
+            : `Centro: ${selectedView.name}`
+        }
         actions={
           <Button className="gap-2">
             <Download className="h-4 w-4" />

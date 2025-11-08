@@ -2,28 +2,52 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useBalanceSheet } from "@/hooks/useBalanceSheet";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useView } from "@/contexts/ViewContext";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 export default function BalanceSheet() {
-  const { currentMembership } = useOrganization();
+  const { selectedView } = useView();
   const [fechaCorte, setFechaCorte] = useState<Date | undefined>(new Date());
   const printRef = useRef<HTMLDivElement>(null);
 
-  const centroCode = currentMembership?.restaurant?.id || "";
   const fechaCorteStr = fechaCorte ? format(fechaCorte, "yyyy-MM-dd") : "";
 
-  const { data, isLoading } = useBalanceSheet(centroCode, fechaCorteStr);
+  const { data, isLoading } = useBalanceSheet(selectedView, fechaCorteStr);
 
   const exportData = data?.items.map((item) => ({
     Grupo: item.grupo,
     Nombre: item.nombre_grupo,
     Saldo: item.balance,
   })) || [];
+
+  if (!selectedView) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Contabilidad" },
+            { label: "Balance de Situación" }
+          ]}
+          title="Balance de Situación"
+        />
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center space-y-2">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">
+                Selecciona una sociedad o centro para ver el balance
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -33,7 +57,11 @@ export default function BalanceSheet() {
           { label: "Balance de Situación" }
         ]}
         title="Balance de Situación"
-        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        subtitle={
+          selectedView.type === 'company'
+            ? `Vista consolidada: ${selectedView.name}`
+            : `Centro: ${selectedView.name}`
+        }
         actions={
           <>
             <DateRangePicker

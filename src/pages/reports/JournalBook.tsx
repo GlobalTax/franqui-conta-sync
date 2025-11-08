@@ -109,154 +109,158 @@ export default function JournalBook() {
 
   if (!selectedView) {
     return (
-      <div className="space-y-6">
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <PageHeader
+            breadcrumbs={[
+              { label: "Contabilidad" },
+              { label: "Libro Diario" }
+            ]}
+            title="Libro Diario"
+          />
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-2">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                <p className="text-muted-foreground">
+                  Selecciona una sociedad o centro para ver el libro diario
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           breadcrumbs={[
             { label: "Contabilidad" },
             { label: "Libro Diario" }
           ]}
           title="Libro Diario"
+          subtitle={
+            selectedView.type === 'company'
+              ? `Vista consolidada: ${selectedView.name}`
+              : `Centro: ${selectedView.name}`
+          }
+          actions={
+            data && (
+              <ExportButton
+                printRef={printRef}
+                data={exportData}
+                filename={`diario-${startDateStr}-${endDateStr}`}
+                showOfficialPDF={!!principalCompany}
+                onExportOfficialPDF={handleExportOfficialPDF}
+              />
+            )
+          }
         />
-        <Card>
-          <CardContent className="flex items-center justify-center h-64">
-            <div className="text-center space-y-2">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-              <p className="text-muted-foreground">
-                Selecciona una sociedad o centro para ver el libro diario
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        breadcrumbs={[
-          { label: "Contabilidad" },
-          { label: "Libro Diario" }
-        ]}
-        title="Libro Diario"
-        subtitle={
-          selectedView.type === 'company'
-            ? `Vista consolidada: ${selectedView.name}`
-            : `Centro: ${selectedView.name}`
-        }
-        actions={
-          data && (
-            <ExportButton
-              printRef={printRef}
-              data={exportData}
-              filename={`diario-${startDateStr}-${endDateStr}`}
-              showOfficialPDF={!!principalCompany}
-              onExportOfficialPDF={handleExportOfficialPDF}
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="text-lg font-semibold">Filtros</h2>
+          </div>
+          <div className="p-6">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
             />
-          )
-        }
-      />
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
-        </CardContent>
-      </Card>
-
-      <div ref={printRef}>
-        {isLoading ? (
-          <Card>
-            <CardContent className="pt-6">
-              <Skeleton className="h-12 w-full mb-2" />
-              <Skeleton className="h-12 w-full mb-2" />
-              <Skeleton className="h-12 w-full" />
-            </CardContent>
-          </Card>
-        ) : entries.length > 0 ? (
-          entries.map((entry: any) => {
-            const isBalanced = Number(entry.total_debit) === Number(entry.total_credit);
-            return (
-              <Card key={entry.entry_id} className="mb-4">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      Asiento #{entry.entry_number} - {format(new Date(entry.entry_date), "dd/MM/yyyy")}
-                    </CardTitle>
-                    {isBalanced ? (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-600">
-                        Cuadrado
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive">Descuadrado</Badge>
-                    )}
+        <div ref={printRef}>
+          {isLoading ? (
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="p-6">
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full mb-2" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+          ) : entries.length > 0 ? (
+            entries.map((entry: any) => {
+              const isBalanced = Number(entry.total_debit) === Number(entry.total_credit);
+              return (
+                <div key={entry.entry_id} className="border border-border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold">
+                        Asiento #{entry.entry_number} - {format(new Date(entry.entry_date), "dd/MM/yyyy")}
+                      </h2>
+                      {isBalanced ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600">
+                          Cuadrado
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">Descuadrado</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{entry.description}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{entry.description}</p>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cuenta</TableHead>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead className="text-right">Debe</TableHead>
-                        <TableHead className="text-right">Haber</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entry.lines.map((line: any, idx: number) => (
-                        <TableRow key={idx}>
-                          <TableCell className="font-medium">{line.account_code}</TableCell>
-                          <TableCell>{line.account_name}</TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cuenta</TableHead>
+                          <TableHead>Nombre</TableHead>
+                          <TableHead className="text-right">Debe</TableHead>
+                          <TableHead className="text-right">Haber</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {entry.lines.map((line: any, idx: number) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{line.account_code}</TableCell>
+                            <TableCell>{line.account_name}</TableCell>
+                            <TableCell className="text-right">
+                              {line.movement_type === "debit"
+                                ? Number(line.amount).toLocaleString("es-ES", {
+                                    minimumFractionDigits: 2,
+                                  })
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {line.movement_type === "credit"
+                                ? Number(line.amount).toLocaleString("es-ES", {
+                                    minimumFractionDigits: 2,
+                                  })
+                                : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="font-bold border-t-2">
+                          <TableCell colSpan={2}>TOTALES</TableCell>
                           <TableCell className="text-right">
-                            {line.movement_type === "debit"
-                              ? Number(line.amount).toLocaleString("es-ES", {
-                                  minimumFractionDigits: 2,
-                                })
-                              : "-"}
+                            {Number(entry.total_debit).toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                            })}
                           </TableCell>
                           <TableCell className="text-right">
-                            {line.movement_type === "credit"
-                              ? Number(line.amount).toLocaleString("es-ES", {
-                                  minimumFractionDigits: 2,
-                                })
-                              : "-"}
+                            {Number(entry.total_credit).toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                            })}
                           </TableCell>
                         </TableRow>
-                      ))}
-                      <TableRow className="font-bold border-t-2">
-                        <TableCell colSpan={2}>TOTALES</TableCell>
-                        <TableCell className="text-right">
-                          {Number(entry.total_debit).toLocaleString("es-ES", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {Number(entry.total_credit).toLocaleString("es-ES", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            );
-          })
-        ) : (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              No hay asientos en el período seleccionado
-            </CardContent>
-          </Card>
-        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="p-6 text-center text-muted-foreground">
+                No hay asientos en el período seleccionado
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

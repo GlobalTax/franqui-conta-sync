@@ -77,50 +77,51 @@ const TrialBalance = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <PageHeader
-        breadcrumbs={[
-          { label: "Reportes" },
-          { label: "Sumas y Saldos" },
-        ]}
-        title="Balance de Sumas y Saldos"
-      />
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Reportes" },
+            { label: "Sumas y Saldos" },
+          ]}
+          title="Balance de Sumas y Saldos"
+        />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5" />
-              Filtros y Exportación
-            </CardTitle>
-            <ExportButton
-              printRef={printRef}
-              data={exportData}
-              filename="sumas-y-saldos"
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5" />
+                Filtros y Exportación
+              </h2>
+              <ExportButton
+                printRef={printRef}
+                data={exportData}
+                filename="sumas-y-saldos"
+              />
+            </div>
+          </div>
+          <div className="p-6">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
             />
           </div>
-        </CardHeader>
-        <CardContent>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card ref={printRef}>
-        <CardHeader>
-          <CardTitle>Balance de Sumas y Saldos</CardTitle>
-          {startDate && endDate && (
-            <p className="text-sm text-muted-foreground">
-              Periodo: {startDate.toLocaleDateString("es-ES")} -{" "}
-              {endDate.toLocaleDateString("es-ES")}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
+        <div ref={printRef} className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="text-lg font-semibold">Balance de Sumas y Saldos</h2>
+            {startDate && endDate && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Periodo: {startDate.toLocaleDateString("es-ES")} -{" "}
+                {endDate.toLocaleDateString("es-ES")}
+              </p>
+            )}
+          </div>
+          <div>
           {isLoading ? (
             <div className="space-y-2">
               {[...Array(10)].map((_, i) => (
@@ -207,8 +208,9 @@ const TrialBalance = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

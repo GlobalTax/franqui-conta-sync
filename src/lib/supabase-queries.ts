@@ -587,87 +587,68 @@ export async function deleteCentreCompany(companyId: string) {
 
 /**
  * Get all users with their roles
+ * Uses 3-step approach as primary method to avoid join issues
  */
 export async function getAllUsersWithRoles() {
   try {
-    // Intento con joins
-    const { data, error } = await supabase
+    // Paso 1: Cargar profiles básicos
+    const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select(`
-        *,
-        user_roles (
-          id,
-          role,
-          centro,
-          franchisee_id,
-          centres!fk_user_roles_centro(codigo, nombre),
-          franchisees (id, name)
-        )
-      `)
+      .select("id, nombre, apellidos, email, created_at, updated_at, theme")
       .order("apellidos", { ascending: true });
     
-    // Si funciona, retornar
-    if (!error) {
-      return { data, error: null };
+    if (profilesError) {
+      return { data: null, error: profilesError };
     }
 
-    // Fallback: cargar en dos pasos si hay error de join (400, PGRST200, etc.)
-    if (error && (error.code === 'PGRST200' || error.code === 'PGRST116' || error.message?.includes('embedding'))) {
-      console.warn("Falling back to two-step query for getAllUsersWithRoles", error);
-      
-      // Paso 1: obtener profiles con user_roles (sin sub-joins)
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            id,
-            role,
-            centro,
-            franchisee_id
-          )
-        `)
-        .order("apellidos", { ascending: true });
-      
-      if (profilesError) {
-        return { data: null, error: profilesError };
-      }
+    if (!profilesData || profilesData.length === 0) {
+      return { data: [], error: null };
+    }
 
-      if (!profilesData || profilesData.length === 0) {
-        return { data: [], error: null };
-      }
+    // Paso 2: Cargar user_roles de esos usuarios
+    const userIds = profilesData.map(p => p.id);
+    const { data: rolesData, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("id, user_id, role, centro, franchisee_id, created_at")
+      .in("user_id", userIds);
+    
+    if (rolesError) {
+      console.warn("Error loading user_roles, continuing without roles:", rolesError);
+    }
 
-      // Paso 2: Cargar centres y franchisees por separado
-      const allRoles = (profilesData as any[]).flatMap(p => p.user_roles || []);
-      const centroIds = Array.from(new Set(allRoles.map((r: any) => r.centro).filter(Boolean)));
-      const franchiseeIds = Array.from(new Set(allRoles.map((r: any) => r.franchisee_id).filter(Boolean)));
+    // Paso 3: Cargar centres y franchisees por separado
+    const allRoles = rolesData || [];
+    const centroIds = Array.from(new Set(allRoles.map(r => r.centro).filter(Boolean)));
+    const franchiseeIds = Array.from(new Set(allRoles.map(r => r.franchisee_id).filter(Boolean)));
 
-      const [centresRes, franchiseesRes] = await Promise.all([
-        centroIds.length ? supabase.from("centres" as any).select("id, codigo, nombre").in("codigo", centroIds) : Promise.resolve({ data: [], error: null }),
-        franchiseeIds.length ? supabase.from("franchisees" as any).select("id, name").in("id", franchiseeIds) : Promise.resolve({ data: [], error: null })
-      ]);
+    const [centresRes, franchiseesRes] = await Promise.all([
+      centroIds.length ? supabase.from("centres").select("id, codigo, nombre").in("codigo", centroIds) : Promise.resolve({ data: [], error: null }),
+      franchiseeIds.length ? supabase.from("franchisees").select("id, name").in("id", franchiseeIds) : Promise.resolve({ data: [], error: null })
+    ]);
 
-      const centresMap = new Map((centresRes.data || []).map((c: any) => [c.codigo, c]));
-      const franchiseesMap = new Map((franchiseesRes.data || []).map((f: any) => [f.id, f]));
+    const centresMap = new Map((centresRes.data || []).map((c: any) => [c.codigo, c]));
+    const franchiseesMap = new Map((franchiseesRes.data || []).map((f: any) => [f.id, f]));
 
-      // Paso 3: Recomponer con las relaciones
-      const enrichedProfiles = (profilesData as any[]).map(profile => ({
-        ...profile,
-        user_roles: (profile.user_roles || []).map((role: any) => ({
-          ...role,
+    // Recomponer profiles con user_roles enriquecidos
+    const enrichedProfiles = profilesData.map(profile => ({
+      ...profile,
+      user_roles: allRoles
+        .filter((r: any) => r.user_id === profile.id)
+        .map((role: any) => ({
+          id: role.id,
+          role: role.role,
+          centro: role.centro,
+          franchisee_id: role.franchisee_id,
+          created_at: role.created_at,
           centres: role.centro ? centresMap.get(role.centro) || null : null,
-          franchisees: role.franchisee_id ? franchiseesMap.get(role.franchisee_id) || null : null,
+          franchisees: role.franchisee_id ? franchiseesMap.get(role.franchisee_id) || null : null
         }))
-      }));
+    }));
 
-      return { data: enrichedProfiles, error: null };
-    }
-
-    // Si es otro tipo de error, retornarlo
-    return { data: null, error };
+    return { data: enrichedProfiles, error: null };
   } catch (err) {
     console.error("Error in getAllUsersWithRoles:", err);
-    return { data: null, error: err };
+    return { data: null, error: err as any };
   }
 }
 

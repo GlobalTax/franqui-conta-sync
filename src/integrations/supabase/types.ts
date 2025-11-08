@@ -868,6 +868,274 @@ export type Database = {
           },
         ]
       }
+      invoice_lines: {
+        Row: {
+          account_code: string | null
+          created_at: string | null
+          description: string
+          discount_amount: number | null
+          discount_percentage: number | null
+          id: string
+          invoice_id: string
+          invoice_type: string
+          line_number: number
+          quantity: number | null
+          subtotal: number
+          tax_amount: number
+          tax_rate: number | null
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          account_code?: string | null
+          created_at?: string | null
+          description: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          invoice_id: string
+          invoice_type: string
+          line_number: number
+          quantity?: number | null
+          subtotal: number
+          tax_amount: number
+          tax_rate?: number | null
+          total: number
+          unit_price: number
+        }
+        Update: {
+          account_code?: string | null
+          created_at?: string | null
+          description?: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          invoice_id?: string
+          invoice_type?: string
+          line_number?: number
+          quantity?: number | null
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number | null
+          total?: number
+          unit_price?: number
+        }
+        Relationships: []
+      }
+      invoice_sequences: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          id: string
+          invoice_type: string
+          last_number: number | null
+          series: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          id?: string
+          invoice_type: string
+          last_number?: number | null
+          series: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          id?: string
+          invoice_type?: string
+          last_number?: number | null
+          series?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      invoices_issued: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          created_by: string | null
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_tax_id: string | null
+          due_date: string | null
+          entry_id: string | null
+          full_invoice_number: string | null
+          id: string
+          invoice_date: string
+          invoice_number: number
+          invoice_series: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_transaction_id: string | null
+          pdf_path: string | null
+          sent_at: string | null
+          status: string | null
+          subtotal: number | null
+          tax_total: number | null
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_tax_id?: string | null
+          due_date?: string | null
+          entry_id?: string | null
+          full_invoice_number?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: number
+          invoice_series?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_transaction_id?: string | null
+          pdf_path?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          tax_total?: number | null
+          total: number
+          updated_at?: string | null
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_tax_id?: string | null
+          due_date?: string | null
+          entry_id?: string | null
+          full_invoice_number?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: number
+          invoice_series?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_transaction_id?: string | null
+          pdf_path?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          tax_total?: number | null
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_issued_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_issued_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices_received: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          created_by: string | null
+          document_path: string | null
+          due_date: string | null
+          entry_id: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          ocr_confidence: number | null
+          payment_transaction_id: string | null
+          status: string | null
+          subtotal: number | null
+          supplier_id: string | null
+          tax_total: number | null
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          created_by?: string | null
+          document_path?: string | null
+          due_date?: string | null
+          entry_id?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          notes?: string | null
+          ocr_confidence?: number | null
+          payment_transaction_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_total?: number | null
+          total: number
+          updated_at?: string | null
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          document_path?: string | null
+          due_date?: string | null
+          entry_id?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          ocr_confidence?: number | null
+          payment_transaction_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_total?: number | null
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_received_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_received_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_received_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           active: boolean
@@ -1444,6 +1712,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          active: boolean | null
+          address: string | null
+          city: string | null
+          commercial_name: string | null
+          country: string | null
+          created_at: string | null
+          default_account_code: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          payment_terms: number | null
+          phone: string | null
+          postal_code: string | null
+          tax_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          commercial_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          default_account_code?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          tax_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          commercial_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          default_account_code?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          tax_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       sync_logs: {
         Row: {

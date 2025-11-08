@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
 import { AlertCircle, Building2, Store, RefreshCw } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
+import { useEffect } from "react";
 
 interface CompanySelectorProps {
   franchiseeId: string;
@@ -14,6 +15,18 @@ interface CompanySelectorProps {
 
 export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelectorProps) => {
   const { data: companies, isLoading, error, isError, refetch } = useCompanies(franchiseeId);
+
+  // Auto-select first consolidated view when companies load and no view is selected
+  useEffect(() => {
+    if (companies && companies.length > 0 && !value) {
+      const firstCompany = companies[0];
+      onChange({
+        type: 'company',
+        id: firstCompany.id,
+        name: firstCompany.razon_social
+      });
+    }
+  }, [companies, value, onChange]);
 
   if (isLoading) {
     return (

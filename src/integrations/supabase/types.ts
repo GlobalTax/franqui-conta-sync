@@ -527,6 +527,152 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_reconciliation_rules: {
+        Row: {
+          active: boolean | null
+          amount_max: number | null
+          amount_min: number | null
+          auto_match_type: string
+          bank_account_id: string | null
+          centro_code: string | null
+          confidence_threshold: number | null
+          created_at: string | null
+          description_pattern: string | null
+          id: string
+          priority: number | null
+          rule_name: string
+          suggested_account: string | null
+          transaction_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          amount_max?: number | null
+          amount_min?: number | null
+          auto_match_type: string
+          bank_account_id?: string | null
+          centro_code?: string | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          description_pattern?: string | null
+          id?: string
+          priority?: number | null
+          rule_name: string
+          suggested_account?: string | null
+          transaction_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          amount_max?: number | null
+          amount_min?: number | null
+          auto_match_type?: string
+          bank_account_id?: string | null
+          centro_code?: string | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          description_pattern?: string | null
+          id?: string
+          priority?: number | null
+          rule_name?: string
+          suggested_account?: string | null
+          transaction_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_rules_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_rules_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_rules_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      bank_reconciliations: {
+        Row: {
+          bank_transaction_id: string
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          matched_id: string | null
+          matched_type: string | null
+          metadata: Json | null
+          notes: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_status: string | null
+          rule_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bank_transaction_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          matched_id?: string | null
+          matched_type?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_status?: string | null
+          rule_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bank_transaction_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          matched_id?: string | null
+          matched_type?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_status?: string | null
+          rule_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliations_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliations_reconciled_by_fkey"
+            columns: ["reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliations_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_remittances: {
         Row: {
           bank_account_id: string
@@ -2918,6 +3064,16 @@ export type Database = {
       }
     }
     Functions: {
+      auto_match_bank_transactions: {
+        Args: { p_bank_account_id: string; p_limit?: number }
+        Returns: {
+          confidence_score: number
+          matched_id: string
+          matched_type: string
+          rule_id: string
+          transaction_id: string
+        }[]
+      }
       calculate_balance_sheet: {
         Args: { p_centro_code: string; p_fecha_corte: string }
         Returns: {

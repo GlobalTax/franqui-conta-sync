@@ -1,8 +1,9 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
-import { AlertCircle, Building2, Store } from "lucide-react";
+import { AlertCircle, Building2, Store, RefreshCw } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
 
 interface CompanySelectorProps {
@@ -12,7 +13,7 @@ interface CompanySelectorProps {
 }
 
 export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelectorProps) => {
-  const { data: companies, isLoading, error, isError } = useCompanies(franchiseeId);
+  const { data: companies, isLoading, error, isError, refetch } = useCompanies(franchiseeId);
 
   if (isLoading) {
     return (
@@ -29,10 +30,21 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error al cargar sociedades</AlertTitle>
         <AlertDescription>
-          No se pudieron cargar las sociedades. Por favor, intenta de nuevo.
-          {error?.message && (
-            <p className="text-xs mt-1 opacity-70">{error.message}</p>
-          )}
+          <div className="space-y-2">
+            <p>No se pudieron cargar las sociedades. Por favor, intenta de nuevo.</p>
+            {error?.message && (
+              <p className="text-xs opacity-70">{error.message}</p>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetch()}
+              className="mt-2"
+            >
+              <RefreshCw className="h-3 w-3 mr-2" />
+              Reintentar
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     );

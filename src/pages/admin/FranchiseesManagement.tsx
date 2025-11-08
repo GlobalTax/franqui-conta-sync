@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Users } from "lucide-react";
+import { Eye, Users, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CreateFranchiseeDialog } from "@/components/admin/CreateFranchiseeDialog";
+import { EditFranchiseeDialog } from "@/components/admin/EditFranchiseeDialog";
 
 const FranchiseesManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [franchisees, setFranchisees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedFranchisee, setSelectedFranchisee] = useState<any>(null);
 
   useEffect(() => {
     loadFranchisees();
@@ -72,13 +79,25 @@ const FranchiseesManagement = () => {
     }
   };
 
+  const openEditDialog = (franchisee: any) => {
+    setSelectedFranchisee(franchisee);
+    setEditDialogOpen(true);
+  };
+
   if (loading) {
     return <div className="text-center py-8">Cargando franchisees...</div>;
   }
 
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Gestión de Franchisees</h3>
+    <>
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Gestión de Franchisees</h3>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Franchisee
+          </Button>
+        </div>
       
       <Table>
         <TableHeader>
@@ -111,11 +130,21 @@ const FranchiseesManagement = () => {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost">
-                    <Eye className="h-4 w-4" />
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => openEditDialog(franchisee)}
+                    title="Editar franchisee"
+                  >
+                    <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost">
-                    <Users className="h-4 w-4" />
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => navigate(`/admin?tab=centres&franchisee=${franchisee.id}`)}
+                    title="Ver centros"
+                  >
+                    <Eye className="h-4 w-4" />
                   </Button>
                 </div>
               </TableCell>
@@ -130,6 +159,24 @@ const FranchiseesManagement = () => {
         </div>
       )}
     </Card>
+
+    <CreateFranchiseeDialog
+      open={createDialogOpen}
+      onOpenChange={(open) => {
+        setCreateDialogOpen(open);
+        if (!open) loadFranchisees();
+      }}
+    />
+
+    <EditFranchiseeDialog
+      franchisee={selectedFranchisee}
+      open={editDialogOpen}
+      onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) loadFranchisees();
+      }}
+    />
+  </>
   );
 };
 

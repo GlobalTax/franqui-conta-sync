@@ -18,6 +18,7 @@ import ChartOfAccounts from "@/pages/ChartOfAccounts";
 import ProfitAndLoss from "@/pages/ProfitAndLoss";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
+import CentreDetail from "@/pages/admin/CentreDetail";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
 import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
@@ -100,6 +101,7 @@ const App = () => {
               <Route path="/reportes/diario" element={<JournalBook />} />
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

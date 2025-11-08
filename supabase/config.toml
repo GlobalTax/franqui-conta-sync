@@ -1,1 +1,4 @@
 project_id = "srwnjnrhxzcpftmbbyib"
+
+[functions.sync-orquest-services]
+verify_jwt = true

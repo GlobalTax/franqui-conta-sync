@@ -4,6 +4,7 @@ import UsersManagement from "./admin/UsersManagement";
 import RolesManagement from "./admin/RolesManagement";
 import FranchiseesManagement from "./admin/FranchiseesManagement";
 import CentresManagement from "./admin/CentresManagement";
+import OrquestServicesManagement from "./admin/OrquestServicesManagement";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
 import PermissionsManagement from "./admin/PermissionsManagement";
@@ -20,14 +21,15 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
+          <TabsTrigger value="orquest">Orquest</TabsTrigger>
           <TabsTrigger value="permissions">Permisos</TabsTrigger>
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
-          <TabsTrigger value="settings">Configuración</TabsTrigger>
+          <TabsTrigger value="settings">Config</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="mt-6">
@@ -44,6 +46,10 @@ const Admin = () => {
 
         <TabsContent value="centres" className="mt-6">
           <CentresManagement />
+        </TabsContent>
+
+        <TabsContent value="orquest" className="mt-6">
+          <OrquestServicesManagement />
         </TabsContent>
 
         <TabsContent value="permissions" className="mt-6">

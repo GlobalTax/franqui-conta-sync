@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Eye, Users, Building2 } from "lucide-react";
+import { Eye, Users, Building2, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toggleCentreStatus } from "@/lib/supabase-queries";
 import { ManageRestaurantUsersDialog } from "@/components/admin/ManageRestaurantUsersDialog";
 import { ManageRestaurantCompaniesDialog } from "@/components/admin/ManageRestaurantCompaniesDialog";
+import { CreateCentreDialog } from "@/components/admin/CreateCentreDialog";
+import { EditCentreDialog } from "@/components/admin/EditCentreDialog";
 
 const CentresManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [centres, setCentres] = useState<any[]>([]);
   const [filteredCentres, setFilteredCentres] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +30,8 @@ const CentresManagement = () => {
   const [selectedCentre, setSelectedCentre] = useState<any>(null);
   const [usersDialogOpen, setUsersDialogOpen] = useState(false);
   const [companiesDialogOpen, setCompaniesDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -153,6 +159,11 @@ const CentresManagement = () => {
     setCompaniesDialogOpen(true);
   };
 
+  const openEditDialog = (centre: any) => {
+    setSelectedCentre(centre);
+    setEditDialogOpen(true);
+  };
+
   const getCompanyCount = (centre: any) => {
     return centre.centre_companies?.filter((c: any) => c.activo).length || 0;
   };
@@ -170,6 +181,10 @@ const CentresManagement = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Gestión de Centros</h3>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Centro
+          </Button>
         </div>
 
         {/* Filters */}
@@ -263,8 +278,21 @@ const CentresManagement = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" title="Ver detalles">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        title="Ver detalles"
+                        onClick={() => navigate(`/admin/centros/${centre.id}`)}
+                      >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => openEditDialog(centre)}
+                        title="Editar centro"
+                      >
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button 
                         size="sm" 
@@ -296,6 +324,23 @@ const CentresManagement = () => {
           </div>
         )}
       </Card>
+
+      <CreateCentreDialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) loadData();
+        }}
+      />
+
+      <EditCentreDialog
+        centre={selectedCentre}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) loadData();
+        }}
+      />
 
       <ManageRestaurantUsersDialog
         centre={selectedCentre}

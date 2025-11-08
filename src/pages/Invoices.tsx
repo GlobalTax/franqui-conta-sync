@@ -13,7 +13,9 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { ApprovalStatusBadge } from "@/components/invoices/ApprovalStatusBadge";
 import { useSubmitForApproval } from "@/hooks/useInvoiceApprovals";
 import { InvoiceApprovalDialog } from "@/components/invoices/InvoiceApprovalDialog";
-import { SendHorizontal, Eye, FileCheck } from "lucide-react";
+import { VerifactuBadge } from "@/components/compliance/VerifactuBadge";
+import { SendHorizontal, Eye, FileCheck, Shield } from "lucide-react";
+import { useGenerateInvoiceHash } from "@/hooks/useVerifactu";
 import { InvoicesTabs } from "@/components/invoices/InvoicesTabs";
 import { FilterPanel } from "@/components/common/FilterPanel";
 import { DataTablePro } from "@/components/common/DataTablePro";
@@ -42,6 +44,7 @@ const Invoices = () => {
   const [approvalLevel, setApprovalLevel] = useState<'manager' | 'accounting'>('accounting');
 
   const submitForApprovalMutation = useSubmitForApproval();
+  const generateHashMutation = useGenerateInvoiceHash();
 
   const handleGenerateEntry = async (invoiceId: string) => {
     try {
@@ -114,6 +117,10 @@ const Invoices = () => {
           {row.approval_status && (
             <ApprovalStatusBadge status={row.approval_status} />
           )}
+          <VerifactuBadge 
+            hasHash={!!row.verifactu_hash}
+            className="mt-1"
+          />
         </div>
       )
     },
@@ -126,6 +133,7 @@ const Invoices = () => {
                           row.approval_status === 'approved_manager';
         const canGenerateEntry = row.approval_status === 'approved_accounting' && 
                                 !row.accounting_entry_id;
+        const needsHash = !row.verifactu_hash && row.approval_status === 'approved_accounting';
 
         return (
           <div className="flex gap-2">
@@ -156,6 +164,23 @@ const Invoices = () => {
               >
                 <FileCheck className="w-4 h-4 mr-1" />
                 Aprobar
+              </Button>
+            )}
+            {needsHash && (
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => generateHashMutation.mutate({
+                  invoice_id: row.id,
+                  invoice_type: 'received',
+                  invoice_number: row.invoice_number,
+                  invoice_date: row.invoice_date,
+                  total: row.total,
+                })}
+                disabled={generateHashMutation.isPending}
+              >
+                <Shield className="w-4 h-4 mr-1" />
+                Hash
               </Button>
             )}
             {canGenerateEntry && (

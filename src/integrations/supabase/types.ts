@@ -1034,6 +1034,57 @@ export type Database = {
           },
         ]
       }
+      compliance_alerts: {
+        Row: {
+          alert_type: string
+          centro_code: string
+          created_at: string | null
+          description: string
+          id: string
+          invoice_id: string
+          invoice_type: string
+          metadata: Json | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          centro_code: string
+          created_at?: string | null
+          description: string
+          id?: string
+          invoice_id: string
+          invoice_type: string
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          centro_code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          invoice_id?: string
+          invoice_type?: string
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       cost_centers: {
         Row: {
           active: boolean
@@ -1398,6 +1449,51 @@ export type Database = {
           is_system?: boolean | null
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      facturae_xml_files: {
+        Row: {
+          aeat_response: Json | null
+          created_at: string | null
+          file_path: string | null
+          id: string
+          invoice_id: string
+          invoice_type: string
+          sent_at: string | null
+          sent_to_aeat: boolean | null
+          signed: boolean | null
+          updated_at: string | null
+          xml_content: string
+          xml_version: string
+        }
+        Insert: {
+          aeat_response?: Json | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          invoice_id: string
+          invoice_type: string
+          sent_at?: string | null
+          sent_to_aeat?: boolean | null
+          signed?: boolean | null
+          updated_at?: string | null
+          xml_content: string
+          xml_version?: string
+        }
+        Update: {
+          aeat_response?: Json | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          invoice_id?: string
+          invoice_type?: string
+          sent_at?: string | null
+          sent_to_aeat?: boolean | null
+          signed?: boolean | null
+          updated_at?: string | null
+          xml_content?: string
+          xml_version?: string
         }
         Relationships: []
       }
@@ -1860,6 +1956,10 @@ export type Database = {
           tax_total: number | null
           total: number
           updated_at: string | null
+          verifactu_hash: string | null
+          verifactu_sent_at: string | null
+          verifactu_sent_to_aeat: boolean | null
+          verifactu_signed: boolean | null
         }
         Insert: {
           centro_code: string
@@ -1886,6 +1986,10 @@ export type Database = {
           tax_total?: number | null
           total: number
           updated_at?: string | null
+          verifactu_hash?: string | null
+          verifactu_sent_at?: string | null
+          verifactu_sent_to_aeat?: boolean | null
+          verifactu_signed?: boolean | null
         }
         Update: {
           centro_code?: string
@@ -1912,6 +2016,10 @@ export type Database = {
           tax_total?: number | null
           total?: number
           updated_at?: string | null
+          verifactu_hash?: string | null
+          verifactu_sent_at?: string | null
+          verifactu_sent_to_aeat?: boolean | null
+          verifactu_signed?: boolean | null
         }
         Relationships: [
           {
@@ -1956,6 +2064,9 @@ export type Database = {
           tax_total: number | null
           total: number
           updated_at: string | null
+          verifactu_hash: string | null
+          verifactu_verified: boolean | null
+          verifactu_verified_at: string | null
         }
         Insert: {
           approval_status?: string | null
@@ -1982,6 +2093,9 @@ export type Database = {
           tax_total?: number | null
           total: number
           updated_at?: string | null
+          verifactu_hash?: string | null
+          verifactu_verified?: boolean | null
+          verifactu_verified_at?: string | null
         }
         Update: {
           approval_status?: string | null
@@ -2008,6 +2122,9 @@ export type Database = {
           tax_total?: number | null
           total?: number
           updated_at?: string | null
+          verifactu_hash?: string | null
+          verifactu_verified?: boolean | null
+          verifactu_verified_at?: string | null
         }
         Relationships: [
           {
@@ -3112,6 +3229,63 @@ export type Database = {
           },
         ]
       }
+      verifactu_logs: {
+        Row: {
+          chain_position: number
+          created_at: string | null
+          created_by: string | null
+          hash_sha256: string
+          id: string
+          invoice_date: string
+          invoice_id: string
+          invoice_number: string
+          invoice_type: string
+          metadata: Json | null
+          previous_hash: string | null
+          signature: string | null
+          signature_algorithm: string | null
+          signature_timestamp: string | null
+          verification_date: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          chain_position: number
+          created_at?: string | null
+          created_by?: string | null
+          hash_sha256: string
+          id?: string
+          invoice_date: string
+          invoice_id: string
+          invoice_number: string
+          invoice_type: string
+          metadata?: Json | null
+          previous_hash?: string | null
+          signature?: string | null
+          signature_algorithm?: string | null
+          signature_timestamp?: string | null
+          verification_date?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          chain_position?: number
+          created_at?: string | null
+          created_by?: string | null
+          hash_sha256?: string
+          id?: string
+          invoice_date?: string
+          invoice_id?: string
+          invoice_number?: string
+          invoice_type?: string
+          metadata?: Json | null
+          previous_hash?: string | null
+          signature?: string | null
+          signature_algorithm?: string | null
+          signature_timestamp?: string | null
+          verification_date?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_user_centres: {
@@ -3275,6 +3449,16 @@ export type Database = {
       }
       generate_daily_closure_entry: {
         Args: { closure_id: string }
+        Returns: string
+      }
+      generate_invoice_hash: {
+        Args: {
+          p_invoice_date: string
+          p_invoice_number: string
+          p_invoice_type: string
+          p_previous_hash?: string
+          p_total: number
+        }
         Returns: string
       }
       generate_modelo_303: {
@@ -3609,6 +3793,14 @@ export type Database = {
       user_can_access_centro: {
         Args: { _centro_code: string; _user_id: string }
         Returns: boolean
+      }
+      verify_hash_chain: {
+        Args: { p_centro_code: string; p_invoice_type: string }
+        Returns: {
+          broken_at: number
+          is_valid: boolean
+          total_checked: number
+        }[]
       }
     }
     Enums: {

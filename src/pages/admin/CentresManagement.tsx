@@ -38,62 +38,54 @@ const CentresManagement = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Intento principal con joins
+      // Paso 1: Cargar centros con companies (sin joins ambiguos)
       const centresResult = await supabase
         .from("centres")
-        .select(`
-          *,
-          franchisees(id, name),
-          user_roles(count),
-          centre_companies!inner(id, cif, razon_social, es_principal, activo)
-        `)
+        .select("*, centre_companies(id, cif, razon_social, es_principal, activo)")
         .order("nombre");
 
-      let centresData = centresResult.data;
-      
-      // Fallback si falla el join con franchisees
-      if (centresResult.error && (centresResult.error.code === 'PGRST200' || centresResult.error.message?.includes('embedding'))) {
-        console.warn("Falling back to simple centres query", centresResult.error);
-        
-        const simpleResult = await supabase
-          .from("centres")
-          .select(`
-            *,
-            user_roles(count),
-            centre_companies!inner(id, cif, razon_social, es_principal, activo)
-          `)
-          .order("nombre");
-        
-        if (simpleResult.error) throw simpleResult.error;
-        
-        // Cargar franchisees por separado
-        const franchiseeIds = Array.from(new Set((simpleResult.data || []).map((c: any) => c.franchisee_id).filter(Boolean)));
-        const franchiseesResult = await supabase
-          .from("franchisees")
-          .select("id, name")
-          .in("id", franchiseeIds);
-        
-        const franchiseesMap = new Map((franchiseesResult.data || []).map((f: any) => [f.id, f]));
-        
-        // Recomponer
-        centresData = (simpleResult.data || []).map((c: any) => ({
-          ...c,
-          franchisees: c.franchisee_id ? franchiseesMap.get(c.franchisee_id) || null : null
-        }));
-      } else if (centresResult.error) {
-        throw centresResult.error;
-      }
+      if (centresResult.error) throw centresResult.error;
+
+      const centresData = centresResult.data || [];
+
+      // Paso 2: Cargar franchisees por separado
+      const franchiseeIds = Array.from(new Set(centresData.map((c: any) => c.franchisee_id).filter(Boolean)));
+      const franchiseesResult = await supabase
+        .from("franchisees")
+        .select("id, name")
+        .in("id", franchiseeIds);
+
+      const franchiseesMap = new Map((franchiseesResult.data || []).map((f: any) => [f.id, f]));
+
+      // Paso 3: Cargar user_roles counts por centro
+      const centroCodes = centresData.map((c: any) => c.codigo);
+      const rolesResult = await supabase
+        .from("user_roles")
+        .select("centro")
+        .in("centro", centroCodes);
+
+      const rolesMap = new Map<string, number>();
+      (rolesResult.data || []).forEach((row: any) => {
+        rolesMap.set(row.centro, (rolesMap.get(row.centro) || 0) + 1);
+      });
+
+      // Paso 4: Recomponer
+      const enrichedCentres = centresData.map((c: any) => ({
+        ...c,
+        franchisees: c.franchisee_id ? franchiseesMap.get(c.franchisee_id) || null : null,
+        user_roles: [{ count: rolesMap.get(c.codigo) || 0 }]
+      }));
 
       // Cargar lista de franchisees para el filtro
-      const franchiseesData = await supabase
+      const allFranchiseesData = await supabase
         .from("franchisees")
         .select("id, name")
         .order("name");
 
-      if (franchiseesData.error) throw franchiseesData.error;
+      if (allFranchiseesData.error) throw allFranchiseesData.error;
 
-      setCentres(centresData || []);
-      setFranchisees(franchiseesData.data || []);
+      setCentres(enrichedCentres);
+      setFranchisees(allFranchiseesData.data || []);
     } catch (error: any) {
       console.error("Error al cargar datos:", error);
       toast({

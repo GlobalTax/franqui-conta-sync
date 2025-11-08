@@ -20,48 +20,46 @@ const FranchiseesManagement = () => {
     setLoading(true);
     
     try {
-      // Intento principal con aggregates
-      const { data, error } = await supabase
+      // Paso 1: Cargar franchisees sin joins
+      const { data: franchiseesData, error } = await supabase
         .from("franchisees")
-        .select(`
-          *,
-          centres:centres(count),
-          user_roles:user_roles(count)
-        `)
+        .select("*")
         .order("name");
 
-      if (error && (error.code === 'PGRST200' || error.message?.includes('embedding'))) {
-        console.warn("Falling back to simple franchisees query", error);
-        
-        // Fallback: cargar sin aggregates
-        const simpleResult = await supabase
-          .from("franchisees")
-          .select("*")
-          .order("name");
-        
-        if (simpleResult.error) throw simpleResult.error;
-        
-        // Cargar counts por separado
-        const franchiseeIds = (simpleResult.data || []).map((f: any) => f.id);
-        
-        const [centresCount, rolesCount] = await Promise.all([
-          supabase.from("centres").select("franchisee_id", { count: 'exact', head: true }).in("franchisee_id", franchiseeIds),
-          supabase.from("user_roles").select("franchisee_id", { count: 'exact', head: true }).in("franchisee_id", franchiseeIds)
-        ]);
-        
-        // Recomponer (simplificado, solo totales)
-        const enrichedData = (simpleResult.data || []).map((f: any) => ({
-          ...f,
-          centres: [{ count: centresCount.count || 0 }],
-          user_roles: [{ count: rolesCount.count || 0 }]
-        }));
-        
-        setFranchisees(enrichedData);
-      } else if (error) {
-        throw error;
-      } else {
-        setFranchisees(data || []);
+      if (error) throw error;
+
+      const franchiseeIds = (franchiseesData || []).map((f: any) => f.id);
+
+      if (franchiseeIds.length === 0) {
+        setFranchisees([]);
+        return;
       }
+
+      // Paso 2: Cargar centros y user_roles para contar
+      const [centresResult, rolesResult] = await Promise.all([
+        supabase.from("centres").select("franchisee_id").in("franchisee_id", franchiseeIds),
+        supabase.from("user_roles").select("franchisee_id").in("franchisee_id", franchiseeIds)
+      ]);
+
+      // Paso 3: Agrupar counts por franchisee_id
+      const centresMap = new Map<string, number>();
+      (centresResult.data || []).forEach((row: any) => {
+        centresMap.set(row.franchisee_id, (centresMap.get(row.franchisee_id) || 0) + 1);
+      });
+
+      const rolesMap = new Map<string, number>();
+      (rolesResult.data || []).forEach((row: any) => {
+        rolesMap.set(row.franchisee_id, (rolesMap.get(row.franchisee_id) || 0) + 1);
+      });
+
+      // Paso 4: Recomponer con counts reales
+      const enrichedData = franchiseesData.map((f: any) => ({
+        ...f,
+        centres: [{ count: centresMap.get(f.id) || 0 }],
+        user_roles: [{ count: rolesMap.get(f.id) || 0 }]
+      }));
+
+      setFranchisees(enrichedData);
     } catch (err: any) {
       console.error("Error loading franchisees:", err);
       toast({

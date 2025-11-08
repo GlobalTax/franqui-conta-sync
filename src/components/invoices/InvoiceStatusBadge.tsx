@@ -10,39 +10,77 @@ export function InvoiceStatusBadge({ status, type = 'received' }: InvoiceStatusB
     if (type === 'received') {
       switch (status) {
         case 'pending':
-          return { label: 'Pendiente', variant: 'secondary' as const };
+          return { 
+            label: 'Pendiente', 
+            className: 'bg-red-100 text-red-700 hover:bg-red-100 border-red-200' 
+          };
         case 'approved':
-          return { label: 'Aprobada', variant: 'default' as const };
+          return { 
+            label: 'Aprobada', 
+            className: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200' 
+          };
         case 'posted':
-          return { label: 'Contabilizada', variant: 'default' as const };
+          return { 
+            label: 'Registrada', 
+            className: 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200' 
+          };
         case 'paid':
-          return { label: 'Pagada', variant: 'default' as const };
+          return { 
+            label: 'Pagada', 
+            className: 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200' 
+          };
         default:
-          return { label: status, variant: 'secondary' as const };
+          return { 
+            label: status, 
+            className: 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200' 
+          };
       }
     } else {
       // issued
       switch (status) {
         case 'draft':
-          return { label: 'Borrador', variant: 'secondary' as const };
+          return { 
+            label: 'Borrador', 
+            className: 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200' 
+          };
+        case 'pending':
+          return { 
+            label: 'Pendiente', 
+            className: 'bg-red-100 text-red-700 hover:bg-red-100 border-red-200' 
+          };
         case 'issued':
-          return { label: 'Emitida', variant: 'default' as const };
+          return { 
+            label: 'Emitida', 
+            className: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200' 
+          };
         case 'sent':
-          return { label: 'Enviada', variant: 'default' as const };
+          return { 
+            label: 'Enviada', 
+            className: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200' 
+          };
         case 'paid':
-          return { label: 'Cobrada', variant: 'default' as const };
+          return { 
+            label: 'Cobrada', 
+            className: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200' 
+          };
         case 'cancelled':
-          return { label: 'Anulada', variant: 'destructive' as const };
+          return { 
+            label: 'Anulada', 
+            className: 'bg-red-100 text-red-700 hover:bg-red-100 border-red-200' 
+          };
         default:
-          return { label: status, variant: 'secondary' as const };
+          return { 
+            label: status, 
+            className: 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200' 
+          };
       }
     }
   };
 
-  const { label, variant } = getStatusConfig();
+  const { label, className } = getStatusConfig();
 
   return (
-    <Badge variant={variant}>
+    <Badge className={className}>
       {label}
     </Badge>
   );

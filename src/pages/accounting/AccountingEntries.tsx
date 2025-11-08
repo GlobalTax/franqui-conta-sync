@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Filter } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,8 @@ import { useAccountingEntries } from "@/hooks/useAccountingEntries";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { RestaurantFilter } from "@/components/RestaurantFilter";
+import { FilterPanel } from "@/components/common/FilterPanel";
+import { toast } from "sonner";
 
 export default function AccountingEntries() {
   const navigate = useNavigate();
@@ -35,6 +37,19 @@ export default function AccountingEntries() {
     searchTerm,
   });
 
+  const handleApplyFilters = () => {
+    toast.success("Filtros aplicados");
+  };
+
+  const handleClearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setStatus("");
+    setSearchTerm("");
+    setSelectedRestaurant("");
+    toast.success("Filtros limpiados");
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -50,66 +65,56 @@ export default function AccountingEntries() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Centro</Label>
-              <RestaurantFilter
-                value={selectedRestaurant}
-                onChange={setSelectedRestaurant}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Desde</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Hasta</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Estado</Label>
-              <Select value={status || 'all'} onValueChange={setStatus}>
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="draft">Borrador</SelectItem>
-                  <SelectItem value="posted">Contabilizado</SelectItem>
-                  <SelectItem value="closed">Cerrado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
-              <Input
-                id="search"
-                placeholder="Nº asiento o concepto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterPanel onApply={handleApplyFilters} onClear={handleClearFilters}>
+        <div className="space-y-2">
+          <Label>Centro</Label>
+          <RestaurantFilter
+            value={selectedRestaurant}
+            onChange={setSelectedRestaurant}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="startDate">Desde</Label>
+          <Input
+            id="startDate"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="endDate">Hasta</Label>
+          <Input
+            id="endDate"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="status">Estado</Label>
+          <Select value={status || 'all'} onValueChange={setStatus}>
+            <SelectTrigger id="status">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="draft">Borrador</SelectItem>
+              <SelectItem value="posted">Contabilizado</SelectItem>
+              <SelectItem value="closed">Cerrado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="search">Buscar</Label>
+          <Input
+            id="search"
+            placeholder="Nº asiento o concepto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </FilterPanel>
 
       <Card>
         <CardHeader>

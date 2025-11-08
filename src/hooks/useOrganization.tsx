@@ -24,75 +24,68 @@ export function useOrganization() {
         return;
       }
 
-      // 1) Intento principal: memberships con joins
+      // Use the optimized materialized view with all data pre-joined
+      // Filter manually since materialized views don't support RLS
       const { data, error } = await supabase
-        .from("memberships" as any)
-        .select(`
-          *,
-          organization:franchisees(*),
-          restaurant:centres(*)
-        `)
+        .from("v_user_memberships" as any)
+        .select("*")
         .eq("user_id", user.id)
         .eq("active", true);
 
-      let membershipsWithData: Membership[] | null = null;
+      if (error) throw error;
 
-      // Si funciona, usamos el resultado directo
-      if (!error && data) {
-        membershipsWithData = (data as any[]).map((membership: any) => ({
-          ...membership,
-          organization: membership.organization as Organization | null,
-          restaurant: membership.restaurant as Restaurant | null,
-        })) as Membership[];
-      } 
-      // 2) Fallback nivel 1: Si hay error de join (PGRST200, PGRST116, 400), intentar sin joins
-      else if (error && (error.code === 'PGRST200' || error.code === 'PGRST116' || error.message?.includes('embedding'))) {
-        console.warn("Falling back to simple select for memberships (join issue)", error);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from("memberships" as any)
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("active", true);
+      // Map the flat view data to our Membership type
+      const membershipsWithData: Membership[] = (data || []).map((row: any) => ({
+        id: row.membership_id,
+        user_id: row.user_id,
+        organization_id: row.organization_id,
+        restaurant_id: row.restaurant_id,
+        role: row.role,
+        active: row.active,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        created_by: null, // Not stored in view
+        organization: row.organization_id ? {
+          id: row.organization_id,
+          name: row.organization_name,
+          email: row.organization_email,
+          company_tax_id: row.organization_tax_id,
+          cif: null,
+          orquest_business_id: null,
+          orquest_api_key: null,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        } as Organization : null,
+        restaurant: row.restaurant_id ? {
+          id: row.restaurant_id,
+          codigo: row.restaurant_code,
+          nombre: row.restaurant_name,
+          direccion: row.restaurant_address,
+          ciudad: row.restaurant_city,
+          activo: row.restaurant_active,
+          franchisee_id: row.organization_id,
+          site_number: null,
+          pais: null,
+          state: null,
+          postal_code: null,
+          cost_center_code: null,
+          seating_capacity: null,
+          square_meters: null,
+          opening_date: null,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        } as Restaurant : null,
+      }));
 
-        if (!fallbackError && fallbackData && fallbackData.length > 0) {
-          const rows = fallbackData as any[];
-          const orgIds = Array.from(new Set(rows.map(r => r.organization_id).filter(Boolean)));
-          const restIds = Array.from(new Set(rows.map(r => r.restaurant_id).filter(Boolean)));
-
-          const [orgRes, restRes] = await Promise.all([
-            orgIds.length ? supabase.from("franchisees" as any).select("*").in("id", orgIds) : Promise.resolve({ data: [], error: null }),
-            restIds.length ? supabase.from("centres" as any).select("*").in("id", restIds) : Promise.resolve({ data: [], error: null })
-          ]);
-
-          if (orgRes.error) throw orgRes.error;
-          if (restRes.error) throw restRes.error;
-
-          const orgMap = new Map<string, any>();
-          (orgRes.data as any[]).forEach((o: any) => orgMap.set(o.id, o));
-          const restMap = new Map<string, any>();
-          (restRes.data as any[]).forEach((r: any) => restMap.set(r.id, r));
-
-          membershipsWithData = rows.map((m: any) => ({
-            ...m,
-            organization: (orgMap.get(m.organization_id) as Organization) || null,
-            restaurant: m.restaurant_id ? ((restMap.get(m.restaurant_id) as Restaurant) || null) : null,
-          })) as Membership[];
-        }
-      }
-
-      setMemberships(membershipsWithData || []);
-      setCurrentMembership((membershipsWithData && membershipsWithData[0]) || null);
+      setMemberships(membershipsWithData);
+      setCurrentMembership(membershipsWithData[0] || null);
     } catch (error: any) {
       console.error("Error fetching memberships:", error);
-      
-      // Solo mostrar toast si es un error real (no 404 esperado durante migración)
-      if (error?.code !== 'PGRST116' && !error?.message?.includes('does not exist')) {
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las organizaciones",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las organizaciones",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

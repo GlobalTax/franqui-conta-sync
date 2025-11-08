@@ -13,22 +13,61 @@ import type {
   CostCenter
 } from "@/types/accounting";
 
-// Memberships
+// Memberships - Using materialized view for better performance
 export async function getMemberships(userId: string) {
   try {
     const { data, error } = await supabase
-      .from("memberships" as any)
+      .from("v_user_memberships" as any)
       .select("*")
       .eq("user_id", userId)
       .eq("active", true);
     
-    // Si la tabla no existe o hay error de esquema, devolver array vacío
-    if (error && (error.code === 'PGRST116' || error.message?.includes('does not exist'))) {
-      console.warn("Memberships table not found, returning empty array");
-      return { data: [] as Membership[], error: null };
-    }
+    if (error) throw error;
     
-    return { data: (data as unknown) as Membership[] | null, error };
+    // Map view data to Membership type
+    const memberships: Membership[] = (data || []).map((row: any) => ({
+      id: row.membership_id,
+      user_id: row.user_id,
+      organization_id: row.organization_id,
+      restaurant_id: row.restaurant_id,
+      role: row.role,
+      active: row.active,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      created_by: null,
+      organization: row.organization_id ? {
+        id: row.organization_id,
+        name: row.organization_name,
+        email: row.organization_email,
+        company_tax_id: row.organization_tax_id,
+        cif: null,
+        orquest_business_id: null,
+        orquest_api_key: null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      } : null,
+      restaurant: row.restaurant_id ? {
+        id: row.restaurant_id,
+        codigo: row.restaurant_code,
+        nombre: row.restaurant_name,
+        direccion: row.restaurant_address,
+        ciudad: row.restaurant_city,
+        activo: row.restaurant_active,
+        franchisee_id: row.organization_id,
+        site_number: null,
+        pais: null,
+        state: null,
+        postal_code: null,
+        cost_center_code: null,
+        seating_capacity: null,
+        square_meters: null,
+        opening_date: null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      } : null,
+    }));
+    
+    return { data: memberships, error: null };
   } catch (err) {
     console.error("Error in getMemberships:", err);
     return { data: null, error: err };
@@ -36,54 +75,8 @@ export async function getMemberships(userId: string) {
 }
 
 export async function getMembershipWithRelations(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from("memberships" as any)
-      .select("*")
-      .eq("user_id", userId)
-      .eq("active", true);
-
-    // Si la tabla no existe, devolver array vacío
-    if (error && (error.code === 'PGRST116' || error.message?.includes('does not exist'))) {
-      console.warn("Memberships table not found, returning empty array");
-      return { data: [] as Membership[], error: null };
-    }
-
-    if (error || !data) {
-      return { data: null, error };
-    }
-
-    // Fetch related organizations and restaurants
-    const membershipsWithData = await Promise.all(
-      (data as any[]).map(async (membership) => {
-        const [orgResult, restaurantResult] = await Promise.all([
-          supabase
-            .from("franchisees" as any)
-            .select("*")
-            .eq("id", membership.organization_id)
-            .maybeSingle(),
-          membership.restaurant_id
-            ? supabase
-                .from("centres" as any)
-                .select("*")
-                .eq("id", membership.restaurant_id)
-                .maybeSingle()
-            : Promise.resolve({ data: null, error: null }),
-        ]);
-
-        return {
-          ...membership,
-          organization: (orgResult.data as unknown) as Organization | null,
-          restaurant: (restaurantResult.data as unknown) as Restaurant | null,
-        } as Membership;
-      })
-    );
-
-    return { data: membershipsWithData, error: null };
-  } catch (err) {
-    console.error("Error in getMembershipWithRelations:", err);
-    return { data: null, error: err };
-  }
+  // Reuse the optimized getMemberships function
+  return getMemberships(userId);
 }
 
 // Organizations

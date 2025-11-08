@@ -1262,6 +1262,13 @@ export type Database = {
             referencedColumns: ["codigo"]
           },
           {
+            foreignKeyName: "fk_user_roles_centro"
+            columns: ["centro"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
             foreignKeyName: "fk_user_roles_franchisee"
             columns: ["franchisee_id"]
             isOneToOne: false
@@ -1296,6 +1303,45 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      v_user_memberships: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          membership_id: string | null
+          organization_email: string | null
+          organization_id: string | null
+          organization_name: string | null
+          organization_tax_id: string | null
+          restaurant_active: boolean | null
+          restaurant_address: string | null
+          restaurant_city: string | null
+          restaurant_code: string | null
+          restaurant_id: string | null
+          restaurant_name: string | null
+          role: string | null
+          updated_at: string | null
+          user_apellidos: string | null
+          user_email: string | null
+          user_id: string | null
+          user_nombre: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_user_restaurants: {
         Row: {
@@ -1433,6 +1479,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      refresh_user_memberships: { Args: never; Returns: undefined }
       set_primary_company: {
         Args: { _centre_id: string; _company_id: string }
         Returns: undefined

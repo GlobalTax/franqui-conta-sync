@@ -2465,6 +2465,24 @@ export type Database = {
           centro: string
         }[]
       }
+      get_closing_periods: {
+        Args: { p_centro_code?: string; p_year?: number }
+        Returns: {
+          centro_code: string
+          closed_by: string
+          closing_date: string
+          closing_entry_id: string
+          created_at: string
+          id: string
+          notes: string
+          period_month: number
+          period_type: string
+          period_year: number
+          regularization_entry_id: string
+          status: string
+          updated_at: string
+        }[]
+      }
       get_cost_metrics: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {

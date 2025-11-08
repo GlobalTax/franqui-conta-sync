@@ -1515,6 +1515,22 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_pnl: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          account_type: string
+          balance: number
+          credit_total: number
+          debit_total: number
+          level: number
+        }[]
+      }
       detect_dq_issues: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {

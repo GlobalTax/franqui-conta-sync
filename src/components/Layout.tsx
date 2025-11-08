@@ -19,6 +19,7 @@ import {
   ChevronDown,
   GitCompare,
   Shield,
+  Store,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -210,13 +211,24 @@ const Layout = () => {
 
         {/* View indicator badge */}
         {selectedView && (
-          <div className="px-6 py-2 bg-muted/30 border-b">
-            <Badge 
-              variant={selectedView.type === 'company' ? 'default' : 'secondary'}
-              className="text-xs"
-            >
-              {selectedView.type === 'company' ? '📊 Vista Consolidada' : '🏪 Centro Individual'}: {selectedView.name}
-            </Badge>
+          <div className="px-6 py-3 bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50">
+            <div className="flex items-center gap-3">
+              {selectedView.type === 'company' ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="uppercase tracking-wide">Consolidado</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-full bg-success text-success-foreground px-4 py-1.5 text-sm font-semibold shadow-sm">
+                  <Store className="h-4 w-4" />
+                  <span className="uppercase tracking-wide">Centro</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Vista actual:</span>
+                <span className="font-semibold text-foreground">{selectedView.name}</span>
+              </div>
+            </div>
           </div>
         )}
 

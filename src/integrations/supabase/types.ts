@@ -809,6 +809,83 @@ export type Database = {
         }
         Relationships: []
       }
+      entry_template_lines: {
+        Row: {
+          account_code: string
+          amount_formula: string | null
+          created_at: string
+          description: string | null
+          id: string
+          line_number: number
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          template_id: string
+        }
+        Insert: {
+          account_code: string
+          amount_formula?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_number: number
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          template_id: string
+        }
+        Update: {
+          account_code?: string
+          amount_formula?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_number?: number
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_template_lines_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "entry_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_templates: {
+        Row: {
+          category: string | null
+          centro_code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fiscal_years: {
         Row: {
           centro_code: string | null

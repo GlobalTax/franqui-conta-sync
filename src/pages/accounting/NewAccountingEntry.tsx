@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountingEntryForm } from "@/components/accounting/AccountingEntryForm";
 import { useCreateAccountingEntry } from "@/hooks/useAccountingEntries";
@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RestaurantFilter } from "@/components/RestaurantFilter";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { EntryTemplateSelector } from "@/components/accounting/EntryTemplateSelector";
+import { EntryTemplateWithLines } from "@/types/entry-templates";
 
 export default function NewAccountingEntry() {
   const navigate = useNavigate();
@@ -15,7 +17,42 @@ export default function NewAccountingEntry() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>(
     currentMembership?.restaurant?.codigo || ""
   );
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [initialFormData, setInitialFormData] = useState<any>(null);
   const createEntry = useCreateAccountingEntry();
+
+  const handleTemplateSelect = (template: EntryTemplateWithLines, amounts: Record<string, number>) => {
+    const evaluateFormula = (formula: string | null): number => {
+      if (!formula) return 0;
+      
+      try {
+        // Replace formula variables with actual amounts
+        let expression = formula;
+        Object.entries(amounts).forEach(([key, value]) => {
+          expression = expression.replace(new RegExp(key, 'g'), value.toString());
+        });
+        
+        // Evaluate the expression safely
+        return Function(`'use strict'; return (${expression})`)();
+      } catch (e) {
+        console.error('Error evaluating formula:', formula, e);
+        return 0;
+      }
+    };
+
+    const transactions = template.entry_template_lines.map(line => ({
+      account_code: line.account_code,
+      movement_type: line.movement_type,
+      amount: evaluateFormula(line.amount_formula),
+      description: line.description || '',
+    }));
+
+    setInitialFormData({
+      entry_date: new Date().toISOString().split('T')[0],
+      description: template.name,
+      transactions,
+    });
+  };
 
   const handleSubmit = async (formData: any) => {
     if (!selectedRestaurant) {
@@ -32,20 +69,30 @@ export default function NewAccountingEntry() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/contabilidad/apuntes")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Nuevo Asiento Contable</h1>
-          <p className="text-muted-foreground">
-            Crea un nuevo asiento con apuntes debe y haber
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/contabilidad/apuntes")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Nuevo Asiento Contable</h1>
+            <p className="text-muted-foreground">
+              Crea un nuevo asiento con apuntes debe y haber
+            </p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => setTemplateDialogOpen(true)}
+          disabled={!selectedRestaurant}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Usar Plantilla
+        </Button>
       </div>
 
       <Card>
@@ -63,6 +110,7 @@ export default function NewAccountingEntry() {
               onSubmit={handleSubmit}
               isLoading={createEntry.isPending}
               organizationId={currentMembership?.organization?.id}
+              initialData={initialFormData}
             />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -71,6 +119,12 @@ export default function NewAccountingEntry() {
           )}
         </CardContent>
       </Card>
+
+      <EntryTemplateSelector
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
+        onSelectTemplate={handleTemplateSelect}
+      />
     </div>
   );
 }

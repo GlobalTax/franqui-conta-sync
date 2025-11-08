@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +26,19 @@ interface AccountingEntryFormProps {
   onSubmit: (data: NewAccountingEntryFormData) => void;
   isLoading?: boolean;
   organizationId?: string;
+  initialData?: {
+    entry_date: string;
+    description: string;
+    transactions: {
+      account_code: string;
+      movement_type: MovementType;
+      amount: number;
+      description: string;
+    }[];
+  };
 }
 
-export function AccountingEntryForm({ onSubmit, isLoading, organizationId }: AccountingEntryFormProps) {
+export function AccountingEntryForm({ onSubmit, isLoading, organizationId, initialData }: AccountingEntryFormProps) {
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [lines, setLines] = useState<TransactionLine[]>([
@@ -47,6 +57,18 @@ export function AccountingEntryForm({ onSubmit, isLoading, organizationId }: Acc
       description: "",
     },
   ]);
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setEntryDate(initialData.entry_date);
+      setDescription(initialData.description);
+      setLines(initialData.transactions.map(t => ({
+        id: crypto.randomUUID(),
+        ...t,
+      })));
+    }
+  }, [initialData]);
 
   const addLine = () => {
     setLines([

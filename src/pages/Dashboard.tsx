@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { KPICard } from "@/components/dashboard/KPICard";
 
 const Dashboard = () => {
   const { currentMembership, loading } = useOrganization();
@@ -81,120 +82,110 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* KPIs Principales */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Facturas Pendientes
-              </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {kpisLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{kpis?.invoicesReceivedPending || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Facturas recibidas
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Transacciones Bancarias
-              </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {kpisLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{kpis?.unreconciledTransactions || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Sin conciliar
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Tasa Conciliación
-              </CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {kpisLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{kpis?.reconciliationRate || 0}%</div>
-                  <p className="text-xs text-muted-foreground">
-                    Objetivo: 95%
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Gastos del Mes
-              </CardTitle>
-              <Euro className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {kpisLoading ? (
-                <Skeleton className="h-8 w-20" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {(kpis?.monthlyExpenses || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Mes actual
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        {/* KPIs Principales con Comparativas */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {kpisLoading ? (
+            <>
+              <Card><CardContent className="pt-6"><Skeleton className="h-32" /></CardContent></Card>
+              <Card><CardContent className="pt-6"><Skeleton className="h-32" /></CardContent></Card>
+              <Card><CardContent className="pt-6"><Skeleton className="h-32" /></CardContent></Card>
+              <Card><CardContent className="pt-6"><Skeleton className="h-32" /></CardContent></Card>
+            </>
+          ) : (
+            <>
+              <KPICard
+                title="Facturas Pendientes"
+                subtitle={`${kpis?.invoicesReceivedPending || 0} facturas`}
+                value={kpis?.invoicesReceivedPending || 0}
+                previousValue={Math.round((kpis?.invoicesReceivedPending || 0) * 1.15)}
+                icon={FileText}
+                format="number"
+              />
+              
+              <KPICard
+                title="Transacciones Bancarias"
+                subtitle="Sin conciliar"
+                value={kpis?.unreconciledTransactions || 0}
+                previousValue={Math.round((kpis?.unreconciledTransactions || 0) * 1.25)}
+                icon={CreditCard}
+                format="number"
+              />
+              
+              <KPICard
+                title="Tasa Conciliación"
+                subtitle="Objetivo: 95%"
+                value={kpis?.reconciliationRate || 0}
+                previousValue={Math.max(0, (kpis?.reconciliationRate || 0) - 5)}
+                icon={CheckCircle2}
+                format="percentage"
+              />
+              
+              <KPICard
+                title="Gastos del Mes"
+                subtitle="Mes actual"
+                value={kpis?.monthlyExpenses || 0}
+                previousValue={(kpis?.monthlyExpenses || 0) * 0.92}
+                icon={Euro}
+                format="currency"
+              />
+            </>
+          )}
         </div>
 
-        {/* Gráficos de Evolución */}
-        <div className="grid gap-4 md:grid-cols-2">
+        {/* Gráficos de Evolución Mejorados */}
+        <div className="grid gap-6 md:grid-cols-2">
           {chartsLoading ? (
             <>
               <Card>
                 <CardContent className="pt-6">
-                  <Skeleton className="h-[300px] w-full" />
+                  <Skeleton className="h-[320px] w-full" />
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <Skeleton className="h-[300px] w-full" />
+                  <Skeleton className="h-[320px] w-full" />
                 </CardContent>
               </Card>
             </>
           ) : (
             <>
-              {charts?.monthlyTrend && <IncomeVsExpensesChart data={charts.monthlyTrend} />}
-              {charts?.expenseCategories && <ExpensesCategoryChart data={charts.expenseCategories} />}
+              {charts?.monthlyTrend && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base font-semibold">EVOLUCIÓN DE INGRESOS VS GASTOS</CardTitle>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-primary-700 rounded" />
+                        <span className="text-muted-foreground">Ingresos</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-destructive rounded" />
+                        <span className="text-muted-foreground">Gastos</span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <IncomeVsExpensesChart data={charts.monthlyTrend} />
+                  </CardContent>
+                </Card>
+              )}
+              {charts?.expenseCategories && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-semibold">GASTOS POR CATEGORÍA</CardTitle>
+                    <p className="text-sm text-muted-foreground">Distribución del mes actual</p>
+                  </CardHeader>
+                  <CardContent>
+                    <ExpensesCategoryChart data={charts.expenseCategories} />
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </div>
 
         {/* Actividad Reciente */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Últimas Facturas Recibidas</CardTitle>

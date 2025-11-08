@@ -21,6 +21,12 @@ All colors MUST be HSL.
     /* Primary - professional blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-50: 214 100% 97%;
+    --primary-100: 214 95% 93%;
+    --primary-500: 217 91% 60%;
+    --primary-600: 221 83% 53%;
+    --primary-700: 224 76% 48%;
+    --primary-900: 224 71% 30%;
 
     /* Secondary - light gray for secondary actions */
     --secondary: 214 32% 95%;
@@ -55,15 +61,16 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 215 16% 25%;
+    /* Sidebar - Dark professional */
+    --sidebar-background: 215 25% 17%;
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 32% 95%;
-    --sidebar-accent-foreground: 215 16% 25%;
-    --sidebar-border: 214 32% 88%;
+    --sidebar-accent: 215 20% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 20% 25%;
     --sidebar-ring: 217 91% 60%;
+    --sidebar-light: 215 20% 27%;
   }
 
   .dark {
@@ -103,14 +110,15 @@ All colors MUST be HSL.
     --input: 216 34% 17%;
     --ring: 217 91% 60%;
 
-    --sidebar-background: 224 71% 4%;
-    --sidebar-foreground: 213 31% 91%;
+    --sidebar-background: 215 25% 17%;
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 216 34% 17%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 216 34% 17%;
+    --sidebar-accent: 215 20% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 20% 25%;
     --sidebar-ring: 217 91% 60%;
+    --sidebar-light: 215 20% 27%;
   }
 }
 

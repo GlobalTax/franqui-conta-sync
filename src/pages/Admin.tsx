@@ -5,9 +5,12 @@ import RolesManagement from "./admin/RolesManagement";
 import FranchiseesManagement from "./admin/FranchiseesManagement";
 import CentresManagement from "./admin/CentresManagement";
 import OrquestServicesManagement from "./admin/OrquestServicesManagement";
+import PermissionsManagement from "./admin/PermissionsManagement";
+import AlertsManagement from "./admin/AlertsManagement";
+import DataQualityManagement from "./admin/DataQualityManagement";
+import DataQualityDashboard from "./admin/DataQualityDashboard";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
-import PermissionsManagement from "./admin/PermissionsManagement";
 
 const Admin = () => {
   return (
@@ -21,13 +24,16 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
           <TabsTrigger value="orquest">Orquest</TabsTrigger>
           <TabsTrigger value="permissions">Permisos</TabsTrigger>
+          <TabsTrigger value="alerts">Alertas</TabsTrigger>
+          <TabsTrigger value="dq">Calidad</TabsTrigger>
+          <TabsTrigger value="dq-dashboard">Dashboard DQ</TabsTrigger>
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
           <TabsTrigger value="settings">Config</TabsTrigger>
         </TabsList>
@@ -54,6 +60,18 @@ const Admin = () => {
 
         <TabsContent value="permissions" className="mt-6">
           <PermissionsManagement />
+        </TabsContent>
+
+        <TabsContent value="alerts" className="mt-6">
+          <AlertsManagement />
+        </TabsContent>
+
+        <TabsContent value="dq" className="mt-6">
+          <DataQualityManagement />
+        </TabsContent>
+
+        <TabsContent value="dq-dashboard" className="mt-6">
+          <DataQualityDashboard />
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">

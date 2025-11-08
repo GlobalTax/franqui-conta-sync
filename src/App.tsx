@@ -30,6 +30,7 @@ import Suppliers from "@/pages/Suppliers";
 import BalanceSheet from "@/pages/reports/BalanceSheet";
 import GeneralLedger from "@/pages/reports/GeneralLedger";
 import JournalBook from "@/pages/reports/JournalBook";
+import Notifications from "@/pages/Notifications";
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -102,6 +103,7 @@ const App = () => {
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
+              <Route path="/notificaciones" element={<Notifications />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

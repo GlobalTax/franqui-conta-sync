@@ -24,6 +24,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -125,8 +126,16 @@ const Layout = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
-        <Outlet />
+      <div className="flex-1 flex flex-col">
+        {/* Header con notificaciones */}
+        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end">
+          <NotificationBell />
+        </div>
+        
+        {/* Contenido principal */}
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

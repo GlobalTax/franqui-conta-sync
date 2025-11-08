@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -28,6 +32,10 @@ export default {
           600: "hsl(var(--primary-600))",
           700: "hsl(var(--primary-700))",
           900: "hsl(var(--primary-900))",
+        },
+        'accent-gold': {
+          DEFAULT: "hsl(var(--accent-gold))",
+          light: "hsl(var(--accent-gold-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -76,9 +84,17 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "1rem",
+        md: "0.75rem",
+        sm: "0.5rem",
+        xl: "1.125rem",
+        "2xl": "1.25rem",
+        "3xl": "1.5rem",
+      },
+      boxShadow: {
+        'soft': '0 2px 8px 0 rgba(0, 0, 0, 0.05)',
+        'soft-lg': '0 4px 16px 0 rgba(0, 0, 0, 0.08)',
+        'soft-xl': '0 8px 24px 0 rgba(0, 0, 0, 0.10)',
       },
       keyframes: {
         "accordion-down": {

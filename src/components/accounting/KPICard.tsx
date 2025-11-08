@@ -22,41 +22,58 @@ export function KPICard({
   variant = "default",
 }: KPICardProps) {
   const variantStyles = {
-    default: "text-foreground",
-    success: "text-green-600 dark:text-green-400",
-    warning: "text-yellow-600 dark:text-yellow-400",
-    danger: "text-red-600 dark:text-red-400",
+    default: "from-slate-50 to-slate-100 border-slate-200",
+    success: "from-emerald-50 to-emerald-100 border-emerald-200",
+    warning: "from-amber-50 to-amber-100 border-amber-200",
+    danger: "from-red-50 to-red-100 border-red-200",
   };
 
-  const trendColors = {
-    up: "text-green-600 dark:text-green-400",
-    down: "text-red-600 dark:text-red-400",
-    neutral: "text-muted-foreground",
+  const iconColors = {
+    default: "text-primary bg-primary/10",
+    success: "text-emerald-600 bg-emerald-500/10",
+    warning: "text-amber-600 bg-amber-500/10",
+    danger: "text-red-600 bg-red-500/10",
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className={cn("h-4 w-4", variantStyles[variant])} />
-      </CardHeader>
-      <CardContent>
-        <div className={cn("text-2xl font-bold", variantStyles[variant])}>
-          {value}
-        </div>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-        )}
-        {trend && trendValue && (
-          <div className={cn("text-xs mt-2 flex items-center gap-1", trendColors[trend])}>
-            {trend === "up" && "↑"}
-            {trend === "down" && "↓"}
-            {trend === "neutral" && "→"}
-            <span>{trendValue}</span>
+    <Card className={cn(
+      "bg-gradient-to-br border-2",
+      variantStyles[variant],
+      "hover:shadow-soft-xl transition-all duration-300"
+    )}>
+      <CardContent className="p-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              {title}
+            </p>
+            <div className="text-4xl font-display font-bold tracking-tight mb-2">
+              {value}
+            </div>
+            {subtitle && (
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            )}
+            {trend && trendValue && (
+              <div className={cn(
+                "inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-xs font-semibold",
+                trend === "up" && "bg-emerald-100 text-emerald-700",
+                trend === "down" && "bg-red-100 text-red-700",
+                trend === "neutral" && "bg-slate-100 text-slate-700"
+              )}>
+                {trend === "up" && "↑"}
+                {trend === "down" && "↓"}
+                {trend === "neutral" && "→"}
+                <span>{trendValue}</span>
+              </div>
+            )}
           </div>
-        )}
+          <div className={cn(
+            "p-4 rounded-2xl",
+            iconColors[variant]
+          )}>
+            <Icon className="h-7 w-7" />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

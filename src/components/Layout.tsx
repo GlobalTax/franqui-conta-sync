@@ -97,56 +97,57 @@ const Layout = () => {
   ];
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar - Dark Professional */}
-      <div className="w-72 border-r border-sidebar-border bg-sidebar flex flex-col text-sidebar-foreground">
-        {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-white/10">
-          <Building2 className="h-6 w-6 mr-3 text-white" />
-          <h1 className="text-xl font-bold">FranquiContaSync</h1>
+    <div className="min-h-screen flex w-full">
+      {/* Sidebar - Clear Modern */}
+      <div className="w-72 border-r border-sidebar-border bg-sidebar flex flex-col shadow-soft-lg">
+        {/* Logo with gold accent */}
+        <div className="h-20 flex items-center px-8 border-b border-border/50">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-accent-gold to-accent-gold/80 mr-3">
+            <Building2 className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-xl font-display font-bold text-foreground">
+            FranquiConta<span className="text-accent-gold">Sync</span>
+          </h1>
         </div>
 
-        {/* Company/Centre Selector - PROMINENTE */}
+        {/* Company/Centre Selector */}
         {currentMembership?.organization_id && (
-          <div className="p-4 border-b border-white/10">
-            <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
+          <div className="p-6 border-b border-border/50">
+            <label className="text-xs text-muted-foreground font-semibold mb-2 block uppercase tracking-wider">
               Vista Contable
             </label>
-              <CentreSelector
-                franchiseeId={currentMembership.organization_id}
-                value={selectedView}
-                onChange={setSelectedView}
-              />
+            <CentreSelector
+              franchiseeId={currentMembership.organization_id}
+              value={selectedView}
+              onChange={setSelectedView}
+            />
           </div>
         )}
 
-        {/* Selector de Año Fiscal - PROMINENTE */}
-        <div className="px-4 pb-4 border-b border-white/10">
-          {/* View indicator inside sidebar - Always visible when selectedView exists */}
+        {/* Selector de Año Fiscal */}
+        <div className="px-6 pb-6 border-b border-border/50">
+          {/* View indicator inside sidebar */}
           {selectedView && (
-            <div className="mb-4">
-              {selectedView.type === 'all' || selectedView.type === 'company' ? (
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                  <span className="uppercase tracking-wide">Consolidado</span>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-2 rounded-full bg-success text-success-foreground px-3 py-1 text-xs font-semibold shadow-sm">
-                  <Store className="h-4 w-4" />
-                  <span className="uppercase tracking-wide">Centro</span>
-                </div>
-              )}
-              <div className="mt-2 text-xs text-white/70">
-                Vista actual: <span className="font-medium text-white">{selectedView.name}</span>
+            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                {selectedView.type === 'all' || selectedView.type === 'company' ? (
+                  <Building2 className="h-4 w-4 text-primary" />
+                ) : (
+                  <Store className="h-4 w-4 text-success" />
+                )}
+                <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                  {selectedView.type === 'all' || selectedView.type === 'company' ? 'Consolidado' : 'Centro'}
+                </span>
               </div>
+              <p className="text-sm font-medium text-foreground">{selectedView.name}</p>
             </div>
           )}
           
-          <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
+          <label className="text-xs text-muted-foreground font-semibold mb-2 block uppercase tracking-wider">
             Ejercicio
           </label>
           <Select value={fiscalYear} onValueChange={setFiscalYear}>
-            <SelectTrigger className="bg-white/10 border-white/20 text-white hover:bg-white/15">
+            <SelectTrigger className="bg-background border-border/50 hover:border-primary/50 transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -158,8 +159,8 @@ const Layout = () => {
         </div>
 
         {/* Sección: Accesos Directos */}
-        <div className="p-4">
-          <div className="text-xs text-white/60 font-semibold mb-3 uppercase tracking-wide">
+        <div className="p-6">
+          <div className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wider">
             Accesos Directos
           </div>
           <nav className="space-y-1">
@@ -167,19 +168,19 @@ const Layout = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:bg-white/5 hover:text-white transition-colors"
-                activeClassName="bg-white/10 text-white font-medium"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/70 hover:bg-primary/5 hover:text-primary transition-all duration-200 group"
+                activeClassName="bg-primary text-white font-semibold shadow-soft"
               >
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <item.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span className="text-sm">{item.label}</span>
               </NavLink>
             ))}
           </nav>
         </div>
 
         {/* Sección: Contabilidad */}
-        <div className="px-4 pb-4 border-t border-white/10 pt-4">
-          <div className="text-xs text-white/60 font-semibold mb-3 uppercase tracking-wide">
+        <div className="px-6 pb-6 border-t border-border/50 pt-6">
+          <div className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wider">
             Contabilidad
           </div>
           <nav className="space-y-1">
@@ -187,11 +188,11 @@ const Layout = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:bg-white/5 hover:text-white transition-colors"
-                activeClassName="bg-white/10 text-white font-medium"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/70 hover:bg-primary/5 hover:text-primary transition-all duration-200 group"
+                activeClassName="bg-primary text-white font-semibold shadow-soft"
               >
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <item.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span className="text-sm">{item.label}</span>
               </NavLink>
             ))}
 
@@ -200,10 +201,10 @@ const Layout = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start px-3 py-2 text-white/70 hover:bg-white/5 hover:text-white h-auto"
+                  className="w-full justify-start px-4 py-3 text-foreground/70 hover:bg-primary/5 hover:text-primary h-auto rounded-xl font-normal"
                 >
                   <FileSpreadsheet className="h-5 w-5 mr-3" />
-                  <span className="flex-1 text-left">IVA</span>
+                  <span className="flex-1 text-left text-sm">IVA</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -224,10 +225,10 @@ const Layout = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start px-3 py-2 text-white/70 hover:bg-white/5 hover:text-white h-auto"
+                  className="w-full justify-start px-4 py-3 text-foreground/70 hover:bg-primary/5 hover:text-primary h-auto rounded-xl font-normal"
                 >
                   <BarChart3 className="h-5 w-5 mr-3" />
-                  <span className="flex-1 text-left">Reportes</span>
+                  <span className="flex-1 text-left text-sm">Reportes</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -246,14 +247,14 @@ const Layout = () => {
         </div>
 
         {/* Footer con Logout */}
-        <div className="mt-auto p-4 border-t border-white/10">
+        <div className="mt-auto p-6 border-t border-border/50">
           <Button
             variant="ghost"
-            className="w-full justify-start text-white/70 hover:bg-white/5 hover:text-white"
+            className="w-full justify-start text-foreground/70 hover:bg-destructive/10 hover:text-destructive rounded-xl"
             onClick={handleLogout}
           >
             <LogOut className="h-5 w-5 mr-3" />
-            Cerrar Sesión
+            <span className="text-sm">Cerrar Sesión</span>
           </Button>
         </div>
       </div>
@@ -261,35 +262,12 @@ const Layout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-16 border-b bg-card px-6 flex items-center justify-end">
+        <div className="h-20 border-b border-border/50 bg-card/80 backdrop-blur-sm px-8 flex items-center justify-end shadow-soft">
           <NotificationBell />
         </div>
 
-        {/* View indicator badge */}
-        {selectedView && (
-          <div className="px-6 py-3 bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              {selectedView.type === 'company' ? (
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                  <span className="uppercase tracking-wide">Consolidado</span>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-2 rounded-full bg-success text-success-foreground px-4 py-1.5 text-sm font-semibold shadow-sm">
-                  <Store className="h-4 w-4" />
-                  <span className="uppercase tracking-wide">Centro</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Vista actual:</span>
-                <span className="font-semibold text-foreground">{selectedView.name}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-background to-muted/30">
           <Outlet />
         </main>
       </div>

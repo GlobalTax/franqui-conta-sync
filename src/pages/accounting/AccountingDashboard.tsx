@@ -81,35 +81,46 @@ export default function AccountingDashboard() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <PageHeader
-        title="Dashboard Contable"
-        subtitle="Análisis financiero y KPIs en tiempo real"
-        breadcrumbs={breadcrumbs}
-      />
-
-      <div className="flex justify-end">
-        <div className="w-32">
-          <Label className="sr-only">Año</Label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={y.toString()}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="container mx-auto px-8 py-8 space-y-8">
+      {/* Header con más espacio */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-display font-bold text-foreground mb-2">
+            Dashboard Contable
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Análisis financiero y KPIs en tiempo real
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {/* Selector de año más destacado */}
+          <div className="flex items-center gap-3 px-6 py-3 bg-card rounded-xl border border-border/50 shadow-soft">
+            <Label className="text-sm font-semibold text-muted-foreground">
+              Ejercicio
+            </Label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32 border-0 bg-transparent font-semibold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={y.toString()}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* Balance General */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Balance General</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+      {/* Secciones con más espacio entre ellas */}
+      <div className="space-y-10">
+        {/* Balance General */}
+        <section>
+          <h2 className="text-2xl font-display font-bold text-foreground mb-6">Balance General</h2>
+          <div className="grid gap-6 md:grid-cols-3">
           {isLoadingKPIs ? (
             <>
               <Skeleton className="h-32" />
@@ -141,31 +152,33 @@ export default function AccountingDashboard() {
               />
             </>
           )}
-        </div>
-      </div>
+          </div>
+        </section>
 
-      {/* Resultado del Ejercicio */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Resultado del Ejercicio</h2>
-        <div className="grid gap-4 md:grid-cols-1">
+        {/* Resultado del Ejercicio */}
+        <section>
+          <h2 className="text-2xl font-display font-bold text-foreground mb-6">Resultado del Ejercicio</h2>
+          <div className="grid gap-6 md:grid-cols-1">
           {isLoadingKPIs ? (
             <Skeleton className="h-32" />
           ) : (
             <KPICard
               title="Resultado Neto"
               value={formatCurrency(kpis?.resultado_ejercicio || 0)}
-              subtitle={kpis && kpis.resultado_ejercicio >= 0 ? "Beneficios" : "Pérdidas"}
+              subtitle={kpis && kpis.resultado_ejercicio >= 0 ? "🎉 Beneficios" : "⚠️ Pérdidas"}
               icon={kpis && kpis.resultado_ejercicio >= 0 ? TrendingUp : TrendingDown}
               variant={kpis && kpis.resultado_ejercicio >= 0 ? "success" : "danger"}
+              trend={kpis && kpis.resultado_ejercicio >= 0 ? "up" : "down"}
+              trendValue={kpis && `${Math.abs(((kpis.resultado_ejercicio || 0) / 1000000 * 100)).toFixed(1)}%`}
             />
           )}
-        </div>
-      </div>
+          </div>
+        </section>
 
-      {/* Ratios Financieros */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Ratios Financieros</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        {/* Ratios Financieros */}
+        <section>
+          <h2 className="text-2xl font-display font-bold text-foreground mb-6">Ratios Financieros</h2>
+          <div className="grid gap-6 md:grid-cols-3">
           {isLoadingKPIs ? (
             <>
               <Skeleton className="h-32" />
@@ -197,26 +210,27 @@ export default function AccountingDashboard() {
               />
             </>
           )}
-        </div>
-      </div>
+          </div>
+        </section>
 
-      {/* Evolución Mensual */}
-      <AccountingEvolutionChart data={evolution || []} isLoading={isLoadingEvolution} />
+        {/* Evolución Mensual */}
+        <AccountingEvolutionChart data={evolution || []} isLoading={isLoadingEvolution} />
 
-      {/* Distribución de Ingresos y Gastos */}
-      <div className="grid gap-6 md:grid-cols-2">
+        {/* Distribución de Ingresos y Gastos */}
+        <div className="grid gap-6 md:grid-cols-2">
         <AccountGroupsPieChart
           data={incomeGroups || []}
           title="Distribución de Ingresos"
           description="Por grupo de cuenta"
           isLoading={isLoadingIncome}
         />
-        <AccountGroupsPieChart
-          data={expenseGroups || []}
-          title="Distribución de Gastos"
-          description="Por grupo de cuenta"
-          isLoading={isLoadingExpense}
-        />
+          <AccountGroupsPieChart
+            data={expenseGroups || []}
+            title="Distribución de Gastos"
+            description="Por grupo de cuenta"
+            isLoading={isLoadingExpense}
+          />
+        </div>
       </div>
     </div>
   );

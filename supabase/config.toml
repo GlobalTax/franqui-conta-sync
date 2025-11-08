@@ -2,3 +2,6 @@ project_id = "srwnjnrhxzcpftmbbyib"
 
 [functions.sync-orquest-services]
 verify_jwt = true
+
+[functions.invoice-ocr]
+verify_jwt = true

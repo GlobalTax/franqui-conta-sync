@@ -23,6 +23,7 @@ import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
 import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
 import NewInvoiceReceived from "@/pages/invoices/NewInvoiceReceived";
+import NewInvoiceWithOCR from "@/pages/invoices/NewInvoiceWithOCR";
 import InvoicesIssued from "@/pages/invoices/InvoicesIssued";
 import NewInvoiceIssued from "@/pages/invoices/NewInvoiceIssued";
 import InvoiceDetail from "@/pages/invoices/InvoiceDetail";
@@ -91,6 +92,7 @@ const App = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
+              <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />
               <Route path="/facturas/emitidas" element={<InvoicesIssued />} />
               <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
               <Route path="/facturas/:id" element={<InvoiceDetail />} />

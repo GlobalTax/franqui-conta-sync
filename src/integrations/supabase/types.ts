@@ -2198,6 +2198,56 @@ export type Database = {
           },
         ]
       }
+      ocr_processing_log: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          document_path: string
+          extracted_data: Json | null
+          id: string
+          invoice_id: string | null
+          ocr_provider: string
+          processing_time_ms: number | null
+          raw_response: Json | null
+          user_corrections: Json | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          document_path: string
+          extracted_data?: Json | null
+          id?: string
+          invoice_id?: string | null
+          ocr_provider?: string
+          processing_time_ms?: number | null
+          raw_response?: Json | null
+          user_corrections?: Json | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          document_path?: string
+          extracted_data?: Json | null
+          id?: string
+          invoice_id?: string | null
+          ocr_provider?: string
+          processing_time_ms?: number | null
+          raw_response?: Json | null
+          user_corrections?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_processing_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           created_at: string

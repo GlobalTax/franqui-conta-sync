@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Receipt } from "lucide-react";
+import { Upload, Receipt, Scan } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
 import { useInvoicesIssued } from "@/hooks/useInvoicesIssued";
@@ -260,10 +260,20 @@ const Invoices = () => {
                 Gestión de facturas emitidas y recibidas
               </p>
             </div>
-            <Button className="gap-2" onClick={() => navigate('/facturas/nueva')}>
-              <Upload className="h-4 w-4" />
-              Nueva Factura
-            </Button>
+            <div className="flex gap-2">
+              <Button className="gap-2" onClick={() => navigate('/facturas/nueva')}>
+                <Upload className="h-4 w-4" />
+                Nueva Factura
+              </Button>
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={() => navigate('/facturas/nueva-ocr')}
+              >
+                <Scan className="h-4 w-4" />
+                Nueva con OCR
+              </Button>
+            </div>
           </div>
         </div>
       </div>

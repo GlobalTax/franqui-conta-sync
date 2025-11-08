@@ -11,6 +11,7 @@ import {
   BookOpen,
   FileSpreadsheet,
   Shield,
+  Building2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,10 +34,12 @@ const Layout = () => {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-    { icon: FileText, label: "Facturas", path: "/invoices" },
+    { icon: FileText, label: "Fact. Recibidas", path: "/invoices" },
+    { icon: FileText, label: "Fact. Emitidas", path: "/facturas/emitidas" },
+    { icon: Building2, label: "Proveedores", path: "/proveedores" },
     { icon: CreditCard, label: "Bancos", path: "/banks" },
     { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
-    { icon: FileSpreadsheet, label: "Apuntes Contables", path: "/contabilidad/apuntes" },
+    { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: TrendingUp, label: "P&L", path: "/pnl" },
     { icon: Settings, label: "Configuración", path: "/settings" },

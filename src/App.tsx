@@ -21,6 +21,11 @@ import Admin from "@/pages/Admin";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
 import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
+import NewInvoiceReceived from "@/pages/invoices/NewInvoiceReceived";
+import InvoicesIssued from "@/pages/invoices/InvoicesIssued";
+import NewInvoiceIssued from "@/pages/invoices/NewInvoiceIssued";
+import InvoiceDetail from "@/pages/invoices/InvoiceDetail";
+import Suppliers from "@/pages/Suppliers";
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -75,6 +80,11 @@ const App = () => {
             >
               <Route path="/" element={<Dashboard />} />
               <Route path="/invoices" element={<Invoices />} />
+              <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
+              <Route path="/facturas/emitidas" element={<InvoicesIssued />} />
+              <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
+              <Route path="/facturas/:id" element={<InvoiceDetail />} />
+              <Route path="/proveedores" element={<Suppliers />} />
               <Route path="/banks" element={<Banks />} />
               <Route path="/reconciliation" element={<Reconciliation />} />
               <Route path="/journal" element={<JournalEntries />} />

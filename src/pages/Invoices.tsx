@@ -1,67 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useOrganization } from "@/hooks/useOrganization";
-import { useEffect, useState } from "react";
-import { getInvoices } from "@/lib/supabase-queries";
-import type { Invoice } from "@/types/accounting";
+import { Upload, FileText, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
+import { useGenerateEntryFromInvoiceReceived } from "@/hooks/useInvoiceToEntry";
+import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { toast } from "sonner";
 
 const Invoices = () => {
-  const { currentMembership, loading } = useOrganization();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const navigate = useNavigate();
+  const { data: invoices, isLoading } = useInvoicesReceived();
+  const generateEntry = useGenerateEntryFromInvoiceReceived();
 
-  useEffect(() => {
-    if (!currentMembership) return;
-
-    const fetchInvoices = async () => {
-      try {
-        const { data, error } = await getInvoices(
-          currentMembership.organization_id,
-          currentMembership.restaurant_id || undefined
-        );
-
-        if (error) throw error;
-
-        setInvoices(data || []);
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-      } finally {
-        setLoadingInvoices(false);
-      }
-    };
-
-    fetchInvoices();
-  }, [currentMembership]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <Badge className="bg-success-light text-success hover:bg-success-light">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
-            Aprobada
-          </Badge>
-        );
-      case "review":
-        return (
-          <Badge className="bg-warning-light text-warning hover:bg-warning-light">
-            <AlertCircle className="mr-1 h-3 w-3" />
-            En Revisión
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary">
-            <FileText className="mr-1 h-3 w-3" />
-            Pendiente
-          </Badge>
-        );
+  const handleGenerateEntry = async (invoiceId: string) => {
+    try {
+      await generateEntry.mutateAsync(invoiceId);
+    } catch (error) {
+      console.error("Error generating entry:", error);
     }
   };
 
-  if (loading || loadingInvoices) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -84,9 +43,9 @@ const Invoices = () => {
               Gestión de facturas y OCR
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => navigate('/facturas/nueva')}>
             <Upload className="h-4 w-4" />
-            Subir Factura
+            Nueva Factura Recibida
           </Button>
         </div>
 
@@ -95,16 +54,16 @@ const Invoices = () => {
             <CardTitle>Facturas</CardTitle>
           </CardHeader>
           <CardContent>
-            {invoices.length === 0 ? (
+            {!invoices || invoices.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold">No hay facturas</h3>
                 <p className="text-muted-foreground mt-2">
-                  Comienza subiendo tu primera factura
+                  Comienza creando tu primera factura recibida
                 </p>
-                <Button className="mt-4 gap-2">
+                <Button className="mt-4 gap-2" onClick={() => navigate('/facturas/nueva')}>
                   <Upload className="h-4 w-4" />
-                  Subir Primera Factura
+                  Nueva Factura
                 </Button>
               </div>
             ) : (
@@ -116,14 +75,17 @@ const Invoices = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
+                        <Receipt className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <p className="font-medium text-foreground">
                           {invoice.invoice_number}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(invoice.issue_date).toLocaleDateString('es-ES')}
+                          {invoice.supplier?.name || 'Sin proveedor'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(invoice.invoice_date).toLocaleDateString('es-ES')}
                         </p>
                       </div>
                     </div>
@@ -134,8 +96,22 @@ const Invoices = () => {
                         </p>
                         <p className="text-sm text-muted-foreground">Total</p>
                       </div>
-                      {getStatusBadge(invoice.status)}
-                      <Button variant="ghost" size="sm">
+                      <InvoiceStatusBadge status={invoice.status} type="received" />
+                      {!invoice.entry_id && invoice.status === 'approved' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleGenerateEntry(invoice.id)}
+                          disabled={generateEntry.isPending}
+                        >
+                          {generateEntry.isPending ? 'Generando...' : 'Generar Asiento'}
+                        </Button>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => navigate(`/facturas/${invoice.id}`)}
+                      >
                         Ver Detalles
                       </Button>
                     </div>

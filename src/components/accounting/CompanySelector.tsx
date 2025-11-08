@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCompanies } from "@/hooks/useCompanies";
 import { Building2, Store } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
@@ -14,7 +15,10 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
 
   if (isLoading) {
     return (
-      <div className="w-[320px] h-10 bg-muted animate-pulse rounded-md" />
+      <div className="w-[320px] h-10 border border-input rounded-md flex items-center gap-2 px-3 bg-background">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-4 flex-1" />
+      </div>
     );
   }
 

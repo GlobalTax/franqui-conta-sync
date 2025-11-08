@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { TrendingUp } from "lucide-react";
 
 interface SalesByChannelChartProps {
@@ -48,7 +48,7 @@ export function SalesByChannelChart({ data }: SalesByChannelChartProps) {
               tickLine={false}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
             />
-            <Tooltip 
+            <RechartsTooltip 
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   return (

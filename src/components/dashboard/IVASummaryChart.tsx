@@ -1,5 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { Receipt } from "lucide-react";
 
 interface IVASummaryChartProps {
@@ -51,7 +51,7 @@ export function IVASummaryChart({ ivaSummary }: IVASummaryChartProps) {
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            <Tooltip 
+            <RechartsTooltip 
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   return (

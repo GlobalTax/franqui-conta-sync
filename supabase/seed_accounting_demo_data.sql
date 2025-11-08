@@ -15,7 +15,7 @@
 DO $$
 DECLARE
   v_user_id UUID := '00000000-0000-0000-0000-000000000000'; -- ⚠️ REEMPLAZAR CON USER_ID REAL
-  v_centro_code TEXT := '689'; -- Abadiño
+  v_centro_code TEXT := '533'; -- Lorca
   v_fiscal_year_id UUID;
   v_entry_id UUID;
 BEGIN
@@ -237,7 +237,7 @@ SELECT
   '✓ Total de asientos creados' as verificacion,
   COUNT(*) as cantidad
 FROM accounting_entries 
-WHERE centro_code = '689';
+WHERE centro_code = '533';
 
 -- Verificar balance de transacciones
 SELECT 
@@ -247,14 +247,14 @@ SELECT
   SUM(CASE WHEN movement_type = 'debit' THEN amount ELSE -amount END) as diferencia
 FROM accounting_transactions t
 JOIN accounting_entries e ON e.id = t.entry_id
-WHERE e.centro_code = '689';
+WHERE e.centro_code = '533';
 
 -- Verificar Balance Sheet
 SELECT 
   grupo,
   nombre_grupo,
   ROUND(balance::numeric, 2) as balance
-FROM calculate_balance_sheet('689', '2025-01-31')
+FROM calculate_balance_sheet('533', '2025-01-31')
 ORDER BY grupo;
 
 -- Resumen esperado:

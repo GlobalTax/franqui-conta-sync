@@ -1,103 +1,19 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Euro, FileText, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import { Euro, FileText, CreditCard, CheckCircle2, AlertCircle, User, Users, BarChart3 } from "lucide-react";
 import { useView } from "@/contexts/ViewContext";
-import { useDashboardKPIs } from "@/hooks/useDashboardKPIs";
-import { useEvolutionCharts } from "@/hooks/useEvolutionCharts";
+import { useDashboardOperativo } from "@/hooks/useDashboardOperativo";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { KPICard } from "@/components/dashboard/KPICard";
-import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
-import { ResultadoTab } from "@/components/dashboard/ResultadoTab";
-import { TesoreriaTab } from "@/components/dashboard/TesoreriaTab";
-import { CarteraTab } from "@/components/dashboard/CarteraTab";
-import { ImpuestosTab } from "@/components/dashboard/ImpuestosTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { GerenteView } from "@/components/dashboard/GerenteView";
+import { ContabilidadView } from "@/components/dashboard/ContabilidadView";
+import { ControllerView } from "@/components/dashboard/ControllerView";
 
 const Dashboard = () => {
   const { selectedView } = useView();
+  const [viewMode, setViewMode] = useState<"gerente" | "contabilidad" | "controller">("gerente");
   
-  const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs(selectedView);
-  const { data: charts, isLoading: chartsLoading } = useEvolutionCharts("", 6);
-
-  // Fetch recent invoices (adapt to selected view)
-  const { data: recentInvoices } = useQuery({
-    queryKey: ["recent-invoices", selectedView],
-    queryFn: async () => {
-      if (!selectedView) return [];
-      
-      let centroCodes: string[] = [];
-      
-      if (selectedView.type === 'company') {
-        const { data: centres } = await supabase
-          .from("centres")
-          .select("codigo")
-          .eq("company_id", selectedView.id)
-          .eq("activo", true);
-        
-        centroCodes = centres?.map(c => c.codigo) || [];
-      } else {
-        const { data: centre } = await supabase
-          .from("centres")
-          .select("codigo")
-          .eq("id", selectedView.id)
-          .single();
-        
-        if (centre) centroCodes = [centre.codigo];
-      }
-      
-      if (centroCodes.length === 0) return [];
-      
-      const { data } = await supabase
-        .from("invoices_received")
-        .select("*")
-        .in("centro_code", centroCodes)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      
-      return data || [];
-    },
-    enabled: !!selectedView,
-  });
-
-  // Fetch recent accounting entries
-  const { data: recentEntries } = useQuery({
-    queryKey: ["recent-entries", selectedView],
-    queryFn: async () => {
-      if (!selectedView) return [];
-      
-      let centroCodes: string[] = [];
-      
-      if (selectedView.type === 'company') {
-        const { data: centres } = await supabase
-          .from("centres")
-          .select("codigo")
-          .eq("company_id", selectedView.id)
-          .eq("activo", true);
-        
-        centroCodes = centres?.map(c => c.codigo) || [];
-      } else {
-        const { data: centre } = await supabase
-          .from("centres")
-          .select("codigo")
-          .eq("id", selectedView.id)
-          .single();
-        
-        if (centre) centroCodes = [centre.codigo];
-      }
-      
-      if (centroCodes.length === 0) return [];
-      
-      const { data } = await supabase
-        .from("accounting_entries")
-        .select("*")
-        .in("centro_code", centroCodes)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      
-      return data || [];
-    },
-    enabled: !!selectedView,
-  });
+  const { data: kpis, isLoading: kpisLoading } = useDashboardOperativo(selectedView);
 
   if (!selectedView) {
     return (
@@ -116,39 +32,68 @@ const Dashboard = () => {
     );
   }
 
-  if (kpisLoading || chartsLoading) {
+  if (kpisLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando...</p>
+          <p className="mt-4 text-muted-foreground">Cargando dashboard operativo...</p>
         </div>
       </div>
     );
   }
 
+  if (!kpis) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <DashboardTabs>
-        {{
-          resultado: (
-            <ResultadoTab 
-              kpis={kpis}
-              charts={charts}
-              recentInvoices={recentInvoices || []}
-            />
-          ),
-          tesoreria: (
-            <TesoreriaTab kpis={kpis} />
-          ),
-          cartera: (
-            <CarteraTab kpis={kpis} />
-          ),
-          impuestos: (
-            <ImpuestosTab kpis={kpis} />
-          ),
-        }}
-      </DashboardTabs>
+      <div className="border-b bg-background sticky top-0 z-10">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard Operativo</h1>
+              <p className="text-sm text-muted-foreground">
+                Vista en tiempo real • {selectedView.type === 'company' ? 'Consolidado' : selectedView.name}
+              </p>
+            </div>
+          </div>
+          
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="gerente" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Gerente
+              </TabsTrigger>
+              <TabsTrigger value="contabilidad" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Contabilidad
+              </TabsTrigger>
+              <TabsTrigger value="controller" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Controller
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <Tabs value={viewMode}>
+          <TabsContent value="gerente" className="mt-0">
+            <GerenteView kpis={kpis} />
+          </TabsContent>
+          
+          <TabsContent value="contabilidad" className="mt-0">
+            <ContabilidadView kpis={kpis} />
+          </TabsContent>
+          
+          <TabsContent value="controller" className="mt-0">
+            <ControllerView kpis={kpis} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

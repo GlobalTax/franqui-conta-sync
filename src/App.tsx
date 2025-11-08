@@ -30,6 +30,7 @@ import Suppliers from "@/pages/Suppliers";
 import BalanceSheet from "@/pages/reports/BalanceSheet";
 import GeneralLedger from "@/pages/reports/GeneralLedger";
 import JournalBook from "@/pages/reports/JournalBook";
+import TrialBalance from "@/pages/reports/TrialBalance";
 import Notifications from "@/pages/Notifications";
 import { AdminRoute } from "@/components/AdminRoute";
 
@@ -100,6 +101,7 @@ const App = () => {
               <Route path="/reportes/balance" element={<BalanceSheet />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />
               <Route path="/reportes/diario" element={<JournalBook />} />
+              <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />

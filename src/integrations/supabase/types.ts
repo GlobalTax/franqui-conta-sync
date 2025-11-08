@@ -52,6 +52,42 @@ export type Database = {
           },
         ]
       }
+      account_templates: {
+        Row: {
+          account_type: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          level: number
+          name: string
+          parent_code: string | null
+          pgc_version: string
+        }
+        Insert: {
+          account_type: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: number
+          name: string
+          parent_code?: string | null
+          pgc_version?: string
+        }
+        Update: {
+          account_type?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: number
+          name?: string
+          parent_code?: string | null
+          pgc_version?: string
+        }
+        Relationships: []
+      }
       accounting_entries: {
         Row: {
           centro_code: string
@@ -62,6 +98,9 @@ export type Database = {
           entry_number: number
           fiscal_year_id: string | null
           id: string
+          posted_at: string | null
+          posted_by: string | null
+          serie: string | null
           status: Database["public"]["Enums"]["accounting_entry_status"]
           total_credit: number
           total_debit: number
@@ -76,6 +115,9 @@ export type Database = {
           entry_number: number
           fiscal_year_id?: string | null
           id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          serie?: string | null
           status?: Database["public"]["Enums"]["accounting_entry_status"]
           total_credit?: number
           total_debit?: number
@@ -90,6 +132,9 @@ export type Database = {
           entry_number?: number
           fiscal_year_id?: string | null
           id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          serie?: string | null
           status?: Database["public"]["Enums"]["accounting_entry_status"]
           total_credit?: number
           total_debit?: number
@@ -1720,6 +1765,50 @@ export type Database = {
           },
         ]
       }
+      series_contables: {
+        Row: {
+          centro_code: string
+          company_id: string | null
+          created_at: string
+          descripcion: string | null
+          ejercicio: number
+          id: string
+          next_number: number
+          serie: string
+          updated_at: string
+        }
+        Insert: {
+          centro_code: string
+          company_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          ejercicio: number
+          id?: string
+          next_number?: number
+          serie?: string
+          updated_at?: string
+        }
+        Update: {
+          centro_code?: string
+          company_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          ejercicio?: number
+          id?: string
+          next_number?: number
+          serie?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "series_contables_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicios_orquest: {
         Row: {
           created_at: string | null
@@ -2118,6 +2207,24 @@ export type Database = {
           credit_total: number
           debit_total: number
           level: number
+        }[]
+      }
+      calculate_trial_balance: {
+        Args: {
+          p_centro_code: string
+          p_company_id?: string
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          account_type: string
+          balance: number
+          credit_total: number
+          debit_total: number
+          level: number
+          parent_code: string
         }[]
       }
       detect_dq_issues: {

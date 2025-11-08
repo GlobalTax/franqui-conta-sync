@@ -83,6 +83,7 @@ const Layout = () => {
   ];
 
   const reportItems = [
+    { icon: FileSpreadsheet, label: "Sumas y Saldos", path: "/reportes/sumas-y-saldos" },
     { icon: BarChart3, label: "Balance de Situación", path: "/reportes/balance" },
     { icon: BookOpen, label: "Libro Mayor", path: "/reportes/mayor" },
     { icon: FileSpreadsheet, label: "Libro Diario", path: "/reportes/diario" },

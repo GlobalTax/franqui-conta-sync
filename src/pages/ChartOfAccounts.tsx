@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search, Filter, FileSpreadsheet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,9 +35,13 @@ import {
 import { AccountTreeTable } from "@/components/accounts/AccountTreeTable";
 import { AccountFormDialog } from "@/components/accounts/AccountFormDialog";
 import { toast } from "sonner";
+import { useLoadPGCTemplate } from "@/hooks/useAccountTemplates";
+import { useView } from "@/contexts/ViewContext";
 
 const ChartOfAccounts = () => {
   const { currentMembership } = useOrganization();
+  const { selectedView } = useView();
+  const loadPGCTemplate = useLoadPGCTemplate();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountTree, setAccountTree] = useState<AccountNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,12 +223,39 @@ const ChartOfAccounts = () => {
               Gestión del Plan General Contable
             </p>
           </div>
-          {canEdit && (
-            <Button className="gap-2" onClick={handleCreate}>
-              <Plus className="h-4 w-4" />
-              Nueva Cuenta
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {canEdit && accounts.length === 0 && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  if (!selectedView) {
+                    toast.error("Seleccione una vista primero");
+                    return;
+                  }
+                  const centroCode = selectedView.type === 'centre' ? selectedView.id : undefined;
+                  const companyId = selectedView.type === 'company' ? selectedView.id : undefined;
+                  
+                  if (!centroCode) {
+                    toast.error("Debe seleccionar un centro para cargar la plantilla");
+                    return;
+                  }
+                  
+                  loadPGCTemplate.mutate({ centroCode, companyId });
+                }}
+                disabled={loadPGCTemplate.isPending}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                {loadPGCTemplate.isPending ? "Cargando..." : "Cargar Plantilla PGC"}
+              </Button>
+            )}
+            {canEdit && (
+              <Button className="gap-2" onClick={handleCreate}>
+                <Plus className="h-4 w-4" />
+                Nueva Cuenta
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (

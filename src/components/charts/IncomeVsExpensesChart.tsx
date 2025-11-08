@@ -12,20 +12,28 @@ interface IncomeVsExpensesChartProps {
 export const IncomeVsExpensesChart = ({ data }: IncomeVsExpensesChartProps) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evolución Ingresos vs Gastos</CardTitle>
+      <CardHeader className="pb-8">
+        <CardTitle className="text-xl font-semibold tracking-tight">Evolución Ingresos vs Gastos</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-8 pb-8">
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis dataKey="month" className="text-xs" />
-            <YAxis className="text-xs" />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+            <XAxis 
+              dataKey="month" 
+              className="text-xs" 
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <YAxis 
+              className="text-xs" 
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)",
+                backgroundColor: "hsl(var(--card))",
+                border: "none",
+                borderRadius: "0.75rem",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
               }}
             />
             <Legend />
@@ -34,14 +42,16 @@ export const IncomeVsExpensesChart = ({ data }: IncomeVsExpensesChartProps) => {
               dataKey="income"
               name="Ingresos"
               stroke="hsl(var(--chart-1))"
-              strokeWidth={2}
+              strokeWidth={3}
+              dot={{ r: 4 }}
             />
             <Line
               type="monotone"
               dataKey="expenses"
               name="Gastos"
               stroke="hsl(var(--chart-2))"
-              strokeWidth={2}
+              strokeWidth={3}
+              dot={{ r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>

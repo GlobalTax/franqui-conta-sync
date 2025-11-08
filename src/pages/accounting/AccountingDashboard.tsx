@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
 import { KPICard } from "@/components/accounting/KPICard";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import {
   TrendingUp,
   TrendingDown,
@@ -116,10 +117,11 @@ export default function AccountingDashboard() {
         {/* Balance General */}
         <div className="space-y-8">
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-4 tracking-tight">
-              Balance General
-            </h2>
-            <div className="grid gap-4 md:grid-cols-3">
+            <SectionHeader 
+              title="Balance General"
+              subtitle="Estado patrimonial de la empresa"
+            />
+            <div className="grid gap-6 md:grid-cols-3">
           {isLoadingKPIs ? (
             <>
               <Skeleton className="h-32" />
@@ -156,9 +158,10 @@ export default function AccountingDashboard() {
 
           {/* Resultado */}
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-4 tracking-tight">
-              Resultado del Ejercicio
-            </h2>
+            <SectionHeader 
+              title="Resultado del Ejercicio"
+              subtitle="Beneficio o pérdida neta del periodo"
+            />
             {isLoadingKPIs ? (
               <Skeleton className="h-32" />
             ) : (
@@ -184,10 +187,11 @@ export default function AccountingDashboard() {
 
           {/* Ratios Financieros */}
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-4 tracking-tight">
-              Ratios Financieros
-            </h2>
-            <div className="grid gap-4 md:grid-cols-3">
+            <SectionHeader 
+              title="Ratios Financieros"
+              subtitle="Indicadores clave de salud financiera"
+            />
+            <div className="grid gap-6 md:grid-cols-3">
           {isLoadingKPIs ? (
             <>
               <Skeleton className="h-32" />

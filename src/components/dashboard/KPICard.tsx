@@ -43,42 +43,47 @@ export const KPICard = ({
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="p-8">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                {title}
-              </p>
+            <div className="flex items-center gap-3 mb-6">
+              {Icon && (
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" strokeWidth={2} />
+                </div>
+              )}
             </div>
             
             {subtitle && (
-              <p className="text-xs text-primary mb-2">{subtitle}</p>
+              <p className="text-xs text-accent font-semibold uppercase tracking-wider mb-3">{subtitle}</p>
             )}
             
-            <h3 className="text-3xl font-bold mb-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              {title}
+            </p>
+            
+            <h3 className="text-4xl font-bold mb-4 tracking-tight">
               {formatValue(value)}
             </h3>
             
             {trend !== null && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm pt-2">
                 {isPositive ? (
                   <>
                     <TrendingUp className="h-4 w-4 text-success" />
-                    <span className="text-success font-medium">
+                    <span className="text-success font-semibold">
                       +{trend.toFixed(1)}%
                     </span>
                   </>
                 ) : (
                   <>
                     <TrendingDown className="h-4 w-4 text-destructive" />
-                    <span className="text-destructive font-medium">
+                    <span className="text-destructive font-semibold">
                       {trend.toFixed(1)}%
                     </span>
                   </>
                 )}
-                <span className="text-muted-foreground">vs año anterior</span>
+                <span className="text-muted-foreground font-medium">vs año anterior</span>
               </div>
             )}
           </div>
@@ -87,7 +92,7 @@ export const KPICard = ({
             <Button
               variant="ghost"
               size="sm"
-              className="text-primary hover:text-primary-700 font-medium"
+              className="text-primary hover:text-primary-700 font-semibold"
               onClick={onAction}
             >
               {actionLabel}

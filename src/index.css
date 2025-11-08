@@ -10,123 +10,142 @@ All colors MUST be HSL.
   :root {
     /* Backgrounds - pure minimal */
     --background: 0 0% 100%;
-    --foreground: 240 10% 10%;
+    --foreground: 220 15% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card: 210 20% 98%;
+    --card-foreground: 220 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover-foreground: 220 15% 15%;
 
-    /* Primary - Soft Violet/Indigo */
-    --primary: 250 60% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-50: 250 60% 98%;
-    --primary-100: 250 60% 95%;
-    --primary-500: 250 60% 55%;
-    --primary-600: 250 60% 45%;
-    --primary-700: 250 60% 35%;
+    /* Primary - Deep Blue */
+    --primary: 217 91% 40%;
+    --primary-foreground: 210 20% 98%;
+    --primary-50: 217 91% 95%;
+    --primary-100: 217 91% 90%;
+    --primary-500: 217 91% 40%;
+    --primary-600: 217 91% 35%;
+    --primary-700: 217 91% 28%;
+    --primary-900: 217 91% 18%;
 
-    /* Accent - Mint Green */
-    --accent-mint: 160 50% 50%;
-    --accent-mint-light: 160 50% 97%;
-    --accent-gold: 45 100% 60%;
-    --accent-gold-light: 45 100% 95%;
+    /* Accent - Sky Blue */
+    --accent-gold: 41 90% 58%;
+    --accent-gold-light: 45 100% 70%;
 
     /* Secondary - ultra light gray */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 20%;
+    --secondary: 215 20% 92%;
+    --secondary-foreground: 217 20% 20%;
 
     /* Muted - subtle gray */
-    --muted: 240 5% 97%;
-    --muted-foreground: 240 5% 45%;
+    --muted: 215 20% 94%;
+    --muted-foreground: 217 15% 50%;
 
     /* Accent - for hover states */
-    --accent: 240 5% 98%;
-    --accent-foreground: 240 10% 15%;
+    --accent: 200 100% 60%;
+    --accent-foreground: 220 15% 15%;
 
     /* Success - fresh mint green */
-    --success: 160 50% 50%;
-    --success-foreground: 0 0% 100%;
-    --success-light: 160 50% 97%;
+    --success: 142 71% 45%;
+    --success-foreground: 144 61% 98%;
+    --success-light: 142 70% 94%;
 
     /* Warning - subtle yellow */
-    --warning: 45 100% 60%;
-    --warning-foreground: 240 10% 10%;
-    --warning-light: 45 100% 95%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+    --warning-light: 48 100% 96%;
 
     /* Destructive - soft red */
-    --destructive: 0 70% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
 
     /* Borders and inputs */
-    --border: 240 5% 90%;
-    --input: 240 5% 92%;
-    --ring: 250 60% 55%;
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 217 91% 40%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Sidebar - Minimal white */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 10% 10%;
-    --sidebar-primary: 250 60% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 60% 55%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 5% 92%;
-    --sidebar-ring: 250 60% 55%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 217 15% 30%;
+    --sidebar-primary: 217 91% 40%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 215 20% 94%;
+    --sidebar-accent-foreground: 217 91% 40%;
+    --sidebar-border: 215 20% 88%;
+    --sidebar-ring: 217 91% 40%;
+    --sidebar-light: 0 0% 100%;
+
+    /* Chart colors */
+    --chart-1: 217 91% 40%;
+    --chart-2: 200 100% 60%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
-    --background: 240 10% 5%;
-    --foreground: 0 0% 95%;
+    --background: 217 25% 10%;
+    --foreground: 210 20% 98%;
 
-    --card: 240 10% 8%;
-    --card-foreground: 0 0% 95%;
+    --card: 217 22% 12%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 240 10% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 217 25% 10%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 250 60% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 55%;
+    --primary-foreground: 210 20% 98%;
+    --primary-50: 217 91% 95%;
+    --primary-100: 217 91% 90%;
+    --primary-500: 217 91% 55%;
+    --primary-600: 217 91% 50%;
+    --primary-700: 217 91% 45%;
+    --primary-900: 217 91% 35%;
 
-    --accent-mint: 160 50% 55%;
-    --accent-mint-light: 160 50% 15%;
-    --accent-gold: 45 100% 65%;
-    --accent-gold-light: 45 100% 12%;
+    --accent-gold: 41 90% 58%;
+    --accent-gold-light: 45 100% 70%;
 
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 217 20% 18%;
+    --secondary-foreground: 210 20% 98%;
 
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 5% 60%;
+    --muted: 217 20% 16%;
+    --muted-foreground: 215 15% 60%;
 
-    --accent: 240 5% 18%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 200 100% 55%;
+    --accent-foreground: 210 20% 98%;
 
-    --success: 160 50% 55%;
-    --success-foreground: 0 0% 100%;
-    --success-light: 160 50% 15%;
+    --success: 142 71% 45%;
+    --success-foreground: 144 61% 20%;
+    --success-light: 142 70% 15%;
 
-    --warning: 45 100% 65%;
-    --warning-foreground: 240 10% 10%;
-    --warning-light: 45 100% 12%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 20%;
+    --warning-light: 48 100% 15%;
 
-    --destructive: 0 70% 65%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 240 5% 20%;
-    --input: 240 5% 18%;
-    --ring: 250 60% 60%;
+    --border: 217 20% 20%;
+    --input: 217 20% 20%;
+    --ring: 217 91% 55%;
 
-    --sidebar-background: 240 10% 8%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 250 60% 60%;
+    --sidebar-background: 217 25% 10%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 217 91% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 60% 60%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 5% 20%;
-    --sidebar-ring: 250 60% 60%;
+    --sidebar-accent: 217 20% 16%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 217 20% 20%;
+    --sidebar-ring: 217 91% 55%;
+    --sidebar-light: 217 20% 18%;
+
+    /* Chart colors */
+    --chart-1: 217 91% 55%;
+    --chart-2: 200 100% 55%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
   }
 }
 

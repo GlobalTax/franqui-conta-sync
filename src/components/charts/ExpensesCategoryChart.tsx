@@ -24,10 +24,10 @@ export const ExpensesCategoryChart = ({ data }: ExpensesCategoryChartProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Distribución de Gastos por Categoría</CardTitle>
+      <CardHeader className="pb-8">
+        <CardTitle className="text-xl font-semibold tracking-tight">Distribución de Gastos por Categoría</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-8 pb-8">
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -36,7 +36,7 @@ export const ExpensesCategoryChart = ({ data }: ExpensesCategoryChartProps) => {
               cy="50%"
               labelLine={false}
               label={(entry) => `${entry.name}: ${entry.value.toFixed(0)}€`}
-              outerRadius={80}
+              outerRadius={90}
               fill="#8884d8"
               dataKey="value"
             >
@@ -46,9 +46,10 @@ export const ExpensesCategoryChart = ({ data }: ExpensesCategoryChartProps) => {
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)",
+                backgroundColor: "hsl(var(--card))",
+                border: "none",
+                borderRadius: "0.75rem",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
               }}
             />
             <Legend />

@@ -127,8 +127,8 @@ const Suppliers = () => {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -140,8 +140,8 @@ const Suppliers = () => {
                 />
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-4">
             {!suppliers || suppliers.length === 0 ? (
               <div className="text-center py-12">
                 <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50" />
@@ -229,8 +229,8 @@ const Suppliers = () => {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

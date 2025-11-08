@@ -102,68 +102,50 @@ export const ControllerView = ({ kpis }: ControllerViewProps) => {
 
       {/* Métricas Operativas Consolidadas */}
       <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">LABOR %</CardTitle>
-            <p className="text-sm text-muted-foreground">% sobre ventas consolidado</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className={`text-3xl font-bold ${kpis.laborPercentage > 30 ? 'text-destructive' : 'text-green-600'}`}>
-                {kpis.laborPercentage.toFixed(1)}%
-              </p>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className={`h-full rounded-full ${kpis.laborPercentage > 30 ? 'bg-destructive' : 'bg-green-600'}`}
-                  style={{ width: `${Math.min(kpis.laborPercentage / 35 * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Target: &lt; 30%</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-6 bg-card rounded-2xl">
+          <p className="text-sm text-muted-foreground mb-2">LABOR %</p>
+          <p className="text-sm text-muted-foreground mb-3">% sobre ventas consolidado</p>
+          <p className={`text-3xl font-bold mb-2 ${kpis.laborPercentage > 30 ? 'text-destructive' : 'text-green-600'}`}>
+            {kpis.laborPercentage.toFixed(1)}%
+          </p>
+          <div className="w-full bg-muted rounded-full h-2 mb-2">
+            <div 
+              className={`h-full rounded-full ${kpis.laborPercentage > 30 ? 'bg-destructive' : 'bg-green-600'}`}
+              style={{ width: `${Math.min(kpis.laborPercentage / 35 * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Target: &lt; 30%</p>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">FOOD COST %</CardTitle>
-            <p className="text-sm text-muted-foreground">% sobre ventas consolidado</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className={`text-3xl font-bold ${kpis.foodCostPercentage > 32 ? 'text-yellow-600' : 'text-green-600'}`}>
-                {kpis.foodCostPercentage.toFixed(1)}%
-              </p>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className={`h-full rounded-full ${kpis.foodCostPercentage > 32 ? 'bg-yellow-600' : 'bg-green-600'}`}
-                  style={{ width: `${Math.min(kpis.foodCostPercentage / 35 * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Target: &lt; 32%</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-6 bg-card rounded-2xl">
+          <p className="text-sm text-muted-foreground mb-2">FOOD COST %</p>
+          <p className="text-sm text-muted-foreground mb-3">% sobre ventas consolidado</p>
+          <p className={`text-3xl font-bold mb-2 ${kpis.foodCostPercentage > 32 ? 'text-yellow-600' : 'text-green-600'}`}>
+            {kpis.foodCostPercentage.toFixed(1)}%
+          </p>
+          <div className="w-full bg-muted rounded-full h-2 mb-2">
+            <div 
+              className={`h-full rounded-full ${kpis.foodCostPercentage > 32 ? 'bg-yellow-600' : 'bg-green-600'}`}
+              style={{ width: `${Math.min(kpis.foodCostPercentage / 35 * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Target: &lt; 32%</p>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">OTROS GASTOS</CardTitle>
-            <p className="text-sm text-muted-foreground">Resto de operaciones</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-3xl font-bold">
-                {((100 - kpis.laborPercentage - kpis.foodCostPercentage - ebitdaMargin)).toFixed(1)}%
-              </p>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className="h-full rounded-full bg-blue-600"
-                  style={{ width: `${(100 - kpis.laborPercentage - kpis.foodCostPercentage - ebitdaMargin)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Alquileres, utilities, etc.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-6 bg-card rounded-2xl">
+          <p className="text-sm text-muted-foreground mb-2">OTROS GASTOS</p>
+          <p className="text-sm text-muted-foreground mb-3">Resto de operaciones</p>
+          <p className="text-3xl font-bold mb-2">
+            {((100 - kpis.laborPercentage - kpis.foodCostPercentage - ebitdaMargin)).toFixed(1)}%
+          </p>
+          <div className="w-full bg-muted rounded-full h-2 mb-2">
+            <div 
+              className="h-full rounded-full bg-blue-600"
+              style={{ width: `${(100 - kpis.laborPercentage - kpis.foodCostPercentage - ebitdaMargin)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Alquileres, utilities, etc.</p>
+        </div>
       </div>
 
       {/* Alertas Estratégicas */}
@@ -171,12 +153,12 @@ export const ControllerView = ({ kpis }: ControllerViewProps) => {
 
       {/* Ranking de Centros */}
       {kpis.ranking && kpis.ranking.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">RANKING INTERCENTROS</CardTitle>
+        <div className="rounded-lg border-l-4 border-l-accent bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-lg font-semibold">RANKING INTERCENTROS</h3>
             <p className="text-sm text-muted-foreground">Ordenados por ventas</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -228,17 +210,17 @@ export const ControllerView = ({ kpis }: ControllerViewProps) => {
                 })}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Comparativa Temporal */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">EVOLUCIÓN VS AÑO ANTERIOR</CardTitle>
+      <div className="rounded-lg border-l-4 border-l-success bg-muted/30 transition-all duration-200">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold">EVOLUCIÓN VS AÑO ANTERIOR</h3>
           <p className="text-sm text-muted-foreground">Crecimiento interanual</p>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6">
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Ventas</p>
@@ -257,8 +239,8 @@ export const ControllerView = ({ kpis }: ControllerViewProps) => {
               <p className="text-2xl font-bold text-green-600">+1.5pp</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

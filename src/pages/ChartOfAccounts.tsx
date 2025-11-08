@@ -274,82 +274,52 @@ const ChartOfAccounts = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-5">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Activo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totals.activo)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total activos
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Activo</p>
+              <div className="text-3xl font-bold mb-1">
+                {formatCurrency(totals.activo)}€
+              </div>
+              <p className="text-xs text-muted-foreground">Total activos</p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Pasivo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totals.pasivo)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total pasivos
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Pasivo</p>
+              <div className="text-3xl font-bold mb-1">
+                {formatCurrency(totals.pasivo)}€
+              </div>
+              <p className="text-xs text-muted-foreground">Total pasivos</p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Patrimonio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totals.patrimonio)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Capital y reservas
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Patrimonio</p>
+              <div className="text-3xl font-bold mb-1">
+                {formatCurrency(totals.patrimonio)}€
+              </div>
+              <p className="text-xs text-muted-foreground">Capital y reservas</p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-success">
-                  {formatCurrency(totals.ingresos)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Este periodo
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Ingresos</p>
+              <div className="text-3xl font-bold text-success mb-1">
+                {formatCurrency(totals.ingresos)}€
+              </div>
+              <p className="text-xs text-muted-foreground">Este periodo</p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Gastos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">
-                  {formatCurrency(totals.gastos)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Este periodo
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Gastos</p>
+              <div className="text-3xl font-bold text-destructive mb-1">
+                {formatCurrency(totals.gastos)}€
+              </div>
+              <p className="text-xs text-muted-foreground">Este periodo</p>
+            </div>
           </div>
         )}
 
-        <Card>
-          <CardHeader>
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <CardTitle>Cuentas Contables</CardTitle>
+              <h2 className="text-lg font-semibold">Cuentas Contables</h2>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -393,8 +363,8 @@ const ChartOfAccounts = () => {
                 </div>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-4">
             {loading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
@@ -411,8 +381,8 @@ const ChartOfAccounts = () => {
                 canEdit={canEdit}
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <AccountFormDialog

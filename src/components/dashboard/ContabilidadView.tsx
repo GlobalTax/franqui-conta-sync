@@ -104,12 +104,12 @@ export const ContabilidadView = ({ kpis }: ContabilidadViewProps) => {
 
       {/* Estado de Workflow */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">FLUJO DE APROBACIÓN</CardTitle>
+        <div className="rounded-lg border-l-4 border-l-warning bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-lg font-semibold">FLUJO DE APROBACIÓN</h3>
             <p className="text-sm text-muted-foreground">Estado actual de facturas</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -163,19 +163,19 @@ export const ContabilidadView = ({ kpis }: ContabilidadViewProps) => {
             >
               Gestionar Facturas
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <AlertsFeed alerts={alerts} />
       </div>
 
       {/* Cierres Diarios por Periodo */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">ESTADO CIERRES CONTABLES</CardTitle>
+      <div className="rounded-lg border-l-4 border-l-accent bg-muted/30 transition-all duration-200">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold">ESTADO CIERRES CONTABLES</h3>
           <p className="text-sm text-muted-foreground">Pipeline de cierre mes actual</p>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -240,17 +240,17 @@ export const ContabilidadView = ({ kpis }: ContabilidadViewProps) => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Conciliación Bancaria */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">CONCILIACIÓN BANCARIA</CardTitle>
+        <div className="rounded-lg border-l-4 border-l-success bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-lg font-semibold">CONCILIACIÓN BANCARIA</h3>
             <p className="text-sm text-muted-foreground">Estado actual</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -288,15 +288,15 @@ export const ContabilidadView = ({ kpis }: ContabilidadViewProps) => {
             >
               Conciliar Movimientos
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">SALDO BANCARIO TOTAL</CardTitle>
+        <div className="rounded-lg border-l-4 border-l-primary bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-lg font-semibold">SALDO BANCARIO TOTAL</h3>
             <p className="text-sm text-muted-foreground">Posición consolidada</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <div className="space-y-4">
               <div className="text-center py-4">
                 <p className="text-4xl font-bold">
@@ -313,8 +313,8 @@ export const ContabilidadView = ({ kpis }: ContabilidadViewProps) => {
             >
               Ver Detalle Bancario
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

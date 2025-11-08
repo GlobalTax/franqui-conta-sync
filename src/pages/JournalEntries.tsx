@@ -70,62 +70,36 @@ const JournalEntries = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Asientos del Mes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Enero 2024
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6 bg-card rounded-2xl">
+            <p className="text-sm text-muted-foreground mb-2">Asientos del Mes</p>
+            <div className="text-3xl font-bold mb-1">156</div>
+            <p className="text-xs text-muted-foreground">Enero 2024</p>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Contabilizados</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">142</div>
-              <p className="text-xs text-muted-foreground mt-1">91% del total</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 bg-card rounded-2xl">
+            <p className="text-sm text-muted-foreground mb-2">Contabilizados</p>
+            <div className="text-3xl font-bold text-success mb-1">142</div>
+            <p className="text-xs text-muted-foreground">91% del total</p>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Borradores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-warning">14</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Pendientes de contabilizar
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6 bg-card rounded-2xl">
+            <p className="text-sm text-muted-foreground mb-2">Borradores</p>
+            <div className="text-3xl font-bold text-warning mb-1">14</div>
+            <p className="text-xs text-muted-foreground">Pendientes de contabilizar</p>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Total Movimientos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">234,567€</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Suma debe/haber
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6 bg-card rounded-2xl">
+            <p className="text-sm text-muted-foreground mb-2">Total Movimientos</p>
+            <div className="text-3xl font-bold mb-1">234,567€</div>
+            <p className="text-xs text-muted-foreground">Suma debe/haber</p>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Asientos Recientes</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="text-lg font-semibold">Asientos Recientes</h2>
+          </div>
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -178,13 +152,13 @@ const JournalEntries = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
+        <div className="rounded-lg border-l-4 border-l-primary bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between">
-              <CardTitle>Detalle: AS-2024-001</CardTitle>
+              <h3 className="text-lg font-semibold">Detalle: AS-2024-001</h3>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   Editar
@@ -192,8 +166,8 @@ const JournalEntries = () => {
                 <Button size="sm">Contabilizar</Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
@@ -253,8 +227,8 @@ const JournalEntries = () => {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

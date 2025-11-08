@@ -129,12 +129,12 @@ export const GerenteView = ({ kpis }: GerenteViewProps) => {
       <div className="grid gap-6 md:grid-cols-2">
         <AlertsFeed alerts={alerts} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">ESTADO CIERRES DIARIOS</CardTitle>
+        <div className="rounded-lg border-l-4 border-l-primary bg-muted/30 transition-all duration-200">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-lg font-semibold">ESTADO CIERRES DIARIOS</h3>
             <p className="text-sm text-muted-foreground">Mes actual</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -187,17 +187,17 @@ export const GerenteView = ({ kpis }: GerenteViewProps) => {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Métricas Labor Detalladas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">ANÁLISIS LABOR</CardTitle>
+      <div className="rounded-lg border-l-4 border-l-accent bg-muted/30 transition-all duration-200">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold">ANÁLISIS LABOR</h3>
           <p className="text-sm text-muted-foreground">Métricas del mes actual</p>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6">
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Coste Total Labor</p>
@@ -218,8 +218,8 @@ export const GerenteView = ({ kpis }: GerenteViewProps) => {
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

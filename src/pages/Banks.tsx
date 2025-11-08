@@ -123,47 +123,35 @@ const Banks = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Balance Total</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {currentAccount?.current_balance.toFixed(2) || "0.00"}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {currentAccount?.account_name || "Selecciona una cuenta"}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Balance Total</p>
+              <div className="text-3xl font-bold mb-1">
+                {currentAccount?.current_balance.toFixed(2) || "0.00"}€
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {currentAccount?.account_name || "Selecciona una cuenta"}
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  +{totalIncome.toFixed(2)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {transactions.filter((t) => t.amount > 0).length} transacciones
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Ingresos del Mes</p>
+              <div className="text-3xl font-bold text-green-600 mb-1">
+                +{totalIncome.toFixed(2)}€
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {transactions.filter((t) => t.amount > 0).length} transacciones
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Gastos del Mes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  -{totalExpenses.toFixed(2)}€
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {transactions.filter((t) => t.amount < 0).length} transacciones
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-2xl">
+              <p className="text-sm text-muted-foreground mb-2">Gastos del Mes</p>
+              <div className="text-3xl font-bold text-red-600 mb-1">
+                -{totalExpenses.toFixed(2)}€
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {transactions.filter((t) => t.amount < 0).length} transacciones
+              </p>
+            </div>
           </div>
         )}
 

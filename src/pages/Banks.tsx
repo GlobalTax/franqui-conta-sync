@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowDownToLine, ArrowUpFromLine, Sparkles, Settings } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Sparkles, Settings, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { KPICard } from "@/components/accounting/KPICard";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBankTransactions } from "@/hooks/useBankTransactions";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -123,43 +123,39 @@ const Banks = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-6 bg-card rounded-2xl">
-              <p className="text-sm text-muted-foreground mb-2">Balance Total</p>
-              <div className="text-3xl font-bold mb-1">
-                {currentAccount?.current_balance.toFixed(2) || "0.00"}€
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {currentAccount?.account_name || "Selecciona una cuenta"}
-              </p>
-            </div>
-
-            <div className="p-6 bg-card rounded-2xl">
-              <p className="text-sm text-muted-foreground mb-2">Ingresos del Mes</p>
-              <div className="text-3xl font-bold text-green-600 mb-1">
-                +{totalIncome.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {transactions.filter((t) => t.amount > 0).length} transacciones
-              </p>
-            </div>
-
-            <div className="p-6 bg-card rounded-2xl">
-              <p className="text-sm text-muted-foreground mb-2">Gastos del Mes</p>
-              <div className="text-3xl font-bold text-red-600 mb-1">
-                -{totalExpenses.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {transactions.filter((t) => t.amount < 0).length} transacciones
-              </p>
-            </div>
+            <KPICard
+              title="Balance Total"
+              value={currentAccount?.current_balance || 0}
+              subtitle={currentAccount?.account_name || "Selecciona una cuenta"}
+              format="currency"
+              icon={Wallet}
+            />
+            
+            <KPICard
+              title="Ingresos del Mes"
+              value={totalIncome}
+              subtitle={`${transactions.filter((t) => t.amount > 0).length} transacciones`}
+              format="currency"
+              icon={TrendingUp}
+              variant="success"
+            />
+            
+            <KPICard
+              title="Gastos del Mes"
+              value={totalExpenses}
+              subtitle={`${transactions.filter((t) => t.amount < 0).length} transacciones`}
+              format="currency"
+              icon={TrendingDown}
+              variant="error"
+            />
           </div>
         )}
 
-        <Card>
+        <div className="border border-border rounded-lg overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <CardHeader>
+            <div className="p-4 border-b border-border bg-muted/30">
               <div className="flex items-center justify-between">
-                <CardTitle>Transacciones Bancarias</CardTitle>
+                <h2 className="text-lg font-semibold">Transacciones Bancarias</h2>
                 <TabsList>
                   <TabsTrigger value="transactions">Movimientos</TabsTrigger>
                   <TabsTrigger value="reconciliation" disabled={!selectedAccount}>
@@ -170,8 +166,8 @@ const Banks = () => {
                   </TabsTrigger>
                 </TabsList>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="p-6">
               <TabsContent value="transactions" className="space-y-4">
                 {loadingTransactions ? (
                   <div className="space-y-3">
@@ -337,9 +333,9 @@ const Banks = () => {
                   </div>
                 )}
               </TabsContent>
-            </CardContent>
+            </div>
           </Tabs>
-        </Card>
+        </div>
       </div>
     </div>
   );

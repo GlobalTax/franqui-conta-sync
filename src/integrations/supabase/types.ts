@@ -875,6 +875,147 @@ export type Database = {
           },
         ]
       }
+      daily_closures: {
+        Row: {
+          accounting_entry_id: string | null
+          actual_cash: number | null
+          card_amount: number | null
+          cash_amount: number | null
+          cash_difference: number | null
+          centro_code: string
+          closure_date: string
+          created_at: string | null
+          delivery_amount: number | null
+          delivery_commission: number | null
+          expected_cash: number | null
+          id: string
+          marketing_fee: number | null
+          notes: string | null
+          pos_data: Json | null
+          posted_at: string | null
+          posted_by: string | null
+          royalty_amount: number | null
+          sales_delivery: number | null
+          sales_drive_thru: number | null
+          sales_in_store: number | null
+          sales_kiosk: number | null
+          status: string | null
+          tax_10_amount: number | null
+          tax_10_base: number | null
+          tax_21_amount: number | null
+          tax_21_base: number | null
+          total_sales: number | null
+          total_tax: number | null
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          actual_cash?: number | null
+          card_amount?: number | null
+          cash_amount?: number | null
+          cash_difference?: number | null
+          centro_code: string
+          closure_date: string
+          created_at?: string | null
+          delivery_amount?: number | null
+          delivery_commission?: number | null
+          expected_cash?: number | null
+          id?: string
+          marketing_fee?: number | null
+          notes?: string | null
+          pos_data?: Json | null
+          posted_at?: string | null
+          posted_by?: string | null
+          royalty_amount?: number | null
+          sales_delivery?: number | null
+          sales_drive_thru?: number | null
+          sales_in_store?: number | null
+          sales_kiosk?: number | null
+          status?: string | null
+          tax_10_amount?: number | null
+          tax_10_base?: number | null
+          tax_21_amount?: number | null
+          tax_21_base?: number | null
+          total_sales?: number | null
+          total_tax?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          actual_cash?: number | null
+          card_amount?: number | null
+          cash_amount?: number | null
+          cash_difference?: number | null
+          centro_code?: string
+          closure_date?: string
+          created_at?: string | null
+          delivery_amount?: number | null
+          delivery_commission?: number | null
+          expected_cash?: number | null
+          id?: string
+          marketing_fee?: number | null
+          notes?: string | null
+          pos_data?: Json | null
+          posted_at?: string | null
+          posted_by?: string | null
+          royalty_amount?: number | null
+          sales_delivery?: number | null
+          sales_drive_thru?: number | null
+          sales_in_store?: number | null
+          sales_kiosk?: number | null
+          status?: string | null
+          tax_10_amount?: number | null
+          tax_10_base?: number | null
+          tax_21_amount?: number | null
+          tax_21_base?: number | null
+          total_sales?: number | null
+          total_tax?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_closures_accounting_entry_id_fkey"
+            columns: ["accounting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_closures_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "daily_closures_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "daily_closures_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_closures_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dq_issues: {
         Row: {
           centro: string | null
@@ -2854,6 +2995,10 @@ export type Database = {
           entry_type: string
           movement_type: string
         }[]
+      }
+      generate_daily_closure_entry: {
+        Args: { closure_id: string }
+        Returns: string
       }
       generate_modelo_303: {
         Args: { p_centro_code: string; p_quarter: number; p_year: number }

@@ -30,7 +30,7 @@ export default function AccountingEntries() {
 
   const centroCode = selectedRestaurant || currentMembership?.restaurant?.codigo;
 
-  const { data: entries = [], isLoading } = useAccountingEntries(centroCode, {
+  const { data: entries = [], isLoading, refetch } = useAccountingEntries(centroCode, {
     startDate,
     endDate,
     status,
@@ -128,7 +128,7 @@ export default function AccountingEntries() {
           </div>
         </CardHeader>
         <CardContent>
-          <AccountingEntriesTable entries={entries} />
+          <AccountingEntriesTable entries={entries} onRefresh={() => refetch()} />
         </CardContent>
       </Card>
     </div>

@@ -2350,6 +2350,14 @@ export type Database = {
           parent_code: string
         }[]
       }
+      contabilizar_asiento: {
+        Args: { p_entry_id: string; p_user_id: string }
+        Returns: Json
+      }
+      descontabilizar_asiento: {
+        Args: { p_entry_id: string; p_motivo: string; p_user_id: string }
+        Returns: Json
+      }
       detect_dq_issues: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {

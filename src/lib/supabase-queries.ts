@@ -15,53 +15,75 @@ import type {
 
 // Memberships
 export async function getMemberships(userId: string) {
-  const { data, error } = await supabase
-    .from("memberships" as any)
-    .select("*")
-    .eq("user_id", userId)
-    .eq("active", true);
-  
-  return { data: (data as unknown) as Membership[] | null, error };
+  try {
+    const { data, error } = await supabase
+      .from("memberships" as any)
+      .select("*")
+      .eq("user_id", userId)
+      .eq("active", true);
+    
+    // Si la tabla no existe o hay error de esquema, devolver array vacío
+    if (error && (error.code === 'PGRST116' || error.message?.includes('does not exist'))) {
+      console.warn("Memberships table not found, returning empty array");
+      return { data: [] as Membership[], error: null };
+    }
+    
+    return { data: (data as unknown) as Membership[] | null, error };
+  } catch (err) {
+    console.error("Error in getMemberships:", err);
+    return { data: null, error: err };
+  }
 }
 
 export async function getMembershipWithRelations(userId: string) {
-  const { data, error } = await supabase
-    .from("memberships" as any)
-    .select("*")
-    .eq("user_id", userId)
-    .eq("active", true);
+  try {
+    const { data, error } = await supabase
+      .from("memberships" as any)
+      .select("*")
+      .eq("user_id", userId)
+      .eq("active", true);
 
-  if (error || !data) {
-    return { data: null, error };
+    // Si la tabla no existe, devolver array vacío
+    if (error && (error.code === 'PGRST116' || error.message?.includes('does not exist'))) {
+      console.warn("Memberships table not found, returning empty array");
+      return { data: [] as Membership[], error: null };
+    }
+
+    if (error || !data) {
+      return { data: null, error };
+    }
+
+    // Fetch related organizations and restaurants
+    const membershipsWithData = await Promise.all(
+      (data as any[]).map(async (membership) => {
+        const [orgResult, restaurantResult] = await Promise.all([
+          supabase
+            .from("franchisees" as any)
+            .select("*")
+            .eq("id", membership.organization_id)
+            .maybeSingle(),
+          membership.restaurant_id
+            ? supabase
+                .from("centres" as any)
+                .select("*")
+                .eq("id", membership.restaurant_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+        ]);
+
+        return {
+          ...membership,
+          organization: (orgResult.data as unknown) as Organization | null,
+          restaurant: (restaurantResult.data as unknown) as Restaurant | null,
+        } as Membership;
+      })
+    );
+
+    return { data: membershipsWithData, error: null };
+  } catch (err) {
+    console.error("Error in getMembershipWithRelations:", err);
+    return { data: null, error: err };
   }
-
-  // Fetch related organizations and restaurants
-  const membershipsWithData = await Promise.all(
-    (data as any[]).map(async (membership) => {
-      const [orgResult, restaurantResult] = await Promise.all([
-        supabase
-          .from("franchisees" as any)
-          .select("*")
-          .eq("id", membership.organization_id)
-          .maybeSingle(),
-        membership.restaurant_id
-          ? supabase
-              .from("centres" as any)
-              .select("*")
-              .eq("id", membership.restaurant_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-      ]);
-
-      return {
-        ...membership,
-        organization: (orgResult.data as unknown) as Organization | null,
-        restaurant: (restaurantResult.data as unknown) as Restaurant | null,
-      } as Membership;
-    })
-  );
-
-  return { data: membershipsWithData, error: null };
 }
 
 // Organizations
@@ -567,21 +589,86 @@ export async function deleteCentreCompany(companyId: string) {
  * Get all users with their roles
  */
 export async function getAllUsersWithRoles() {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(`
-      *,
-      user_roles (
-        id,
-        role,
-        centro,
-        franchisee_id,
-        centres!fk_user_roles_centro(codigo, nombre),
-        franchisees (id, name)
-      )
-    `)
-    .order("apellidos", { ascending: true });
-  return { data, error };
+  try {
+    // Intento con joins
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(`
+        *,
+        user_roles (
+          id,
+          role,
+          centro,
+          franchisee_id,
+          centres!fk_user_roles_centro(codigo, nombre),
+          franchisees (id, name)
+        )
+      `)
+      .order("apellidos", { ascending: true });
+    
+    // Si funciona, retornar
+    if (!error) {
+      return { data, error: null };
+    }
+
+    // Fallback: cargar en dos pasos si hay error de join (400, PGRST200, etc.)
+    if (error && (error.code === 'PGRST200' || error.code === 'PGRST116' || error.message?.includes('embedding'))) {
+      console.warn("Falling back to two-step query for getAllUsersWithRoles", error);
+      
+      // Paso 1: obtener profiles con user_roles (sin sub-joins)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          user_roles (
+            id,
+            role,
+            centro,
+            franchisee_id
+          )
+        `)
+        .order("apellidos", { ascending: true });
+      
+      if (profilesError) {
+        return { data: null, error: profilesError };
+      }
+
+      if (!profilesData || profilesData.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Paso 2: Cargar centres y franchisees por separado
+      const allRoles = (profilesData as any[]).flatMap(p => p.user_roles || []);
+      const centroIds = Array.from(new Set(allRoles.map((r: any) => r.centro).filter(Boolean)));
+      const franchiseeIds = Array.from(new Set(allRoles.map((r: any) => r.franchisee_id).filter(Boolean)));
+
+      const [centresRes, franchiseesRes] = await Promise.all([
+        centroIds.length ? supabase.from("centres" as any).select("id, codigo, nombre").in("codigo", centroIds) : Promise.resolve({ data: [], error: null }),
+        franchiseeIds.length ? supabase.from("franchisees" as any).select("id, name").in("id", franchiseeIds) : Promise.resolve({ data: [], error: null })
+      ]);
+
+      const centresMap = new Map((centresRes.data || []).map((c: any) => [c.codigo, c]));
+      const franchiseesMap = new Map((franchiseesRes.data || []).map((f: any) => [f.id, f]));
+
+      // Paso 3: Recomponer con las relaciones
+      const enrichedProfiles = (profilesData as any[]).map(profile => ({
+        ...profile,
+        user_roles: (profile.user_roles || []).map((role: any) => ({
+          ...role,
+          centres: role.centro ? centresMap.get(role.centro) || null : null,
+          franchisees: role.franchisee_id ? franchiseesMap.get(role.franchisee_id) || null : null,
+        }))
+      }));
+
+      return { data: enrichedProfiles, error: null };
+    }
+
+    // Si es otro tipo de error, retornarlo
+    return { data: null, error };
+  } catch (err) {
+    console.error("Error in getAllUsersWithRoles:", err);
+    return { data: null, error: err };
+  }
 }
 
 /**

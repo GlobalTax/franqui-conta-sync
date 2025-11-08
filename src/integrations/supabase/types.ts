@@ -335,6 +335,13 @@ export type Database = {
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_centres_franchisee"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dq_issues: {
@@ -590,6 +597,54 @@ export type Database = {
             columns: ["franchisee_id"]
             isOneToOne: false
             referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memberships: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          organization_id: string | null
+          restaurant_id: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          restaurant_id?: string | null
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          restaurant_id?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "centres"
             referencedColumns: ["id"]
           },
         ]
@@ -1205,6 +1260,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "centres"
             referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "fk_user_roles_franchisee"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_roles_franchisee_id_fkey"

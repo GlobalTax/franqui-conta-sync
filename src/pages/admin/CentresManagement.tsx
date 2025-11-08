@@ -38,26 +38,61 @@ const CentresManagement = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [centresData, franchiseesData] = await Promise.all([
-        supabase
+      // Intento principal con joins
+      const centresResult = await supabase
+        .from("centres")
+        .select(`
+          *,
+          franchisees(id, name),
+          user_roles(count),
+          centre_companies!inner(id, cif, razon_social, es_principal, activo)
+        `)
+        .order("nombre");
+
+      let centresData = centresResult.data;
+      
+      // Fallback si falla el join con franchisees
+      if (centresResult.error && (centresResult.error.code === 'PGRST200' || centresResult.error.message?.includes('embedding'))) {
+        console.warn("Falling back to simple centres query", centresResult.error);
+        
+        const simpleResult = await supabase
           .from("centres")
           .select(`
             *,
-            franchisees(id, name),
             user_roles(count),
             centre_companies!inner(id, cif, razon_social, es_principal, activo)
           `)
-          .order("nombre"),
-        supabase
+          .order("nombre");
+        
+        if (simpleResult.error) throw simpleResult.error;
+        
+        // Cargar franchisees por separado
+        const franchiseeIds = Array.from(new Set((simpleResult.data || []).map((c: any) => c.franchisee_id).filter(Boolean)));
+        const franchiseesResult = await supabase
           .from("franchisees")
           .select("id, name")
-          .order("name")
-      ]);
+          .in("id", franchiseeIds);
+        
+        const franchiseesMap = new Map((franchiseesResult.data || []).map((f: any) => [f.id, f]));
+        
+        // Recomponer
+        centresData = (simpleResult.data || []).map((c: any) => ({
+          ...c,
+          franchisees: c.franchisee_id ? franchiseesMap.get(c.franchisee_id) || null : null
+        }));
+      } else if (centresResult.error) {
+        throw centresResult.error;
+      }
 
-      if (centresData.error) throw centresData.error;
+      // Cargar lista de franchisees para el filtro
+      const franchiseesData = await supabase
+        .from("franchisees")
+        .select("id, name")
+        .order("name");
+
       if (franchiseesData.error) throw franchiseesData.error;
 
-      setCentres(centresData.data || []);
+      setCentres(centresData || []);
       setFranchisees(franchiseesData.data || []);
     } catch (error: any) {
       console.error("Error al cargar datos:", error);

@@ -18,25 +18,60 @@ const FranchiseesManagement = () => {
 
   const loadFranchisees = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("franchisees")
-      .select(`
-        *,
-        centres:centres(count),
-        user_roles:user_roles(count)
-      `)
-      .order("name");
+    
+    try {
+      // Intento principal con aggregates
+      const { data, error } = await supabase
+        .from("franchisees")
+        .select(`
+          *,
+          centres:centres(count),
+          user_roles:user_roles(count)
+        `)
+        .order("name");
 
-    if (error) {
+      if (error && (error.code === 'PGRST200' || error.message?.includes('embedding'))) {
+        console.warn("Falling back to simple franchisees query", error);
+        
+        // Fallback: cargar sin aggregates
+        const simpleResult = await supabase
+          .from("franchisees")
+          .select("*")
+          .order("name");
+        
+        if (simpleResult.error) throw simpleResult.error;
+        
+        // Cargar counts por separado
+        const franchiseeIds = (simpleResult.data || []).map((f: any) => f.id);
+        
+        const [centresCount, rolesCount] = await Promise.all([
+          supabase.from("centres").select("franchisee_id", { count: 'exact', head: true }).in("franchisee_id", franchiseeIds),
+          supabase.from("user_roles").select("franchisee_id", { count: 'exact', head: true }).in("franchisee_id", franchiseeIds)
+        ]);
+        
+        // Recomponer (simplificado, solo totales)
+        const enrichedData = (simpleResult.data || []).map((f: any) => ({
+          ...f,
+          centres: [{ count: centresCount.count || 0 }],
+          user_roles: [{ count: rolesCount.count || 0 }]
+        }));
+        
+        setFranchisees(enrichedData);
+      } else if (error) {
+        throw error;
+      } else {
+        setFranchisees(data || []);
+      }
+    } catch (err: any) {
+      console.error("Error loading franchisees:", err);
       toast({
         title: "Error",
         description: "No se pudieron cargar los franchisees",
         variant: "destructive",
       });
-    } else {
-      setFranchisees(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (loading) {

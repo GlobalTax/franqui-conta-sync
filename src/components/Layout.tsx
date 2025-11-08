@@ -108,28 +108,28 @@ const Layout = () => {
           </div>
         )}
 
-        {/* View indicator inside sidebar - Always visible when selectedView exists */}
-        {selectedView && (
-          <div className="px-4 pb-4 border-b border-white/10">
-            {selectedView.type === 'company' ? (
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-sm">
-                <Building2 className="h-4 w-4" />
-                <span className="uppercase tracking-wide">Consolidado</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-full bg-success text-success-foreground px-3 py-1 text-xs font-semibold shadow-sm">
-                <Store className="h-4 w-4" />
-                <span className="uppercase tracking-wide">Centro</span>
-              </div>
-            )}
-            <div className="mt-2 text-xs text-white/70">
-              Vista actual: <span className="font-medium text-white">{selectedView.name}</span>
-            </div>
-          </div>
-        )}
-
         {/* Selector de Año Fiscal - PROMINENTE */}
         <div className="px-4 pb-4 border-b border-white/10">
+          {/* View indicator inside sidebar - Always visible when selectedView exists */}
+          {selectedView && (
+            <div className="mb-4">
+              {selectedView.type === 'company' ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="uppercase tracking-wide">Consolidado</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-full bg-success text-success-foreground px-3 py-1 text-xs font-semibold shadow-sm">
+                  <Store className="h-4 w-4" />
+                  <span className="uppercase tracking-wide">Centro</span>
+                </div>
+              )}
+              <div className="mt-2 text-xs text-white/70">
+                Vista actual: <span className="font-medium text-white">{selectedView.name}</span>
+              </div>
+            </div>
+          )}
+          
           <label className="text-xs text-white/60 font-semibold mb-2 block uppercase tracking-wide">
             Ejercicio
           </label>

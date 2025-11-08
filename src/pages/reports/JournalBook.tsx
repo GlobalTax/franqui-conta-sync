@@ -5,6 +5,7 @@ import { useJournalBook } from "@/hooks/useJournalBook";
 import { useOrganization } from "@/hooks/useOrganization";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -53,23 +54,23 @@ export default function JournalBook() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Libro Diario</h1>
-          <p className="text-muted-foreground mt-2">
-            {currentMembership?.restaurant?.nombre || "Sin restaurante"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {data && (
+      <PageHeader
+        breadcrumbs={[
+          { label: "Contabilidad" },
+          { label: "Libro Diario" }
+        ]}
+        title="Libro Diario"
+        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        actions={
+          data && (
             <ExportButton
               printRef={printRef}
               data={exportData}
               filename={`diario-${startDateStr}-${endDateStr}`}
             />
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       <Card>
         <CardHeader>

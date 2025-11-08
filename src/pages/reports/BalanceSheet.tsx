@@ -5,6 +5,7 @@ import { useBalanceSheet } from "@/hooks/useBalanceSheet";
 import { useOrganization } from "@/hooks/useOrganization";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -26,29 +27,31 @@ export default function BalanceSheet() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Balance de Situación</h1>
-          <p className="text-muted-foreground mt-2">
-            {currentMembership?.restaurant?.nombre || "Sin restaurante"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <DateRangePicker
-            startDate={fechaCorte}
-            endDate={fechaCorte}
-            onStartDateChange={setFechaCorte}
-            onEndDateChange={setFechaCorte}
-          />
-          {data && (
-            <ExportButton
-              printRef={printRef}
-              data={exportData}
-              filename={`balance-${fechaCorteStr}`}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Contabilidad" },
+          { label: "Balance de Situación" }
+        ]}
+        title="Balance de Situación"
+        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        actions={
+          <>
+            <DateRangePicker
+              startDate={fechaCorte}
+              endDate={fechaCorte}
+              onStartDateChange={setFechaCorte}
+              onEndDateChange={setFechaCorte}
             />
-          )}
-        </div>
-      </div>
+            {data && (
+              <ExportButton
+                printRef={printRef}
+                data={exportData}
+                filename={`balance-${fechaCorteStr}`}
+              />
+            )}
+          </>
+        }
+      />
 
       <div ref={printRef}>
         <Card>

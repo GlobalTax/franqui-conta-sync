@@ -6,6 +6,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
 import { AccountSelector } from "@/components/accounting/AccountSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -49,23 +50,23 @@ export default function GeneralLedger() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Libro Mayor</h1>
-          <p className="text-muted-foreground mt-2">
-            {currentMembership?.restaurant?.nombre || "Sin restaurante"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {data && (
+      <PageHeader
+        breadcrumbs={[
+          { label: "Contabilidad" },
+          { label: "Libro Mayor" }
+        ]}
+        title="Libro Mayor"
+        subtitle={currentMembership?.restaurant?.nombre || "Sin restaurante"}
+        actions={
+          data && (
             <ExportButton
               printRef={printRef}
               data={exportData}
               filename={`mayor-${startDateStr}-${endDateStr}`}
             />
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       <Card>
         <CardHeader>

@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useProfitAndLoss } from "@/hooks/useProfitAndLoss";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const ProfitAndLoss = () => {
   const { currentMembership } = useOrganization();
@@ -58,22 +59,22 @@ const ProfitAndLoss = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Cuenta de Pérdidas y Ganancias
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Análisis de resultados por periodo
-            </p>
-          </div>
+    <div className="min-h-screen bg-background">
+      <PageHeader
+        breadcrumbs={[
+          { label: "Contabilidad" },
+          { label: "Cuenta de Pérdidas y Ganancias" }
+        ]}
+        title="Cuenta de Pérdidas y Ganancias"
+        subtitle="Análisis de resultados por periodo"
+        actions={
           <Button className="gap-2">
             <Download className="h-4 w-4" />
             Exportar PDF
           </Button>
-        </div>
+        }
+      />
+      <div className="mx-auto max-w-7xl p-6 space-y-6">
 
         <div className="flex items-center gap-4">
           <Select value={period} onValueChange={setPeriod}>

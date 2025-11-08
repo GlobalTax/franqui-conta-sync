@@ -2045,6 +2045,14 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_balance_sheet: {
+        Args: { p_centro_code: string; p_fecha_corte: string }
+        Returns: {
+          balance: number
+          grupo: string
+          nombre_grupo: string
+        }[]
+      }
       calculate_pnl: {
         Args: {
           p_centro_code: string
@@ -2094,6 +2102,24 @@ export type Database = {
           horas_trabajadas: number
         }[]
       }
+      get_general_ledger: {
+        Args: {
+          p_account_code?: string
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+          credit: number
+          debit: number
+          description: string
+          entry_date: string
+          entry_number: number
+        }[]
+      }
       get_hours_metrics: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -2101,6 +2127,26 @@ export type Database = {
           horas_planificadas: number
           horas_trabajadas: number
           tasa_absentismo: number
+        }[]
+      }
+      get_journal_book: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          amount: number
+          description: string
+          entry_date: string
+          entry_id: string
+          entry_number: number
+          line_number: number
+          movement_type: string
+          total_credit: number
+          total_debit: number
         }[]
       }
       get_metrics_by_service: {

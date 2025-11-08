@@ -12,7 +12,15 @@ import {
   FileSpreadsheet,
   Shield,
   Building2,
+  BarChart3,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -46,6 +54,14 @@ const Layout = () => {
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 
+  const reportItems = [
+    { label: "Balance de Situación", path: "/reportes/balance" },
+    { label: "Libro Mayor", path: "/reportes/mayor" },
+    { label: "Libro Diario", path: "/reportes/diario" },
+  ];
+
+  const isReportActive = reportItems.some(item => location.pathname === item.path);
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -70,6 +86,31 @@ const Layout = () => {
               </Link>
             );
           })}
+          
+          {/* Menú de Reportes */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start gap-3 hover:bg-accent ${
+                  isReportActive ? "bg-accent text-accent-foreground" : ""
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Reportes
+                <ChevronDown className="ml-auto h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {reportItems.map((item) => (
+                <DropdownMenuItem key={item.path} asChild>
+                  <Link to={item.path} className="cursor-pointer">
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
         <div className="absolute bottom-4 left-4 right-4">
           <Button

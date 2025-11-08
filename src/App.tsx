@@ -26,6 +26,9 @@ import InvoicesIssued from "@/pages/invoices/InvoicesIssued";
 import NewInvoiceIssued from "@/pages/invoices/NewInvoiceIssued";
 import InvoiceDetail from "@/pages/invoices/InvoiceDetail";
 import Suppliers from "@/pages/Suppliers";
+import BalanceSheet from "@/pages/reports/BalanceSheet";
+import GeneralLedger from "@/pages/reports/GeneralLedger";
+import JournalBook from "@/pages/reports/JournalBook";
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -92,6 +95,9 @@ const App = () => {
               <Route path="/pnl" element={<ProfitAndLoss />} />
               <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
               <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
+              <Route path="/reportes/balance" element={<BalanceSheet />} />
+              <Route path="/reportes/mayor" element={<GeneralLedger />} />
+              <Route path="/reportes/diario" element={<JournalBook />} />
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             </Route>

@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from "@/components/ui/panel-card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Receipt, FileText, ExternalLink } from "lucide-react";
 import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
@@ -83,11 +84,11 @@ const InvoiceDetail = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información General</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <PanelCard variant="info">
+            <PanelCardHeader>
+              <PanelCardTitle>Información General</PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent className="space-y-3">
               {type === "received" ? (
                 <>
                   <div>
@@ -131,14 +132,14 @@ const InvoiceDetail = () => {
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Totales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <PanelCard variant="default">
+            <PanelCardHeader>
+              <PanelCardTitle>Totales</PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent className="space-y-3">
               <div className="flex justify-between">
                 <p className="text-muted-foreground">Subtotal</p>
                 <p className="font-medium">
@@ -169,91 +170,89 @@ const InvoiceDetail = () => {
                   €
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </div>
 
         {lines && lines.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Líneas de Factura</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">
-                        Descripción
-                      </th>
-                      <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
-                        Cant.
-                      </th>
-                      <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
-                        Precio
-                      </th>
-                      <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
-                        IVA %
-                      </th>
-                      <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
-                        Total
-                      </th>
+          <div className="border rounded-lg bg-background overflow-hidden">
+            <div className="border-b border-border px-6 py-4">
+              <h3 className="text-lg font-semibold">Líneas de Factura</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-6 text-sm font-medium text-muted-foreground">
+                      Descripción
+                    </th>
+                    <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
+                      Cant.
+                    </th>
+                    <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
+                      Precio
+                    </th>
+                    <th className="text-right py-2 px-2 text-sm font-medium text-muted-foreground">
+                      IVA %
+                    </th>
+                    <th className="text-right py-2 px-6 text-sm font-medium text-muted-foreground">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((line) => (
+                    <tr key={line.id} className="border-b hover:bg-muted/5">
+                      <td className="py-3 px-6">
+                        <div>
+                          <p className="font-medium">{line.description}</p>
+                          {line.account_code && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              {line.account_code}
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-right py-3 px-2">{line.quantity}</td>
+                      <td className="text-right py-3 px-2">
+                        {Number(line.unit_price).toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                        })}
+                        €
+                      </td>
+                      <td className="text-right py-3 px-2">{line.tax_rate}%</td>
+                      <td className="text-right py-3 px-6 font-medium">
+                        {Number(line.total).toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                        })}
+                        €
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((line) => (
-                      <tr key={line.id} className="border-b">
-                        <td className="py-2 px-2">
-                          <div>
-                            <p className="font-medium">{line.description}</p>
-                            {line.account_code && (
-                              <Badge variant="outline" className="mt-1 text-xs">
-                                {line.account_code}
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-right py-2 px-2">{line.quantity}</td>
-                        <td className="text-right py-2 px-2">
-                          {Number(line.unit_price).toLocaleString("es-ES", {
-                            minimumFractionDigits: 2,
-                          })}
-                          €
-                        </td>
-                        <td className="text-right py-2 px-2">{line.tax_rate}%</td>
-                        <td className="text-right py-2 px-2 font-medium">
-                          {Number(line.total).toLocaleString("es-ES", {
-                            minimumFractionDigits: 2,
-                          })}
-                          €
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {(invoice as any).notes && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <PanelCard variant="warning">
+            <PanelCardHeader>
+              <PanelCardTitle>Notas</PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <p className="text-muted-foreground whitespace-pre-wrap">
                 {(invoice as any).notes}
               </p>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Documento PDF</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <PanelCard variant="info">
+          <PanelCardHeader>
+            <PanelCardTitle>Documento PDF</PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             <InvoicePDFUploader
               invoiceId={id!}
               invoiceType={type}
@@ -261,14 +260,16 @@ const InvoiceDetail = () => {
               currentPath={documentPath}
               onUploadComplete={() => {}}
             />
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Asiento Contable</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <PanelCard variant={
+          (invoice as any).entry_id ? "success" : "default"
+        }>
+          <PanelCardHeader>
+            <PanelCardTitle>Asiento Contable</PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             {(invoice as any).entry_id ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -308,8 +309,8 @@ const InvoiceDetail = () => {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       </div>
     </div>
   );

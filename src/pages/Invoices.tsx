@@ -336,52 +336,50 @@ const Invoices = () => {
                 </div>
               </FilterPanel>
 
-              <Card>
-                <CardContent className="p-0">
-                  {isLoadingIssued ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <DataTablePro
-                        columns={columnsIssued}
-                        data={invoicesIssued}
-                        onRowSelect={setSelectedIds}
-                        showLegend
-                        legend={[
-                          { color: 'bg-blue-500', label: 'Cobrada' },
-                          { color: 'bg-red-500', label: 'Pendiente' },
-                          { color: 'bg-gray-500', label: 'Registrada' },
-                        ]}
-                      />
-                      
-                      <TableSummary
-                        items={[
-                          { label: 'Total Facturas', value: invoicesIssued.reduce((sum, inv) => sum + Number(inv.total), 0) },
-                          { label: 'Pendientes', value: invoicesIssued.filter(inv => inv.status === 'pending').length, color: 'primary' },
-                          { label: 'Cobradas', value: invoicesIssued.filter(inv => inv.status === 'paid').length, color: 'success' },
-                        ]}
-                      />
-                      
-                      <PaginationAdvanced
-                        currentPage={currentPage}
-                        totalItems={totalIssued}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                      />
-                      
-                      <TableActions
-                        selectedCount={selectedIds.length}
-                        onEmail={handleEmail}
-                        onDelete={handleDelete}
-                        onNew={() => navigate('/facturas/emitidas/nueva')}
-                        onExport={handleExport}
-                      />
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="border rounded-lg bg-background">
+                {isLoadingIssued ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  </div>
+                ) : (
+                  <>
+                    <DataTablePro
+                      columns={columnsIssued}
+                      data={invoicesIssued}
+                      onRowSelect={setSelectedIds}
+                      showLegend
+                      legend={[
+                        { color: 'bg-blue-500', label: 'Cobrada' },
+                        { color: 'bg-red-500', label: 'Pendiente' },
+                        { color: 'bg-gray-500', label: 'Registrada' },
+                      ]}
+                    />
+                    
+                    <TableSummary
+                      items={[
+                        { label: 'Total Facturas', value: invoicesIssued.reduce((sum, inv) => sum + Number(inv.total), 0) },
+                        { label: 'Pendientes', value: invoicesIssued.filter(inv => inv.status === 'pending').length, color: 'primary' },
+                        { label: 'Cobradas', value: invoicesIssued.filter(inv => inv.status === 'paid').length, color: 'success' },
+                      ]}
+                    />
+                    
+                    <PaginationAdvanced
+                      currentPage={currentPage}
+                      totalItems={totalIssued}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                    />
+                    
+                    <TableActions
+                      selectedCount={selectedIds.length}
+                      onEmail={handleEmail}
+                      onDelete={handleDelete}
+                      onNew={() => navigate('/facturas/emitidas/nueva')}
+                      onExport={handleExport}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           ),
           recibidas: (
@@ -440,52 +438,50 @@ const Invoices = () => {
                 </div>
               </FilterPanel>
 
-              <Card>
-                <CardContent className="p-0">
-                  {isLoadingReceived ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <DataTablePro
-                        columns={columnsReceived}
-                        data={invoicesReceived}
-                        onRowSelect={setSelectedIds}
-                        showLegend
-                        legend={[
-                          { color: 'bg-green-500', label: 'Pagada' },
-                          { color: 'bg-blue-500', label: 'Aprobada' },
-                          { color: 'bg-red-500', label: 'Pendiente' },
-                        ]}
-                      />
-                      
-                      <TableSummary
-                        items={[
-                          { label: 'Total Facturas', value: invoicesReceived.reduce((sum, inv) => sum + Number(inv.total), 0) },
-                          { label: 'Pendientes', value: invoicesReceived.filter(inv => inv.status === 'pending').length, color: 'primary' },
-                          { label: 'Pagadas', value: invoicesReceived.filter(inv => inv.status === 'paid').length, color: 'success' },
-                        ]}
-                      />
-                      
-                      <PaginationAdvanced
-                        currentPage={currentPage}
-                        totalItems={totalReceived}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                      />
-                      
-                      <TableActions
-                        selectedCount={selectedIds.length}
-                        onEmail={handleEmail}
-                        onDelete={handleDelete}
-                        onNew={() => navigate('/facturas/nueva')}
-                        onExport={handleExport}
-                      />
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="border rounded-lg bg-background">
+                {isLoadingReceived ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  </div>
+                ) : (
+                  <>
+                    <DataTablePro
+                      columns={columnsReceived}
+                      data={invoicesReceived}
+                      onRowSelect={setSelectedIds}
+                      showLegend
+                      legend={[
+                        { color: 'bg-green-500', label: 'Pagada' },
+                        { color: 'bg-blue-500', label: 'Aprobada' },
+                        { color: 'bg-red-500', label: 'Pendiente' },
+                      ]}
+                    />
+                    
+                    <TableSummary
+                      items={[
+                        { label: 'Total Facturas', value: invoicesReceived.reduce((sum, inv) => sum + Number(inv.total), 0) },
+                        { label: 'Pendientes', value: invoicesReceived.filter(inv => inv.status === 'pending').length, color: 'primary' },
+                        { label: 'Aprobadas', value: invoicesReceived.filter(inv => (inv as any).approval_status === 'approved_accounting').length, color: 'success' },
+                      ]}
+                    />
+                    
+                    <PaginationAdvanced
+                      currentPage={currentPage}
+                      totalItems={totalReceived}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                    />
+                    
+                    <TableActions
+                      selectedCount={selectedIds.length}
+                      onEmail={handleEmail}
+                      onDelete={handleDelete}
+                      onNew={() => navigate('/facturas/nueva')}
+                      onExport={handleExport}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           )
         }}

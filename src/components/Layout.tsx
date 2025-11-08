@@ -78,8 +78,13 @@ const Layout = () => {
     { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
-    { icon: TrendingUp, label: "P&L", path: "/pnl" },
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
+  ];
+
+  const ivaItems = [
+    { icon: FileText, label: "Facturas Expedidas", path: "/iva/expedidas" },
+    { icon: Receipt, label: "Facturas Recibidas", path: "/iva/recibidas" },
+    { icon: FileSpreadsheet, label: "Modelo 303", path: "/iva/modelo-303" },
   ];
 
   const reportItems = [
@@ -187,6 +192,30 @@ const Layout = () => {
                 <span>{item.label}</span>
               </NavLink>
             ))}
+
+            {/* IVA Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start px-3 py-2 text-white/70 hover:bg-white/5 hover:text-white h-auto"
+                >
+                  <FileSpreadsheet className="h-5 w-5 mr-3" />
+                  <span className="flex-1 text-left">IVA</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Libros y Modelos de IVA</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ivaItems.map((item) => (
+                  <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                    <item.icon className="h-4 w-4 mr-2" />
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Reportes Dropdown */}
             <DropdownMenu>

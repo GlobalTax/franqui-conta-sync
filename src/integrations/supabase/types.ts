@@ -164,6 +164,51 @@ export type Database = {
           },
         ]
       }
+      accounting_taxes: {
+        Row: {
+          base_amount: number
+          created_at: string
+          id: string
+          tax_amount: number
+          tax_code_id: string | null
+          tax_rate: number
+          transaction_id: string | null
+        }
+        Insert: {
+          base_amount: number
+          created_at?: string
+          id?: string
+          tax_amount: number
+          tax_code_id?: string | null
+          tax_rate: number
+          transaction_id?: string | null
+        }
+        Update: {
+          base_amount?: number
+          created_at?: string
+          id?: string
+          tax_amount?: number
+          tax_code_id?: string | null
+          tax_rate?: number
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_taxes_tax_code_id_fkey"
+            columns: ["tax_code_id"]
+            isOneToOne: false
+            referencedRelation: "tax_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_taxes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounting_transactions: {
         Row: {
           account_code: string
@@ -976,8 +1021,12 @@ export type Database = {
           invoice_type: string
           line_number: number
           quantity: number | null
+          recargo_equivalencia: number | null
+          retencion_amount: number | null
+          retencion_percentage: number | null
           subtotal: number
           tax_amount: number
+          tax_code_id: string | null
           tax_rate: number | null
           total: number
           unit_price: number
@@ -993,8 +1042,12 @@ export type Database = {
           invoice_type: string
           line_number: number
           quantity?: number | null
+          recargo_equivalencia?: number | null
+          retencion_amount?: number | null
+          retencion_percentage?: number | null
           subtotal: number
           tax_amount: number
+          tax_code_id?: string | null
           tax_rate?: number | null
           total: number
           unit_price: number
@@ -1010,13 +1063,25 @@ export type Database = {
           invoice_type?: string
           line_number?: number
           quantity?: number | null
+          recargo_equivalencia?: number | null
+          retencion_amount?: number | null
+          retencion_percentage?: number | null
           subtotal?: number
           tax_amount?: number
+          tax_code_id?: string | null
           tax_rate?: number | null
           total?: number
           unit_price?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_tax_code_id_fkey"
+            columns: ["tax_code_id"]
+            isOneToOne: false
+            referencedRelation: "tax_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_sequences: {
         Row: {
@@ -2021,6 +2086,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_codes: {
+        Row: {
+          account_code_base: string | null
+          account_code_fee: string | null
+          active: boolean
+          code: string
+          created_at: string
+          description: string
+          id: string
+          rate: number
+          regime: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          account_code_base?: string | null
+          account_code_fee?: string | null
+          active?: boolean
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          rate: number
+          regime?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          account_code_base?: string | null
+          account_code_fee?: string | null
+          active?: boolean
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          rate?: number
+          regime?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_centre_permissions: {
         Row: {
           centro: string
@@ -2287,6 +2394,23 @@ export type Database = {
           tasa_absentismo: number
         }[]
       }
+      get_iva_summary_303: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          compensaciones_anteriores: number
+          resultado_final: number
+          resultado_liquidacion: number
+          total_base_repercutido: number
+          total_base_soportado: number
+          total_cuota_deducible: number
+          total_cuota_repercutido: number
+          total_cuota_soportado: number
+        }[]
+      }
       get_journal_book: {
         Args: {
           p_centro_code: string
@@ -2305,6 +2429,44 @@ export type Database = {
           movement_type: string
           total_credit: number
           total_debit: number
+        }[]
+      }
+      get_libro_iva_repercutido: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          base_imponible: number
+          cliente_nif: string
+          cliente_nombre: string
+          cuota_iva: number
+          fecha: string
+          numero_factura: string
+          recargo_equivalencia: number
+          tipo_iva: number
+          tipo_operacion: string
+          total_factura: number
+        }[]
+      }
+      get_libro_iva_soportado: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          base_imponible: number
+          cuota_deducible: number
+          cuota_iva: number
+          fecha: string
+          numero_factura: string
+          proveedor_nif: string
+          proveedor_nombre: string
+          tipo_iva: number
+          tipo_operacion: string
+          total_factura: number
         }[]
       }
       get_metrics_by_service: {

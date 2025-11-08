@@ -32,6 +32,7 @@ import BalanceSheet from "@/pages/reports/BalanceSheet";
 import GeneralLedger from "@/pages/reports/GeneralLedger";
 import JournalBook from "@/pages/reports/JournalBook";
 import TrialBalance from "@/pages/reports/TrialBalance";
+import ConsolidatedReports from "@/pages/reports/ConsolidatedReports";
 import LibroIVARepercutido from "@/pages/iva/LibroIVARepercutido";
 import LibroIVASoportado from "@/pages/iva/LibroIVASoportado";
 import Modelo303 from "@/pages/iva/Modelo303";
@@ -108,6 +109,7 @@ const App = () => {
             <Route path="/reportes/mayor" element={<GeneralLedger />} />
             <Route path="/reportes/diario" element={<JournalBook />} />
             <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />
+            <Route path="/reportes/consolidado" element={<ConsolidatedReports />} />
             <Route path="/iva/expedidas" element={<LibroIVARepercutido />} />
             <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
             <Route path="/iva/modelo-303" element={<Modelo303 />} />

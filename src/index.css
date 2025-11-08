@@ -193,4 +193,40 @@ All colors MUST be HSL.
   .animate-fade-in-up {
     animation: fadeInUp 0.4s ease-out;
   }
+  
+  /* Quantum Economics Design System */
+  .quantum-card {
+    @apply bg-white border border-border/40 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .quantum-header {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+  }
+
+  .quantum-value {
+    @apply text-2xl font-normal tabular-nums;
+  }
+
+  .quantum-chart-grid {
+    stroke: hsl(var(--border));
+    stroke-dasharray: 3 3;
+    opacity: 0.2;
+  }
+
+  .quantum-button {
+    @apply font-normal;
+  }
+
+  /* Color coding badges */
+  .badge-success {
+    @apply bg-success-light text-success border-success/20;
+  }
+
+  .badge-warning {
+    @apply bg-warning-light text-warning border-warning/20;
+  }
+
+  .badge-danger {
+    @apply bg-red-50 text-destructive border-destructive/20;
+  }
 }

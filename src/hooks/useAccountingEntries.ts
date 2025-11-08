@@ -33,7 +33,7 @@ export function useAccountingEntries(centroCode?: string, filters?: {
         query = query.lte("entry_date", filters.endDate);
       }
 
-      if (filters?.status && (filters.status === 'draft' || filters.status === 'posted' || filters.status === 'closed')) {
+      if (filters?.status && filters.status !== 'all' && (filters.status === 'draft' || filters.status === 'posted' || filters.status === 'closed')) {
         query = query.eq("status", filters.status);
       }
 

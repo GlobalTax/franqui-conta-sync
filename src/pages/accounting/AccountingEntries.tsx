@@ -86,12 +86,12 @@ export default function AccountingEntries() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Estado</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status || 'all'} onValueChange={setStatus}>
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="draft">Borrador</SelectItem>
                   <SelectItem value="posted">Contabilizado</SelectItem>
                   <SelectItem value="closed">Cerrado</SelectItem>

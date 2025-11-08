@@ -103,8 +103,10 @@ export function AccountFormDialog({
     try {
       // Calcular nivel basado en padre
       let level = 0;
-      if (data.parent_account_id) {
-        const parent = accounts.find((a) => a.id === data.parent_account_id);
+      const parentId = data.parent_account_id === 'none' ? null : data.parent_account_id;
+      
+      if (parentId) {
+        const parent = accounts.find((a) => a.id === parentId);
         if (parent) {
           level = (parent.level || 0) + 1;
         }
@@ -114,7 +116,7 @@ export function AccountFormDialog({
         ...data,
         organization_id: organizationId,
         level,
-        parent_account_id: data.parent_account_id || null,
+        parent_account_id: parentId,
       };
 
       if (account) {
@@ -224,7 +226,7 @@ export function AccountFormDialog({
                   <FormLabel>Cuenta Padre (opcional)</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    defaultValue={field.value || 'none'}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -232,7 +234,7 @@ export function AccountFormDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sin cuenta padre</SelectItem>
+                      <SelectItem value="none">Sin cuenta padre</SelectItem>
                       {parentAccountOptions.map((acc) => (
                         <SelectItem key={acc.id} value={acc.id}>
                           {acc.code} - {acc.name}

@@ -98,163 +98,172 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen flex w-full">
-      {/* Sidebar - Clear Modern */}
-      <div className="w-72 border-r border-sidebar-border bg-sidebar flex flex-col shadow-soft-lg">
-        {/* Logo with gold accent */}
-        <div className="h-20 flex items-center px-8 border-b border-border/50">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-accent-gold to-accent-gold/80 mr-3">
-            <Building2 className="h-6 w-6 text-white" />
+      {/* Sidebar */}
+      <div className="w-64 border-r border-border bg-sidebar flex flex-col">
+        {/* Logo */}
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-white" strokeWidth={2} />
+            </div>
+            <h1 className="text-base font-semibold text-foreground tracking-tight">
+              FranquiContaSync
+            </h1>
           </div>
-          <h1 className="text-xl font-display font-bold text-foreground">
-            FranquiConta<span className="text-accent-gold">Sync</span>
-          </h1>
         </div>
 
         {/* Company/Centre Selector */}
         {currentMembership?.organization_id && (
-          <div className="p-6 border-b border-border/50">
-            <label className="text-xs text-muted-foreground font-semibold mb-2 block uppercase tracking-wider">
-              Vista Contable
-            </label>
-            <CentreSelector
-              franchiseeId={currentMembership.organization_id}
-              value={selectedView}
-              onChange={setSelectedView}
-            />
+          <div className="p-5 space-y-4 border-b border-border">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                Vista contable
+              </label>
+              <CentreSelector
+                franchiseeId={currentMembership.organization_id}
+                value={selectedView}
+                onChange={setSelectedView}
+              />
+            </div>
+
+            {selectedView && (
+              <div className="p-3 bg-muted rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-1.5">
+                  {selectedView.type === 'all' || selectedView.type === 'company' ? (
+                    <Building2 className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
+                  ) : (
+                    <Store className="h-3.5 w-3.5 text-success" strokeWidth={2} />
+                  )}
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {selectedView.type === 'all' || selectedView.type === 'company' ? 'Consolidado' : 'Centro'}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {selectedView.name}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                Ejercicio fiscal
+              </label>
+              <Select value={fiscalYear} onValueChange={setFiscalYear}>
+                <SelectTrigger className="w-full bg-card border border-input hover:border-primary/30 transition-all rounded-lg h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2023">2023</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
 
-        {/* Selector de Año Fiscal */}
-        <div className="px-6 pb-6 border-b border-border/50">
-          {/* View indicator inside sidebar */}
-          {selectedView && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                {selectedView.type === 'all' || selectedView.type === 'company' ? (
-                  <Building2 className="h-4 w-4 text-primary" />
-                ) : (
-                  <Store className="h-4 w-4 text-success" />
-                )}
-                <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                  {selectedView.type === 'all' || selectedView.type === 'company' ? 'Consolidado' : 'Centro'}
-                </span>
-              </div>
-              <p className="text-sm font-medium text-foreground">{selectedView.name}</p>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-6 overflow-auto">
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Principal
+            </h3>
+            <div className="space-y-0.5">
+              {navItems.slice(0, 4).map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
             </div>
-          )}
-          
-          <label className="text-xs text-muted-foreground font-semibold mb-2 block uppercase tracking-wider">
-            Ejercicio
-          </label>
-          <Select value={fiscalYear} onValueChange={setFiscalYear}>
-            <SelectTrigger className="bg-background border-border/50 hover:border-primary/50 transition-colors">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Sección: Accesos Directos */}
-        <div className="p-6">
-          <div className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wider">
-            Accesos Directos
           </div>
-          <nav className="space-y-1">
-            {navItems.slice(0, 4).map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/70 hover:bg-primary/5 hover:text-primary transition-all duration-200 group"
-                activeClassName="bg-primary text-white font-semibold shadow-soft"
-              >
-                <item.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                <span className="text-sm">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </div>
 
-        {/* Sección: Contabilidad */}
-        <div className="px-6 pb-6 border-t border-border/50 pt-6">
-          <div className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wider">
-            Contabilidad
-          </div>
-          <nav className="space-y-1">
-            {navItems.slice(4).map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/70 hover:bg-primary/5 hover:text-primary transition-all duration-200 group"
-                activeClassName="bg-primary text-white font-semibold shadow-soft"
-              >
-                <item.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                <span className="text-sm">{item.label}</span>
-              </NavLink>
-            ))}
-
-            {/* IVA Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start px-4 py-3 text-foreground/70 hover:bg-primary/5 hover:text-primary h-auto rounded-xl font-normal"
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Contabilidad
+            </h3>
+            <div className="space-y-0.5">
+              {navItems.slice(4, 7).map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
                 >
-                  <FileSpreadsheet className="h-5 w-5 mr-3" />
-                  <span className="flex-1 text-left text-sm">IVA</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          {/* IVA Dropdown */}
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">IVA</span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Libros y Modelos de IVA</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="start" className="w-52 rounded-lg border-border">
                 {ivaItems.map((item) => (
-                  <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
-                    <item.icon className="h-4 w-4 mr-2" />
-                    {item.label}
+                  <DropdownMenuItem key={item.path} asChild>
+                    <NavLink
+                      to={item.path}
+                      className="flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer"
+                    >
+                      <item.icon className="h-4 w-4" strokeWidth={2} />
+                      <span>{item.label}</span>
+                    </NavLink>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
 
-            {/* Reportes Dropdown */}
+          {/* Informes Dropdown */}
+          <div>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start px-4 py-3 text-foreground/70 hover:bg-primary/5 hover:text-primary h-auto rounded-xl font-normal"
-                >
-                  <BarChart3 className="h-5 w-5 mr-3" />
-                  <span className="flex-1 text-left text-sm">Reportes</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+              <DropdownMenuTrigger className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">Informes</span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Informes Contables</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="start" className="w-52 rounded-lg border-border">
                 {reportItems.map((item) => (
-                  <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
-                    <item.icon className="h-4 w-4 mr-2" />
-                    {item.label}
+                  <DropdownMenuItem key={item.path} asChild>
+                    <NavLink
+                      to={item.path}
+                      className="flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer"
+                    >
+                      <item.icon className="h-4 w-4" strokeWidth={2} />
+                      <span>{item.label}</span>
+                    </NavLink>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </nav>
-        </div>
+          </div>
+        </nav>
 
-        {/* Footer con Logout */}
-        <div className="mt-auto p-6 border-t border-border/50">
+        {/* Footer */}
+        <div className="p-4 border-t border-border">
           <Button
             variant="ghost"
-            className="w-full justify-start text-foreground/70 hover:bg-destructive/10 hover:text-destructive rounded-xl"
             onClick={handleLogout}
+            className="w-full justify-start gap-3 text-foreground/70 hover:text-destructive hover:bg-destructive/10 rounded-lg h-9"
           >
-            <LogOut className="h-5 w-5 mr-3" />
-            <span className="text-sm">Cerrar Sesión</span>
+            <LogOut className="h-4 w-4" strokeWidth={2} />
+            <span className="text-sm">Cerrar sesión</span>
           </Button>
         </div>
       </div>
@@ -262,7 +271,7 @@ const Layout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-20 border-b border-border/50 bg-card/80 backdrop-blur-sm px-8 flex items-center justify-end shadow-soft">
+        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end">
           <NotificationBell />
         </div>
 

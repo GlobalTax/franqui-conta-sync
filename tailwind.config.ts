@@ -14,8 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        display: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -84,17 +83,16 @@ export default {
         },
       },
       borderRadius: {
-        lg: "1rem",
-        md: "0.75rem",
+        lg: "0.75rem",
+        md: "0.625rem",
         sm: "0.5rem",
-        xl: "1.125rem",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        xl: "0.875rem",
+        "2xl": "1rem",
       },
       boxShadow: {
-        'soft': '0 2px 8px 0 rgba(0, 0, 0, 0.05)',
-        'soft-lg': '0 4px 16px 0 rgba(0, 0, 0, 0.08)',
-        'soft-xl': '0 8px 24px 0 rgba(0, 0, 0, 0.10)',
+        'minimal': '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+        'minimal-md': '0 2px 4px 0 rgba(0, 0, 0, 0.04)',
+        'minimal-lg': '0 4px 8px 0 rgba(0, 0, 0, 0.06)',
       },
       keyframes: {
         "accordion-down": {

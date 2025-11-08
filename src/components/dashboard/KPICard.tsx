@@ -11,6 +11,7 @@ interface KPICardProps {
   actionLabel?: string;
   onAction?: () => void;
   format?: "currency" | "number" | "percentage";
+  variant?: "default" | "accent" | "success" | "warning";
 }
 
 export const KPICard = ({
@@ -22,7 +23,16 @@ export const KPICard = ({
   actionLabel,
   onAction,
   format = "currency",
+  variant = "default",
 }: KPICardProps) => {
+  const getBorderColor = () => {
+    switch (variant) {
+      case "accent": return "border-l-primary";
+      case "success": return "border-l-success";
+      case "warning": return "border-l-warning";
+      default: return "border-l-border";
+    }
+  };
   const formatValue = (val: number) => {
     if (format === "currency") {
       return `${val.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€`;
@@ -42,7 +52,7 @@ export const KPICard = ({
   const isPositive = trend !== null && trend >= 0;
 
   return (
-    <Card>
+    <Card className={`relative overflow-hidden transition-all hover:shadow-md border-l-4 ${getBorderColor()} border-border/40 hover:border-border`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -82,7 +92,9 @@ export const KPICard = ({
           
           <div className="flex flex-col items-end gap-2">
             {Icon && (
-              <Icon className="h-5 w-5 text-muted-foreground/50" strokeWidth={1.5} />
+              <div className="rounded-full bg-primary/10 p-2.5">
+                <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+              </div>
             )}
             {actionLabel && onAction && (
               <Button

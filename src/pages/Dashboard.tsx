@@ -1,20 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Euro, FileText, CreditCard, CheckCircle2, AlertCircle, User, Users, BarChart3 } from "lucide-react";
+import { Euro, Users, TrendingUp, AlertCircle } from "lucide-react";
 import { useView } from "@/contexts/ViewContext";
-import { useDashboardOperativo } from "@/hooks/useDashboardOperativo";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import { GerenteView } from "@/components/dashboard/GerenteView";
-import { ContabilidadView } from "@/components/dashboard/ContabilidadView";
-import { ControllerView } from "@/components/dashboard/ControllerView";
-import { TasksPanel } from "@/components/dashboard/TasksPanel";
+import { useDashboardMain } from "@/hooks/useDashboardMain";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { SalesByChannelChart } from "@/components/dashboard/SalesByChannelChart";
+import { TreasuryCard } from "@/components/dashboard/TreasuryCard";
+import { IncidentsCard } from "@/components/dashboard/IncidentsCard";
+import { IVASummaryChart } from "@/components/dashboard/IVASummaryChart";
 
 const Dashboard = () => {
   const { selectedView } = useView();
-  const [viewMode, setViewMode] = useState<"gerente" | "contabilidad" | "controller">("gerente");
-  
-  const { data: kpis, isLoading: kpisLoading } = useDashboardOperativo(selectedView);
+  const { data, isLoading } = useDashboardMain(selectedView);
 
   if (!selectedView) {
     return (
@@ -33,18 +29,18 @@ const Dashboard = () => {
     );
   }
 
-  if (kpisLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando dashboard operativo...</p>
+          <p className="mt-4 text-muted-foreground">Cargando dashboard...</p>
         </div>
       </div>
     );
   }
 
-  if (!kpis) {
+  if (!data) {
     return null;
   }
 
@@ -52,54 +48,62 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-background sticky top-0 z-10">
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">Dashboard Operativo</h1>
-              <p className="text-sm text-muted-foreground">
-                Vista en tiempo real • {selectedView.type === 'company' ? 'Consolidado' : selectedView.name}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard Operativo</h1>
+            <p className="text-sm text-muted-foreground">
+              Vista en tiempo real • {selectedView.type === 'company' ? 'Consolidado' : selectedView.name}
+            </p>
           </div>
-          
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-              <TabsTrigger value="gerente" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Gerente
-              </TabsTrigger>
-              <TabsTrigger value="contabilidad" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Contabilidad
-              </TabsTrigger>
-              <TabsTrigger value="controller" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Controller
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Tabs value={viewMode}>
-              <TabsContent value="gerente" className="mt-0">
-                <GerenteView kpis={kpis} />
-              </TabsContent>
-              
-              <TabsContent value="contabilidad" className="mt-0">
-                <ContabilidadView kpis={kpis} />
-              </TabsContent>
-              
-              <TabsContent value="controller" className="mt-0">
-                <ControllerView kpis={kpis} />
-              </TabsContent>
-            </Tabs>
-          </div>
+      <div className="p-6 space-y-6">
+        {/* KPIs Principales */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <KPICard 
+            title="Ventas Día"
+            value={data.dailySales}
+            icon={Euro}
+            format="currency"
+            variant="accent"
+          />
+          <KPICard 
+            title="Coste Laboral"
+            subtitle="Mes actual"
+            value={data.laborCost}
+            icon={Users}
+            format="currency"
+            variant="default"
+          />
+          <KPICard 
+            title="Margen Neto"
+            subtitle="% sobre ventas"
+            value={data.netMarginPercent}
+            icon={TrendingUp}
+            format="percentage"
+            variant="success"
+          />
+        </div>
 
-          <div>
-            <TasksPanel />
+        {/* Gráficos y Cards */}
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-8">
+            <SalesByChannelChart data={data.salesByChannel} />
+          </div>
+          <div className="md:col-span-4">
+            <TreasuryCard 
+              bankBalance={data.bankBalance}
+              cashAudit={data.cashAudit}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-8">
+            <IncidentsCard incidents={data.incidents} />
+          </div>
+          <div className="md:col-span-4">
+            <IVASummaryChart ivaSummary={data.ivaSummary} />
           </div>
         </div>
       </div>

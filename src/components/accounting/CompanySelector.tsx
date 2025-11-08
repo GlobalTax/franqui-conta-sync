@@ -1,7 +1,8 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useCompanies } from "@/hooks/useCompanies";
-import { Building2, Store } from "lucide-react";
+import { AlertCircle, Building2, Store } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
 
 interface CompanySelectorProps {
@@ -11,7 +12,7 @@ interface CompanySelectorProps {
 }
 
 export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelectorProps) => {
-  const { data: companies, isLoading } = useCompanies(franchiseeId);
+  const { data: companies, isLoading, error, isError } = useCompanies(franchiseeId);
 
   if (isLoading) {
     return (
@@ -19,6 +20,21 @@ export const CompanySelector = ({ franchiseeId, value, onChange }: CompanySelect
         <Skeleton className="h-4 w-4 rounded-full" />
         <Skeleton className="h-4 flex-1" />
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="destructive" className="w-[320px]">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error al cargar sociedades</AlertTitle>
+        <AlertDescription>
+          No se pudieron cargar las sociedades. Por favor, intenta de nuevo.
+          {error?.message && (
+            <p className="text-xs mt-1 opacity-70">{error.message}</p>
+          )}
+        </AlertDescription>
+      </Alert>
     );
   }
 

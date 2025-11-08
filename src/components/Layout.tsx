@@ -78,6 +78,7 @@ const Layout = () => {
     { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
+    { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 

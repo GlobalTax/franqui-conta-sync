@@ -34,6 +34,7 @@ import TrialBalance from "@/pages/reports/TrialBalance";
 import LibroIVARepercutido from "@/pages/iva/LibroIVARepercutido";
 import LibroIVASoportado from "@/pages/iva/LibroIVASoportado";
 import Modelo303 from "@/pages/iva/Modelo303";
+import FiscalYearClosing from "@/pages/accounting/FiscalYearClosing";
 import Notifications from "@/pages/Notifications";
 import { AdminRoute } from "@/components/AdminRoute";
 
@@ -108,6 +109,7 @@ const App = () => {
               <Route path="/iva/expedidas" element={<LibroIVARepercutido />} />
               <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
               <Route path="/iva/modelo-303" element={<Modelo303 />} />
+              <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />

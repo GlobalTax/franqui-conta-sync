@@ -7,7 +7,9 @@ export interface LedgerLine {
   account_name: string;
   entry_date: string;
   entry_number: number;
+  serie: string;
   description: string;
+  document_ref: string | null;
   debit: number;
   credit: number;
   balance: number;
@@ -37,7 +39,7 @@ export const useGeneralLedger = (
         if (!centres || centres.length === 0) return [];
 
         const promises = centres.map(c =>
-          supabase.rpc("get_general_ledger", {
+          supabase.rpc("get_general_ledger_official", {
             p_centro_code: c.codigo,
             p_start_date: startDate,
             p_end_date: endDate,
@@ -64,7 +66,7 @@ export const useGeneralLedger = (
 
         if (!centre) return [];
 
-        const { data, error } = await supabase.rpc("get_general_ledger", {
+        const { data, error } = await supabase.rpc("get_general_ledger_official", {
           p_centro_code: centre.codigo,
           p_start_date: startDate,
           p_end_date: endDate,

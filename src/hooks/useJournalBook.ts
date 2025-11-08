@@ -6,14 +6,17 @@ export interface JournalLine {
   entry_id: string;
   entry_number: number;
   entry_date: string;
+  serie: string;
   description: string;
   account_code: string;
   account_name: string;
   line_number: number;
   movement_type: string;
   amount: number;
+  document_ref: string | null;
   total_debit: number;
   total_credit: number;
+  posted_at: string | null;
 }
 
 export const useJournalBook = (
@@ -39,7 +42,7 @@ export const useJournalBook = (
         if (!centres || centres.length === 0) return [];
 
         const promises = centres.map(c =>
-          supabase.rpc("get_journal_book", {
+          supabase.rpc("get_journal_book_official", {
             p_centro_code: c.codigo,
             p_start_date: startDate,
             p_end_date: endDate,
@@ -65,7 +68,7 @@ export const useJournalBook = (
 
         if (!centre) return [];
 
-        const { data, error } = await supabase.rpc("get_journal_book", {
+        const { data, error } = await supabase.rpc("get_journal_book_official", {
           p_centro_code: centre.codigo,
           p_start_date: startDate,
           p_end_date: endDate,

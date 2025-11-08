@@ -812,6 +812,9 @@ export type Database = {
       fiscal_years: {
         Row: {
           centro_code: string | null
+          closed_by: string | null
+          closing_date: string | null
+          closing_entry_id: string | null
           created_at: string
           end_date: string
           id: string
@@ -822,6 +825,9 @@ export type Database = {
         }
         Insert: {
           centro_code?: string | null
+          closed_by?: string | null
+          closing_date?: string | null
+          closing_entry_id?: string | null
           created_at?: string
           end_date: string
           id?: string
@@ -832,6 +838,9 @@ export type Database = {
         }
         Update: {
           centro_code?: string | null
+          closed_by?: string | null
+          closing_date?: string | null
+          closing_entry_id?: string | null
           created_at?: string
           end_date?: string
           id?: string
@@ -854,6 +863,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_user_memberships"
             referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "fiscal_years_closing_entry_id_fkey"
+            columns: ["closing_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2344,6 +2360,20 @@ export type Database = {
           real_sin_plan: number
         }[]
       }
+      generate_closing_entries: {
+        Args: {
+          p_centro_code: string
+          p_closing_date: string
+          p_fiscal_year_id: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          amount: number
+          entry_type: string
+          movement_type: string
+        }[]
+      }
       get_centros: {
         Args: never
         Returns: {
@@ -2383,6 +2413,26 @@ export type Database = {
           description: string
           entry_date: string
           entry_number: number
+        }[]
+      }
+      get_general_ledger_official: {
+        Args: {
+          p_account_code?: string
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+          credit: number
+          debit: number
+          description: string
+          document_ref: string
+          entry_date: string
+          entry_number: number
+          serie: string
         }[]
       }
       get_hours_metrics: {
@@ -2427,6 +2477,29 @@ export type Database = {
           entry_number: number
           line_number: number
           movement_type: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
+      get_journal_book_official: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          amount: number
+          description: string
+          document_ref: string
+          entry_date: string
+          entry_id: string
+          entry_number: number
+          line_number: number
+          movement_type: string
+          posted_at: string
+          serie: string
           total_credit: number
           total_debit: number
         }[]
@@ -2481,6 +2554,24 @@ export type Database = {
           horas_trabajadas: number
           service_descripcion: string
           service_id: string
+        }[]
+      }
+      get_next_entry_number: {
+        Args: {
+          p_centro_code: string
+          p_company_id: string
+          p_ejercicio: number
+          p_serie?: string
+        }
+        Returns: number
+      }
+      get_opening_balances: {
+        Args: { p_centro_code: string; p_fiscal_year_id: string }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+          movement_type: string
         }[]
       }
       get_payroll_costs: {

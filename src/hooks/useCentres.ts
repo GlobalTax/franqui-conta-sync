@@ -65,7 +65,6 @@ export const useCentres = (franchiseeId?: string) => {
       
       return (data || []) as Centre[];
     },
-    enabled: !!franchiseeId,
   });
 };
 

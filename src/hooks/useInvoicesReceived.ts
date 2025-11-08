@@ -19,6 +19,12 @@ export interface InvoiceReceived {
   payment_transaction_id: string | null;
   ocr_confidence: number | null;
   notes: string | null;
+  approval_status: string;
+  requires_manager_approval: boolean;
+  requires_accounting_approval: boolean;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  rejected_reason: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -27,6 +33,14 @@ export interface InvoiceReceived {
     name: string;
     tax_id: string;
   };
+  approvals?: Array<{
+    id: string;
+    approver_id: string;
+    approval_level: string;
+    action: string;
+    comments: string | null;
+    created_at: string;
+  }>;
 }
 
 export interface InvoiceReceivedFormData {
@@ -69,7 +83,15 @@ export const useInvoicesReceived = (filters?: {
         .from('invoices_received')
         .select(`
           *,
-          supplier:suppliers(id, name, tax_id)
+          supplier:suppliers(id, name, tax_id),
+          approvals:invoice_approvals(
+            id,
+            approver_id,
+            approval_level,
+            action,
+            comments,
+            created_at
+          )
         `)
         .order('invoice_date', { ascending: false });
 

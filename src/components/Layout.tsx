@@ -28,6 +28,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CompanySelector } from "@/components/accounting/CompanySelector";
 import { useView } from "@/contexts/ViewContext";
+import { useEnsureDefaultView } from "@/hooks/useEnsureDefaultView";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -55,6 +56,9 @@ const Layout = () => {
   const { currentMembership } = useOrganization();
   const { selectedView, setSelectedView } = useView();
   const [fiscalYear, setFiscalYear] = useState("2025");
+  
+  // Ensure a default view is selected when data loads
+  useEnsureDefaultView();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

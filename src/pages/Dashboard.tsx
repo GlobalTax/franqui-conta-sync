@@ -8,6 +8,7 @@ import { useState } from "react";
 import { GerenteView } from "@/components/dashboard/GerenteView";
 import { ContabilidadView } from "@/components/dashboard/ContabilidadView";
 import { ControllerView } from "@/components/dashboard/ControllerView";
+import { TasksPanel } from "@/components/dashboard/TasksPanel";
 
 const Dashboard = () => {
   const { selectedView } = useView();
@@ -80,19 +81,27 @@ const Dashboard = () => {
       </div>
 
       <div className="p-6">
-        <Tabs value={viewMode}>
-          <TabsContent value="gerente" className="mt-0">
-            <GerenteView kpis={kpis} />
-          </TabsContent>
-          
-          <TabsContent value="contabilidad" className="mt-0">
-            <ContabilidadView kpis={kpis} />
-          </TabsContent>
-          
-          <TabsContent value="controller" className="mt-0">
-            <ControllerView kpis={kpis} />
-          </TabsContent>
-        </Tabs>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Tabs value={viewMode}>
+              <TabsContent value="gerente" className="mt-0">
+                <GerenteView kpis={kpis} />
+              </TabsContent>
+              
+              <TabsContent value="contabilidad" className="mt-0">
+                <ContabilidadView kpis={kpis} />
+              </TabsContent>
+              
+              <TabsContent value="controller" className="mt-0">
+                <ControllerView kpis={kpis} />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div>
+            <TasksPanel />
+          </div>
+        </div>
       </div>
     </div>
   );

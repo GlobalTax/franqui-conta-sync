@@ -10,6 +10,10 @@ import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
 import { useInvoicesIssued } from "@/hooks/useInvoicesIssued";
 import { useGenerateEntryFromInvoiceReceived } from "@/hooks/useInvoiceToEntry";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { ApprovalStatusBadge } from "@/components/invoices/ApprovalStatusBadge";
+import { useSubmitForApproval } from "@/hooks/useInvoiceApprovals";
+import { InvoiceApprovalDialog } from "@/components/invoices/InvoiceApprovalDialog";
+import { SendHorizontal, Eye, FileCheck } from "lucide-react";
 import { InvoicesTabs } from "@/components/invoices/InvoicesTabs";
 import { FilterPanel } from "@/components/common/FilterPanel";
 import { DataTablePro } from "@/components/common/DataTablePro";
@@ -33,6 +37,11 @@ const Invoices = () => {
     status: '',
     limit: '100'
   });
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [selectedInvoiceForApproval, setSelectedInvoiceForApproval] = useState<any>(null);
+  const [approvalLevel, setApprovalLevel] = useState<'manager' | 'accounting'>('accounting');
+
+  const submitForApprovalMutation = useSubmitForApproval();
 
   const handleGenerateEntry = async (invoiceId: string) => {
     try {
@@ -99,32 +108,76 @@ const Invoices = () => {
     { 
       key: 'status', 
       label: 'Estado',
-      render: (value: string) => <InvoiceStatusBadge status={value} type="received" />
+      render: (value: string, row: any) => (
+        <div className="space-y-1">
+          <InvoiceStatusBadge status={value} type="received" />
+          {row.approval_status && (
+            <ApprovalStatusBadge status={row.approval_status} />
+          )}
+        </div>
+      )
     },
     {
       key: 'actions',
       label: 'Acciones',
-      render: (_: any, row: any) => (
-        <div className="flex gap-2">
-          {!row.entry_id && row.status === 'approved' && (
+      render: (_: any, row: any) => {
+        const canSubmit = row.approval_status === 'draft' || !row.approval_status;
+        const canApprove = row.approval_status === 'pending_approval' || 
+                          row.approval_status === 'approved_manager';
+        const canGenerateEntry = row.approval_status === 'approved_accounting' && 
+                                !row.accounting_entry_id;
+
+        return (
+          <div className="flex gap-2">
+            {canSubmit && (
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => submitForApprovalMutation.mutate(row.id)}
+                disabled={submitForApprovalMutation.isPending}
+              >
+                <SendHorizontal className="w-4 h-4 mr-1" />
+                Enviar
+              </Button>
+            )}
+            {canApprove && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => {
+                  setSelectedInvoiceForApproval(row);
+                  setApprovalLevel(
+                    row.approval_status === 'pending_approval' && row.requires_manager_approval
+                      ? 'manager'
+                      : 'accounting'
+                  );
+                  setApprovalDialogOpen(true);
+                }}
+              >
+                <FileCheck className="w-4 h-4 mr-1" />
+                Aprobar
+              </Button>
+            )}
+            {canGenerateEntry && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleGenerateEntry(row.id)}
+                disabled={generateEntry.isPending}
+              >
+                {generateEntry.isPending ? 'Generando...' : 'Generar Asiento'}
+              </Button>
+            )}
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm"
-              onClick={() => handleGenerateEntry(row.id)}
-              disabled={generateEntry.isPending}
+              onClick={() => navigate(`/facturas/${row.id}`)}
             >
-              {generateEntry.isPending ? 'Generando...' : 'Generar Asiento'}
+              <Eye className="w-4 h-4" />
             </Button>
-          )}
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate(`/facturas/${row.id}`)}
-          >
-            Ver
-          </Button>
-        </div>
-      )
+          </div>
+        );
+      }
     }
   ];
 
@@ -401,6 +454,12 @@ const Invoices = () => {
             </div>
           )
         }}
+      />
+      <InvoiceApprovalDialog
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+        invoice={selectedInvoiceForApproval}
+        approvalLevel={approvalLevel}
       />
     </div>
   );

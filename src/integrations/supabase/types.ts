@@ -389,6 +389,63 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_rules: {
+        Row: {
+          active: boolean | null
+          auto_approve_below_threshold: boolean | null
+          centro_code: string | null
+          created_at: string | null
+          id: string
+          max_amount: number | null
+          min_amount: number | null
+          requires_accounting_approval: boolean | null
+          requires_manager_approval: boolean | null
+          rule_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          auto_approve_below_threshold?: boolean | null
+          centro_code?: string | null
+          created_at?: string | null
+          id?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          requires_accounting_approval?: boolean | null
+          requires_manager_approval?: boolean | null
+          rule_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          auto_approve_below_threshold?: boolean | null
+          centro_code?: string | null
+          created_at?: string | null
+          id?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          requires_accounting_approval?: boolean | null
+          requires_manager_approval?: boolean | null
+          rule_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_rules_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "approval_rules_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
       asset_depreciations: {
         Row: {
           accounting_entry_id: string | null
@@ -1632,6 +1689,44 @@ export type Database = {
           },
         ]
       }
+      invoice_approvals: {
+        Row: {
+          action: string
+          approval_level: string
+          approver_id: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          invoice_id: string
+        }
+        Insert: {
+          action: string
+          approval_level: string
+          approver_id: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id: string
+        }
+        Update: {
+          action?: string
+          approval_level?: string
+          approver_id?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_approvals_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           account_code: string | null
@@ -1837,6 +1932,7 @@ export type Database = {
       }
       invoices_received: {
         Row: {
+          approval_status: string | null
           centro_code: string
           created_at: string | null
           created_by: string | null
@@ -1849,6 +1945,11 @@ export type Database = {
           notes: string | null
           ocr_confidence: number | null
           payment_transaction_id: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejected_reason: string | null
+          requires_accounting_approval: boolean | null
+          requires_manager_approval: boolean | null
           status: string | null
           subtotal: number | null
           supplier_id: string | null
@@ -1857,6 +1958,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approval_status?: string | null
           centro_code: string
           created_at?: string | null
           created_by?: string | null
@@ -1869,6 +1971,11 @@ export type Database = {
           notes?: string | null
           ocr_confidence?: number | null
           payment_transaction_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejected_reason?: string | null
+          requires_accounting_approval?: boolean | null
+          requires_manager_approval?: boolean | null
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null
@@ -1877,6 +1984,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approval_status?: string | null
           centro_code?: string
           created_at?: string | null
           created_by?: string | null
@@ -1889,6 +1997,11 @@ export type Database = {
           notes?: string | null
           ocr_confidence?: number | null
           payment_transaction_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejected_reason?: string | null
+          requires_accounting_approval?: boolean | null
+          requires_manager_approval?: boolean | null
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null
@@ -3100,6 +3213,14 @@ export type Database = {
           credit_total: number
           debit_total: number
           level: number
+        }[]
+      }
+      calculate_required_approvals: {
+        Args: { p_centro_code: string; p_total_amount: number }
+        Returns: {
+          matching_rule_id: string
+          requires_accounting: boolean
+          requires_manager: boolean
         }[]
       }
       calculate_trial_balance: {

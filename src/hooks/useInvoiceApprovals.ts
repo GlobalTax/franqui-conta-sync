@@ -1,0 +1,147 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+export interface InvoiceApproval {
+  id: string;
+  invoice_id: string;
+  approver_id: string;
+  approval_level: 'manager' | 'accounting';
+  action: 'approved' | 'rejected' | 'requested_changes';
+  comments: string | null;
+  created_at: string;
+}
+
+export interface ApprovalAction {
+  invoice_id: string;
+  approval_level: 'manager' | 'accounting';
+  action: 'approved' | 'rejected' | 'requested_changes';
+  comments?: string;
+}
+
+export function useInvoiceApprovals(invoiceId?: string) {
+  return useQuery({
+    queryKey: ['invoice-approvals', invoiceId],
+    queryFn: async () => {
+      const query = supabase
+        .from('invoice_approvals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (invoiceId) {
+        query.eq('invoice_id', invoiceId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as InvoiceApproval[];
+    },
+    enabled: !!invoiceId,
+  });
+}
+
+export function useApproveInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: ApprovalAction) => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('invoice_approvals')
+        .insert({
+          invoice_id: params.invoice_id,
+          approver_id: userData.user.id,
+          approval_level: params.approval_level,
+          action: params.action,
+          comments: params.comments,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update rejection fields if rejected
+      if (params.action === 'rejected') {
+        const { error: updateError } = await supabase
+          .from('invoices_received')
+          .update({
+            rejected_by: userData.user.id,
+            rejected_at: new Date().toISOString(),
+            rejected_reason: params.comments,
+          })
+          .eq('id', params.invoice_id);
+
+        if (updateError) throw updateError;
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-approvals', variables.invoice_id] });
+      queryClient.invalidateQueries({ queryKey: ['pending-tasks'] });
+
+      const actionText = variables.action === 'approved' ? 'aprobada' : 
+                        variables.action === 'rejected' ? 'rechazada' : 'marcada para revisión';
+      toast.success(`Factura ${actionText} correctamente`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al procesar aprobación: ${error.message}`);
+    },
+  });
+}
+
+export function useSubmitForApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // Get invoice details
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices_received')
+        .select('total, centro_code')
+        .eq('id', invoiceId)
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Calculate required approvals
+      const { data: rules, error: rulesError } = await supabase
+        .rpc('calculate_required_approvals', {
+          p_centro_code: invoice.centro_code,
+          p_total_amount: invoice.total,
+        });
+
+      if (rulesError) throw rulesError;
+
+      const rule = rules?.[0];
+      const requiresManager = rule?.requires_manager || false;
+      const requiresAccounting = rule?.requires_accounting || true;
+
+      // Update invoice status
+      const { error: updateError } = await supabase
+        .from('invoices_received')
+        .update({
+          approval_status: 'pending_approval',
+          requires_manager_approval: requiresManager,
+          requires_accounting_approval: requiresAccounting,
+        })
+        .eq('id', invoiceId);
+
+      if (updateError) throw updateError;
+
+      return { invoiceId, requiresManager, requiresAccounting };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-tasks'] });
+      toast.success('Factura enviada para aprobación');
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al enviar factura: ${error.message}`);
+    },
+  });
+}

@@ -35,8 +35,12 @@ const Banks = () => {
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   const handleSuggestMatches = () => {
-    if (selectedAccount) {
-      suggestMatches(selectedAccount);
+    if (selectedAccount && selectedCentro) {
+      suggestMatches({
+        centroCode: selectedCentro,
+        startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+      });
     }
   };
 

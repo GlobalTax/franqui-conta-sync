@@ -4,15 +4,16 @@ import { toast } from "sonner";
 
 export interface ReconciliationMatch {
   id: string;
-  transaction_id: string;
-  match_type: "invoice" | "entry" | "manual";
-  match_id: string;
+  bank_transaction_id: string;
+  accounting_entry_id?: string;
+  match_type: "manual" | "automatic" | "suggested";
+  status: "pending" | "approved" | "rejected";
   confidence_score?: number;
-  matching_rules?: string[];
-  status: "suggested" | "approved" | "rejected";
-  approved_by?: string;
-  approved_at?: string;
+  matched_by?: string;
+  matched_at?: string;
+  notes?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export const useReconciliation = (centroCode?: string) => {
@@ -36,7 +37,7 @@ export const useReconciliation = (centroCode?: string) => {
             )
           )
         `)
-        .eq("status", "suggested")
+        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (centroCode) {
@@ -45,7 +46,7 @@ export const useReconciliation = (centroCode?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as (ReconciliationMatch & { bank_transactions: any })[];
+      return data as any;
     },
   });
 
@@ -68,7 +69,7 @@ export const useReconciliation = (centroCode?: string) => {
           )
         `)
         .eq("status", "approved")
-        .order("approved_at", { ascending: false });
+        .order("matched_at", { ascending: false });
 
       if (centroCode) {
         query = query.eq("bank_transactions.bank_accounts.centro_code", centroCode);
@@ -76,7 +77,7 @@ export const useReconciliation = (centroCode?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as (ReconciliationMatch & { bank_transactions: any })[];
+      return data as any;
     },
   });
 
@@ -89,8 +90,8 @@ export const useReconciliation = (centroCode?: string) => {
         .from("reconciliation_matches")
         .update({
           status: "approved",
-          approved_by: userId,
-          approved_at: new Date().toISOString(),
+          matched_by: userId,
+          matched_at: new Date().toISOString(),
         })
         .eq("id", matchId)
         .select()
@@ -99,11 +100,11 @@ export const useReconciliation = (centroCode?: string) => {
       if (error) throw error;
 
       // Update transaction status
-      const match = data as ReconciliationMatch;
+      const match = data as any;
       await supabase
         .from("bank_transactions")
         .update({ status: "reconciled" })
-        .eq("id", match.transaction_id);
+        .eq("id", match.bank_transaction_id);
 
       return data;
     },
@@ -142,95 +143,35 @@ export const useReconciliation = (centroCode?: string) => {
   });
 
   const suggestMatches = useMutation({
-    mutationFn: async (accountId: string) => {
-      // Get pending transactions
-      const { data: transactions, error: txError } = await supabase
-        .from("bank_transactions")
-        .select("*")
-        .eq("bank_account_id", accountId)
-        .eq("status", "pending");
+    mutationFn: async (params: { centroCode: string; startDate: string; endDate: string }) => {
+      // Call the database function to find potential matches
+      const { data, error } = await supabase.rpc("suggest_reconciliation_matches" as any, {
+        p_centro_code: params.centroCode,
+        p_start_date: params.startDate,
+        p_end_date: params.endDate,
+      });
 
-      if (txError) throw txError;
+      if (error) throw error;
 
-      // Get accounting entries from the same centro
-      const { data: account } = await supabase
-        .from("bank_accounts")
-        .select("centro_code")
-        .eq("id", accountId)
-        .single();
+      // Insert suggested matches
+      if (data && data.length > 0) {
+        const matches = data.map((match: any) => ({
+          bank_transaction_id: match.bank_transaction_id,
+          accounting_entry_id: match.accounting_entry_id,
+          match_type: "suggested",
+          status: "pending",
+          confidence_score: match.confidence_score,
+          notes: match.match_reason,
+        }));
 
-      const { data: entries, error: entriesError } = await supabase
-        .from("accounting_entries")
-        .select(`
-          id,
-          entry_date,
-          description,
-          total_debit,
-          total_credit
-        `)
-        .eq("centro_code", account?.centro_code)
-        .eq("status", "posted");
-
-      if (entriesError) throw entriesError;
-
-      // Simple matching algorithm
-      const matches: Omit<ReconciliationMatch, "id" | "created_at">[] = [];
-
-      for (const tx of transactions || []) {
-        for (const entry of entries || []) {
-          const rules: string[] = [];
-          let score = 0;
-
-          // Check amount match (debit/credit)
-          const entryAmount = tx.amount > 0 ? entry.total_credit : Math.abs(entry.total_debit);
-          if (Math.abs(Math.abs(tx.amount) - entryAmount) < 0.01) {
-            rules.push("exact_amount");
-            score += 0.5;
-          }
-
-          // Check date proximity (±3 days)
-          const txDate = new Date(tx.transaction_date);
-          const entryDate = new Date(entry.entry_date);
-          const daysDiff = Math.abs((txDate.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysDiff <= 3) {
-            rules.push("date_3_days");
-            score += 0.3;
-          }
-
-          // Check description similarity
-          const txDesc = tx.description.toLowerCase();
-          const entryDesc = entry.description.toLowerCase();
-          if (txDesc.includes(entryDesc.split(" ")[0]) || entryDesc.includes(txDesc.split(" ")[0])) {
-            rules.push("text_similarity");
-            score += 0.2;
-          }
-
-          // If confidence > 50%, suggest match
-          if (score >= 0.5) {
-            matches.push({
-              transaction_id: tx.id,
-              match_type: "entry",
-              match_id: entry.id,
-              confidence_score: Math.min(score, 1),
-              matching_rules: rules,
-              status: "suggested",
-            });
-          }
-        }
-      }
-
-      // Insert matches
-      if (matches.length > 0) {
-        const { data, error } = await supabase
+        const { error: insertError } = await supabase
           .from("reconciliation_matches")
-          .insert(matches)
-          .select();
+          .insert(matches as any);
 
-        if (error) throw error;
-        return data;
+        if (insertError) throw insertError;
       }
 
-      return [];
+      return data || [];
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["reconciliation-pending"] });

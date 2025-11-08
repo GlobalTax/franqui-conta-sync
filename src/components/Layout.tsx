@@ -5,6 +5,7 @@ import {
   FileText,
   CreditCard,
   Building2,
+  CheckCircle2,
   Users,
   Settings,
   LogOut,

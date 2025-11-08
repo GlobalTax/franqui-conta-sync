@@ -1,439 +1,270 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, Clock, CheckCircle2, XCircle, Sparkles, ArrowRight, AlertCircle } from "lucide-react";
 import { useReconciliation } from "@/hooks/useReconciliation";
-import { useOrganization } from "@/hooks/useOrganization";
-import { Skeleton } from "@/components/ui/skeleton";
+import { BankAccountSelector } from "@/components/treasury/BankAccountSelector";
+import { DateRangePicker } from "@/components/reports/DateRangePicker";
+import { Check, X, Sparkles } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { toast } from "sonner";
+import { useView } from "@/contexts/ViewContext";
 
-const Reconciliation = () => {
-  const [selectedTab, setSelectedTab] = useState("pending");
-  const { currentMembership } = useOrganization();
-  const selectedCentro = currentMembership?.restaurant?.codigo;
+export default function Reconciliation() {
+  const { selectedView } = useView();
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [dateRange, setDateRange] = useState({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
 
-  const {
-    pendingMatches,
-    approvedMatches,
+  const { 
+    pendingMatches, 
+    approvedMatches, 
     isLoading,
     approveMatch,
     rejectMatch,
-  } = useReconciliation(selectedCentro);
+    suggestMatches 
+  } = useReconciliation(selectedView?.id);
 
-  const mockReconciliations = [
-    {
-      id: "1",
-      transaction: {
-        date: "2024-01-15",
-        description: "TRANSFERENCIA PROVEEDOR A SL",
-        amount: -1234.56,
-      },
-      match: {
-        type: "invoice",
-        number: "FACT-2024-001",
-        supplier: "Proveedor A SL",
-        amount: 1234.56,
-      },
-      score: 0.95,
-      status: "suggested",
-      rules: ["Importe exacto", "Coincidencia texto 95%"],
-    },
-    {
-      id: "2",
-      transaction: {
-        date: "2024-01-16",
-        description: "DOM ELECTRICIDAD ENE",
-        amount: -567.89,
-      },
-      match: {
-        type: "invoice",
-        number: "FACT-2024-005",
-        supplier: "Compañía Eléctrica",
-        amount: 567.89,
-      },
-      score: 0.88,
-      status: "suggested",
-      rules: ["Importe exacto", "Fecha ±3 días"],
-    },
-    {
-      id: "3",
-      transaction: {
-        date: "2024-01-17",
-        description: "INGRESO TPV DIA 16/01",
-        amount: 3456.78,
-      },
-      match: null,
-      score: 0,
-      status: "pending",
-      rules: [],
-    },
-  ];
-
-  const approvedReconciliations = [
-    {
-      id: "4",
-      transaction: {
-        date: "2024-01-10",
-        description: "TRANSFERENCIA PROVEEDOR B",
-        amount: -987.65,
-      },
-      match: {
-        type: "invoice",
-        number: "FACT-2024-003",
-        supplier: "Proveedor B",
-        amount: 987.65,
-      },
-      status: "auto",
-      approvedBy: "María García",
-      approvedAt: "2024-01-10 14:30",
-    },
-  ];
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "auto":
-        return (
-          <Badge className="bg-success-light text-success hover:bg-success-light">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
-            Automática
-          </Badge>
-        );
-      case "suggested":
-        return (
-          <Badge className="bg-warning-light text-warning hover:bg-warning-light">
-            <AlertCircle className="mr-1 h-3 w-3" />
-            Sugerida
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge variant="secondary">
-            <Clock className="mr-1 h-3 w-3" />
-            Pendiente
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge variant="destructive">
-            <XCircle className="mr-1 h-3 w-3" />
-            Rechazada
-          </Badge>
-        );
-      default:
-        return null;
+  const handleSuggestMatches = () => {
+    if (!selectedView?.id) {
+      toast.error("Selecciona un centro primero");
+      return;
     }
+    
+    suggestMatches({
+      centroCode: selectedView.id,
+      startDate: format(dateRange.from, "yyyy-MM-dd"),
+      endDate: format(dateRange.to, "yyyy-MM-dd"),
+    });
   };
 
-  const renderReconciliationCard = (recon: any, showActions = true) => (
-    <Card key={recon.id} className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="grid md:grid-cols-2 gap-px bg-border">
-          {/* Transaction */}
-          <div className="bg-card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  TRANSACCIÓN BANCARIA
-                </p>
-                <p className="font-medium text-foreground mb-2">
-                  {recon.transaction.description}
-                </p>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-muted-foreground">
-                    {recon.transaction.date}
-                  </span>
-                  <span
-                    className={`font-semibold ${
-                      recon.transaction.amount > 0
-                        ? "text-success"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {recon.transaction.amount.toFixed(2)}€
-                  </span>
-                </div>
-              </div>
-              {getStatusBadge(recon.status)}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Banco: ES12 1234 5678 90</span>
-              <span>•</span>
-              <span>Madrid Centro</span>
-            </div>
-          </div>
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+  };
 
-          {/* Match */}
-          <div className="bg-card p-6 border-l-4 border-l-primary/20">
-            {recon.match ? (
-              <>
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  FACTURA RELACIONADA
-                </p>
-                <p className="font-medium text-foreground mb-2">
-                  {recon.match.number}
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Proveedor:</span>
-                    <span className="font-medium">{recon.match.supplier}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Importe:</span>
-                    <span className="font-semibold text-foreground">
-                      {recon.match.amount.toFixed(2)}€
-                    </span>
-                  </div>
-                  {recon.score > 0 && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">
-                        Reglas aplicadas:
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {recon.rules.map((rule: string, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {rule}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            Confianza:
-                          </span>
-                          <span className="font-semibold text-primary">
-                            {(recon.score * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${recon.score * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {recon.approvedBy && (
-                  <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-                    <p>
-                      Aprobado por {recon.approvedBy} • {recon.approvedAt}
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm font-medium text-foreground mb-1">
-                  Sin coincidencias
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  No se encontraron facturas relacionadas
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {showActions && recon.match && recon.status === "suggested" && (
-          <div className="bg-muted/30 p-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              ¿Confirmar esta conciliación?
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => rejectMatch(recon.id)}
-              >
-                Rechazar
-              </Button>
-              <Button
-                size="sm"
-                className="gap-2"
-                onClick={() => approveMatch(recon.id)}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Aprobar
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  const formatDate = (date: string) => {
+    return format(new Date(date), "dd/MM/yyyy", { locale: es });
+  };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Conciliación Bancaria
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Revisión y aprobación de coincidencias automáticas
-          </p>
-        </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <PageHeader
+        title="Conciliación Bancaria"
+        subtitle="Concilia transacciones bancarias con asientos contables"
+        breadcrumbs={[
+          { label: "Tesorería", href: "/bancos" },
+          { label: "Conciliación" }
+        ]}
+      />
 
-        <div className="grid gap-4 md:grid-cols-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+          <CardDescription>Selecciona cuenta bancaria y período</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Cuenta Bancaria</label>
+              <BankAccountSelector
+                value={selectedAccount}
+                onChange={setSelectedAccount}
+                centroCode={selectedView?.id}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium mb-2 block">Período</label>
+              <div className="flex gap-2">
+                <DateRangePicker
+                  startDate={dateRange.from}
+                  endDate={dateRange.to}
+                  onStartDateChange={(date) => date && setDateRange({ ...dateRange, from: date })}
+                  onEndDateChange={(date) => date && setDateRange({ ...dateRange, to: date })}
+                />
+                <Button onClick={handleSuggestMatches} variant="outline">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Sugerir Conciliaciones
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="pending">
+        <TabsList>
+          <TabsTrigger value="pending">
+            Pendientes ({pendingMatches.length})
+          </TabsTrigger>
+          <TabsTrigger value="approved">
+            Aprobadas ({approvedMatches.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="space-y-4">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Pendientes
-              </CardTitle>
+            <CardHeader>
+              <CardTitle>Conciliaciones Pendientes</CardTitle>
+              <CardDescription>
+                Revisa y aprueba las conciliaciones sugeridas automáticamente
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Requieren revisión
-              </p>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Cargando...</div>
+              ) : pendingMatches.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay conciliaciones pendientes. Haz clic en "Sugerir Conciliaciones" para buscar coincidencias.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha Trans.</TableHead>
+                      <TableHead>Descripción Bancaria</TableHead>
+                      <TableHead className="text-right">Importe</TableHead>
+                      <TableHead>Asiento</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-center">Confianza</TableHead>
+                      <TableHead className="text-center">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingMatches.map((match) => (
+                      <TableRow key={match.id}>
+                        <TableCell>
+                          {match.bank_transactions?.transaction_date 
+                            ? formatDate(match.bank_transactions.transaction_date)
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {match.bank_transactions?.description || "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {match.bank_transactions?.amount 
+                            ? formatCurrency(match.bank_transactions.amount)
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {match.accounting_entry_id 
+                            ? `Asiento ${match.accounting_entry_id.substring(0, 8)}`
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={match.match_type === "automatic" ? "default" : "secondary"}>
+                            {match.match_type === "automatic" ? "Automático" : "Sugerido"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge 
+                            variant={
+                              (match.confidence_score || 0) >= 80 
+                                ? "default" 
+                                : "secondary"
+                            }
+                          >
+                            {match.confidence_score ? `${match.confidence_score}%` : "-"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex gap-2 justify-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => approveMatch(match.id)}
+                            >
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => rejectMatch(match.id)}
+                            >
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="approved" className="space-y-4">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Sugeridas</CardTitle>
+            <CardHeader>
+              <CardTitle>Conciliaciones Aprobadas</CardTitle>
+              <CardDescription>
+                Historial de conciliaciones confirmadas
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-warning">12</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Confianza &gt; 80%
-              </p>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Cargando...</div>
+              ) : approvedMatches.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay conciliaciones aprobadas todavía
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha Trans.</TableHead>
+                      <TableHead>Descripción Bancaria</TableHead>
+                      <TableHead className="text-right">Importe</TableHead>
+                      <TableHead>Asiento</TableHead>
+                      <TableHead>Conciliado Por</TableHead>
+                      <TableHead>Fecha Conciliación</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedMatches.map((match) => (
+                      <TableRow key={match.id}>
+                        <TableCell>
+                          {match.bank_transactions?.transaction_date 
+                            ? formatDate(match.bank_transactions.transaction_date)
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {match.bank_transactions?.description || "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {match.bank_transactions?.amount 
+                            ? formatCurrency(match.bank_transactions.amount)
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {match.accounting_entry_id 
+                            ? `Asiento ${match.accounting_entry_id.substring(0, 8)}`
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {match.matched_by ? match.matched_by.substring(0, 8) : "Sistema"}
+                        </TableCell>
+                        <TableCell>
+                          {match.matched_at ? formatDate(match.matched_at) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Aprobadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">156</div>
-              <p className="text-xs text-muted-foreground mt-1">Este mes</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Precisión</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">94%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Conciliaciones automáticas
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList>
-            <TabsTrigger value="pending">
-              Pendientes de Revisión
-              <Badge className="ml-2 bg-warning-light text-warning">12</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="approved">Aprobadas</TabsTrigger>
-            <TabsTrigger value="rejected">Rechazadas</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending" className="space-y-4 mt-6">
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-40" />
-                ))}
-              </div>
-            ) : pendingMatches.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No hay conciliaciones pendientes</p>
-                <p className="text-sm mt-2">
-                  Usa el botón "Sugerir Conciliaciones" en la página de Bancos
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingMatches.map((match) => {
-                  const tx = match.bank_transactions;
-                  const recon = {
-                    id: match.id,
-                    transactionId: match.transaction_id,
-                    date: tx.transaction_date,
-                    amount: tx.amount,
-                    bankDescription: tx.description,
-                    status: match.status,
-                    match: match.match_type ? {
-                      type: match.match_type,
-                      reference: match.match_type === "invoice" ? "FAC-001" : "ASI-001",
-                      amount: Math.abs(tx.amount),
-                      date: tx.transaction_date,
-                    } : null,
-                    score: match.confidence_score || 0,
-                  };
-                  return renderReconciliationCard(recon, true);
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="approved" className="space-y-4 mt-6">
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2].map((i) => (
-                  <Skeleton key={i} className="h-40" />
-                ))}
-              </div>
-            ) : approvedMatches.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground">
-                    No hay conciliaciones aprobadas
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {approvedMatches.map((match) => {
-                  const tx = match.bank_transactions;
-                  const recon = {
-                    id: match.id,
-                    transactionId: match.transaction_id,
-                    date: tx.transaction_date,
-                    amount: tx.amount,
-                    bankDescription: tx.description,
-                    status: match.status,
-                    match: {
-                      type: match.match_type,
-                      reference: match.match_type === "invoice" ? "FAC-001" : "ASI-001",
-                      amount: Math.abs(tx.amount),
-                      date: tx.transaction_date,
-                    },
-                    score: match.confidence_score || 0,
-                    approvedBy: "Usuario",
-                    approvedAt: match.approved_at ? new Date(match.approved_at).toLocaleDateString("es-ES") : "",
-                  };
-                  return renderReconciliationCard(recon, false);
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="rejected" className="space-y-4 mt-6">
-            <Card>
-              <CardContent className="py-12 text-center">
-                <XCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground">
-                  No hay conciliaciones rechazadas
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default Reconciliation;
+}

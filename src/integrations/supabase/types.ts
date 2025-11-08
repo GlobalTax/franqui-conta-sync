@@ -213,6 +213,7 @@ export type Database = {
         Row: {
           account_code: string
           amount: number
+          cost_center_id: string | null
           created_at: string
           description: string | null
           document_ref: string | null
@@ -220,10 +221,12 @@ export type Database = {
           id: string
           line_number: number
           movement_type: Database["public"]["Enums"]["movement_type"]
+          project_id: string | null
         }
         Insert: {
           account_code: string
           amount: number
+          cost_center_id?: string | null
           created_at?: string
           description?: string | null
           document_ref?: string | null
@@ -231,10 +234,12 @@ export type Database = {
           id?: string
           line_number: number
           movement_type: Database["public"]["Enums"]["movement_type"]
+          project_id?: string | null
         }
         Update: {
           account_code?: string
           amount?: number
+          cost_center_id?: string | null
           created_at?: string
           description?: string | null
           document_ref?: string | null
@@ -242,13 +247,28 @@ export type Database = {
           id?: string
           line_number?: number
           movement_type?: Database["public"]["Enums"]["movement_type"]
+          project_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "accounting_transactions_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "accounting_transactions_entry_id_fkey"
             columns: ["entry_id"]
             isOneToOne: false
             referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -369,6 +389,57 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_depreciations: {
+        Row: {
+          accounting_entry_id: string | null
+          accumulated_depreciation: number
+          asset_id: string
+          book_value: number
+          created_at: string
+          depreciation_amount: number
+          id: string
+          period_month: number
+          period_year: number
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          accumulated_depreciation: number
+          asset_id: string
+          book_value: number
+          created_at?: string
+          depreciation_amount: number
+          id?: string
+          period_month: number
+          period_year: number
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          accumulated_depreciation?: number
+          asset_id?: string
+          book_value?: number
+          created_at?: string
+          depreciation_amount?: number
+          id?: string
+          period_month?: number
+          period_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_depreciations_accounting_entry_id_fkey"
+            columns: ["accounting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_depreciations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -455,6 +526,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      bank_remittances: {
+        Row: {
+          bank_account_id: string
+          centro_code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          remittance_date: string
+          remittance_number: string
+          remittance_type: string
+          sepa_file_path: string | null
+          status: string
+          total_amount: number
+          total_items: number
+          updated_at: string
+        }
+        Insert: {
+          bank_account_id: string
+          centro_code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          remittance_date: string
+          remittance_number: string
+          remittance_type: string
+          sepa_file_path?: string | null
+          status?: string
+          total_amount?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Update: {
+          bank_account_id?: string
+          centro_code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          remittance_date?: string
+          remittance_number?: string
+          remittance_type?: string
+          sepa_file_path?: string | null
+          status?: string
+          total_amount?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_remittances_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bank_transactions: {
         Row: {
@@ -704,6 +831,50 @@ export type Database = {
           },
         ]
       }
+      cost_centers: {
+        Row: {
+          active: boolean
+          centro_code: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          centro_code: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          centro_code?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dq_issues: {
         Row: {
           centro: string | null
@@ -949,6 +1120,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fixed_assets: {
+        Row: {
+          account_code: string
+          accumulated_depreciation: number | null
+          acquisition_date: string
+          acquisition_value: number
+          asset_code: string
+          centro_code: string
+          created_at: string
+          current_value: number | null
+          depreciation_method: string
+          description: string
+          disposal_date: string | null
+          disposal_value: number | null
+          id: string
+          invoice_ref: string | null
+          location: string | null
+          notes: string | null
+          residual_value: number | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+          useful_life_years: number
+        }
+        Insert: {
+          account_code: string
+          accumulated_depreciation?: number | null
+          acquisition_date: string
+          acquisition_value: number
+          asset_code: string
+          centro_code: string
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string
+          description: string
+          disposal_date?: string | null
+          disposal_value?: number | null
+          id?: string
+          invoice_ref?: string | null
+          location?: string | null
+          notes?: string | null
+          residual_value?: number | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          useful_life_years: number
+        }
+        Update: {
+          account_code?: string
+          accumulated_depreciation?: number | null
+          acquisition_date?: string
+          acquisition_value?: number
+          asset_code?: string
+          centro_code?: string
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string
+          description?: string
+          disposal_date?: string | null
+          disposal_value?: number | null
+          id?: string
+          invoice_ref?: string | null
+          location?: string | null
+          notes?: string | null
+          residual_value?: number | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          useful_life_years?: number
+        }
+        Relationships: []
       }
       franchisees: {
         Row: {
@@ -1599,6 +1842,71 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_terms: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          centro_code: string
+          concept: string
+          created_at: string
+          document_type: string
+          due_date: string
+          id: string
+          invoice_id: string | null
+          invoice_type: string | null
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          remittance_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          centro_code: string
+          concept: string
+          created_at?: string
+          document_type: string
+          due_date: string
+          id?: string
+          invoice_id?: string | null
+          invoice_type?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          remittance_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          centro_code?: string
+          concept?: string
+          created_at?: string
+          document_type?: string
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_type?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          remittance_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_terms_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payrolls: {
         Row: {
           coste_total: number | null
@@ -1673,6 +1981,54 @@ export type Database = {
           nombre?: string | null
           theme?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          actual_amount: number | null
+          budget_amount: number | null
+          centro_code: string
+          client_name: string | null
+          code: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_amount?: number | null
+          budget_amount?: number | null
+          centro_code: string
+          client_name?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_amount?: number | null
+          budget_amount?: number | null
+          centro_code?: string
+          client_name?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2221,6 +2577,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_model_configs: {
+        Row: {
+          auto_generate: boolean | null
+          centro_code: string
+          config_data: Json | null
+          created_at: string
+          id: string
+          last_generated_period: string | null
+          model_number: string
+          period_type: string
+          updated_at: string
+        }
+        Insert: {
+          auto_generate?: boolean | null
+          centro_code: string
+          config_data?: Json | null
+          created_at?: string
+          id?: string
+          last_generated_period?: string | null
+          model_number: string
+          period_type: string
+          updated_at?: string
+        }
+        Update: {
+          auto_generate?: boolean | null
+          centro_code?: string
+          config_data?: Json | null
+          created_at?: string
+          id?: string
+          last_generated_period?: string | null
+          model_number?: string
+          period_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_centre_permissions: {
         Row: {
           centro: string
@@ -2393,6 +2785,10 @@ export type Database = {
           nombre_grupo: string
         }[]
       }
+      calculate_monthly_depreciations: {
+        Args: { p_centro_code: string; p_month: number; p_year: number }
+        Returns: Json
+      }
       calculate_pnl: {
         Args: {
           p_centro_code: string
@@ -2459,6 +2855,10 @@ export type Database = {
           movement_type: string
         }[]
       }
+      generate_modelo_303: {
+        Args: { p_centro_code: string; p_quarter: number; p_year: number }
+        Returns: Json
+      }
       get_centros: {
         Args: never
         Returns: {
@@ -2481,6 +2881,20 @@ export type Database = {
           regularization_entry_id: string
           status: string
           updated_at: string
+        }[]
+      }
+      get_cost_center_analysis: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          balance: number
+          cost_center_code: string
+          cost_center_name: string
+          total_credit: number
+          total_debit: number
         }[]
       }
       get_cost_metrics: {
@@ -2677,6 +3091,15 @@ export type Database = {
           movement_type: string
         }[]
       }
+      get_payment_terms_analysis: {
+        Args: { p_centro_code: string; p_date_from: string; p_date_to: string }
+        Returns: {
+          avg_days_overdue: number
+          count_items: number
+          due_status: string
+          total_amount: number
+        }[]
+      }
       get_payroll_costs: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -2696,6 +3119,18 @@ export type Database = {
           centro: string
           costes_planificados: number
           costes_reales: number
+        }[]
+      }
+      get_project_analysis: {
+        Args: { p_centro_code: string; p_project_id?: string }
+        Returns: {
+          actual_amount: number
+          budget_amount: number
+          project_code: string
+          project_name: string
+          status: string
+          variance: number
+          variance_percent: number
         }[]
       }
       get_restaurants_with_franchisees: {

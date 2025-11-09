@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOrganization } from './useOrganization';
+import { 
+  getInvoicesIssued, 
+  getNextInvoiceNumber
+} from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import type { InvoiceFilters } from '@/domain/invoicing/types';
 
 export interface InvoiceIssued {
   id: string;
@@ -66,32 +71,44 @@ export const useInvoicesIssued = (filters?: {
   return useQuery({
     queryKey: ['invoices_issued', filters, selectedCentro],
     queryFn: async () => {
-      let query = supabase
-        .from('invoices_issued')
-        .select('*')
-        .order('invoice_date', { ascending: false });
-
       const centroFilter = filters?.centro_code || selectedCentro;
-      if (centroFilter) {
-        query = query.eq('centro_code', centroFilter);
-      }
+      
+      const queryFilters: Omit<InvoiceFilters, 'supplierId' | 'approvalStatus'> = {
+        centroCode: centroFilter,
+        status: filters?.status as any,
+        dateFrom: filters?.date_from,
+        dateTo: filters?.date_to,
+      };
 
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
+      const domainInvoices = await getInvoicesIssued(queryFilters);
 
-      if (filters?.date_from) {
-        query = query.gte('invoice_date', filters.date_from);
-      }
-
-      if (filters?.date_to) {
-        query = query.lte('invoice_date', filters.date_to);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as InvoiceIssued[];
+      // Convertir de camelCase (dominio) a snake_case (API legacy)
+      return domainInvoices.map(inv => ({
+        id: inv.id,
+        centro_code: inv.centroCode,
+        customer_name: inv.customerName,
+        customer_tax_id: inv.customerTaxId,
+        customer_email: inv.customerEmail,
+        customer_address: inv.customerAddress,
+        invoice_series: inv.invoiceSeries,
+        invoice_number: inv.invoiceNumber,
+        full_invoice_number: inv.fullInvoiceNumber,
+        invoice_date: inv.invoiceDate,
+        due_date: inv.dueDate,
+        subtotal: inv.subtotal,
+        tax_total: inv.taxTotal,
+        total: inv.total,
+        status: inv.status,
+        entry_id: inv.entryId,
+        payment_transaction_id: inv.paymentTransactionId,
+        pdf_path: inv.pdfPath,
+        sent_at: inv.sentAt,
+        paid_at: inv.paidAt,
+        notes: inv.notes,
+        created_at: inv.createdAt,
+        updated_at: inv.updatedAt,
+        created_by: inv.createdBy,
+      })) as InvoiceIssued[];
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
   });
@@ -100,41 +117,7 @@ export const useInvoicesIssued = (filters?: {
 export const useGetNextInvoiceNumber = () => {
   return useMutation({
     mutationFn: async ({ centro_code, series }: { centro_code: string; series: string }) => {
-      const year = new Date().getFullYear();
-
-      // Obtener o crear la secuencia
-      const { data: sequence, error: fetchError } = await supabase
-        .from('invoice_sequences')
-        .select('*')
-        .eq('centro_code', centro_code)
-        .eq('invoice_type', 'issued')
-        .eq('series', series)
-        .eq('year', year)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
-      if (!sequence) {
-        // Crear nueva secuencia
-        const { data: newSequence, error: createError } = await supabase
-          .from('invoice_sequences')
-          .insert([{
-            centro_code,
-            invoice_type: 'issued',
-            series,
-            year,
-            last_number: 0,
-          }])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        return 1;
-      }
-
-      return sequence.last_number + 1;
+      return await getNextInvoiceNumber(centro_code, series);
     },
   });
 };

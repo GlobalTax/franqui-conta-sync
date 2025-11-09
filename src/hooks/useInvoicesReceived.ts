@@ -2,7 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOrganization } from './useOrganization';
+import { 
+  getInvoicesReceived, 
+  getInvoiceLines 
+} from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import type { InvoiceFilters } from '@/domain/invoicing/types';
 
+// Tipos exportados para retrocompatibilidad (mapeo snake_case → camelCase)
 export interface InvoiceReceived {
   id: string;
   supplier_id: string | null;
@@ -79,47 +85,58 @@ export const useInvoicesReceived = (filters?: {
   return useQuery({
     queryKey: ['invoices_received', filters, selectedCentro],
     queryFn: async () => {
-      let query = supabase
-        .from('invoices_received')
-        .select(`
-          *,
-          supplier:suppliers(id, name, tax_id),
-          approvals:invoice_approvals(
-            id,
-            approver_id,
-            approval_level,
-            action,
-            comments,
-            created_at
-          )
-        `)
-        .order('invoice_date', { ascending: false });
-
       const centroFilter = filters?.centro_code || selectedCentro;
-      if (centroFilter) {
-        query = query.eq('centro_code', centroFilter);
-      }
+      
+      const queryFilters: InvoiceFilters = {
+        centroCode: centroFilter,
+        supplierId: filters?.supplier_id,
+        status: filters?.status as any,
+        dateFrom: filters?.date_from,
+        dateTo: filters?.date_to,
+      };
 
-      if (filters?.supplier_id) {
-        query = query.eq('supplier_id', filters.supplier_id);
-      }
+      const domainInvoices = await getInvoicesReceived(queryFilters);
 
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters?.date_from) {
-        query = query.gte('invoice_date', filters.date_from);
-      }
-
-      if (filters?.date_to) {
-        query = query.lte('invoice_date', filters.date_to);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as InvoiceReceived[];
+      // Convertir de camelCase (dominio) a snake_case (API legacy)
+      return domainInvoices.map(inv => ({
+        id: inv.id,
+        supplier_id: inv.supplierId,
+        centro_code: inv.centroCode,
+        invoice_number: inv.invoiceNumber,
+        invoice_date: inv.invoiceDate,
+        due_date: inv.dueDate,
+        subtotal: inv.subtotal,
+        tax_total: inv.taxTotal,
+        total: inv.total,
+        status: inv.status,
+        document_path: inv.documentPath,
+        entry_id: inv.entryId,
+        payment_transaction_id: inv.paymentTransactionId,
+        ocr_confidence: inv.ocrConfidence,
+        notes: inv.notes,
+        approval_status: inv.approvalStatus,
+        requires_manager_approval: inv.requiresManagerApproval,
+        requires_accounting_approval: inv.requiresAccountingApproval,
+        rejected_by: inv.rejectedBy,
+        rejected_at: inv.rejectedAt,
+        rejected_reason: inv.rejectedReason,
+        created_at: inv.createdAt,
+        updated_at: inv.updatedAt,
+        created_by: inv.createdBy,
+        supplier: inv.supplier ? {
+          id: inv.supplier.id,
+          name: inv.supplier.name,
+          tax_id: inv.supplier.taxId,
+        } : undefined,
+        approvals: inv.approvals?.map(a => ({
+          id: a.id,
+          approver_id: a.approverId,
+          approval_level: a.approvalLevel,
+          action: a.action,
+          comments: a.comments,
+          created_at: a.createdAt,
+        })),
+      })) as InvoiceReceived[];
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
   });
@@ -216,15 +233,25 @@ export const useInvoiceLines = (invoiceId: string, invoiceType: 'received' | 'is
   return useQuery({
     queryKey: ['invoice_lines', invoiceId, invoiceType],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoice_lines')
-        .select('*')
-        .eq('invoice_id', invoiceId)
-        .eq('invoice_type', invoiceType)
-        .order('line_number');
-
-      if (error) throw error;
-      return data;
+      const domainLines = await getInvoiceLines(invoiceId, invoiceType);
+      
+      // Convertir de camelCase (dominio) a snake_case (API legacy)
+      return domainLines.map(line => ({
+        id: line.id,
+        invoice_id: line.invoiceId,
+        invoice_type: line.invoiceType,
+        line_number: line.lineNumber,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unitPrice,
+        discount_percentage: line.discountPercentage,
+        discount_amount: line.discountAmount,
+        subtotal: line.subtotal,
+        tax_rate: line.taxRate,
+        tax_amount: line.taxAmount,
+        total: line.total,
+        account_code: line.accountCode,
+      }));
     },
     enabled: !!invoiceId,
   });

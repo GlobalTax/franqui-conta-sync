@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { 
+  getBankTransactions, 
+  createBankTransaction, 
+  updateBankTransaction,
+  importBankTransactions 
+} from "@/infrastructure/persistence/supabase/queries/BankQueries";
+import type { BankTransactionFilters } from "@/domain/banking/types";
 
+// Tipo exportado para retrocompatibilidad (snake_case)
 export interface BankTransaction {
   id: string;
   bank_account_id: string;
@@ -33,54 +40,54 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ["bank-transactions", filters],
     queryFn: async () => {
-      let query = supabase
-        .from("bank_transactions")
-        .select(`
-          *,
-          bank_accounts!inner(
-            id,
-            account_name,
-            iban,
-            centro_code
-          )
-        `)
-        .order("transaction_date", { ascending: false });
+      const queryFilters: BankTransactionFilters = {
+        accountId: filters.accountId,
+        centroCode: filters.centroCode,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        status: filters.status as any,
+      };
 
-      if (filters.accountId) {
-        query = query.eq("bank_account_id", filters.accountId);
-      }
+      const domainTransactions = await getBankTransactions(queryFilters);
 
-      if (filters.startDate) {
-        query = query.gte("transaction_date", filters.startDate);
-      }
-
-      if (filters.endDate) {
-        query = query.lte("transaction_date", filters.endDate);
-      }
-
-      if (filters.status) {
-        query = query.eq("status", filters.status);
-      }
-
-      if (filters.centroCode) {
-        query = query.eq("bank_accounts.centro_code", filters.centroCode);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as (BankTransaction & { bank_accounts: any })[];
+      // Convertir de camelCase (dominio) a snake_case (API legacy)
+      return domainTransactions.map(trans => ({
+        id: trans.id,
+        bank_account_id: trans.bankAccountId,
+        transaction_date: trans.transactionDate,
+        value_date: trans.valueDate,
+        description: trans.description,
+        reference: trans.reference,
+        amount: trans.amount,
+        balance: trans.balance,
+        status: trans.status,
+        matched_entry_id: trans.matchedEntryId,
+        matched_invoice_id: trans.matchedInvoiceId,
+        reconciliation_id: trans.reconciliationId,
+        import_batch_id: trans.importBatchId,
+        created_at: trans.createdAt,
+      })) as (BankTransaction & { bank_accounts?: any })[];
     },
   });
 
   const createTransaction = useMutation({
     mutationFn: async (transaction: Omit<BankTransaction, "id" | "created_at">) => {
-      const { data, error } = await supabase
-        .from("bank_transactions")
-        .insert(transaction)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const domainTrans = {
+        bankAccountId: transaction.bank_account_id,
+        transactionDate: transaction.transaction_date,
+        valueDate: transaction.value_date || null,
+        description: transaction.description,
+        reference: transaction.reference || null,
+        amount: transaction.amount,
+        balance: transaction.balance || null,
+        status: transaction.status,
+        matchedEntryId: transaction.matched_entry_id || null,
+        matchedInvoiceId: transaction.matched_invoice_id || null,
+        reconciliationId: transaction.reconciliation_id || null,
+        importBatchId: transaction.import_batch_id || null,
+      };
+      const result = await createBankTransaction(domainTrans as any);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
@@ -94,14 +101,22 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
 
   const updateTransaction = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<BankTransaction> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("bank_transactions")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const domainUpdates = {
+        bankAccountId: updates.bank_account_id,
+        transactionDate: updates.transaction_date,
+        valueDate: updates.value_date,
+        description: updates.description,
+        reference: updates.reference,
+        amount: updates.amount,
+        balance: updates.balance,
+        status: updates.status,
+        matchedEntryId: updates.matched_entry_id,
+        matchedInvoiceId: updates.matched_invoice_id,
+        reconciliationId: updates.reconciliation_id,
+        importBatchId: updates.import_batch_id,
+      };
+      const result = await updateBankTransaction(id, domainUpdates as any);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
@@ -115,12 +130,22 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
 
   const importTransactions = useMutation({
     mutationFn: async (transactions: Omit<BankTransaction, "id" | "created_at">[]) => {
-      const { data, error } = await supabase
-        .from("bank_transactions")
-        .insert(transactions)
-        .select();
-      if (error) throw error;
-      return data;
+      const domainTransactions = transactions.map(t => ({
+        bankAccountId: t.bank_account_id,
+        transactionDate: t.transaction_date,
+        valueDate: t.value_date || null,
+        description: t.description,
+        reference: t.reference || null,
+        amount: t.amount,
+        balance: t.balance || null,
+        status: t.status,
+        matchedEntryId: t.matched_entry_id || null,
+        matchedInvoiceId: t.matched_invoice_id || null,
+        reconciliationId: t.reconciliation_id || null,
+        importBatchId: t.import_batch_id || null,
+      }));
+      const results = await importBankTransactions(domainTransactions as any);
+      return results;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });

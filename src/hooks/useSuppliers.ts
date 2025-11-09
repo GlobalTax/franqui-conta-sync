@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { 
+  getSuppliers
+} from '@/infrastructure/persistence/supabase/queries/SupplierQueries';
+import type { SupplierFilters } from '@/domain/suppliers/types';
 
 export interface Supplier {
   id: string;
@@ -40,23 +44,32 @@ export const useSuppliers = (filters?: { search?: string; active?: boolean }) =>
   return useQuery({
     queryKey: ['suppliers', filters],
     queryFn: async () => {
-      let query = supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
+      const queryFilters: SupplierFilters = {
+        search: filters?.search,
+        active: filters?.active,
+      };
 
-      if (filters?.active !== undefined) {
-        query = query.eq('active', filters.active);
-      }
+      const domainSuppliers = await getSuppliers(queryFilters);
 
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,tax_id.ilike.%${filters.search}%,commercial_name.ilike.%${filters.search}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Supplier[];
+      // Convertir de camelCase (dominio) a snake_case (API legacy)
+      return domainSuppliers.map(sup => ({
+        id: sup.id,
+        tax_id: sup.taxId,
+        name: sup.name,
+        commercial_name: sup.commercialName,
+        email: sup.email,
+        phone: sup.phone,
+        address: sup.address,
+        city: sup.city,
+        postal_code: sup.postalCode,
+        country: sup.country,
+        payment_terms: sup.paymentTerms,
+        default_account_code: sup.defaultAccountCode,
+        notes: sup.notes,
+        active: sup.active,
+        created_at: sup.createdAt,
+        updated_at: sup.updatedAt,
+      })) as Supplier[];
     },
   });
 };

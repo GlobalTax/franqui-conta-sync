@@ -120,10 +120,30 @@ export default {
             height: "0",
           },
         },
+        "bounce-in": {
+          "0%": {
+            transform: "translateX(-100%) scale(0.9)",
+            opacity: "0",
+          },
+          "50%": {
+            transform: "translateX(0) scale(1.1)",
+            opacity: "1",
+          },
+          "70%": {
+            transform: "scale(0.95)",
+          },
+          "85%": {
+            transform: "scale(1.02)",
+          },
+          "100%": {
+            transform: "scale(1)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "bounce-in": "bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
       },
     },
   },

@@ -246,7 +246,7 @@ const ProfitAndLoss = () => {
                           <TooltipTrigger asChild>
                             <Badge 
                               variant="outline" 
-                              className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-in fade-in-0 slide-in-from-left-1 duration-200 flex items-center gap-1"
+                              className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-bounce-in flex items-center gap-1"
                             >
                               <span>⚡ Listo</span>
                               <Info className="h-3 w-3 motion-safe:animate-pulse" />

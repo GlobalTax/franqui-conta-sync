@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -14,9 +14,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TableActions } from "@/components/common/TableActions";
 import { useFranchisees } from "@/hooks/useFranchisees";
 
 interface Company {
@@ -29,6 +42,7 @@ interface Company {
   franchisee?: {
     name: string;
   };
+  centros_count?: number;
 }
 
 const CompaniesManagement = () => {
@@ -37,7 +51,13 @@ const CompaniesManagement = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [deleteValidation, setDeleteValidation] = useState<{
+    canDelete: Company[];
+    cannotDelete: Company[];
+  }>({ canDelete: [], cannotDelete: [] });
   const [formData, setFormData] = useState({
     cif: "",
     razon_social: "",
@@ -65,7 +85,22 @@ const CompaniesManagement = () => {
 
       if (error) throw error;
 
-      setCompanies(data || []);
+      // Get centre counts for each company
+      const companiesWithCounts = await Promise.all(
+        (data || []).map(async (company: any) => {
+          const { count } = await supabase
+            .from("centres")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", company.id);
+
+          return {
+            ...company,
+            centros_count: count || 0,
+          };
+        })
+      );
+
+      setCompanies(companiesWithCounts);
     } catch (err: any) {
       console.error("Error loading companies:", err);
       toast({
@@ -153,28 +188,91 @@ const CompaniesManagement = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar esta sociedad?")) return;
+  const validateDelete = async (companyIds: string[]) => {
+    const selectedCompanies = companies.filter(c => companyIds.includes(c.id));
+    const canDelete = selectedCompanies.filter(c => (c.centros_count || 0) === 0);
+    const cannotDelete = selectedCompanies.filter(c => (c.centros_count || 0) > 0);
+    
+    setDeleteValidation({ canDelete, cannotDelete });
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
     try {
-      const { error } = await supabase.from("companies").delete().eq("id", id);
+      const idsToDelete = deleteValidation.canDelete.map(c => c.id);
+      
+      if (idsToDelete.length === 0) {
+        toast({
+          title: "Error",
+          description: "No hay sociedades válidas para eliminar",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("companies")
+        .delete()
+        .in("id", idsToDelete);
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Sociedad mercantil eliminada correctamente",
+        description: `${idsToDelete.length} sociedad(es) eliminada(s) correctamente`,
       });
-
+      
+      if (deleteValidation.cannotDelete.length > 0) {
+        toast({
+          title: "Advertencia",
+          description: `${deleteValidation.cannotDelete.length} sociedad(es) no se pudieron eliminar (tienen centros asociados)`,
+          variant: "destructive",
+        });
+      }
+      
+      setSelectedCompanies([]);
+      setDeleteDialogOpen(false);
       loadCompanies();
     } catch (err: any) {
-      console.error("Error deleting company:", err);
+      console.error("Error deleting companies:", err);
       toast({
         title: "Error",
-        description: err.message || "No se pudo eliminar la sociedad mercantil",
+        description: err.message || "No se pudieron eliminar las sociedades",
         variant: "destructive",
       });
     }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCompanies.length === 0) {
+      toast({
+        title: "Error",
+        description: "Selecciona al menos una sociedad",
+        variant: "destructive",
+      });
+      return;
+    }
+    validateDelete(selectedCompanies);
+  };
+
+  const handleSingleDelete = (companyId: string) => {
+    validateDelete([companyId]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCompanies.length === companies.length) {
+      setSelectedCompanies([]);
+    } else {
+      setSelectedCompanies(companies.map(c => c.id));
+    }
+  };
+
+  const toggleSelectCompany = (companyId: string) => {
+    setSelectedCompanies(prev =>
+      prev.includes(companyId)
+        ? prev.filter(id => id !== companyId)
+        : [...prev, companyId]
+    );
   };
 
   if (loading) {
@@ -203,17 +301,33 @@ const CompaniesManagement = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedCompanies.length === companies.length && companies.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>CIF</TableHead>
               <TableHead>Razón Social</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Franquiciado</TableHead>
+              <TableHead>Centros</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {companies.map((company) => (
-              <TableRow key={company.id}>
+              <TableRow 
+                key={company.id}
+                className={selectedCompanies.includes(company.id) ? "bg-muted/50" : ""}
+              >
+                <TableCell>
+                  <Checkbox
+                    checked={selectedCompanies.includes(company.id)}
+                    onCheckedChange={() => toggleSelectCompany(company.id)}
+                  />
+                </TableCell>
                 <TableCell className="font-mono text-sm">{company.cif}</TableCell>
                 <TableCell className="font-medium">{company.razon_social}</TableCell>
                 <TableCell>
@@ -221,6 +335,16 @@ const CompaniesManagement = () => {
                 </TableCell>
                 <TableCell>
                   {company.franchisee?.name || "—"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={company.centros_count === 0 ? "outline" : "secondary"}>
+                      {company.centros_count || 0}
+                    </Badge>
+                    {company.centros_count! > 0 && (
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={company.activo ? "default" : "secondary"}>
@@ -240,8 +364,9 @@ const CompaniesManagement = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleDelete(company.id)}
-                      title="Eliminar sociedad"
+                      onClick={() => handleSingleDelete(company.id)}
+                      disabled={company.centros_count! > 0}
+                      title={company.centros_count! > 0 ? "No se puede eliminar: tiene centros asociados" : "Eliminar"}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -257,6 +382,12 @@ const CompaniesManagement = () => {
             No se encontraron sociedades mercantiles
           </div>
         )}
+
+        <TableActions
+          selectedCount={selectedCompanies.length}
+          onDelete={handleBulkDelete}
+          onNew={openCreateDialog}
+        />
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -341,6 +472,57 @@ const CompaniesManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                {deleteValidation.canDelete.length > 0 && (
+                  <Alert>
+                    <AlertDescription>
+                      <strong className="text-foreground">{deleteValidation.canDelete.length} sociedad(es) serán eliminadas:</strong>
+                      <ul className="mt-2 space-y-1">
+                        {deleteValidation.canDelete.map(c => (
+                          <li key={c.id} className="text-sm">• {c.razon_social} ({c.cif})</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {deleteValidation.cannotDelete.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>{deleteValidation.cannotDelete.length} sociedad(es) NO se pueden eliminar (tienen centros asociados):</strong>
+                      <ul className="mt-2 space-y-1">
+                        {deleteValidation.cannotDelete.map(c => (
+                          <li key={c.id} className="text-sm">
+                            • {c.razon_social} ({c.cif}) - {c.centros_count} centro(s)
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 text-sm">Desasocia los centros primero o cámbialos a otra sociedad.</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteValidation.canDelete.length === 0}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar {deleteValidation.canDelete.length > 0 && `(${deleteValidation.canDelete.length})`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

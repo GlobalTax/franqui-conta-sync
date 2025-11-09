@@ -993,6 +993,42 @@ export type Database = {
           },
         ]
       }
+      centres_companies_snapshot_20241109: {
+        Row: {
+          centre_code: string | null
+          centre_id: string | null
+          centre_name: string | null
+          franchisee_id: string | null
+          old_cif: string | null
+          old_company_id: string | null
+          old_razon_social: string | null
+          old_tipo_sociedad: string | null
+          snapshot_date: string | null
+        }
+        Insert: {
+          centre_code?: string | null
+          centre_id?: string | null
+          centre_name?: string | null
+          franchisee_id?: string | null
+          old_cif?: string | null
+          old_company_id?: string | null
+          old_razon_social?: string | null
+          old_tipo_sociedad?: string | null
+          snapshot_date?: string | null
+        }
+        Update: {
+          centre_code?: string | null
+          centre_id?: string | null
+          centre_name?: string | null
+          franchisee_id?: string | null
+          old_cif?: string | null
+          old_company_id?: string | null
+          old_razon_social?: string | null
+          old_tipo_sociedad?: string | null
+          snapshot_date?: string | null
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           activo: boolean | null
@@ -1033,6 +1069,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      companies_backup_20241109: {
+        Row: {
+          activo: boolean | null
+          cif: string | null
+          created_at: string | null
+          franchisee_id: string | null
+          id: string | null
+          razon_social: string | null
+          tipo_sociedad: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          cif?: string | null
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string | null
+          razon_social?: string | null
+          tipo_sociedad?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          cif?: string | null
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string | null
+          razon_social?: string | null
+          tipo_sociedad?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       compliance_alerts: {
         Row: {
@@ -3338,6 +3407,13 @@ export type Database = {
       }
     }
     Views: {
+      v_companies_reconstruction_report: {
+        Row: {
+          metric: string | null
+          value: string | null
+        }
+        Relationships: []
+      }
       v_user_centres: {
         Row: {
           centro_code: string | null

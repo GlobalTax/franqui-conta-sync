@@ -4287,46 +4287,25 @@ export type Database = {
         Args: { p_centro_code: string; p_month: number; p_year: number }
         Returns: Json
       }
-      calculate_pl_report:
-        | {
-            Args: {
-              p_centro_code?: string
-              p_company_id?: string
-              p_end_date?: string
-              p_start_date?: string
-              p_template_code: string
-            }
-            Returns: {
-              amount: number
-              is_total: boolean
-              level: number
-              parent_code: string
-              rubric_code: string
-              rubric_name: string
-              sign: string
-              sort: number
-            }[]
-          }
-        | {
-            Args: {
-              p_centro_code?: string
-              p_company_id?: string
-              p_end_date?: string
-              p_start_date?: string
-              p_template_code: string
-            }
-            Returns: {
-              amount: number
-              is_total: boolean
-              level: number
-              parent_code: string
-              percentage: number
-              rubric_code: string
-              rubric_name: string
-              sign: string
-              sort: number
-            }[]
-          }
+      calculate_pl_report: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_end_date?: string
+          p_start_date?: string
+          p_template_code: string
+        }
+        Returns: {
+          amount: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          rubric_code: string
+          rubric_name: string
+          sign: string
+          sort: number
+        }[]
+      }
       calculate_pl_report_accumulated: {
         Args: {
           p_centro_code?: string

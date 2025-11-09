@@ -2,10 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountingEntry, AccountingEntryWithTransactions, NewAccountingEntryFormData } from "@/types/accounting-entries";
 import { toast } from "sonner";
-import { EntryValidator } from "@/domain/accounting/services/EntryValidator";
-import { EntryCalculator } from "@/domain/accounting/services/EntryCalculator";
-import { Transaction } from "@/domain/accounting/types";
-import { getJournalEntries, createJournalEntry, getNextEntryNumber } from "@/infrastructure/persistence/supabase/queries/EntryQueries";
+import { getJournalEntries } from "@/infrastructure/persistence/supabase/queries/EntryQueries";
+import { CreateAccountingEntryUseCase } from "@/domain/accounting/use-cases/CreateAccountingEntry";
 
 export function useAccountingEntries(centroCode?: string, filters?: {
   startDate?: string;
@@ -61,79 +59,40 @@ export function useAccountingEntries(centroCode?: string, filters?: {
 
 export function useCreateAccountingEntry() {
   const queryClient = useQueryClient();
+  const createEntryUseCase = new CreateAccountingEntryUseCase();
 
   return useMutation({
     mutationFn: async ({ centroCode, formData }: { centroCode: string; formData: NewAccountingEntryFormData }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("No autenticado");
 
-      // Get current fiscal year
-      const { data: fiscalYear } = await supabase
-        .from("fiscal_years")
-        .select("id")
-        .eq("centro_code", centroCode)
-        .eq("status", "open")
-        .single();
-
-      if (!fiscalYear) {
-        throw new Error("No hay ejercicio fiscal abierto para este centro");
-      }
-
-      // Convert to domain types for validation
-      const domainTransactions: Transaction[] = formData.transactions.map(t => ({
-        accountCode: t.account_code,
-        movementType: t.movement_type,
-        amount: t.amount,
-        description: t.description,
-      }));
-
-      // Validate using domain services
-      const validation = EntryValidator.validateEntry({
+      const result = await createEntryUseCase.execute({
+        centroCode,
         entryDate: formData.entry_date,
         description: formData.description,
-        centroCode: centroCode,
-        totalDebit: 0, // Will be calculated
-        totalCredit: 0, // Will be calculated
-        transactions: domainTransactions,
-      });
-
-      if (!validation.valid) {
-        throw new Error(validation.details || validation.error);
-      }
-
-      // Calculate totals using domain service
-      const totals = EntryCalculator.calculateTotals(domainTransactions);
-
-      // Get next entry number using new query layer
-      const nextEntryNumber = await getNextEntryNumber(fiscalYear.id);
-
-      // Create entry using new query layer
-      const createdEntry = await createJournalEntry({
-        entryDate: formData.entry_date,
-        description: formData.description,
-        centroCode: centroCode,
-        fiscalYearId: fiscalYear.id,
-        status: 'draft',
-        totalDebit: totals.debit,
-        totalCredit: totals.credit,
-        transactions: domainTransactions,
+        transactions: formData.transactions.map(t => ({
+          accountCode: t.account_code,
+          movementType: t.movement_type,
+          amount: t.amount,
+          description: t.description,
+        })),
         createdBy: user.user.id,
-      }, nextEntryNumber);
+      });
 
       // Mapear de vuelta al formato esperado por UI
       return {
-        id: createdEntry.id,
-        entry_number: createdEntry.entryNumber,
-        entry_date: createdEntry.entryDate,
-        description: createdEntry.description,
-        centro_code: createdEntry.centroCode,
-        fiscal_year_id: createdEntry.fiscalYearId || null,
-        status: createdEntry.status,
-        total_debit: createdEntry.totalDebit,
-        total_credit: createdEntry.totalCredit,
-        created_by: createdEntry.createdBy || null,
-        created_at: createdEntry.createdAt || '',
-        updated_at: createdEntry.updatedAt || '',
+        id: result.entry.id,
+        entry_number: result.entry.entryNumber,
+        entry_date: result.entry.entryDate,
+        description: result.entry.description,
+        centro_code: result.entry.centroCode,
+        fiscal_year_id: result.entry.fiscalYearId || null,
+        status: result.entry.status,
+        total_debit: result.entry.totalDebit,
+        total_credit: result.entry.totalCredit,
+        created_by: result.entry.createdBy || null,
+        created_at: result.entry.createdAt || '',
+        updated_at: result.entry.updatedAt || '',
       };
     },
     onSuccess: () => {

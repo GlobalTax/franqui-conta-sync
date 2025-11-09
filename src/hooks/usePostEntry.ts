@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PostEntryUseCase } from "@/domain/accounting/use-cases/PostEntry";
 
 interface PostEntryParams {
   entryId: string;
@@ -13,29 +14,21 @@ interface UnpostEntryParams {
 
 export const usePostEntry = () => {
   const queryClient = useQueryClient();
+  const postEntryUseCase = new PostEntryUseCase();
 
   const postEntry = useMutation({
     mutationFn: async ({ entryId }: PostEntryParams) => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Usuario no autenticado");
 
-      const { data, error } = await supabase.rpc("contabilizar_asiento" as any, {
-        p_entry_id: entryId,
-        p_user_id: userData.user.id,
+      return await postEntryUseCase.execute({
+        entryId,
+        userId: userData.user.id,
       });
-
-      if (error) throw error;
-
-      const result = data as any;
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      return result;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["accounting-entries"] });
-      toast.success(data.message || "Asiento contabilizado correctamente");
+      toast.success(data.message);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error al contabilizar el asiento");

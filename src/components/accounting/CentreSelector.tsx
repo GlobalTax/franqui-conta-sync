@@ -21,16 +21,20 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
   const isError = centresIsError;
   const error = centresError;
 
-  // Auto-select "all" (consolidated view) when data loads and no view is selected
+  // Auto-select first company when data loads and no view is selected
   useEffect(() => {
-    if (!isLoading && !value && (franchiseesWithCentres?.length || franchiseesWithCompanies?.length)) {
-      onChange({
-        type: 'all',
-        id: 'all',
-        name: 'Consolidado General - Todos los Franquiciados'
-      });
+    if (!isLoading && !value && franchiseesWithCompanies?.length) {
+      const firstFranchisee = franchiseesWithCompanies[0];
+      const firstCompany = firstFranchisee?.companies[0];
+      if (firstCompany) {
+        onChange({
+          type: 'company',
+          id: firstCompany.id,
+          name: firstCompany.razon_social
+        });
+      }
     }
-  }, [franchiseesWithCentres, franchiseesWithCompanies, value, onChange, isLoading]);
+  }, [franchiseesWithCompanies, value, onChange, isLoading]);
 
   if (isLoading) {
     return (
@@ -77,13 +81,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
       onValueChange={(val) => {
         const [type, id] = val.split(':');
         
-        if (type === 'all') {
-          onChange({ 
-            type: 'all', 
-            id: 'all', 
-            name: 'Consolidado General - Todos los Franquiciados' 
-          });
-        } else if (type === 'company') {
+        if (type === 'company') {
           // Find company across all franchisees
           let foundCompany = null;
           for (const franchisee of franchiseesWithCompanies || []) {
@@ -118,18 +116,10 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         <SelectValue placeholder="Seleccionar vista..." />
       </SelectTrigger>
       <SelectContent className="max-h-[500px]">
-        {/* Opción consolidada general */}
-        <SelectItem value="all:all" className="font-semibold bg-primary/5 sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" />
-            <span>📊 Consolidado General - Todos</span>
-          </div>
-        </SelectItem>
-        
         {/* Sociedades mercantiles agrupadas por franquiciado */}
         {franchiseesWithCompanies && franchiseesWithCompanies.length > 0 && (
           <>
-            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky top-10 z-10">
+            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky top-0 z-10">
               💼 Sociedades Mercantiles
             </div>
             {franchiseesWithCompanies.map((franchisee) => (

@@ -20,38 +20,22 @@ export const useEnsureDefaultView = () => {
         return;
       }
 
-      // Priority 1: If user has a specific restaurant_id in their membership, use it
-      if (currentMembership.restaurant_id) {
-        try {
-          const { data: centre } = await supabase
-            .from('centres')
-            .select('id, codigo, nombre')
-            .eq('id', currentMembership.restaurant_id)
-            .single();
+      // Only set view if user has a specific restaurant_id in their membership
+      if (currentMembership.restaurant_id && centres) {
+        const prioritizedCentre = centres.find(
+          (c) => c.id === currentMembership.restaurant_id
+        );
 
-          if (centre) {
-            const defaultView: ViewSelection = {
-              type: 'centre',
-              id: centre.id,
-              name: `${centre.codigo} - ${centre.nombre}`,
-            };
-            setSelectedView(defaultView);
-            return;
-          }
-        } catch (error) {
-          console.error('Error loading specific centre from membership:', error);
+        if (prioritizedCentre) {
+          const defaultView: ViewSelection = {
+            type: 'centre',
+            id: prioritizedCentre.id,
+            name: `${prioritizedCentre.codigo} - ${prioritizedCentre.nombre}`,
+          };
+          setSelectedView(defaultView);
         }
       }
-
-      // Priority 2: Default to "all centres" (consolidated view)
-      if (centres && centres.length > 0) {
-        const defaultView: ViewSelection = {
-          type: 'all',
-          id: currentMembership.organization_id,
-          name: 'Todos los Centros',
-        };
-        setSelectedView(defaultView);
-      }
+      // If no restaurant_id, let CentreSelector handle the default (first company)
     };
 
     initializeView();

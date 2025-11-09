@@ -13,6 +13,28 @@ import type {
 } from "@/domain/invoicing/types";
 
 /**
+ * Obtiene una factura recibida por ID
+ */
+export async function getInvoiceReceivedById(
+  invoiceId: string
+): Promise<InvoiceReceived | null> {
+  const { data, error } = await supabase
+    .from("invoices_received")
+    .select(`
+      *,
+      supplier:suppliers(id, name, tax_id),
+      approvals:invoice_approvals(*)
+    `)
+    .eq("id", invoiceId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return InvoiceMapper.receivedToDomain(data);
+}
+
+/**
  * Obtiene facturas recibidas con filtros
  */
 export async function getInvoicesReceived(

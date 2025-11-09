@@ -229,8 +229,8 @@ export class InvoiceValidator {
 
     // Validar cuenta contable si existe
     if (line.accountCode) {
-      const validation = PGCValidator.validate(line.accountCode);
-      if (!validation.isValid) {
+      const validation = PGCValidator.validateAccountGroup(line.accountCode);
+      if (!validation.valid) {
         errors.push({
           field: `${prefix}.accountCode`,
           message: `La cuenta contable "${line.accountCode}" en línea ${lineIndex + 1} no es válida según PGC`,

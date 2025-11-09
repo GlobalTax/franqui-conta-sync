@@ -109,9 +109,15 @@ export class CreateInvoiceReceivedUseCase {
     }
 
     // PASO 5: Persistir en base de datos
+    // Agregar invoiceType a las líneas (requerido por la interfaz de persistencia)
+    const linesWithType = input.lines.map(line => ({
+      ...line,
+      invoiceType: 'received' as const,
+    }));
+    
     const createdInvoice = await InvoiceQueries.createInvoiceReceived(
       invoice,
-      input.lines
+      linesWithType
     );
 
     return {

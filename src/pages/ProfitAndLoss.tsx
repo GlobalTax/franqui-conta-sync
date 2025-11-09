@@ -26,19 +26,6 @@ import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 // ✅ Lazy load: Tabla multi-año (solo se carga cuando se activa la vista)
 const PLTableMultiYear = lazy(() => import("@/components/pl/PLTableMultiYear").then(m => ({ default: m.PLTableMultiYear })));
 
-// ✅ Función de preload para cargar el componente antes del clic
-let isPreloaded = false;
-const preloadMultiYearTable = () => {
-  if (!isPreloaded) {
-    isPreloaded = true;
-    import("@/components/pl/PLTableMultiYear").then(() => {
-      console.log("✅ PLTableMultiYear precargado");
-    }).catch((err) => {
-      console.warn("⚠️ Error al precargar PLTableMultiYear:", err);
-      isPreloaded = false;
-    });
-  }
-};
 
 // Skeleton para lazy loading
 function PLTableMultiYearSkeleton() {
@@ -60,6 +47,20 @@ const ProfitAndLoss = () => {
   const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
   const [showAccumulated, setShowAccumulated] = useState(false);
   const [showAdjustments, setShowAdjustments] = useState(false);
+  const [isPreloaded, setIsPreloaded] = useState(false);
+  
+  // ✅ Función de preload con estado de React
+  const preloadMultiYearTable = useCallback(() => {
+    if (!isPreloaded) {
+      setIsPreloaded(true);
+      import("@/components/pl/PLTableMultiYear").then(() => {
+        console.log("✅ PLTableMultiYear precargado");
+      }).catch((err) => {
+        console.warn("⚠️ Error al precargar PLTableMultiYear:", err);
+        setIsPreloaded(false);
+      });
+    }
+  }, [isPreloaded]);
   
   // Obtener plantillas disponibles
   const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
@@ -236,7 +237,17 @@ const ProfitAndLoss = () => {
                   value="multi-year"
                   onMouseEnter={preloadMultiYearTable}
                 >
-                  Multi-Año
+                  <div className="flex items-center gap-2">
+                    <span>Multi-Año</span>
+                    {isPreloaded && (
+                      <Badge 
+                        variant="outline" 
+                        className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20"
+                      >
+                        ⚡ Listo
+                      </Badge>
+                    )}
+                  </div>
                 </SelectItem>
               </SelectContent>
             </Select>

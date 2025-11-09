@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RejectInvoiceUseCase } from '../RejectInvoice';
-import * as InvoiceCommands from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { RejectInvoiceInput } from '../RejectInvoice';
 import type { InvoiceReceived } from '../../types';
-
-vi.mock('@/infrastructure/persistence/supabase/commands/InvoiceCommands');
 
 describe('RejectInvoiceUseCase', () => {
   let useCase: RejectInvoiceUseCase;
@@ -57,20 +55,22 @@ describe('RejectInvoiceUseCase', () => {
       status: 'rejected',
       rejectedBy: 'user-123',
     };
-    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(
       mockUpdated as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.updatedInvoice.approvalStatus).toBe('rejected');
-    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(updateSpy).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
-        approvalStatus: 'rejected',
-        status: 'rejected',
-        rejectedBy: 'user-123',
-        rejectedReason: 'Importe no coincide con pedido',
+        updates: expect.objectContaining({
+          approvalStatus: 'rejected',
+          status: 'rejected',
+          rejectedBy: 'user-123',
+          rejectedReason: 'Importe no coincide con pedido',
+        })
       })
     );
   });
@@ -84,8 +84,10 @@ describe('RejectInvoiceUseCase', () => {
       reason: '', // Razón vacía
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/Debe proporcionar una razón/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar si factura ya está aprobada', async () => {
@@ -100,8 +102,10 @@ describe('RejectInvoiceUseCase', () => {
       reason: 'Razón de prueba',
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/ya aprobada/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar si factura ya está rechazada', async () => {
@@ -116,8 +120,10 @@ describe('RejectInvoiceUseCase', () => {
       reason: 'Razón de prueba',
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/ya rechazada/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe validar permisos del usuario', async () => {
@@ -129,8 +135,10 @@ describe('RejectInvoiceUseCase', () => {
       reason: 'Razón de prueba',
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/no tiene permisos/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe agregar comentarios a notas existentes', async () => {
@@ -147,16 +155,18 @@ describe('RejectInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'rejected' };
-    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(
       mockUpdated as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(updateSpy).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
-        notes: expect.stringContaining('Notas previas'),
+        updates: expect.objectContaining({
+          notes: expect.stringContaining('Notas previas'),
+        })
       })
     );
   });

@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApproveInvoiceUseCase } from '../ApproveInvoice';
-import * as InvoiceCommands from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { ApproveInvoiceInput } from '../ApproveInvoice';
 import type { InvoiceReceived } from '../../types';
-
-vi.mock('@/infrastructure/persistence/supabase/commands/InvoiceCommands');
 
 describe('ApproveInvoiceUseCase', () => {
   let useCase: ApproveInvoiceUseCase;
@@ -51,18 +49,20 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'pending_accounting' };
-    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(
       mockUpdated as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.nextApprovalStatus).toBe('pending_accounting');
-    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(updateSpy).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
-        approvalStatus: 'pending_accounting',
-        status: 'pending',
+        updates: expect.objectContaining({
+          approvalStatus: 'pending_accounting',
+          status: 'pending',
+        })
       })
     );
   });
@@ -80,18 +80,20 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'approved' };
-    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(
       mockUpdated as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.nextApprovalStatus).toBe('approved');
-    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(updateSpy).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
-        approvalStatus: 'approved',
-        status: 'approved',
+        updates: expect.objectContaining({
+          approvalStatus: 'approved',
+          status: 'approved',
+        })
       })
     );
   });
@@ -105,8 +107,10 @@ describe('ApproveInvoiceUseCase', () => {
       approvalLevel: 'manager',
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/no tiene permisos/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar aprobación si factura ya está aprobada', async () => {
@@ -121,8 +125,10 @@ describe('ApproveInvoiceUseCase', () => {
       approvalLevel: 'manager',
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(/ya está aprobada/);
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar si nivel de aprobación no coincide', async () => {
@@ -134,10 +140,12 @@ describe('ApproveInvoiceUseCase', () => {
       approvalLevel: 'accounting', // Intenta aprobar accounting cuando está pending_manager
     };
 
+    const updateSpy = vi.spyOn(InvoiceCommands, 'updateInvoiceReceived');
+
     await expect(useCase.execute(input)).rejects.toThrow(
       /pendiente de aprobación de nivel/
     );
-    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('admin puede aprobar en cualquier nivel', async () => {
@@ -150,7 +158,7 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'pending_accounting' };
-    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
+    vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(
       mockUpdated as any
     );
 

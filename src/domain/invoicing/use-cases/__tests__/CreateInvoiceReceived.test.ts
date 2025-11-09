@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CreateInvoiceReceivedUseCase } from '../CreateInvoiceReceived';
-import * as InvoiceCommands from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { CreateInvoiceReceivedInput } from '../CreateInvoiceReceived';
-
-vi.mock('@/infrastructure/persistence/supabase/commands/InvoiceCommands');
 
 describe('CreateInvoiceReceivedUseCase', () => {
   let useCase: CreateInvoiceReceivedUseCase;
@@ -39,20 +37,22 @@ describe('CreateInvoiceReceivedUseCase', () => {
     const input = createValidInput();
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.invoice).toBeDefined();
-    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        subtotal: 100,
-        taxTotal: 21,
-        total: 121,
-      }),
-      input.lines
+        invoice: expect.objectContaining({
+          subtotal: 100,
+          taxTotal: 21,
+          total: 121,
+        }),
+        lines: input.lines
+      })
     );
   });
 
@@ -60,19 +60,21 @@ describe('CreateInvoiceReceivedUseCase', () => {
     const input = createValidInput();
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        requiresManagerApproval: false,
-        requiresAccountingApproval: true,
-        approvalStatus: 'pending_accounting',
-      }),
-      input.lines
+        invoice: expect.objectContaining({
+          requiresManagerApproval: false,
+          requiresAccountingApproval: true,
+          approvalStatus: 'pending_accounting',
+        }),
+        lines: input.lines
+      })
     );
   });
 
@@ -81,42 +83,47 @@ describe('CreateInvoiceReceivedUseCase', () => {
     input.lines[0].unitPrice = 600; // Total = 726€ con IVA
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        requiresManagerApproval: true,
-        requiresAccountingApproval: true,
-        approvalStatus: 'pending_manager',
-      }),
-      input.lines
+        invoice: expect.objectContaining({
+          requiresManagerApproval: true,
+          requiresAccountingApproval: true,
+          approvalStatus: 'pending_manager',
+        }),
+        lines: input.lines
+      })
     );
   });
 
   it('debe rechazar factura sin proveedor', async () => {
     const input = { ...createValidInput(), supplierId: '' };
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived');
 
     await expect(useCase.execute(input)).rejects.toThrow(/Validación fallida/);
-    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(createSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar factura sin líneas', async () => {
     const input = { ...createValidInput(), lines: [] };
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived');
 
     await expect(useCase.execute(input)).rejects.toThrow(/al menos una línea/);
-    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(createSpy).not.toHaveBeenCalled();
   });
 
   it('debe rechazar factura con línea inválida', async () => {
     const input = createValidInput();
     input.lines[0].quantity = -1; // Cantidad negativa
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived');
 
     await expect(useCase.execute(input)).rejects.toThrow(/Validación fallida/);
-    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(createSpy).not.toHaveBeenCalled();
   });
 
   it('debe calcular múltiples líneas correctamente', async () => {
@@ -136,19 +143,21 @@ describe('CreateInvoiceReceivedUseCase', () => {
     });
 
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
-    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
+    const createSpy = vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        subtotal: 190, // 100 + 90
-        taxTotal: 30, // 21 + 9
-        total: 220, // 121 + 99
-      }),
-      input.lines
+        invoice: expect.objectContaining({
+          subtotal: 190, // 100 + 90
+          taxTotal: 30, // 21 + 9
+          total: 220, // 121 + 99
+        }),
+        lines: input.lines
+      })
     );
   });
 });

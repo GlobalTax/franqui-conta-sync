@@ -59,10 +59,33 @@ export const franchiseeSchema = z.object({
 
 export type FranchiseeFormData = z.infer<typeof franchiseeSchema>;
 
-// Validate CIF format client-side
-export const validateCIF = (cif: string): boolean => {
-  if (!cif || cif.trim() === "") return true;
-  return cifRegex.test(cif.trim().toUpperCase());
+// Validate CIF format client-side with detailed error
+export const validateCIF = (cif: string): { isValid: boolean; error?: string } => {
+  if (!cif || cif.trim() === "") {
+    return { isValid: true };
+  }
+  
+  const trimmedCIF = cif.trim().toUpperCase();
+  
+  // Check if it looks like an email
+  if (emailRegex.test(trimmedCIF)) {
+    return { isValid: false, error: "El CIF no puede ser un email" };
+  }
+  
+  // Check if it's too long to be a valid CIF
+  if (trimmedCIF.length > 20) {
+    return { isValid: false, error: "El CIF es demasiado largo (max 20 caracteres)" };
+  }
+  
+  // Check CIF format
+  if (!cifRegex.test(trimmedCIF)) {
+    return { 
+      isValid: false, 
+      error: "Formato de CIF inválido (ejemplo: B12345678 o ES12345678)" 
+    };
+  }
+  
+  return { isValid: true };
 };
 
 // Validate email format client-side

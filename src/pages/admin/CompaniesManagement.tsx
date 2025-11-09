@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Building2, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2, AlertTriangle, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -47,6 +48,7 @@ interface Company {
 
 const CompaniesManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: franchisees } = useFranchisees();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -353,6 +355,14 @@ const CompaniesManagement = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigate(`/admin/companies/${company.id}`)}
+                      title="Ver detalle"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"

@@ -18,6 +18,7 @@ import ProfitAndLoss from "@/pages/ProfitAndLoss";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
 import CentreDetail from "@/pages/admin/CentreDetail";
+import CompanyDetail from "@/pages/admin/CompanyDetail";
 import AdminDebug from "@/pages/admin/AdminDebug";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
@@ -127,6 +128,7 @@ const App = () => {
             <Route path="/settings" element={<Dashboard />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
+            <Route path="/admin/companies/:id" element={<AdminRoute><CompanyDetail /></AdminRoute>} />
             <Route path="/admin-debug" element={<AdminDebug />} />
             <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
             <Route path="/notificaciones" element={<Notifications />} />

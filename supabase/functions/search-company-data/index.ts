@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+/**
+ * CORS Configuration
+ * Set ALLOWED_ORIGIN env var in Supabase Project Settings
+ * Examples:
+ * - Single: "https://app.franquicontasync.com"
+ * - Multiple: "https://app.com,https://staging.app.com"
+ * - Dev: leave empty or "*" for local development
+ */
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
+  .split(",")
+  .map(o => o.trim());
 
 interface CompanyData {
   razon_social: string;
@@ -32,6 +39,14 @@ interface CompanyData {
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get("origin") || "";
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes("*") 
+      ? "*" 
+      : (ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0]),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

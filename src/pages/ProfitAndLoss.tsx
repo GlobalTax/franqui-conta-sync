@@ -444,11 +444,6 @@ const ProfitAndLoss = () => {
                           style={{ paddingLeft: `${baseLine.level * 2 + 1}rem` }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {baseLine.rubric_code && (
-                              <span className="font-mono text-xs text-muted-foreground w-20 flex-shrink-0">
-                                {baseLine.rubric_code}
-                              </span>
-                            )}
                             <span
                               className={`truncate ${
                                 baseLine.is_total ? "font-semibold text-foreground" : ""
@@ -561,11 +556,6 @@ const ProfitAndLoss = () => {
                       style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {line.rubric_code && (
-                          <span className="font-mono text-xs text-muted-foreground w-20 flex-shrink-0">
-                            {line.rubric_code}
-                          </span>
-                        )}
                         <span
                           className={`truncate ${
                             line.is_total ? "font-semibold text-foreground" : ""

@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
 import { exportPLHistorical } from "@/lib/pl-export-excel";
+import { YearSelector } from "@/components/pl/YearSelector";
 
 const ProfitAndLoss = () => {
   const { selectedView } = useView();
@@ -34,7 +35,20 @@ const ProfitAndLoss = () => {
   const lastDay = new Date(year, month, 0).getDate();
   const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
-  // Nuevo hook de P&L basado en reglas
+  // Fetch paralelo para multi-año
+  const yearQueries = compareYears.map(y => {
+    const yearStartDate = `${y}-01-01`;
+    const yearEndDate = `${y}-12-31`;
+    return usePLReport({
+      templateCode: selectedTemplate,
+      companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+      centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
+      startDate: yearStartDate,
+      endDate: yearEndDate,
+    });
+  });
+
+  // Vista single (mensual)
   const { data, isLoading, isError } = usePLReport({
     templateCode: selectedTemplate,
     companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
@@ -42,6 +56,12 @@ const ProfitAndLoss = () => {
     startDate,
     endDate,
   });
+
+  // Determinar si estamos cargando o hay error
+  const isLoadingMultiYear = viewMode === "multi-year" && yearQueries.some(q => q.isLoading);
+  const isErrorMultiYear = viewMode === "multi-year" && yearQueries.some(q => q.isError);
+  const finalIsLoading = viewMode === "multi-year" ? isLoadingMultiYear : isLoading;
+  const finalIsError = viewMode === "multi-year" ? isErrorMultiYear : isError;
 
   const plData = data?.plData || [];
   const summary = data?.summary || {
@@ -105,7 +125,7 @@ const ProfitAndLoss = () => {
     );
   }
 
-  if (isError) {
+  if (finalIsError) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl">
@@ -176,22 +196,32 @@ const ProfitAndLoss = () => {
             {templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate}
           </Badge>
           
-          {/* Selector de Periodo */}
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Seleccionar periodo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2024-01">Enero 2024</SelectItem>
-              <SelectItem value="2024-02">Febrero 2024</SelectItem>
-              <SelectItem value="2024-03">Marzo 2024</SelectItem>
-              <SelectItem value="2023-12">Diciembre 2023</SelectItem>
-              <SelectItem value="2023-11">Noviembre 2023</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Selector de Periodo - Solo en vista single */}
+          {viewMode === "single" && (
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Seleccionar periodo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2024-01">Enero 2024</SelectItem>
+                <SelectItem value="2024-02">Febrero 2024</SelectItem>
+                <SelectItem value="2024-03">Marzo 2024</SelectItem>
+                <SelectItem value="2023-12">Diciembre 2023</SelectItem>
+                <SelectItem value="2023-11">Noviembre 2023</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        {isLoading ? (
+        {/* Selector de años - Solo en vista multi-año */}
+        {viewMode === "multi-year" && (
+          <YearSelector 
+            selectedYears={compareYears}
+            onChange={setCompareYears}
+          />
+        )}
+
+        {finalIsLoading ? (
           <div className="grid gap-4 md:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <Card key={i}>
@@ -286,19 +316,123 @@ const ProfitAndLoss = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {finalIsLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
+            ) : viewMode === "multi-year" ? (
+              // Vista Multi-Año: Tabla comparativa
+              <div className="overflow-x-auto">
+                {yearQueries.some(q => !q.data?.plData?.length) ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No hay datos para algunos años seleccionados.
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {/* Header de años */}
+                    <div className="flex items-center justify-between py-3 px-4 bg-muted font-semibold sticky top-0 z-10">
+                      <div className="flex items-center gap-3 flex-1">
+                        <span className="font-mono text-xs w-20">Código</span>
+                        <span>Concepto</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {compareYears.map((year) => (
+                          <div key={year} className="flex items-center gap-2">
+                            <span className="text-sm w-28 text-right">{year} €</span>
+                            <span className="text-sm w-16 text-right">%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Filas de datos */}
+                    {yearQueries[0]?.data?.plData?.map((baseLine, idx) => {
+                      const linesByYear = yearQueries.map(q => 
+                        q.data?.plData?.find(l => l.rubric_code === baseLine.rubric_code)
+                      );
+
+                      return (
+                        <div
+                          key={`${baseLine.rubric_code}-${idx}`}
+                          className={`flex items-center justify-between py-3 px-4 ${
+                            baseLine.is_total
+                              ? "bg-muted/50 font-semibold"
+                              : "hover:bg-accent/30"
+                          } ${
+                            baseLine.rubric_code === 'resultado_neto' || baseLine.rubric_code === 'net_result'
+                              ? "bg-primary/5 border-t-2 border-primary mt-2"
+                              : ""
+                          } ${
+                            baseLine.rubric_code === 'ebitda' || baseLine.rubric_code === 'margen_bruto' || baseLine.rubric_code === 'gross_margin'
+                              ? "border-l-4 border-l-primary"
+                              : ""
+                          }`}
+                          style={{ paddingLeft: `${baseLine.level * 2 + 1}rem` }}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            {baseLine.rubric_code && (
+                              <span className="font-mono text-xs text-muted-foreground w-20">
+                                {baseLine.rubric_code}
+                              </span>
+                            )}
+                            <span
+                              className={`${
+                                baseLine.is_total ? "font-semibold text-foreground" : ""
+                              } ${
+                                baseLine.rubric_code === 'resultado_neto' || baseLine.rubric_code === 'net_result'
+                                  ? "font-bold text-lg"
+                                  : ""
+                              }`}
+                            >
+                              {baseLine.rubric_name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            {linesByYear.map((line, yearIdx) => (
+                              <div key={yearIdx} className="flex items-center gap-2">
+                                <span
+                                  className={`font-mono font-semibold text-right w-28 ${
+                                    (line?.amount ?? 0) >= 0 ? "text-success" : "text-foreground"
+                                  } ${
+                                    baseLine.rubric_code === 'resultado_neto' || baseLine.rubric_code === 'net_result'
+                                      ? "text-lg"
+                                      : ""
+                                  }`}
+                                >
+                                  {(line?.amount ?? 0).toLocaleString("es-ES", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}€
+                                </span>
+                                <span
+                                  className={`text-sm text-muted-foreground text-right w-16 ${
+                                    baseLine.rubric_code === 'resultado_neto' || baseLine.rubric_code === 'net_result'
+                                      ? "font-semibold"
+                                      : ""
+                                  }`}
+                                >
+                                  {Math.abs(line?.percentage ?? 0).toFixed(1)}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ) : plData.length === 0 ? (
+              // Vista Single sin datos
               <div className="text-center py-12 text-muted-foreground">
                 No hay datos contables para este periodo.
                 <br />
                 <span className="text-sm">Crea asientos contables para ver el P&L.</span>
               </div>
             ) : (
+              // Vista Single normal
               <div className="space-y-1">
                 {plData.map((line, idx) => (
                   <div
@@ -377,7 +511,7 @@ const ProfitAndLoss = () => {
           </CardContent>
         </Card>
 
-        {!isLoading && plData.length > 0 && (
+        {!finalIsLoading && (viewMode === "single" ? plData.length > 0 : yearQueries.some(q => q.data?.plData?.length)) && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Ratios Clave</CardTitle>

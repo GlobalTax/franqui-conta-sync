@@ -239,6 +239,70 @@ const ProfitAndLoss = () => {
     exportPLCSV(plData, fileName);
   }, [plData, selectedView, period]);
 
+  // ✅ Aplicar presets de período (YTD, Q1-Q4, S1-S2)
+  const applyPreset = useCallback((preset: string) => {
+    const currentYear = dateRange.year;
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    
+    switch (preset) {
+      case "YTD":
+        // Year To Date: desde enero hasta el mes actual
+        const targetMonth = now.getFullYear() === currentYear 
+          ? currentMonth 
+          : 12; // Si estamos viendo un año pasado, usar diciembre
+        setPeriod(`${currentYear}-${String(targetMonth).padStart(2, "0")}`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "Q1":
+        // Trimestre 1: Enero-Marzo
+        setPeriod(`${currentYear}-03`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "Q2":
+        // Trimestre 2: Abril-Junio
+        setPeriod(`${currentYear}-06`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "Q3":
+        // Trimestre 3: Julio-Septiembre
+        setPeriod(`${currentYear}-09`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "Q4":
+        // Trimestre 4: Octubre-Diciembre
+        setPeriod(`${currentYear}-12`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "S1":
+        // Semestre 1: Enero-Junio
+        setPeriod(`${currentYear}-06`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      case "S2":
+        // Semestre 2: Julio-Diciembre
+        setPeriod(`${currentYear}-12`);
+        setShowAccumulated(true);
+        setShowAdjustments(false);
+        break;
+        
+      default:
+        console.warn(`Preset desconocido: ${preset}`);
+    }
+  }, [dateRange.year]);
+
   if (!selectedView) {
     return (
       <div className="min-h-screen bg-background">
@@ -453,6 +517,71 @@ const ProfitAndLoss = () => {
                 <SelectItem value="2023-11">Noviembre 2023</SelectItem>
               </SelectContent>
             </Select>
+          )}
+
+          {/* Botones de Presets - Solo en vista single */}
+          {viewMode === "single" && (
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-lg">
+              <span className="text-xs text-muted-foreground font-medium mr-2">Presets:</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("YTD")}
+                className="text-xs h-8"
+              >
+                YTD
+              </Button>
+              <div className="w-px h-4 bg-border" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("Q1")}
+                className="text-xs h-8"
+              >
+                Q1
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("Q2")}
+                className="text-xs h-8"
+              >
+                Q2
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("Q3")}
+                className="text-xs h-8"
+              >
+                Q3
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("Q4")}
+                className="text-xs h-8"
+              >
+                Q4
+              </Button>
+              <div className="w-px h-4 bg-border" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("S1")}
+                className="text-xs h-8"
+              >
+                S1
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => applyPreset("S2")}
+                className="text-xs h-8"
+              >
+                S2
+              </Button>
+            </div>
           )}
         </div>
 

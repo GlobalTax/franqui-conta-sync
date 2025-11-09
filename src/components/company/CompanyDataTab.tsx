@@ -7,6 +7,7 @@ import { CompanyWithAddresses } from "@/hooks/useCompanyConfiguration";
 import { FormProvider } from "react-hook-form";
 import { useCompanyForm } from "@/hooks/useCompanyForm";
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   company: CompanyWithAddresses;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function CompanyDataTab({ company, onSave, isLoading }: Props) {
+  const { toast } = useToast();
   const form = useCompanyForm({
     code: company.code || undefined,
     razon_social: company.razon_social,
@@ -69,6 +71,22 @@ export function CompanyDataTab({ company, onSave, isLoading }: Props) {
       delete (window as any).__companyFormSubmit;
     };
   }, [form, onSave]);
+
+  // Confirmación al salir sin guardar
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (form.formState.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [form.formState.isDirty]);
 
   return (
     <FormProvider {...form}>

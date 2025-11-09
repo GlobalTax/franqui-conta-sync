@@ -4,6 +4,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFormContext } from "react-hook-form";
 import { CompanyFormData } from "@/hooks/useCompanyForm";
 
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children} <span className="text-destructive">*</span>
+    </span>
+  );
+}
+
 export function CompanyIdentificationSection() {
   const { register, formState: { errors }, watch, setValue } = useFormContext<CompanyFormData>();
 
@@ -56,7 +64,7 @@ export function CompanyIdentificationSection() {
 
         <div className="col-span-12 sm:col-span-4">
           <Label htmlFor="razon-social" className="text-xs text-muted-foreground">
-            Razón Social *
+            <RequiredLabel>Razón Social</RequiredLabel>
           </Label>
           <Input 
             id="razon-social"

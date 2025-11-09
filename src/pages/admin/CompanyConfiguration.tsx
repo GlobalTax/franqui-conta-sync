@@ -3,6 +3,7 @@ import { Building2, Mail, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyConfigTabs } from "@/components/company/CompanyConfigTabs";
 import { useView } from "@/contexts/ViewContext";
 import { useCompanyConfiguration } from "@/hooks/useCompanyConfiguration";
@@ -33,13 +34,49 @@ export default function CompanyConfiguration() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-sm text-muted-foreground">Cargando configuración...</p>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-9 w-36" />
           </div>
         </div>
+
+        <Card>
+          <CardHeader className="border-b">
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-64" />
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-2">
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-3">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-3">
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-4">
+                  <Skeleton className="h-4 w-28 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

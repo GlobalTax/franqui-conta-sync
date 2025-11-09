@@ -10,6 +10,14 @@ import { useState } from "react";
 import { LocationSearchDialog } from "./LocationSearchDialog";
 import { useToast } from "@/hooks/use-toast";
 
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children} <span className="text-destructive">*</span>
+    </span>
+  );
+}
+
 interface Props {
   address?: any;
 }

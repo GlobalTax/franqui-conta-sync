@@ -9,6 +9,14 @@ import { CompanyFormData } from "@/hooks/useCompanyForm";
 import { useState } from "react";
 import { LocationSearchDialog } from "./LocationSearchDialog";
 
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children} <span className="text-destructive">*</span>
+    </span>
+  );
+}
+
 interface Props {
   address?: any;
 }
@@ -59,7 +67,7 @@ export function FiscalAddressSection({ address }: Props) {
 
           <div className="col-span-12 sm:col-span-6">
             <Label htmlFor="fiscal-street" className="text-xs text-muted-foreground">
-              Vía pública *
+              <RequiredLabel>Vía pública</RequiredLabel>
             </Label>
             <Input 
               id="fiscal-street"
@@ -106,7 +114,7 @@ export function FiscalAddressSection({ address }: Props) {
 
           <div className="col-span-6 sm:col-span-2">
             <Label htmlFor="fiscal-postal-code" className="text-xs text-muted-foreground">
-              Código Postal *
+              <RequiredLabel>Código Postal</RequiredLabel>
             </Label>
             <Input 
               id="fiscal-postal-code"
@@ -117,7 +125,9 @@ export function FiscalAddressSection({ address }: Props) {
           </div>
 
           <div className="col-span-12 sm:col-span-7">
-            <Label className="text-xs text-muted-foreground">Población *</Label>
+            <Label className="text-xs text-muted-foreground">
+              <RequiredLabel>Población</RequiredLabel>
+            </Label>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 

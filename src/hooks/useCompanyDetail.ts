@@ -15,7 +15,7 @@ export interface CompanyDetailData {
     id: string;
     name: string;
     email: string;
-    cif: string;
+    company_tax_id: string;
   };
 }
 
@@ -48,7 +48,7 @@ export function useCompanyDetail(companyId?: string) {
             id,
             name,
             email,
-            cif
+            company_tax_id
           )
         `)
         .eq("id", companyId)

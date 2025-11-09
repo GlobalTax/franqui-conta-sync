@@ -1103,6 +1103,39 @@ export type Database = {
         }
         Relationships: []
       }
+      company_enrichment_cache: {
+        Row: {
+          cif: string
+          confidence: string
+          created_at: string
+          enriched_data: Json
+          expires_at: string
+          last_accessed_at: string
+          search_count: number
+          sources: Json | null
+        }
+        Insert: {
+          cif: string
+          confidence: string
+          created_at?: string
+          enriched_data: Json
+          expires_at: string
+          last_accessed_at?: string
+          search_count?: number
+          sources?: Json | null
+        }
+        Update: {
+          cif?: string
+          confidence?: string
+          created_at?: string
+          enriched_data?: Json
+          expires_at?: string
+          last_accessed_at?: string
+          search_count?: number
+          sources?: Json | null
+        }
+        Relationships: []
+      }
       compliance_alerts: {
         Row: {
           alert_type: string
@@ -3910,6 +3943,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_cache_search_count: {
+        Args: { p_cif: string }
+        Returns: undefined
       }
       reconstruct_franchisee_relationships: {
         Args: never

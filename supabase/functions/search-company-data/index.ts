@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,21 +41,61 @@ serve(async (req) => {
 
     if (!cif || typeof cif !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'CIF es requerido' }),
+        JSON.stringify({ success: false, error: 'CIF es requerido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const normalizedCIF = cif.trim().toUpperCase();
+
+    // Initialize Supabase client with service role for cache operations
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 1. Check cache in database first
+    const { data: cachedData, error: cacheError } = await supabase
+      .from('company_enrichment_cache')
+      .select('enriched_data, confidence, sources, search_count')
+      .eq('cif', normalizedCIF)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (cachedData && !cacheError) {
+      console.log(`✅ Cache hit for CIF: ${normalizedCIF} (searches: ${cachedData.search_count})`);
+      
+      // Increment search counter
+      await supabase.rpc('increment_cache_search_count', { p_cif: normalizedCIF });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: {
+            ...cachedData.enriched_data,
+            confidence: cachedData.confidence,
+            sources: cachedData.sources
+          },
+          cached: true,
+          cache_hits: cachedData.search_count + 1
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 200 
+        }
+      );
+    }
+
+    console.log(`❌ Cache miss for CIF: ${normalizedCIF}, calling Lovable AI...`);
+
+    // 2. Call Lovable AI if not in cache
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY no configurada');
       return new Response(
-        JSON.stringify({ error: 'Servicio de IA no disponible' }),
+        JSON.stringify({ success: false, error: 'Servicio de IA no disponible' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`Buscando información para CIF: ${cif}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -84,7 +125,7 @@ IMPORTANTE:
           },
           {
             role: "user",
-            content: `Busca información OFICIAL y VERIFICABLE sobre la empresa española con CIF/NIF: ${cif}
+            content: `Busca información OFICIAL y VERIFICABLE sobre la empresa española con CIF/NIF: ${normalizedCIF}
 
 INFORMACIÓN A EXTRAER:
 1. Razón Social (nombre legal completo)
@@ -220,20 +261,20 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Límite de búsquedas alcanzado. Intenta de nuevo en unos minutos.' }),
+          JSON.stringify({ success: false, error: 'Límite de búsquedas alcanzado. Intenta de nuevo en unos minutos.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Créditos de IA agotados. Contacta con soporte.' }),
+          JSON.stringify({ success: false, error: 'Créditos de IA agotados. Contacta con soporte.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: 'Error al buscar información de la empresa' }),
+        JSON.stringify({ success: false, error: 'Error al buscar información de la empresa' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -241,12 +282,12 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
     const data = await response.json();
     console.log('Respuesta de IA:', JSON.stringify(data, null, 2));
 
-    // Extraer tool call
+    // Extract tool call
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.function?.name !== 'return_company_data') {
       console.error('No se recibió tool call esperado');
       return new Response(
-        JSON.stringify({ error: 'No se encontró información para este CIF' }),
+        JSON.stringify({ success: false, error: 'No se encontró información para este CIF' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -254,10 +295,31 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
     const companyData: CompanyData = JSON.parse(toolCall.function.arguments);
     console.log('Datos de empresa extraídos:', companyData);
 
+    // 3. Store in cache for future use
+    try {
+      const { error: insertError } = await supabase
+        .from('company_enrichment_cache')
+        .insert({
+          cif: normalizedCIF,
+          enriched_data: companyData,
+          confidence: companyData.confidence,
+          sources: companyData.sources || []
+        });
+
+      if (insertError) {
+        console.error('⚠️ Error caching data:', insertError);
+      } else {
+        console.log(`✅ Data cached for CIF: ${normalizedCIF}`);
+      }
+    } catch (cacheInsertError) {
+      console.error('⚠️ Cache insertion failed:', cacheInsertError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        data: companyData
+        data: companyData,
+        cached: false
       }),
       { 
         status: 200, 
@@ -268,7 +330,7 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
   } catch (error) {
     console.error('Error en search-company-data:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Error desconocido' }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

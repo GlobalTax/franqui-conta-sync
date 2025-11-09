@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApproveInvoiceUseCase } from '../ApproveInvoice';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import * as InvoiceCommands from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { ApproveInvoiceInput } from '../ApproveInvoice';
 import type { InvoiceReceived } from '../../types';
 
-vi.mock('@/infrastructure/persistence/supabase/queries/InvoiceQueries');
+vi.mock('@/infrastructure/persistence/supabase/commands/InvoiceCommands');
 
 describe('ApproveInvoiceUseCase', () => {
   let useCase: ApproveInvoiceUseCase;
@@ -51,14 +51,14 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'pending_accounting' };
-    vi.mocked(InvoiceQueries.updateInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
       mockUpdated as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.nextApprovalStatus).toBe('pending_accounting');
-    expect(InvoiceQueries.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
         approvalStatus: 'pending_accounting',
@@ -80,14 +80,14 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'approved' };
-    vi.mocked(InvoiceQueries.updateInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
       mockUpdated as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.nextApprovalStatus).toBe('approved');
-    expect(InvoiceQueries.updateInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.updateInvoiceReceived).toHaveBeenCalledWith(
       invoice.id,
       expect.objectContaining({
         approvalStatus: 'approved',
@@ -106,7 +106,7 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(/no tiene permisos/);
-    expect(InvoiceQueries.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('debe rechazar aprobación si factura ya está aprobada', async () => {
@@ -122,7 +122,7 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(/ya está aprobada/);
-    expect(InvoiceQueries.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('debe rechazar si nivel de aprobación no coincide', async () => {
@@ -137,7 +137,7 @@ describe('ApproveInvoiceUseCase', () => {
     await expect(useCase.execute(input)).rejects.toThrow(
       /pendiente de aprobación de nivel/
     );
-    expect(InvoiceQueries.updateInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.updateInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('admin puede aprobar en cualquier nivel', async () => {
@@ -150,7 +150,7 @@ describe('ApproveInvoiceUseCase', () => {
     };
 
     const mockUpdated = { ...invoice, approvalStatus: 'pending_accounting' };
-    vi.mocked(InvoiceQueries.updateInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.updateInvoiceReceived).mockResolvedValue(
       mockUpdated as any
     );
 

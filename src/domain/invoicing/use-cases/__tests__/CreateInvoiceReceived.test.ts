@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CreateInvoiceReceivedUseCase } from '../CreateInvoiceReceived';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import * as InvoiceCommands from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { CreateInvoiceReceivedInput } from '../CreateInvoiceReceived';
 
-vi.mock('@/infrastructure/persistence/supabase/queries/InvoiceQueries');
+vi.mock('@/infrastructure/persistence/supabase/commands/InvoiceCommands');
 
 describe('CreateInvoiceReceivedUseCase', () => {
   let useCase: CreateInvoiceReceivedUseCase;
@@ -39,14 +39,14 @@ describe('CreateInvoiceReceivedUseCase', () => {
     const input = createValidInput();
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceQueries.createInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     const result = await useCase.execute(input);
 
     expect(result.invoice).toBeDefined();
-    expect(InvoiceQueries.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
       expect.objectContaining({
         subtotal: 100,
         taxTotal: 21,
@@ -60,13 +60,13 @@ describe('CreateInvoiceReceivedUseCase', () => {
     const input = createValidInput();
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceQueries.createInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceQueries.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
       expect.objectContaining({
         requiresManagerApproval: false,
         requiresAccountingApproval: true,
@@ -81,13 +81,13 @@ describe('CreateInvoiceReceivedUseCase', () => {
     input.lines[0].unitPrice = 600; // Total = 726€ con IVA
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
 
-    vi.mocked(InvoiceQueries.createInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceQueries.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
       expect.objectContaining({
         requiresManagerApproval: true,
         requiresAccountingApproval: true,
@@ -101,14 +101,14 @@ describe('CreateInvoiceReceivedUseCase', () => {
     const input = { ...createValidInput(), supplierId: '' };
 
     await expect(useCase.execute(input)).rejects.toThrow(/Validación fallida/);
-    expect(InvoiceQueries.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('debe rechazar factura sin líneas', async () => {
     const input = { ...createValidInput(), lines: [] };
 
     await expect(useCase.execute(input)).rejects.toThrow(/al menos una línea/);
-    expect(InvoiceQueries.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('debe rechazar factura con línea inválida', async () => {
@@ -116,7 +116,7 @@ describe('CreateInvoiceReceivedUseCase', () => {
     input.lines[0].quantity = -1; // Cantidad negativa
 
     await expect(useCase.execute(input)).rejects.toThrow(/Validación fallida/);
-    expect(InvoiceQueries.createInvoiceReceived).not.toHaveBeenCalled();
+    expect(InvoiceCommands.createInvoiceReceived).not.toHaveBeenCalled();
   });
 
   it('debe calcular múltiples líneas correctamente', async () => {
@@ -136,13 +136,13 @@ describe('CreateInvoiceReceivedUseCase', () => {
     });
 
     const mockCreatedInvoice = { id: 'invoice-123', ...input };
-    vi.mocked(InvoiceQueries.createInvoiceReceived).mockResolvedValue(
+    vi.mocked(InvoiceCommands.createInvoiceReceived).mockResolvedValue(
       mockCreatedInvoice as any
     );
 
     await useCase.execute(input);
 
-    expect(InvoiceQueries.createInvoiceReceived).toHaveBeenCalledWith(
+    expect(InvoiceCommands.createInvoiceReceived).toHaveBeenCalledWith(
       expect.objectContaining({
         subtotal: 190, // 100 + 90
         taxTotal: 30, // 21 + 9

@@ -5,6 +5,7 @@ import { InvoiceInboxSidebar } from '@/components/invoices/inbox/InvoiceInboxSid
 import { InboxFiltersBar } from '@/components/invoices/inbox/InboxFiltersBar';
 import { InboxEmptyState } from '@/components/invoices/inbox/InboxEmptyState';
 import { InboxBulkActions } from '@/components/invoices/inbox/InboxBulkActions';
+import { InboxAssignCentreDialog } from '@/components/invoices/inbox/InboxAssignCentreDialog';
 import { InboxSearchDialog } from '@/components/invoices/inbox/InboxSearchDialog';
 import { useInvoicesReceived, type InvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
@@ -35,6 +36,7 @@ export default function InvoicesInbox() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [assignCentreDialogOpen, setAssignCentreDialogOpen] = useState(false);
 
   // Fetch invoices
   const { data: rawInvoices = [], isLoading } = useInvoicesReceived(filters);
@@ -98,8 +100,7 @@ export default function InvoicesInbox() {
   };
 
   const handleBulkAssignCentre = () => {
-    toast.info('Asignar centro a facturas seleccionadas');
-    // TODO: Abrir diálogo para asignar centro
+    setAssignCentreDialogOpen(true);
   };
 
   // Determinar estado vacío
@@ -189,6 +190,14 @@ export default function InvoicesInbox() {
           setSelectedInvoiceId(id);
           setSidebarOpen(true);
         }}
+      />
+
+      {/* Diálogo de asignación masiva de centro */}
+      <InboxAssignCentreDialog
+        open={assignCentreDialogOpen}
+        onOpenChange={setAssignCentreDialogOpen}
+        selectedIds={selectedIds}
+        onAssigned={() => setSelectedIds([])}
       />
     </div>
   );

@@ -32,6 +32,19 @@ export interface RejectInvoiceCommand {
   reason: string;
 }
 
+export interface BulkAssignCentreCommand {
+  invoiceIds: string[];
+  centroCode: string;
+  userId: string;
+  organizationId: string;
+}
+
+export interface BulkAssignCentreResult {
+  success: number;
+  failed: number;
+  errors: Array<{ invoiceId: string; error: string }>;
+}
+
 /**
  * Repository Interface para operaciones de facturación
  * Separa la lógica de dominio de la implementación de persistencia
@@ -100,4 +113,9 @@ export interface IInvoiceRepository {
    * Rechaza una factura recibida
    */
   rejectInvoice(command: RejectInvoiceCommand): Promise<void>;
+  
+  /**
+   * Asigna centro a múltiples facturas de forma masiva
+   */
+  bulkAssignCentre(command: BulkAssignCentreCommand): Promise<BulkAssignCentreResult>;
 }

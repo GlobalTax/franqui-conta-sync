@@ -22,6 +22,7 @@ import { BalanceCalculator } from './accounting/services/BalanceCalculator';
 import { CreateInvoiceReceivedUseCase } from './invoicing/use-cases/CreateInvoiceReceived';
 import { ApproveInvoiceUseCase } from './invoicing/use-cases/ApproveInvoice';
 import { RejectInvoiceUseCase } from './invoicing/use-cases/RejectInvoice';
+import { BulkAssignCentreUseCase } from './invoicing/use-cases/BulkAssignCentre';
 
 // Invoicing Services
 import { InvoiceCalculator } from './invoicing/services/InvoiceCalculator';
@@ -92,6 +93,13 @@ export class UseCaseFactory {
    */
   static rejectInvoiceUseCase(): RejectInvoiceUseCase {
     return new RejectInvoiceUseCase();
+  }
+
+  /**
+   * Crea caso de uso para asignación masiva de centro
+   */
+  static bulkAssignCentreUseCase(): BulkAssignCentreUseCase {
+    return new BulkAssignCentreUseCase(this.invoiceRepo);
   }
 
   // ========== BANKING USE CASES ==========

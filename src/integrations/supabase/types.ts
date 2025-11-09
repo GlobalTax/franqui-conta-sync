@@ -3962,6 +3962,25 @@ export type Database = {
         Args: { p_centro_code: string; p_month: number; p_year: number }
         Returns: Json
       }
+      calculate_pl_report: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_end_date?: string
+          p_start_date?: string
+          p_template_code: string
+        }
+        Returns: {
+          amount: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          rubric_code: string
+          rubric_name: string
+          sign: string
+          sort: number
+        }[]
+      }
       calculate_pnl: {
         Args: {
           p_centro_code: string
@@ -4402,6 +4421,7 @@ export type Database = {
           related_name: string
         }[]
       }
+      refresh_gl_ledger_month: { Args: never; Returns: undefined }
       refresh_user_memberships: { Args: never; Returns: undefined }
       run_franchisee_reconstruction: { Args: never; Returns: Json }
       search_locations: {
@@ -4443,6 +4463,22 @@ export type Database = {
           p_source: string
         }
         Returns: string
+      }
+      unmapped_accounts: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_period_month?: string
+          p_template_code: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          amount: number
+          centro_code: string
+          company_id: string
+          period_month: string
+        }[]
       }
       upsert_company_with_addresses: {
         Args: {

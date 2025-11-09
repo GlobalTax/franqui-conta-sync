@@ -16,6 +16,7 @@ import { usePLAdjustments } from "@/hooks/usePLAdjustments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
 import { exportPLHistorical } from "@/lib/pl-export-excel";
 import { YearSelector } from "@/components/pl/YearSelector";
@@ -240,12 +241,21 @@ const ProfitAndLoss = () => {
                   <div className="flex items-center gap-2">
                     <span>Multi-Año</span>
                     {isPreloaded && (
-                      <Badge 
-                        variant="outline" 
-                        className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-in fade-in-0 slide-in-from-left-1 duration-200"
-                      >
-                        ⚡ Listo
-                      </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge 
+                              variant="outline" 
+                              className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-in fade-in-0 slide-in-from-left-1 duration-200"
+                            >
+                              ⚡ Listo
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Vista precargada para cambio instantáneo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                 </SelectItem>

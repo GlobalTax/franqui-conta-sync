@@ -82,20 +82,24 @@ const ProfitAndLoss = () => {
 
   // Export Excel con formato histórico
   const handleExport = () => {
-    if (!plData || plData.length === 0) return;
-
     if (viewMode === "multi-year") {
-      // Multi-año: exportar comparativo
+      // Multi-año: extraer datos de todos los años
+      const plDataByYear = yearQueries.map((q) => q.data?.plData || []);
+
       exportPLHistorical({
-        plDataByYear: [plData], // Aquí deberías tener data de múltiples años
+        plDataByYear,
         years: compareYears,
         restaurantName: selectedView?.name || "Restaurante",
         templateName: templates?.find((t) => t.code === selectedTemplate)?.name || selectedTemplate,
       });
     } else {
-      // Single: exportar PDF o Excel simple
-      // TODO: Implementar export simple
-      console.log("Export single period");
+      // Single: exportar solo el periodo actual
+      exportPLHistorical({
+        plDataByYear: [plData],
+        years: [year],
+        restaurantName: selectedView?.name || "Restaurante",
+        templateName: templates?.find((t) => t.code === selectedTemplate)?.name || selectedTemplate,
+      });
     }
   };
 

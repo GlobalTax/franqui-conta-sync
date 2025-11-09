@@ -118,6 +118,42 @@ export function useConfirmReconciliation() {
 
   return useMutation({
     mutationFn: async (reconciliationId: string) => {
+      // REFACTORED: Usar ReconciliationValidator para validación
+      const { ReconciliationValidator } = await import('@/domain/banking/services/ReconciliationValidator');
+      
+      // Obtener reconciliación actual
+      const { data: reconciliation, error: fetchError } = await supabase
+        .from('bank_reconciliations')
+        .select('*')
+        .eq('id', reconciliationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Mapear de snake_case (DB) a camelCase (domain)
+      const domainReconciliation = {
+        id: reconciliation.id,
+        bankTransactionId: reconciliation.bank_transaction_id,
+        matchedType: reconciliation.matched_type,
+        matchedId: reconciliation.matched_id,
+        reconciliationStatus: reconciliation.reconciliation_status,
+        confidenceScore: reconciliation.confidence_score,
+        ruleId: reconciliation.rule_id,
+        reconciledBy: reconciliation.reconciled_by,
+        reconciledAt: reconciliation.reconciled_at,
+        notes: reconciliation.notes,
+        metadata: reconciliation.metadata,
+        createdAt: reconciliation.created_at,
+        updatedAt: reconciliation.updated_at,
+      };
+
+      // Validar que se pueda confirmar
+      const validation = ReconciliationValidator.canConfirmReconciliation(domainReconciliation as any);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+      }
+
+      // Confirmar reconciliación
       const { data, error } = await supabase
         .from('bank_reconciliations')
         .update({
@@ -130,12 +166,12 @@ export function useConfirmReconciliation() {
 
       if (error) throw error;
       
-      // Update bank transaction status
-      const reconciliation = data as BankReconciliation;
+      // Actualizar estado de transacción bancaria
+      const rec = data as BankReconciliation;
       await supabase
         .from('bank_transactions')
         .update({ status: 'reconciled' })
-        .eq('id', reconciliation.bank_transaction_id);
+        .eq('id', rec.bank_transaction_id);
 
       return data;
     },

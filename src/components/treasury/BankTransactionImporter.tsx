@@ -17,70 +17,25 @@ export const BankTransactionImporter = ({ accountId, onImportComplete }: BankTra
   const [preview, setPreview] = useState<any[]>([]);
   const { importTransactions } = useBankTransactions();
 
-  const parseNorma43 = (text: string): any[] => {
-    const lines = text.split("\n").filter((line) => line.trim());
-    const transactions: any[] = [];
-    
-    for (const line of lines) {
-      // Registro tipo 11: Cabecera de cuenta
-      if (line.startsWith("11")) {
-        // Skip header, just validate format
-        continue;
-      }
+  const parseNorma43Preview = (text: string): any[] => {
+    // REFACTORED: Usar Norma43Parser del dominio para preview
+    try {
+      const { Norma43Parser } = require('@/domain/banking/services/Norma43Parser');
+      const result = Norma43Parser.parse(text);
       
-      // Registro tipo 22: Movimiento principal
-      if (line.startsWith("22")) {
-        const oficina = line.substring(6, 10);
-        const cuenta = line.substring(10, 20);
-        const fecha = line.substring(20, 26); // YYMMDD
-        const valorFecha = line.substring(26, 32); // YYMMDD
-        const conceptoComun = line.substring(32, 34);
-        const conceptoPropio = line.substring(34, 37);
-        const importeStr = line.substring(37, 51);
-        const signo = line.substring(51, 52); // 1=haber, 2=debe
-        const numeroDocumento = line.substring(52, 62);
-        const referencia1 = line.substring(62, 74);
-        const referencia2 = line.substring(74, 86);
-        
-        // Parse date YYMMDD to YYYY-MM-DD
-        const year = "20" + fecha.substring(0, 2);
-        const month = fecha.substring(2, 4);
-        const day = fecha.substring(4, 6);
-        const transactionDate = `${year}-${month}-${day}`;
-        
-        const valueYear = "20" + valorFecha.substring(0, 2);
-        const valueMonth = valorFecha.substring(2, 4);
-        const valueDay = valorFecha.substring(4, 6);
-        const valueDate = `${valueYear}-${valueMonth}-${valueDay}`;
-        
-        // Parse amount (last 2 digits are decimals)
-        const amount = parseFloat(importeStr) / 100 * (signo === "1" ? 1 : -1);
-        
-        transactions.push({
-          fecha: transactionDate,
-          "fecha valor": valueDate,
-          descripcion: `Mov. ${conceptoComun}-${conceptoPropio}`,
-          referencia: numeroDocumento.trim() || referencia1.trim(),
-          importe: amount,
-          ref1: referencia1.trim(),
-          ref2: referencia2.trim(),
-        });
-      }
-      
-      // Registro tipo 23: Conceptos adicionales
-      if (line.startsWith("23")) {
-        const concepto1 = line.substring(4, 42).trim();
-        const concepto2 = line.substring(42, 80).trim();
-        
-        // Add description to last transaction
-        if (transactions.length > 0) {
-          const lastTx = transactions[transactions.length - 1];
-          lastTx.descripcion = [concepto1, concepto2].filter(Boolean).join(" ");
-        }
-      }
+      // Transformar a formato de preview
+      return result.transactions.map((tx: any) => ({
+        fecha: tx.transactionDate,
+        "fecha valor": tx.valueDate,
+        descripcion: tx.description,
+        referencia: tx.reference1 || tx.documentNumber,
+        importe: tx.amount,
+        saldo: null,
+      }));
+    } catch (error) {
+      console.error('Error parsing Norma43:', error);
+      return [];
     }
-    
-    return transactions;
   };
 
   const parseCSV = (text: string): any[] => {
@@ -125,7 +80,7 @@ export const BankTransactionImporter = ({ accountId, onImportComplete }: BankTra
       
       if (isN43 || text.startsWith("11") || text.startsWith("22")) {
         // Norma 43 format
-        parsed = parseNorma43(text);
+        parsed = parseNorma43Preview(text);
       } else {
         // CSV format
         parsed = parseCSV(text);
@@ -148,7 +103,7 @@ export const BankTransactionImporter = ({ accountId, onImportComplete }: BankTra
       let parsed: any[] = [];
       
       if (file.name.endsWith(".n43") || file.name.endsWith(".txt") || text.startsWith("11") || text.startsWith("22")) {
-        parsed = parseNorma43(text);
+        parsed = parseNorma43Preview(text);
       } else {
         parsed = parseCSV(text);
       }

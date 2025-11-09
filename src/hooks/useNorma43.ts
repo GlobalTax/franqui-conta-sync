@@ -60,21 +60,31 @@ export function useParseNorma43() {
       fileName: string;
       fileContent: string;
     }) => {
-      const { data, error } = await supabase.rpc('parse_norma43_file' as any, {
-        p_centro_code: centroCode,
-        p_bank_account_id: bankAccountId,
-        p_file_name: fileName,
-        p_file_content: fileContent,
+      // REFACTORED: Usar caso de uso ImportNorma43File
+      const { ImportNorma43FileUseCase } = await import('@/domain/banking/use-cases/ImportNorma43File');
+      const { importBankTransactions } = await import('@/infrastructure/persistence/supabase/queries/BankQueries');
+      
+      const useCase = new ImportNorma43FileUseCase();
+      const result = useCase.execute({
+        bankAccountId,
+        centroCode,
+        fileName,
+        fileContent,
       });
 
-      if (error) throw error;
-      
-      const result = data as any;
       if (!result.success) {
-        throw new Error(result.error || 'Error al parsear archivo Norma43');
+        throw new Error(result.errors.join(', ') || 'Error al parsear archivo Norma43');
       }
 
-      return result;
+      // Persistir transacciones en base de datos
+      await importBankTransactions(result.transactions);
+
+      return {
+        success: true,
+        transactions_count: result.transactionsImported,
+        total_debits: result.totalDebits,
+        total_credits: result.totalCredits,
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['norma43-files'] });

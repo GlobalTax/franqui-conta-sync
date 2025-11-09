@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.invoice-ocr]
 verify_jwt = true
+
+[functions.search-company-data]
+verify_jwt = true

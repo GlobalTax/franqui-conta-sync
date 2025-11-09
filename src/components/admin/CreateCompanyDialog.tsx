@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { validateCIF } from "@/lib/franchisee-validation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { CompanyDataEnrichment } from "@/components/company/CompanyDataEnrichment";
+import { EnrichedCompanyData } from "@/hooks/useCompanyEnrichment";
 
 interface CreateCompanyDialogProps {
   open: boolean;
@@ -30,6 +32,11 @@ export function CreateCompanyDialog({
     setCif(value.toUpperCase());
     const validation = validateCIF(value);
     setCifError(validation.isValid ? null : validation.error || null);
+  };
+
+  const handleEnrichmentAccept = (data: EnrichedCompanyData) => {
+    setRazonSocial(data.razon_social);
+    setTipoSociedad(data.tipo_sociedad);
   };
 
   const handleSubmit = () => {
@@ -94,14 +101,21 @@ export function CreateCompanyDialog({
             <Label htmlFor="cif">
               CIF <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="cif"
-              placeholder="B12345678"
-              value={cif}
-              onChange={(e) => handleCifChange(e.target.value)}
-              disabled={isCreating}
-              className={cifError ? "border-destructive" : ""}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="cif"
+                placeholder="B12345678"
+                value={cif}
+                onChange={(e) => handleCifChange(e.target.value)}
+                disabled={isCreating}
+                className={cifError ? "border-destructive" : ""}
+              />
+              <CompanyDataEnrichment
+                cif={cif}
+                disabled={isCreating || !!cifError}
+                onAccept={handleEnrichmentAccept}
+              />
+            </div>
             {cifError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

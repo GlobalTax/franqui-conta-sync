@@ -18,14 +18,15 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
-import { exportPLHistorical } from "@/lib/pl-export-excel";
+import { exportPLHistorical, exportPLCSV, exportPLMonthlyYoY } from "@/lib/pl-export-excel";
 import { YearSelector } from "@/components/pl/YearSelector";
 import { AdjustmentCell } from "@/components/pl/AdjustmentCell";
 import { PLTableSingle } from "@/components/pl/PLTableSingle";
 import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 
-// ✅ Lazy load: Tabla multi-año (solo se carga cuando se activa la vista)
+// ✅ Lazy load: Tablas (solo se cargan cuando se activa la vista)
 const PLTableMultiYear = lazy(() => import("@/components/pl/PLTableMultiYear").then(m => ({ default: m.PLTableMultiYear })));
+const PLTableMonthly = lazy(() => import("@/components/pl/PLTableMonthly").then(m => ({ default: m.PLTableMonthly })));
 
 
 // Skeleton para lazy loading
@@ -45,9 +46,10 @@ const ProfitAndLoss = () => {
   const [period, setPeriod] = useState("2025-01");
   const [selectedTemplate, setSelectedTemplate] = useState("McD_QSR_v1");
   const [compareYears, setCompareYears] = useState<number[]>([2024, 2023, 2022]);
-  const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
+  const [viewMode, setViewMode] = useState<"single" | "multi-year" | "monthly">("single");
   const [showAccumulated, setShowAccumulated] = useState(false);
   const [showAdjustments, setShowAdjustments] = useState(false);
+  const [showYoY, setShowYoY] = useState(false);
   const [isPreloaded, setIsPreloaded] = useState(false);
   
   // ✅ Función de preload con estado de React
@@ -89,6 +91,53 @@ const ProfitAndLoss = () => {
   // Fetch paralelo para multi-año
   const yearQueries = yearQueriesConfig.map(config => usePLReport(config));
 
+  // ✅ Configuración de queries mensuales (12 meses)
+  const monthlyQueriesConfig = useMemo(() => {
+    if (viewMode !== "monthly") return [];
+    
+    const year = dateRange.year;
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+      
+      return {
+        templateCode: selectedTemplate,
+        companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+        centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
+        startDate,
+        endDate,
+      };
+    });
+  }, [viewMode, dateRange.year, selectedTemplate, selectedView]);
+
+  // Queries para el año actual (monthly)
+  const monthlyQueries = monthlyQueriesConfig.map(config => usePLReport(config));
+
+  // Queries para el año anterior (solo si showYoY está activo)
+  const prevYearMonthlyQueriesConfig = useMemo(() => {
+    if (viewMode !== "monthly" || !showYoY) return [];
+    
+    const prevYear = dateRange.year - 1;
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const startDate = `${prevYear}-${String(month).padStart(2, "0")}-01`;
+      const lastDay = new Date(prevYear, month, 0).getDate();
+      const endDate = `${prevYear}-${String(month).padStart(2, "0")}-${lastDay}`;
+      
+      return {
+        templateCode: selectedTemplate,
+        companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+        centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
+        startDate,
+        endDate,
+      };
+    });
+  }, [viewMode, showYoY, dateRange.year, selectedTemplate, selectedView]);
+
+  const prevYearMonthlyQueries = prevYearMonthlyQueriesConfig.map(config => usePLReport(config));
+
   // Hook de ajustes manuales
   const {
     upsertAdjustment,
@@ -115,8 +164,21 @@ const ProfitAndLoss = () => {
   // Determinar si estamos cargando o hay error
   const isLoadingMultiYear = viewMode === "multi-year" && yearQueries.some(q => q.isLoading);
   const isErrorMultiYear = viewMode === "multi-year" && yearQueries.some(q => q.isError);
-  const finalIsLoading = viewMode === "multi-year" ? isLoadingMultiYear : isLoading;
-  const finalIsError = viewMode === "multi-year" ? isErrorMultiYear : isError;
+  const isLoadingMonthly = viewMode === "monthly" && (
+    monthlyQueries.some(q => q.isLoading) || 
+    (showYoY && prevYearMonthlyQueries.some(q => q.isLoading))
+  );
+  const isErrorMonthly = viewMode === "monthly" && (
+    monthlyQueries.some(q => q.isError) || 
+    (showYoY && prevYearMonthlyQueries.some(q => q.isError))
+  );
+  
+  const finalIsLoading = viewMode === "multi-year" ? isLoadingMultiYear : 
+                         viewMode === "monthly" ? isLoadingMonthly : 
+                         isLoading;
+  const finalIsError = viewMode === "multi-year" ? isErrorMultiYear : 
+                       viewMode === "monthly" ? isErrorMonthly : 
+                       isError;
 
   const plData = data?.plData || [];
   const summary = data?.summary || {
@@ -137,7 +199,20 @@ const ProfitAndLoss = () => {
 
   // ✅ MEMOIZADO: Export Excel con formato histórico
   const handleExport = useCallback(() => {
-    if (viewMode === "multi-year") {
+    if (viewMode === "monthly") {
+      const plDataByMonth = monthlyQueries.map(q => q.data?.plData || []);
+      const prevYearPlDataByMonth = showYoY 
+        ? prevYearMonthlyQueries.map(q => q.data?.plData || [])
+        : undefined;
+      
+      exportPLMonthlyYoY({
+        plDataByMonth,
+        prevYearPlDataByMonth,
+        year: dateRange.year,
+        restaurantName: selectedView?.name || "Restaurante",
+        templateName: templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate,
+      });
+    } else if (viewMode === "multi-year") {
       // Multi-año: extraer datos de todos los años
       const plDataByYear = yearQueries.map((q) => q.data?.plData || []);
 
@@ -156,7 +231,13 @@ const ProfitAndLoss = () => {
         templateName: templates?.find((t) => t.code === selectedTemplate)?.name || selectedTemplate,
       });
     }
-  }, [viewMode, yearQueries, compareYears, plData, dateRange.year, selectedView, templates, selectedTemplate]);
+  }, [viewMode, monthlyQueries, prevYearMonthlyQueries, showYoY, yearQueries, compareYears, plData, dateRange.year, selectedView, templates, selectedTemplate]);
+
+  // ✅ Exportar CSV rápido (solo vista single)
+  const handleExportCSV = useCallback(() => {
+    const fileName = `PL_${selectedView?.name || "Restaurante"}_${period}.csv`;
+    exportPLCSV(plData, fileName);
+  }, [plData, selectedView, period]);
 
   if (!selectedView) {
     return (
@@ -215,7 +296,7 @@ const ProfitAndLoss = () => {
           <div className="flex items-center gap-2">
             <Select 
               value={viewMode} 
-              onValueChange={(v) => setViewMode(v as "single" | "multi-year")}
+              onValueChange={(v) => setViewMode(v as "single" | "multi-year" | "monthly")}
               onOpenChange={(open) => {
                 if (open && viewMode === "single") {
                   preloadMultiYearTable();
@@ -234,6 +315,7 @@ const ProfitAndLoss = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="single">Vista Mensual</SelectItem>
+                <SelectItem value="monthly">Año (Mensual)</SelectItem>
                 <SelectItem 
                   value="multi-year"
                   onMouseEnter={preloadMultiYearTable}
@@ -310,10 +392,23 @@ const ProfitAndLoss = () => {
                 </div>
               </>
             )}
-            <Button onClick={handleExport} disabled={!plData || plData.length === 0} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar Excel
-            </Button>
+            <div className="flex gap-2">
+              {viewMode === "single" && (
+                <Button 
+                  onClick={handleExportCSV} 
+                  disabled={!plData || plData.length === 0}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar CSV
+                </Button>
+              )}
+              <Button onClick={handleExport} disabled={!plData || plData.length === 0} className="gap-2">
+                <Download className="h-4 w-4" />
+                Exportar Excel
+              </Button>
+            </div>
           </div>
         }
       />
@@ -369,6 +464,30 @@ const ProfitAndLoss = () => {
           />
         )}
 
+        {/* Toggle YoY - Solo en vista mensual */}
+        {viewMode === "monthly" && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={!showYoY ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowYoY(false)}
+                >
+                  Solo {dateRange.year}
+                </Button>
+                <Button
+                  variant={showYoY ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowYoY(true)}
+                >
+                  YoY ({dateRange.year} vs {dateRange.year - 1})
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {finalIsLoading ? (
           <div className="grid gap-4 md:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
@@ -383,9 +502,9 @@ const ProfitAndLoss = () => {
               </Card>
             ))}
           </div>
-        ) : isQSRTemplate ? (
+        ) : viewMode === "single" && isQSRTemplate ? (
           <PLQSRKPICards plData={plData} summary={summary} />
-        ) : (
+        ) : viewMode === "single" ? (
           <div className="grid gap-4 md:grid-cols-4">
             <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">
               <div className="flex items-start justify-between mb-3">
@@ -450,7 +569,7 @@ const ProfitAndLoss = () => {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         <Card>
           <CardHeader>
@@ -460,7 +579,12 @@ const ProfitAndLoss = () => {
                 : selectedTemplate === 'McD_v1'
                 ? 'P&L McDonald\'s'
                 : 'Cuenta de Resultados'
-              } - {new Date(dateRange.startDate).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
+              } - {viewMode === "monthly" 
+                ? `Año ${dateRange.year}` 
+                : viewMode === "multi-year"
+                ? `Comparación ${compareYears.join(", ")}`
+                : new Date(dateRange.startDate).toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+              }
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -470,6 +594,16 @@ const ProfitAndLoss = () => {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
+            ) : viewMode === "monthly" ? (
+              // ✅ Vista Mensual (12 meses)
+              <Suspense fallback={<PLTableMultiYearSkeleton />}>
+                <PLTableMonthly 
+                  monthlyQueries={monthlyQueries}
+                  prevYearMonthlyQueries={showYoY ? prevYearMonthlyQueries : undefined}
+                  year={dateRange.year}
+                  showYoY={showYoY}
+                />
+              </Suspense>
             ) : viewMode === "multi-year" ? (
               // ✅ Vista Multi-Año: Tabla comparativa con lazy loading
               <Suspense fallback={<PLTableMultiYearSkeleton />}>

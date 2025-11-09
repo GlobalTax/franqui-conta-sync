@@ -3924,9 +3924,29 @@ export type Database = {
       }
       refresh_user_memberships: { Args: never; Returns: undefined }
       run_franchisee_reconstruction: { Args: never; Returns: Json }
+      search_locations: {
+        Args: { limit_results?: number; search_query: string }
+        Returns: {
+          match_type: string
+          municipality_id: number
+          municipality_name: string
+          postal_code: string
+          province_id: number
+          province_name: string
+        }[]
+      }
       set_primary_company: {
         Args: { _centre_id: string; _company_id: string }
         Returns: undefined
+      }
+      upsert_company_with_addresses: {
+        Args: {
+          p_company_data: Json
+          p_company_id: string
+          p_fiscal_address: Json
+          p_social_address: Json
+        }
+        Returns: Json
       }
       user_can_access_centro: {
         Args: { _centro_code: string; _user_id: string }

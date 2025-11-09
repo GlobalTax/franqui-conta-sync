@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useOrganization } from "@/hooks/useOrganization";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CentreSelector } from "@/components/accounting/CentreSelector";
 import { useView } from "@/contexts/ViewContext";
 import { useEnsureDefaultView } from "@/hooks/useEnsureDefaultView";
@@ -271,12 +272,13 @@ const Layout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end">
+        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end gap-2">
+          <ThemeToggle />
           <NotificationBell />
         </div>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto bg-gradient-to-br from-background to-muted/30">
+        <main className="flex-1 overflow-auto bg-background">
           <Outlet />
         </main>
       </div>

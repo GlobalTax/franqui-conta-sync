@@ -1,13 +1,16 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "next-themes";
 import { ViewProvider } from "@/contexts/ViewContext";
 import App from "./App";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ViewProvider>
-      <App />
-    </ViewProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ViewProvider>
+        <App />
+      </ViewProvider>
+    </ThemeProvider>
   </StrictMode>
 );

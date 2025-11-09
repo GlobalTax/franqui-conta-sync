@@ -41,7 +41,7 @@ export default function ConsolidatedReports() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB] p-6 space-y-6">
+    <div className="min-h-screen bg-background p-6 space-y-6 animate-fade-in-up">
       <PageHeader
         breadcrumbs={[
           { label: "Reportes", href: "/reportes" },

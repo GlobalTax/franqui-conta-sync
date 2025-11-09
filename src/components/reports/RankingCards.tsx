@@ -41,7 +41,7 @@ export function RankingCards({ rankings, isLoading }: RankingCardsProps) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Card 1: Ranking EBITDA */}
-      <Card className="quantum-card">
+      <Card className="quantum-card hover:quantum-glow-gold transition-all">
         <CardHeader>
           <CardTitle className="quantum-header flex items-center gap-2">
             <Target className="h-4 w-4" strokeWidth={1.5} />
@@ -78,7 +78,7 @@ export function RankingCards({ rankings, isLoading }: RankingCardsProps) {
       </Card>
 
       {/* Card 2: Ranking Labor (menor es mejor) */}
-      <Card className="quantum-card">
+      <Card className="quantum-card hover:quantum-glow-green transition-all">
         <CardHeader>
           <CardTitle className="quantum-header flex items-center gap-2">
             <Users className="h-4 w-4" strokeWidth={1.5} />
@@ -115,7 +115,7 @@ export function RankingCards({ rankings, isLoading }: RankingCardsProps) {
       </Card>
 
       {/* Card 3: Ranking Margen */}
-      <Card className="quantum-card">
+      <Card className="quantum-card hover:quantum-glow-blue transition-all">
         <CardHeader>
           <CardTitle className="quantum-header flex items-center gap-2">
             <TrendingUp className="h-4 w-4" strokeWidth={1.5} />

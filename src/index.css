@@ -90,67 +90,72 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 217 25% 10%;
-    --foreground: 210 20% 98%;
+    /* Quantum Economics Dark - Ultra Dark Background */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 93%;
 
-    --card: 217 22% 12%;
-    --card-foreground: 210 20% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 93%;
 
-    --popover: 217 25% 10%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 93%;
 
-    --primary: 217 91% 55%;
-    --primary-foreground: 210 20% 98%;
-    --primary-50: 217 91% 95%;
-    --primary-100: 217 91% 90%;
-    --primary-500: 217 91% 55%;
-    --primary-600: 217 91% 50%;
-    --primary-700: 217 91% 45%;
-    --primary-900: 217 91% 35%;
+    /* Gold Accent Primary */
+    --primary: 46 96% 65%;
+    --primary-foreground: 0 0% 10%;
+    --primary-50: 46 96% 95%;
+    --primary-100: 46 96% 85%;
+    --primary-500: 46 96% 65%;
+    --primary-600: 46 96% 55%;
+    --primary-700: 46 96% 45%;
+    --primary-900: 46 96% 30%;
 
-    --accent-gold: 41 90% 58%;
-    --accent-gold-light: 45 100% 70%;
+    --accent-gold: 46 96% 65%;
+    --accent-gold-light: 46 96% 75%;
 
-    --secondary: 217 20% 18%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 93%;
 
-    --muted: 217 20% 16%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 200 100% 55%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 93%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 144 61% 20%;
+    /* Neon Green Success */
+    --success: 142 71% 55%;
+    --success-foreground: 0 0% 10%;
     --success-light: 142 70% 15%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 20%;
-    --warning-light: 48 100% 15%;
+    /* Neon Orange Warning */
+    --warning: 38 92% 60%;
+    --warning-foreground: 0 0% 10%;
+    --warning-light: 38 90% 15%;
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 93%;
 
-    --border: 217 20% 20%;
-    --input: 217 20% 20%;
-    --ring: 217 91% 55%;
+    /* Subtle Borders */
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 46 96% 65%;
 
-    --sidebar-background: 217 25% 10%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 217 91% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 20% 16%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 217 20% 20%;
-    --sidebar-ring: 217 91% 55%;
-    --sidebar-light: 217 20% 18%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 46 96% 65%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 93%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 46 96% 65%;
+    --sidebar-light: 0 0% 8%;
 
-    /* Chart colors */
-    --chart-1: 217 91% 55%;
-    --chart-2: 200 100% 55%;
-    --chart-3: 142 71% 45%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 0 84% 60%;
+    /* Neon Chart Colors */
+    --chart-1: 46 96% 65%;     /* Gold neon */
+    --chart-2: 210 100% 60%;   /* Blue neon */
+    --chart-3: 142 71% 55%;    /* Green neon */
+    --chart-4: 38 92% 60%;     /* Orange neon */
+    --chart-5: 0 72% 55%;      /* Red neon */
   }
 }
 
@@ -196,7 +201,16 @@ All colors MUST be HSL.
   
   /* Quantum Economics Design System */
   .quantum-card {
-    @apply bg-white border border-border/40 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
+    @apply bg-white dark:bg-card border border-border/40 rounded-lg shadow-sm hover:shadow-md dark:shadow-none transition-all duration-200;
+  }
+  
+  .dark .quantum-card {
+    border-color: hsl(var(--border));
+  }
+  
+  .dark .quantum-card:hover {
+    box-shadow: 0 0 20px rgba(252, 211, 77, 0.12);
+    border-color: hsl(var(--primary) / 0.3);
   }
 
   .quantum-header {
@@ -206,27 +220,63 @@ All colors MUST be HSL.
   .quantum-value {
     @apply text-2xl font-normal tabular-nums;
   }
+  
+  .dark .quantum-value {
+    text-shadow: 0 0 30px rgba(252, 211, 77, 0.15);
+  }
 
   .quantum-chart-grid {
     stroke: hsl(var(--border));
     stroke-dasharray: 3 3;
     opacity: 0.2;
   }
+  
+  .dark .quantum-chart-grid {
+    opacity: 0.3;
+  }
 
   .quantum-button {
     @apply font-normal;
+  }
+  
+  /* Neon Glow Effects */
+  .quantum-glow-gold {
+    box-shadow: 0 0 20px rgba(252, 211, 77, 0.25);
+  }
+  
+  .quantum-glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+  }
+  
+  .quantum-glow-green {
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.25);
   }
 
   /* Color coding badges */
   .badge-success {
     @apply bg-success-light text-success border-success/20;
   }
+  
+  .dark .badge-success {
+    @apply bg-success-light text-success border-success/30;
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.15);
+  }
 
   .badge-warning {
     @apply bg-warning-light text-warning border-warning/20;
   }
+  
+  .dark .badge-warning {
+    @apply bg-warning-light text-warning border-warning/30;
+    box-shadow: 0 0 15px rgba(251, 146, 60, 0.15);
+  }
 
   .badge-danger {
-    @apply bg-red-50 text-destructive border-destructive/20;
+    @apply bg-red-50 dark:bg-red-950/30 text-destructive border-destructive/20;
+  }
+  
+  .dark .badge-danger {
+    border-color: hsl(var(--destructive) / 0.3);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
   }
 }

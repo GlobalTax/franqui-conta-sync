@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useChartColors } from "@/lib/chart-theme-utils";
 
 interface EvolutionComposedChartProps {
   data: {
@@ -36,6 +37,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function EvolutionComposedChart({ data, isLoading }: EvolutionComposedChartProps) {
+  const chartColors = useChartColors();
+  
   return (
     <Card className="quantum-card">
       <CardHeader className="pb-8">
@@ -54,45 +57,44 @@ export function EvolutionComposedChart({ data, isLoading }: EvolutionComposedCha
             <ComposedChart data={data}>
               <defs>
                 <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="0%" stopColor={chartColors.gradients.gold.start} stopOpacity={1} />
+                  <stop offset="100%" stopColor={chartColors.gradients.gold.end} stopOpacity={1} />
                 </linearGradient>
               </defs>
               
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke="hsl(var(--border))" 
-                opacity={0.2}
+                stroke={chartColors.grid}
                 className="quantum-chart-grid"
               />
               
               <XAxis 
                 dataKey="month" 
-                stroke="hsl(var(--muted-foreground))"
+                stroke={chartColors.axis}
                 fontSize={11}
                 fontWeight={400}
                 tickLine={false}
-                axisLine={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                axisLine={false}
               />
               
               <YAxis 
                 yAxisId="left"
-                stroke="hsl(var(--muted-foreground))"
+                stroke={chartColors.axis}
                 fontSize={11}
                 fontWeight={400}
                 tickLine={false}
-                axisLine={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                axisLine={false}
                 tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
               />
               
               <YAxis 
                 yAxisId="right" 
                 orientation="right"
-                stroke="hsl(var(--muted-foreground))"
+                stroke={chartColors.axis}
                 fontSize={11}
                 fontWeight={400}
                 tickLine={false}
-                axisLine={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                axisLine={false}
                 tickFormatter={(val) => `${val}%`}
               />
               
@@ -117,10 +119,10 @@ export function EvolutionComposedChart({ data, isLoading }: EvolutionComposedCha
                 yAxisId="right"
                 type="monotone" 
                 dataKey="foodCostPct" 
-                stroke="hsl(var(--chart-2))"
-                strokeWidth={1.5}
-                dot={{ r: 4, fill: "hsl(var(--chart-2))", strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
+                stroke={chartColors.lines.secondary}
+                strokeWidth={chartColors.strokeWidth}
+                dot={{ r: chartColors.dotRadius, fill: chartColors.lines.secondary, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
                 name="Food Cost %"
               />
               
@@ -128,10 +130,10 @@ export function EvolutionComposedChart({ data, isLoading }: EvolutionComposedCha
                 yAxisId="right"
                 type="monotone" 
                 dataKey="laborPct" 
-                stroke="hsl(var(--chart-3))"
-                strokeWidth={1.5}
-                dot={{ r: 4, fill: "hsl(var(--chart-3))", strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
+                stroke={chartColors.lines.success}
+                strokeWidth={chartColors.strokeWidth}
+                dot={{ r: chartColors.dotRadius, fill: chartColors.lines.success, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
                 name="Labor %"
               />
               
@@ -139,10 +141,10 @@ export function EvolutionComposedChart({ data, isLoading }: EvolutionComposedCha
                 yAxisId="right"
                 type="monotone" 
                 dataKey="otherExpensesPct" 
-                stroke="hsl(var(--chart-4))"
-                strokeWidth={1.5}
-                dot={{ r: 4, fill: "hsl(var(--chart-4))", strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
+                stroke={chartColors.lines.warning}
+                strokeWidth={chartColors.strokeWidth}
+                dot={{ r: chartColors.dotRadius, fill: chartColors.lines.warning, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
                 name="Otros Gastos %"
               />
             </ComposedChart>

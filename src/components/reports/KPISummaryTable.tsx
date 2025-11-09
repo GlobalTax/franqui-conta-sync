@@ -164,7 +164,7 @@ export function KPISummaryTable({ data, onSort, sortConfig, isLoading }: KPISumm
               {sortedData.map((row) => (
                 <TableRow 
                   key={row.centroCode}
-                  className="hover:bg-accent/10 transition-colors border-border/20"
+                  className="hover:bg-accent/30 dark:hover:bg-primary/5 transition-colors cursor-pointer border-border/20"
                 >
                   <TableCell className="font-normal text-sm">{row.centroName}</TableCell>
                   <TableCell className="text-right font-medium tabular-nums text-sm">

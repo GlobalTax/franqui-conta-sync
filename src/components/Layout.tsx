@@ -124,7 +124,6 @@ const Layout = () => {
                 Vista contable
               </label>
               <CentreSelector
-                franchiseeId={currentMembership.organization_id}
                 value={selectedView}
                 onChange={setSelectedView}
               />

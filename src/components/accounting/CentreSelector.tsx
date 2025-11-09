@@ -2,21 +2,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useCentres } from "@/hooks/useCentres";
-import { useCompanies } from "@/hooks/useCompanies";
-import { AlertCircle, Building2, Store, RefreshCw, Briefcase } from "lucide-react";
+import { useAllUserCentres } from "@/hooks/useAllUserCentres";
+import { useAllUserCompanies } from "@/hooks/useAllUserCompanies";
+import { AlertCircle, Building2, Store, RefreshCw, Briefcase, Users } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
 import { useEffect } from "react";
 
 interface CentreSelectorProps {
-  franchiseeId: string;
   value: ViewSelection | null;
   onChange: (value: ViewSelection) => void;
 }
 
-export const CentreSelector = ({ franchiseeId, value, onChange }: CentreSelectorProps) => {
-  const { data: centres, isLoading: centresLoading, error: centresError, isError: centresIsError, refetch: refetchCentres } = useCentres(franchiseeId);
-  const { data: companies, isLoading: companiesLoading } = useCompanies(franchiseeId);
+export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
+  const { data: franchiseesWithCentres, isLoading: centresLoading, error: centresError, isError: centresIsError, refetch: refetchCentres } = useAllUserCentres();
+  const { data: franchiseesWithCompanies, isLoading: companiesLoading, refetch: refetchCompanies } = useAllUserCompanies();
 
   const isLoading = centresLoading || companiesLoading;
   const isError = centresIsError;
@@ -24,14 +23,14 @@ export const CentreSelector = ({ franchiseeId, value, onChange }: CentreSelector
 
   // Auto-select "all" (consolidated view) when data loads and no view is selected
   useEffect(() => {
-    if (!isLoading && !value && (centres?.length || companies?.length)) {
+    if (!isLoading && !value && (franchiseesWithCentres?.length || franchiseesWithCompanies?.length)) {
       onChange({
         type: 'all',
-        id: franchiseeId,
-        name: 'Consolidado General'
+        id: 'all',
+        name: 'Consolidado General - Todos los Franquiciados'
       });
     }
-  }, [centres, companies, value, onChange, franchiseeId, isLoading]);
+  }, [franchiseesWithCentres, franchiseesWithCompanies, value, onChange, isLoading]);
 
   if (isLoading) {
     return (
@@ -68,7 +67,7 @@ export const CentreSelector = ({ franchiseeId, value, onChange }: CentreSelector
     );
   }
 
-  if (!centres || centres.length === 0) {
+  if (!franchiseesWithCentres?.length && !franchiseesWithCompanies?.length) {
     return null;
   }
 
@@ -81,25 +80,35 @@ export const CentreSelector = ({ franchiseeId, value, onChange }: CentreSelector
         if (type === 'all') {
           onChange({ 
             type: 'all', 
-            id: franchiseeId, 
-            name: 'Consolidado General' 
+            id: 'all', 
+            name: 'Consolidado General - Todos los Franquiciados' 
           });
         } else if (type === 'company') {
-          const company = companies?.find(c => c.id === id);
-          if (company) {
+          // Find company across all franchisees
+          let foundCompany = null;
+          for (const franchisee of franchiseesWithCompanies || []) {
+            foundCompany = franchisee.companies.find(c => c.id === id);
+            if (foundCompany) break;
+          }
+          if (foundCompany) {
             onChange({ 
               type: 'company', 
               id, 
-              name: company.razon_social
+              name: foundCompany.razon_social
             });
           }
-        } else {
-          const centre = centres?.find(c => c.id === id);
-          if (centre) {
+        } else if (type === 'centre') {
+          // Find centre across all franchisees
+          let foundCentre = null;
+          for (const franchisee of franchiseesWithCentres || []) {
+            foundCentre = franchisee.centres.find(c => c.id === id);
+            if (foundCentre) break;
+          }
+          if (foundCentre) {
             onChange({ 
               type: 'centre', 
               id, 
-              name: `${centre.codigo} - ${centre.nombre}` 
+              name: `${foundCentre.codigo} - ${foundCentre.nombre}` 
             });
           }
         }
@@ -108,53 +117,77 @@ export const CentreSelector = ({ franchiseeId, value, onChange }: CentreSelector
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Seleccionar vista..." />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="max-h-[500px]">
         {/* Opción consolidada general */}
-        <SelectItem value={`all:${franchiseeId}`} className="font-semibold bg-primary/5">
+        <SelectItem value="all:all" className="font-semibold bg-primary/5 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" />
-            <span>📊 Consolidado General</span>
+            <span>📊 Consolidado General - Todos</span>
           </div>
         </SelectItem>
         
-        {/* Sociedades mercantiles */}
-        {companies && companies.length > 0 && (
+        {/* Sociedades mercantiles agrupadas por franquiciado */}
+        {franchiseesWithCompanies && franchiseesWithCompanies.length > 0 && (
           <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-              Sociedades Mercantiles
+            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky top-10 z-10">
+              💼 Sociedades Mercantiles
             </div>
-            {companies.map((company) => (
-              <SelectItem 
-                key={company.id} 
-                value={`company:${company.id}`}
-                className="pl-6"
-              >
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-blue-500" />
-                  <span>{company.razon_social}</span>
-                  <span className="text-xs text-muted-foreground">({company.cif})</span>
+            {franchiseesWithCompanies.map((franchisee) => (
+              <div key={`company-franchisee-${franchisee.id}`}>
+                {/* Franchisee header */}
+                <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
+                  <Users className="h-3 w-3" />
+                  {franchisee.name}
                 </div>
-              </SelectItem>
+                {/* Companies for this franchisee */}
+                {franchisee.companies.map((company) => (
+                  <SelectItem 
+                    key={company.id} 
+                    value={`company:${company.id}`}
+                    className="pl-8"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-blue-500" />
+                      <span>{company.razon_social}</span>
+                      <span className="text-xs text-muted-foreground">({company.cif})</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </div>
             ))}
           </>
         )}
         
-        {/* Centros individuales */}
-        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-1">
-          Centros
-        </div>
-        {centres?.map((centre) => (
-          <SelectItem 
-            key={centre.id} 
-            value={`centre:${centre.id}`}
-            className="pl-6"
-          >
-            <div className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-success" />
-              <span>{centre.codigo} - {centre.nombre}</span>
+        {/* Centros individuales agrupados por franquiciado */}
+        {franchiseesWithCentres && franchiseesWithCentres.length > 0 && (
+          <>
+            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky z-10 mt-1">
+              🏪 Centros Individuales
             </div>
-          </SelectItem>
-        ))}
+            {franchiseesWithCentres.map((franchisee) => (
+              <div key={`centre-franchisee-${franchisee.id}`}>
+                {/* Franchisee header */}
+                <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
+                  <Users className="h-3 w-3" />
+                  {franchisee.name}
+                </div>
+                {/* Centres for this franchisee */}
+                {franchisee.centres.map((centre) => (
+                  <SelectItem 
+                    key={centre.id} 
+                    value={`centre:${centre.id}`}
+                    className="pl-8"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-success" />
+                      <span>{centre.codigo} - {centre.nombre}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
       </SelectContent>
     </Select>
   );

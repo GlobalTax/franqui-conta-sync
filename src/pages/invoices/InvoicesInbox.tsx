@@ -11,8 +11,9 @@ import { useInvoicesReceived, type InvoiceReceived } from '@/hooks/useInvoicesRe
 import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
 import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Transform invoice data to match table interface
 const transformInvoice = (inv: InvoiceReceived) => ({
@@ -32,6 +33,7 @@ const transformInvoice = (inv: InvoiceReceived) => ({
 
 export default function InvoicesInbox() {
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     status?: string;
     supplier_id?: string;
@@ -46,11 +48,13 @@ export default function InvoicesInbox() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [assignCentreDialogOpen, setAssignCentreDialogOpen] = useState(false);
 
-  // Fetch invoices
-  const { data: rawInvoices = [], isLoading } = useInvoicesReceived(filters);
+  // Fetch invoices con paginación
+  const { data: result, isLoading } = useInvoicesReceived({ ...filters, page, limit: 50 });
   
   // Transform invoices for table
-  const invoices = useMemo(() => rawInvoices.map(transformInvoice), [rawInvoices]);
+  const invoices = useMemo(() => (result?.data || []).map(transformInvoice), [result]);
+  const totalInvoices = result?.total || 0;
+  const totalPages = result?.pageCount || 1;
   
   // Review actions
   const { assignCentre, generateEntry } = useInvoiceReview(selectedInvoiceId);
@@ -80,6 +84,7 @@ export default function InvoicesInbox() {
 
   const handleClearFilters = () => {
     setFilters({});
+    setPage(1);
   };
 
   const handleApprove = (id: string) => {
@@ -167,13 +172,80 @@ export default function InvoicesInbox() {
             onNewInvoice={() => navigate('/invoices/new-received')}
           />
         ) : (
-          <InvoiceInboxTable
-            invoices={invoices}
-            selectedIds={selectedIds}
-            onSelect={setSelectedIds}
-            onRowClick={handleRowClick}
-            loading={isLoading}
-          />
+          <>
+            <InvoiceInboxTable
+              invoices={invoices}
+              selectedIds={selectedIds}
+              onSelect={setSelectedIds}
+              onRowClick={handleRowClick}
+              loading={isLoading}
+            />
+            
+            {/* Controles de paginación */}
+            <div className="sticky bottom-0 border-t bg-background px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {invoices.length} de {totalInvoices} factura{totalInvoices !== 1 ? 's' : ''}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPage(1);
+                      setSelectedIds([]);
+                    }}
+                    disabled={page === 1 || isLoading}
+                  >
+                    Primera
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPage(p => Math.max(1, p - 1));
+                      setSelectedIds([]);
+                    }}
+                    disabled={page === 1 || isLoading}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  
+                  <span className="text-sm px-2">
+                    Página <span className="font-medium">{page}</span> de <span className="font-medium">{totalPages}</span>
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPage(p => Math.min(totalPages, p + 1));
+                      setSelectedIds([]);
+                    }}
+                    disabled={page === totalPages || isLoading}
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPage(totalPages);
+                      setSelectedIds([]);
+                    }}
+                    disabled={page === totalPages || isLoading}
+                  >
+                    Última
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

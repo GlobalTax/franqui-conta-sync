@@ -17,14 +17,14 @@ const InvoiceDetail = () => {
   const navigate = useNavigate();
   const [invoiceType, setInvoiceType] = useState<"received" | "issued">("received");
 
-  const { data: receivedInvoices } = useInvoicesReceived();
+  const { data: receivedInvoicesResult } = useInvoicesReceived();
   const { data: issuedInvoices } = useInvoicesIssued();
   const { data: lines } = useInvoiceLines(id!, invoiceType);
   const generateReceivedEntry = useGenerateEntryFromInvoiceReceived();
   const generateIssuedEntry = useGenerateEntryFromInvoiceIssued();
 
   // Try to find the invoice in either list
-  const receivedInvoice = receivedInvoices?.find((inv) => inv.id === id);
+  const receivedInvoice = receivedInvoicesResult?.data?.find((inv) => inv.id === id);
   const issuedInvoice = issuedInvoices?.find((inv) => inv.id === id);
   
   const invoice = receivedInvoice || issuedInvoice;

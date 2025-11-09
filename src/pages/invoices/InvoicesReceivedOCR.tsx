@@ -49,13 +49,15 @@ export default function InvoicesReceivedOCR() {
     searchQuery: "",
   });
 
-  const { data: invoices, isLoading } = useInvoicesReceived({
+  const { data: invoicesResult, isLoading } = useInvoicesReceived({
     centro_code: currentMembership?.restaurant?.codigo,
     status: filters.status.length > 0 ? filters.status[0] : undefined,
     supplier_id: filters.supplierId || undefined,
     date_from: filters.dateFrom || undefined,
     date_to: filters.dateTo || undefined,
   });
+
+  const invoices = invoicesResult?.data || [];
 
   const handleOpenSheet = (invoice: InvoiceReceived) => {
     setSelectedInvoice(invoice);
@@ -68,7 +70,7 @@ export default function InvoicesReceivedOCR() {
   };
 
   // Filter invoices by OCR confidence and search query
-  const filteredInvoices = invoices?.filter((invoice) => {
+  const filteredInvoices = invoices.filter((invoice) => {
     const ocrConfidence = invoice.ocr_confidence || 0;
     if (ocrConfidence < filters.minOcrConfidence / 100) return false;
 
@@ -119,7 +121,7 @@ export default function InvoicesReceivedOCR() {
             <InvoiceFiltersPanel
               filters={filters}
               onFiltersChange={setFilters}
-              invoices={invoices || []}
+              invoices={invoices}
             />
           </aside>
 

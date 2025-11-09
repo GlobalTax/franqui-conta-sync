@@ -76,6 +76,8 @@ export const useInvoicesReceived = (filters?: {
   date_from?: string;
   date_to?: string;
   searchTerm?: string;
+  page?: number;
+  limit?: number;
 }) => {
   const { currentMembership } = useOrganization();
   const selectedCentro = currentMembership?.restaurant?.codigo;
@@ -92,12 +94,14 @@ export const useInvoicesReceived = (filters?: {
         dateFrom: filters?.date_from,
         dateTo: filters?.date_to,
         searchTerm: filters?.searchTerm,
+        page: filters?.page || 1,
+        limit: filters?.limit || 50,
       };
 
-      const domainInvoices = await InvoiceQueries.findInvoicesReceived(queryFilters);
+      const result = await InvoiceQueries.findInvoicesReceived(queryFilters);
 
       // Convertir de camelCase (dominio) a snake_case (API legacy)
-      const mappedInvoices = domainInvoices.map(inv => ({
+      const mappedInvoices = result.data.map(inv => ({
         id: inv.id,
         supplier_id: inv.supplierId,
         centro_code: inv.centroCode,
@@ -129,6 +133,7 @@ export const useInvoicesReceived = (filters?: {
         } : undefined,
         approvals: inv.approvals?.map(a => ({
           id: a.id,
+          invoice_id: a.invoiceId,
           approver_id: a.approverId,
           approval_level: a.approvalLevel,
           action: a.action,
@@ -140,15 +145,27 @@ export const useInvoicesReceived = (filters?: {
       // Filtrado client-side adicional (supplier.name, supplier.tax_id)
       if (filters?.searchTerm) {
         const q = filters.searchTerm.toLowerCase().trim();
-        return mappedInvoices.filter(inv => {
+        const filtered = mappedInvoices.filter(inv => {
           const matchesNumber = inv.invoice_number?.toLowerCase().includes(q);
           const matchesSupplier = inv.supplier?.name?.toLowerCase().includes(q);
           const matchesTaxId = inv.supplier?.tax_id?.toLowerCase().includes(q);
           return matchesNumber || matchesSupplier || matchesTaxId;
         });
+        
+        return {
+          data: filtered,
+          total: filtered.length,
+          page: result.page,
+          pageCount: Math.ceil(filtered.length / queryFilters.limit),
+        };
       }
 
-      return mappedInvoices;
+      return {
+        data: mappedInvoices,
+        total: result.total,
+        page: result.page,
+        pageCount: result.pageCount,
+      };
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
     // ✅ OPTIMIZACIÓN: Caché de 2 minutos para datos transaccionales

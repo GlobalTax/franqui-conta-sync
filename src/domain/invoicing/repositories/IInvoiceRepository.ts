@@ -3,7 +3,7 @@
 // Define el contrato de persistencia para operaciones de facturación
 // ============================================================================
 
-import type { InvoiceReceived, InvoiceIssued, InvoiceFilters, InvoiceLine } from '../types';
+import type { InvoiceReceived, InvoiceIssued, InvoiceFilters, InvoiceLine, PaginatedInvoices } from '../types';
 
 export interface CreateInvoiceReceivedCommand {
   invoice: Omit<InvoiceReceived, 'id' | 'createdAt' | 'updatedAt'>;
@@ -82,9 +82,9 @@ export interface IInvoiceRepository {
   findInvoiceReceivedById(id: string): Promise<InvoiceReceived | null>;
   
   /**
-   * Busca facturas recibidas con filtros
+   * Busca facturas recibidas con filtros y paginación
    */
-  findInvoicesReceived(filters: InvoiceFilters): Promise<InvoiceReceived[]>;
+  findInvoicesReceived(filters: InvoiceFilters): Promise<PaginatedInvoices<InvoiceReceived>>;
   
   /**
    * Busca facturas emitidas con filtros

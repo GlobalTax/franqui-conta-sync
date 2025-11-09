@@ -9,7 +9,8 @@ import type {
   InvoiceReceived, 
   InvoiceIssued, 
   InvoiceFilters,
-  InvoiceLine 
+  InvoiceLine,
+  PaginatedInvoices
 } from "@/domain/invoicing/types";
 
 /**
@@ -39,11 +40,46 @@ export class InvoiceQueries {
   }
 
   /**
-   * Obtiene facturas recibidas con filtros
+   * Obtiene facturas recibidas con filtros y paginación
    */
   static async findInvoicesReceived(
     filters: InvoiceFilters
-  ): Promise<InvoiceReceived[]> {
+  ): Promise<PaginatedInvoices<InvoiceReceived>> {
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    // Query base para aplicar filtros
+    let baseQuery = supabase.from("invoices_received").select("*", { count: "exact", head: true });
+
+    // Aplicar filtros a la query de count
+    if (filters.centroCode) {
+      baseQuery = baseQuery.eq("centro_code", filters.centroCode);
+    }
+    if (filters.supplierId) {
+      baseQuery = baseQuery.eq("supplier_id", filters.supplierId);
+    }
+    if (filters.status) {
+      baseQuery = baseQuery.eq("status", filters.status);
+    }
+    if (filters.approvalStatus) {
+      baseQuery = baseQuery.eq("approval_status", filters.approvalStatus);
+    }
+    if (filters.dateFrom) {
+      baseQuery = baseQuery.gte("invoice_date", filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      baseQuery = baseQuery.lte("invoice_date", filters.dateTo);
+    }
+    if (filters.searchTerm) {
+      baseQuery = baseQuery.ilike("invoice_number", `%${filters.searchTerm}%`);
+    }
+
+    // Obtener total de registros
+    const { count } = await baseQuery;
+
+    // Query paginada con joins
     let query = supabase
       .from("invoices_received")
       .select(`
@@ -51,32 +87,28 @@ export class InvoiceQueries {
         supplier:suppliers(id, name, tax_id),
         approvals:invoice_approvals(*)
       `)
-      .order("invoice_date", { ascending: false });
+      .order("invoice_date", { ascending: false })
+      .range(start, end);
 
+    // Aplicar mismos filtros
     if (filters.centroCode) {
       query = query.eq("centro_code", filters.centroCode);
     }
-
     if (filters.supplierId) {
       query = query.eq("supplier_id", filters.supplierId);
     }
-
     if (filters.status) {
       query = query.eq("status", filters.status);
     }
-
     if (filters.approvalStatus) {
       query = query.eq("approval_status", filters.approvalStatus);
     }
-
     if (filters.dateFrom) {
       query = query.gte("invoice_date", filters.dateFrom);
     }
-
     if (filters.dateTo) {
       query = query.lte("invoice_date", filters.dateTo);
     }
-
     if (filters.searchTerm) {
       query = query.ilike("invoice_number", `%${filters.searchTerm}%`);
     }
@@ -87,7 +119,12 @@ export class InvoiceQueries {
       throw new Error(`Error fetching received invoices: ${error.message}`);
     }
 
-    return (data || []).map(InvoiceMapper.receivedToDomain);
+    return {
+      data: (data || []).map(InvoiceMapper.receivedToDomain),
+      total: count || 0,
+      page,
+      pageCount: Math.ceil((count || 0) / limit),
+    };
   }
 
   /**

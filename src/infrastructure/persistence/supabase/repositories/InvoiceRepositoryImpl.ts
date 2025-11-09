@@ -6,7 +6,7 @@
 import { IInvoiceRepository } from '@/domain/invoicing/repositories/IInvoiceRepository';
 import { InvoiceQueries } from '../queries/InvoiceQueries';
 import { InvoiceCommands } from '../commands/InvoiceCommands';
-import type { InvoiceReceived, InvoiceIssued, InvoiceFilters, InvoiceLine } from '@/domain/invoicing/types';
+import type { InvoiceReceived, InvoiceIssued, InvoiceFilters, InvoiceLine, PaginatedInvoices } from '@/domain/invoicing/types';
 import type {
   CreateInvoiceReceivedCommand,
   CreateInvoiceIssuedCommand,
@@ -26,7 +26,7 @@ export class InvoiceRepositoryImpl implements IInvoiceRepository {
     return InvoiceQueries.findInvoiceReceivedById(id);
   }
 
-  async findInvoicesReceived(filters: InvoiceFilters): Promise<InvoiceReceived[]> {
+  async findInvoicesReceived(filters: InvoiceFilters): Promise<PaginatedInvoices<InvoiceReceived>> {
     return InvoiceQueries.findInvoicesReceived(filters);
   }
 

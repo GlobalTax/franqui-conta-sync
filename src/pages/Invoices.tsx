@@ -26,8 +26,9 @@ import { toast } from "sonner";
 
 const Invoices = () => {
   const navigate = useNavigate();
-  const { data: invoicesReceived = [], isLoading: isLoadingReceived } = useInvoicesReceived();
+  const { data: invoicesReceivedResult = { data: [], total: 0, page: 1, pageCount: 1 }, isLoading: isLoadingReceived } = useInvoicesReceived();
   const { data: invoicesIssued = [], isLoading: isLoadingIssued } = useInvoicesIssued();
+  const invoicesReceived = invoicesReceivedResult.data;
   const generateEntry = useGenerateEntryFromInvoiceReceived();
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

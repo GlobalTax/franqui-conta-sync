@@ -134,4 +134,16 @@ export interface InvoiceFilters {
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Resultado paginado de facturas
+ */
+export interface PaginatedInvoices<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageCount: number;
 }

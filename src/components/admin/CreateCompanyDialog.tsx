@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { CompanyDataEnrichment } from "@/components/company/CompanyDataEnrichment";
 import { EnrichedCompanyData } from "@/hooks/useCompanyEnrichment";
+import { CIFAutocompleteInput } from "@/components/company/CIFAutocompleteInput";
+import { toast } from "sonner";
 
 interface CreateCompanyDialogProps {
   open: boolean;
@@ -37,6 +39,14 @@ export function CreateCompanyDialog({
   const handleEnrichmentAccept = (data: EnrichedCompanyData) => {
     setRazonSocial(data.razon_social);
     setTipoSociedad(data.tipo_sociedad);
+  };
+
+  const handleCIFSelect = (data: EnrichedCompanyData) => {
+    // CIF is already set by onChange in CIFAutocompleteInput
+    setRazonSocial(data.razon_social);
+    setTipoSociedad(data.tipo_sociedad);
+    setCifError(null);
+    toast.success("✨ Datos cargados desde caché");
   };
 
   const handleSubmit = () => {
@@ -102,11 +112,10 @@ export function CreateCompanyDialog({
               CIF <span className="text-destructive">*</span>
             </Label>
             <div className="flex gap-2">
-              <Input
-                id="cif"
-                placeholder="B12345678"
+              <CIFAutocompleteInput
                 value={cif}
-                onChange={(e) => handleCifChange(e.target.value)}
+                onChange={handleCifChange}
+                onSelect={handleCIFSelect}
                 disabled={isCreating}
                 className={cifError ? "border-destructive" : ""}
               />

@@ -5,6 +5,7 @@ import { useFormContext } from "react-hook-form";
 import { CompanyFormData } from "@/hooks/useCompanyForm";
 import { CompanyDataEnrichment } from "@/components/company/CompanyDataEnrichment";
 import { EnrichedCompanyData } from "@/hooks/useCompanyEnrichment";
+import { CIFAutocompleteInput } from "@/components/company/CIFAutocompleteInput";
 import { toast } from "sonner";
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,17 @@ export function CompanyIdentificationSection() {
   const nifPrefix = watch("nif_prefix") || "";
   const nifNumber = watch("nif_number") || "";
   const fullCIF = nifPrefix + nifNumber;
+
+  const handleCIFChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    if (upperValue.length > 0) {
+      setValue("nif_prefix", upperValue[0]);
+      setValue("nif_number", upperValue.slice(1, 9));
+    } else {
+      setValue("nif_prefix", "");
+      setValue("nif_number", "");
+    }
+  };
 
   const handleEnrichmentAccept = (data: EnrichedCompanyData) => {
     // Datos básicos
@@ -92,19 +104,13 @@ export function CompanyIdentificationSection() {
         <div className="col-span-12 sm:col-span-3">
           <Label className="text-xs text-muted-foreground">NIF</Label>
           <div className="flex gap-2">
-            <div className="flex gap-2 flex-1">
-              <Input 
-                {...register("nif_prefix")}
-                className="w-12 uppercase"
-                placeholder="B"
-                maxLength={1}
-              />
-              <Input 
-                {...register("nif_number")}
-                placeholder="67498741"
-                maxLength={8}
-              />
-            </div>
+            <CIFAutocompleteInput
+              value={fullCIF}
+              onChange={handleCIFChange}
+              onSelect={handleEnrichmentAccept}
+              placeholder="B67498741"
+              className="flex-1"
+            />
             <CompanyDataEnrichment
               cif={fullCIF}
               disabled={fullCIF.length < 9}

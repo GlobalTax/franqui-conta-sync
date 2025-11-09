@@ -18,6 +18,11 @@ export const usePLTemplates = () => {
       if (error) throw error;
       return data as unknown as PLTemplate[];
     },
+    // ✅ OPTIMIZACIÓN: Caché largo para datos casi estáticos
+    staleTime: 30 * 60 * 1000,      // 30 minutos
+    gcTime: 60 * 60 * 1000,         // 1 hora en memoria
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 };
 

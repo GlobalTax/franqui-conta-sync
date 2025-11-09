@@ -54,6 +54,10 @@ export function useAccountingEntries(centroCode?: string, filters?: {
         })),
       })) as AccountingEntryWithTransactions[];
     },
+    // ✅ OPTIMIZACIÓN: Caché de 3 minutos para asientos contables
+    staleTime: 3 * 60 * 1000,       // 3 minutos
+    gcTime: 10 * 60 * 1000,         // 10 minutos en memoria
+    refetchOnWindowFocus: false,    // No refetch al cambiar de pestaña
   });
 }
 

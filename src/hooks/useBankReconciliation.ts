@@ -59,6 +59,10 @@ export function useBankReconciliations(bankAccountId?: string, status?: string) 
       if (error) throw error;
       return data as any[];
     },
+    // ✅ OPTIMIZACIÓN: Caché de 2 minutos para conciliaciones bancarias
+    staleTime: 2 * 60 * 1000,       // 2 minutos
+    gcTime: 5 * 60 * 1000,          // 5 minutos en memoria
+    refetchOnWindowFocus: true,     // Sí refetch (datos bancarios actualizados)
   });
 }
 

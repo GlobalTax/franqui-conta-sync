@@ -136,6 +136,10 @@ export const useInvoicesReceived = (filters?: {
       })) as InvoiceReceived[];
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
+    // ✅ OPTIMIZACIÓN: Caché de 2 minutos para datos transaccionales
+    staleTime: 2 * 60 * 1000,       // 2 minutos
+    gcTime: 5 * 60 * 1000,          // 5 minutos en memoria
+    refetchOnWindowFocus: true,     // Sí refetch (detectar cambios de otros usuarios)
   });
 };
 

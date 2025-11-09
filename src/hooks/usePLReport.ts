@@ -215,6 +215,11 @@ export const usePLReport = ({
       };
     },
     enabled: !!templateCode && (!!companyId || !!centroCode || (!!centroCodes && centroCodes.length > 0)),
+    // ✅ OPTIMIZACIÓN: Caché de 5 minutos para datos de análisis
+    staleTime: 5 * 60 * 1000,      // 5 minutos
+    gcTime: 10 * 60 * 1000,         // 10 minutos en memoria
+    refetchOnWindowFocus: false,    // No refetch al cambiar de pestaña
+    refetchOnMount: false,          // No refetch si está en caché
   }) as any; // Type assertion due to conditional return type
 };
 

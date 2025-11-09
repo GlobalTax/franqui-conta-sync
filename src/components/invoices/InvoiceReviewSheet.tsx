@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -20,15 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { InvoicePDFPreview } from "./InvoicePDFPreview";
 import { ApprovalStatusBadge } from "./ApprovalStatusBadge";
 import { InvoiceApprovalDialog } from "./InvoiceApprovalDialog";
 import { useInvoiceReview } from "@/hooks/useInvoiceReview";
@@ -37,18 +29,21 @@ import { useInvoiceLines } from "@/hooks/useInvoicesReceived";
 import {
   CheckCircle2,
   XCircle,
-  FileCheck,
   Building2,
   Calendar,
   Hash,
   DollarSign,
   AlertTriangle,
-  Clock,
-  User,
+  FileCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
+
+// ✅ Lazy load: Secciones pesadas del sheet
+const InvoiceReviewPDFSection = lazy(() => import("./review/InvoiceReviewPDFSection").then(m => ({ default: m.InvoiceReviewPDFSection })));
+const InvoiceReviewLinesSection = lazy(() => import("./review/InvoiceReviewLinesSection").then(m => ({ default: m.InvoiceReviewLinesSection })));
+const InvoiceReviewHistorySection = lazy(() => import("./review/InvoiceReviewHistorySection").then(m => ({ default: m.InvoiceReviewHistorySection })));
 
 interface InvoiceReviewSheetProps {
   open: boolean;
@@ -135,14 +130,10 @@ export function InvoiceReviewSheet({
 
               <Separator />
 
-              {/* Preview del PDF */}
-              <section>
-                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                  <FileCheck className="h-5 w-5 text-primary" />
-                  Documento
-                </h3>
-                <InvoicePDFPreview documentPath={invoice.document_path} />
-              </section>
+              {/* ✅ Preview del PDF - Lazy Load */}
+              <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                <InvoiceReviewPDFSection documentPath={invoice.document_path} />
+              </Suspense>
 
               <Separator />
 
@@ -250,124 +241,22 @@ export function InvoiceReviewSheet({
 
               <Separator />
 
-              {/* Líneas de factura */}
+              {/* ✅ Líneas de factura - Lazy Load */}
               {invoiceLines && invoiceLines.length > 0 && (
                 <>
-                  <section>
-                    <h3 className="font-semibold text-lg mb-3">
-                      Líneas de Factura
-                    </h3>
-                    <Card className="border-border/40">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead className="w-[60px]">#</TableHead>
-                            <TableHead>Descripción</TableHead>
-                            <TableHead className="text-right w-[100px]">
-                              Cantidad
-                            </TableHead>
-                            <TableHead className="text-right w-[100px]">
-                              Precio
-                            </TableHead>
-                            <TableHead className="text-right w-[80px]">
-                              IVA
-                            </TableHead>
-                            <TableHead className="text-right w-[120px]">
-                              Total
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {invoiceLines.map((line, index) => (
-                            <TableRow key={line.id}>
-                              <TableCell className="font-medium text-muted-foreground">
-                                {index + 1}
-                              </TableCell>
-                              <TableCell>{line.description}</TableCell>
-                              <TableCell className="text-right tabular-nums">
-                                {line.quantity}
-                              </TableCell>
-                              <TableCell className="text-right tabular-nums">
-                                {line.unit_price.toLocaleString("es-ES", {
-                                  style: "currency",
-                                  currency: "EUR",
-                                })}
-                              </TableCell>
-                              <TableCell className="text-right tabular-nums">
-                                {line.tax_rate}%
-                              </TableCell>
-                              <TableCell className="text-right font-medium tabular-nums">
-                                {line.total.toLocaleString("es-ES", {
-                                  style: "currency",
-                                  currency: "EUR",
-                                })}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Card>
-                  </section>
+                  <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                    <InvoiceReviewLinesSection invoiceLines={invoiceLines} />
+                  </Suspense>
                   <Separator />
                 </>
               )}
 
-              {/* Historial de aprobaciones */}
+              {/* ✅ Historial de aprobaciones - Lazy Load */}
               {invoice.approvals && invoice.approvals.length > 0 && (
                 <>
-                  <section>
-                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
-                      Historial de Aprobaciones
-                    </h3>
-                    <div className="space-y-3">
-                      {invoice.approvals.map((approval: any) => (
-                        <Card key={approval.id} className="p-4 border-border/40">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-1">
-                              {approval.action === "approved" ? (
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-red-600" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">
-                                  {approval.approval_level}
-                                </span>
-                                <Badge
-                                  variant={
-                                    approval.action === "approved"
-                                      ? "default"
-                                      : "destructive"
-                                  }
-                                  className="text-xs"
-                                >
-                                  {approval.action === "approved"
-                                    ? "Aprobado"
-                                    : "Rechazado"}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {format(
-                                  new Date(approval.created_at),
-                                  "dd/MM/yyyy HH:mm",
-                                  { locale: es }
-                                )}
-                              </p>
-                              {approval.comments && (
-                                <p className="text-sm mt-2 bg-accent/30 p-2 rounded">
-                                  {approval.comments}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </section>
+                  <Suspense fallback={<Skeleton className="h-32 w-full rounded-lg" />}>
+                    <InvoiceReviewHistorySection approvals={invoice.approvals} />
+                  </Suspense>
                   <Separator />
                 </>
               )}

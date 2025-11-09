@@ -138,7 +138,7 @@ const FranchiseesManagement = () => {
                 <Button 
                   size="sm" 
                   variant="ghost"
-                  onClick={() => navigate(`/admin?tab=centres&franchisee=${franchisee.id}`)}
+                  onClick={() => navigate(`/admin/franchisees/${franchisee.id}`)}
                   title="Ver detalles"
                 >
                   <Eye className="h-4 w-4" />

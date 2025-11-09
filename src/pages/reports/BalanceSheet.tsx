@@ -109,7 +109,7 @@ export default function BalanceSheet() {
                   {data?.items.map((item) => (
                     <TableRow key={item.grupo}>
                       <TableCell className="font-medium">{item.grupo}</TableCell>
-                      <TableCell>{item.nombre_grupo}</TableCell>
+                      <TableCell className="whitespace-normal break-words">{item.nombre_grupo}</TableCell>
                       <TableCell className="text-right">
                         {Number(item.balance).toLocaleString("es-ES", {
                           minimumFractionDigits: 2,

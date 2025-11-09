@@ -24,7 +24,7 @@ import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 
 const ProfitAndLoss = () => {
   const { selectedView } = useView();
-  const [period, setPeriod] = useState("2024-01");
+  const [period, setPeriod] = useState("2025-01");
   const [selectedTemplate, setSelectedTemplate] = useState("McD_QSR_v1");
   const [compareYears, setCompareYears] = useState<number[]>([2024, 2023, 2022]);
   const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
@@ -274,6 +274,7 @@ const ProfitAndLoss = () => {
                 <SelectValue placeholder="Seleccionar periodo" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="2025-01">Enero 2025</SelectItem>
                 <SelectItem value="2024-01">Enero 2024</SelectItem>
                 <SelectItem value="2024-02">Febrero 2024</SelectItem>
                 <SelectItem value="2024-03">Marzo 2024</SelectItem>
@@ -442,20 +443,21 @@ const ProfitAndLoss = () => {
                           }`}
                           style={{ paddingLeft: `${baseLine.level * 2 + 1}rem` }}
                         >
-                          <div className="flex items-center gap-3 flex-1">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             {baseLine.rubric_code && (
                               <span className="font-mono text-xs text-muted-foreground w-20">
                                 {baseLine.rubric_code}
                               </span>
                             )}
                             <span
-                              className={`${
+                              className={`truncate ${
                                 baseLine.is_total ? "font-semibold text-foreground" : ""
                               } ${
                                 baseLine.rubric_code === 'resultado_neto' || baseLine.rubric_code === 'net_result'
                                   ? "font-bold text-lg"
                                   : ""
                               }`}
+                              title={baseLine.rubric_name}
                             >
                               {baseLine.rubric_name}
                             </span>
@@ -558,20 +560,21 @@ const ProfitAndLoss = () => {
                       }`}
                       style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
                     >
-                      <div className="flex items-center gap-3 flex-1">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         {line.rubric_code && (
                           <span className="font-mono text-xs text-muted-foreground w-20">
                             {line.rubric_code}
                           </span>
                         )}
                         <span
-                          className={`${
+                          className={`truncate ${
                             line.is_total ? "font-semibold text-foreground" : ""
                           } ${
                             line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
                               ? "font-bold text-lg"
                               : ""
                           }`}
+                          title={line.rubric_name}
                         >
                           {line.rubric_name}
                         </span>

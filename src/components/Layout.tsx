@@ -21,6 +21,7 @@ import {
   GitCompare,
   Shield,
   Store,
+  Layers,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -263,17 +264,27 @@ const Layout = () => {
               <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
                 Sistema
               </h3>
-              <NavLink
-                to="/admin"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group relative"
-                activeClassName="bg-primary/10 text-primary font-medium"
-              >
-                <Shield className="h-4 w-4" strokeWidth={2} />
-                <span className="text-sm font-medium">Administración</span>
-                <Badge className="ml-auto bg-primary/20 text-primary border-0 text-[10px] px-1.5 py-0">
-                  ADMIN
-                </Badge>
-              </NavLink>
+              <div className="space-y-0.5">
+                <NavLink
+                  to="/admin"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group relative"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <Shield className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm font-medium">Administración</span>
+                  <Badge className="ml-auto bg-primary/20 text-primary border-0 text-[10px] px-1.5 py-0">
+                    ADMIN
+                  </Badge>
+                </NavLink>
+                <NavLink
+                  to="/admin/pl-rules"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <Layers className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">Reglas P&L</span>
+                </NavLink>
+              </div>
             </div>
           )}
         </nav>

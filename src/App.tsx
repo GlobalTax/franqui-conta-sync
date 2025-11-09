@@ -22,6 +22,7 @@ import CentreDetail from "@/pages/admin/CentreDetail";
 import CompanyDetail from "@/pages/admin/CompanyDetail";
 import FranchiseeDetail from "@/pages/admin/FranchiseeDetail";
 import AdminDebug from "@/pages/admin/AdminDebug";
+import PLRulesManagement from "@/pages/admin/PLRulesManagement";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
 import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
@@ -133,6 +134,7 @@ const App = () => {
             <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
             <Route path="/admin/companies/:id" element={<AdminRoute><CompanyDetail /></AdminRoute>} />
             <Route path="/admin/franchisees/:id" element={<AdminRoute><FranchiseeDetail /></AdminRoute>} />
+            <Route path="/admin/pl-rules" element={<AdminRoute><PLRulesManagement /></AdminRoute>} />
             <Route path="/admin-debug" element={<AdminDebug />} />
             <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
             <Route path="/notificaciones" element={<Notifications />} />

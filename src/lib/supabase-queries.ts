@@ -205,12 +205,16 @@ export async function getBankTransactionCount(
 }
 
 // Accounts
-export async function getAccounts(organizationId: string, active = true) {
+export async function getAccounts(centroCode: string, companyId?: string | null, active = true) {
   let query = supabase
     .from("accounts" as any)
     .select("*")
-    .eq("organization_id", organizationId)
+    .eq("centro_code", centroCode)
     .order("code", { ascending: true });
+  
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
   
   if (active) {
     query = query.eq("active", true);
@@ -345,45 +349,45 @@ export async function deactivateAccount(id: string) {
 }
 
 /**
- * Obtiene líneas de asientos contables para calcular saldos
+ * Obtiene transacciones contables para calcular saldos
  */
-export async function getJournalLinesForBalances(
-  organizationId: string,
+export async function getAccountingTransactionsForBalances(
+  centroCode: string,
   startDate?: string,
   endDate?: string
 ) {
   let query = supabase
-    .from("journal_lines" as any)
+    .from("accounting_transactions" as any)
     .select(
       `
-      account_id,
-      debit,
-      credit,
-      journal_entries!inner(
-        organization_id,
+      account_code,
+      amount,
+      movement_type,
+      accounting_entries!inner(
+        centro_code,
         entry_date,
         status
       )
     `
     )
-    .eq("journal_entries.organization_id", organizationId)
-    .eq("journal_entries.status", "posted");
+    .eq("accounting_entries.centro_code", centroCode)
+    .eq("accounting_entries.status", "posted");
 
   if (startDate) {
-    query = query.gte("journal_entries.entry_date", startDate);
+    query = query.gte("accounting_entries.entry_date", startDate);
   }
 
   if (endDate) {
-    query = query.lte("journal_entries.entry_date", endDate);
+    query = query.lte("accounting_entries.entry_date", endDate);
   }
 
   const { data, error } = await query;
 
   return {
     data: (data as unknown) as Array<{
-      account_id: string;
-      debit: number;
-      credit: number;
+      account_code: string;
+      amount: number;
+      movement_type: 'debit' | 'credit';
     }> | null,
     error,
   };

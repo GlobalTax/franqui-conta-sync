@@ -273,6 +273,80 @@ export type Database = {
           },
         ]
       }
+      accounts: {
+        Row: {
+          account_type: string
+          active: boolean
+          centro_code: string
+          code: string
+          company_id: string | null
+          created_at: string
+          id: string
+          is_detail: boolean
+          level: number
+          name: string
+          parent_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: string
+          active?: boolean
+          centro_code: string
+          code: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_detail?: boolean
+          level?: number
+          name: string
+          parent_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          active?: boolean
+          centro_code?: string
+          code?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_detail?: boolean
+          level?: number
+          name?: string
+          parent_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accounts_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_code_fkey"
+            columns: ["parent_code", "centro_code"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["code", "centro_code"]
+          },
+        ]
+      }
       alert_notifications: {
         Row: {
           alert_id: string | null

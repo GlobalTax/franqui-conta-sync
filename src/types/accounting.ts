@@ -62,11 +62,12 @@ export interface Membership {
 // Accounts (Plan de Cuentas)
 export interface Account {
   id: string;
-  organization_id: string;
+  centro_code: string;
+  company_id: string | null;
   code: string;
   name: string;
   account_type: AccountType;
-  parent_account_id: string | null;
+  parent_code: string | null;
   level: number;
   is_detail: boolean;
   active: boolean;

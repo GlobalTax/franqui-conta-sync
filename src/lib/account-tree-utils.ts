@@ -19,24 +19,27 @@ export function buildAccountTree(
   balances: Map<string, number> = new Map()
 ): AccountNode[] {
   const accountMap = new Map<string, AccountNode>();
+  const accountByCode = new Map<string, AccountNode>();
   const rootNodes: AccountNode[] = [];
 
   // Convertir cuentas a nodos
   accounts.forEach((account) => {
-    accountMap.set(account.id, {
+    const node: AccountNode = {
       ...account,
       children: [],
       balance: balances.get(account.id) || 0,
-      isExpanded: false,
-    });
+      isExpanded: account.level < 2, // Auto-expandir grupos y subgrupos
+    };
+    accountMap.set(account.id, node);
+    accountByCode.set(account.code, node);
   });
 
-  // Construir árbol
+  // Construir árbol usando parent_code
   accounts.forEach((account) => {
     const node = accountMap.get(account.id)!;
 
-    if (account.parent_account_id) {
-      const parent = accountMap.get(account.parent_account_id);
+    if (account.parent_code) {
+      const parent = accountByCode.get(account.parent_code);
       if (parent) {
         parent.children.push(node);
       } else {
@@ -61,18 +64,32 @@ export function buildAccountTree(
 }
 
 /**
- * Calcula saldos de cuentas desde journal_lines
+ * Calcula saldos de cuentas desde accounting_transactions
  */
 export function calculateAccountBalances(
-  journalLines: Array<{ account_id: string; debit: number; credit: number }>
+  transactions: Array<{ account_code: string; amount: number; movement_type: 'debit' | 'credit' }>,
+  accounts: Array<{ id: string; code: string }>
 ): Map<string, number> {
   const balances = new Map<string, number>();
+  const codeToId = new Map<string, string>();
+  
+  // Crear mapa de código a ID
+  accounts.forEach(acc => {
+    codeToId.set(acc.code, acc.id);
+  });
 
-  journalLines.forEach((line) => {
-    const currentBalance = balances.get(line.account_id) || 0;
-    const debit = line.debit || 0;
-    const credit = line.credit || 0;
-    balances.set(line.account_id, currentBalance + debit - credit);
+  transactions.forEach((txn) => {
+    const accountId = codeToId.get(txn.account_code);
+    if (!accountId) return;
+    
+    const currentBalance = balances.get(accountId) || 0;
+    const amount = txn.amount || 0;
+    
+    if (txn.movement_type === 'debit') {
+      balances.set(accountId, currentBalance + amount);
+    } else {
+      balances.set(accountId, currentBalance - amount);
+    }
   });
 
   return balances;

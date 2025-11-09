@@ -37,7 +37,7 @@ const accountSchema = z.object({
   code: z.string().min(1, "El código es requerido"),
   name: z.string().min(1, "El nombre es requerido"),
   account_type: z.enum(["A", "P", "PN", "ING", "GAS"]),
-  parent_account_id: z.string().optional(),
+  parent_code: z.string().optional(),
   is_detail: z.boolean().default(true),
   active: z.boolean().default(true),
 });
@@ -49,7 +49,8 @@ interface AccountFormDialogProps {
   onOpenChange: (open: boolean) => void;
   account?: Account | null;
   accounts: Account[];
-  organizationId: string;
+  centroCode: string;
+  companyId?: string | null;
   onSave: (data: Partial<Account>) => Promise<void>;
 }
 
@@ -58,7 +59,8 @@ export function AccountFormDialog({
   onOpenChange,
   account,
   accounts,
-  organizationId,
+  centroCode,
+  companyId,
   onSave,
 }: AccountFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +71,7 @@ export function AccountFormDialog({
       code: "",
       name: "",
       account_type: "A",
-      parent_account_id: undefined,
+      parent_code: undefined,
       is_detail: true,
       active: true,
     },
@@ -81,7 +83,7 @@ export function AccountFormDialog({
         code: account.code,
         name: account.name,
         account_type: account.account_type as AccountType,
-        parent_account_id: account.parent_account_id || undefined,
+        parent_code: account.parent_code || undefined,
         is_detail: account.is_detail,
         active: account.active,
       });
@@ -90,7 +92,7 @@ export function AccountFormDialog({
         code: "",
         name: "",
         account_type: "A",
-        parent_account_id: undefined,
+        parent_code: undefined,
         is_detail: true,
         active: true,
       });
@@ -103,10 +105,10 @@ export function AccountFormDialog({
     try {
       // Calcular nivel basado en padre
       let level = 0;
-      const parentId = data.parent_account_id === 'none' ? null : data.parent_account_id;
+      const parentCode = data.parent_code === 'none' ? null : data.parent_code;
       
-      if (parentId) {
-        const parent = accounts.find((a) => a.id === parentId);
+      if (parentCode) {
+        const parent = accounts.find((a) => a.code === parentCode);
         if (parent) {
           level = (parent.level || 0) + 1;
         }
@@ -114,9 +116,10 @@ export function AccountFormDialog({
 
       const accountData: Partial<Account> = {
         ...data,
-        organization_id: organizationId,
+        centro_code: centroCode,
+        company_id: companyId || null,
         level,
-        parent_account_id: parentId,
+        parent_code: parentCode,
       };
 
       if (account) {
@@ -220,7 +223,7 @@ export function AccountFormDialog({
 
             <FormField
               control={form.control}
-              name="parent_account_id"
+              name="parent_code"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cuenta Padre (opcional)</FormLabel>
@@ -236,7 +239,7 @@ export function AccountFormDialog({
                     <SelectContent>
                       <SelectItem value="none">Sin cuenta padre</SelectItem>
                       {parentAccountOptions.map((acc) => (
-                        <SelectItem key={acc.id} value={acc.id}>
+                        <SelectItem key={acc.id} value={acc.code}>
                           {acc.code} - {acc.name}
                         </SelectItem>
                       ))}

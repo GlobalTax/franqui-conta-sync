@@ -17,7 +17,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { Account, AccountType } from "@/types/accounting";
 import {
   getAccounts,
-  getJournalLinesForBalances,
+  getAccountingTransactionsForBalances,
   createAccount,
   updateAccount,
 } from "@/lib/supabase-queries";
@@ -51,19 +51,25 @@ const ChartOfAccounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
-  const organizationId = currentMembership?.organization?.id;
   const canEdit = currentMembership?.role === "admin";
+  
+  // Get centro_code and company_id from selectedView
+  const centroCode = selectedView?.type === 'centre' 
+    ? (selectedView.id.includes(' - ') ? selectedView.id.split(' - ')[0] : selectedView.id)
+    : undefined;
+  const companyId = selectedView?.type === 'company' ? selectedView.id : undefined;
 
   // Cargar cuentas
   useEffect(() => {
-    if (!organizationId) return;
+    if (!centroCode) return;
 
     const loadAccounts = async () => {
       setLoading(true);
       try {
         // 1. Cargar cuentas
         const { data: accountsData, error: accountsError } = await getAccounts(
-          organizationId,
+          centroCode,
+          companyId,
           !showInactive
         );
 
@@ -74,13 +80,13 @@ const ChartOfAccounts = () => {
           return;
         }
 
-        // 2. Cargar journal_lines para calcular saldos
-        const { data: linesData } = await getJournalLinesForBalances(
-          organizationId
+        // 2. Cargar accounting_transactions para calcular saldos
+        const { data: txnsData } = await getAccountingTransactionsForBalances(
+          centroCode
         );
 
         // 3. Calcular saldos por cuenta
-        const balances = calculateAccountBalances(linesData || []);
+        const balances = calculateAccountBalances(txnsData || [], accountsData);
 
         // 4. Construir árbol
         const tree = buildAccountTree(accountsData, balances);
@@ -98,7 +104,7 @@ const ChartOfAccounts = () => {
     };
 
     loadAccounts();
-  }, [organizationId, showInactive]);
+  }, [centroCode, companyId, showInactive]);
 
   // Filtrar árbol
   const filteredTree = useMemo(() => {
@@ -169,7 +175,7 @@ const ChartOfAccounts = () => {
   };
 
   const handleSave = async (data: Partial<Account>) => {
-    if (!organizationId) return;
+    if (!centroCode) return;
 
     try {
       if (editingAccount) {
@@ -181,9 +187,9 @@ const ChartOfAccounts = () => {
       }
 
       // Recargar cuentas
-      const { data: accountsData } = await getAccounts(organizationId, !showInactive);
-      const { data: linesData } = await getJournalLinesForBalances(organizationId);
-      const balances = calculateAccountBalances(linesData || []);
+      const { data: accountsData } = await getAccounts(centroCode, companyId, !showInactive);
+      const { data: txnsData } = await getAccountingTransactionsForBalances(centroCode);
+      const balances = calculateAccountBalances(txnsData || [], accountsData || []);
       const tree = buildAccountTree(accountsData || [], balances);
       aggregateParentBalances(tree);
 
@@ -201,11 +207,11 @@ const ChartOfAccounts = () => {
     });
   };
 
-  if (!organizationId) {
+  if (!centroCode) {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <p className="text-muted-foreground">
-          Selecciona una organización para ver el plan de cuentas
+          Selecciona un centro para ver el plan de cuentas
         </p>
       </div>
     );
@@ -390,7 +396,8 @@ const ChartOfAccounts = () => {
         onOpenChange={setIsDialogOpen}
         account={editingAccount}
         accounts={accounts}
-        organizationId={organizationId}
+        centroCode={centroCode}
+        companyId={companyId}
         onSave={handleSave}
       />
     </div>

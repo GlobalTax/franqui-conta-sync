@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { PLReportLine, PLReportLineAccumulated, PLReportSummary, PLReportParams } from "@/types/profit-loss";
+import type { PLReportLine, PLReportLineAccumulated, PLReportLineWithAdjustments, PLReportSummary, PLReportParams } from "@/types/profit-loss";
 
 /**
  * Hook para calcular el informe de P&L dinámicamente
@@ -16,10 +16,37 @@ export const usePLReport = ({
   endDate,
   showAccumulated = false,
   periodDate,
+  includeAdjustments = false,
 }: PLReportParams) => {
   return useQuery({
-    queryKey: ["pl-report", templateCode, companyId, centroCode, centroCodes, startDate, endDate, showAccumulated, periodDate],
+    queryKey: ["pl-report", templateCode, companyId, centroCode, centroCodes, startDate, endDate, showAccumulated, periodDate, includeAdjustments],
     queryFn: async () => {
+      // Vista con ajustes manuales
+      if (includeAdjustments && !showAccumulated) {
+        const { data, error } = await supabase.rpc(
+          "calculate_pl_report_with_adjustments" as any,
+          {
+            p_template_code: templateCode,
+            p_company_id: companyId || null,
+            p_centro_code: centroCode || null,
+            p_start_date: startDate || null,
+            p_end_date: endDate || null,
+          }
+        );
+
+        if (error) throw error;
+
+        const plDataWithAdjustments = (data || []) as any as PLReportLineWithAdjustments[];
+        
+        return {
+          plData: plDataWithAdjustments,
+          summary: calculateSummary(plDataWithAdjustments.map(line => ({
+            ...line,
+            amount: line.amount_final,
+          }))),
+        };
+      }
+
       // Vista dual: Mes + Acumulado
       if (showAccumulated && periodDate) {
         const { data, error } = await supabase.rpc(

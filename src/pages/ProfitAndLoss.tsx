@@ -12,12 +12,15 @@ import { useState } from "react";
 import { useView } from "@/contexts/ViewContext";
 import { usePLTemplates } from "@/hooks/usePLTemplates";
 import { usePLReport } from "@/hooks/usePLReport";
+import { usePLAdjustments } from "@/hooks/usePLAdjustments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
 import { exportPLHistorical } from "@/lib/pl-export-excel";
 import { YearSelector } from "@/components/pl/YearSelector";
+import { AdjustmentCell } from "@/components/pl/AdjustmentCell";
+import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 
 const ProfitAndLoss = () => {
   const { selectedView } = useView();
@@ -26,6 +29,7 @@ const ProfitAndLoss = () => {
   const [compareYears, setCompareYears] = useState<number[]>([2024, 2023, 2022]);
   const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
   const [showAccumulated, setShowAccumulated] = useState(false);
+  const [showAdjustments, setShowAdjustments] = useState(false);
   
   // Obtener plantillas disponibles
   const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
@@ -49,7 +53,18 @@ const ProfitAndLoss = () => {
     });
   });
 
-  // Vista single (mensual o dual)
+  // Hook de ajustes manuales
+  const {
+    upsertAdjustment,
+    getAdjustmentAmount,
+  } = usePLAdjustments(
+    selectedView?.type === 'company' ? selectedView.id : undefined,
+    selectedView?.type === 'centre' ? selectedView.id : undefined,
+    selectedTemplate,
+    startDate
+  );
+
+  // Vista single (mensual, dual o con ajustes)
   const { data, isLoading, isError } = usePLReport({
     templateCode: selectedTemplate,
     companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
@@ -58,6 +73,7 @@ const ProfitAndLoss = () => {
     endDate: showAccumulated ? undefined : endDate,
     showAccumulated,
     periodDate: showAccumulated ? startDate : undefined,
+    includeAdjustments: showAdjustments,
   });
 
   // Determinar si estamos cargando o hay error
@@ -171,22 +187,52 @@ const ProfitAndLoss = () => {
               </SelectContent>
             </Select>
             {viewMode === "single" && (
-              <div className="flex gap-2">
-                <Button
-                  variant={!showAccumulated ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowAccumulated(false)}
-                >
-                  Mensual
-                </Button>
-                <Button
-                  variant={showAccumulated ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowAccumulated(true)}
-                >
-                  Mes + Acumulado
-                </Button>
-              </div>
+              <>
+                <div className="flex gap-2">
+                  <Button
+                    variant={!showAccumulated ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setShowAccumulated(false);
+                      setShowAdjustments(false);
+                    }}
+                  >
+                    Mensual
+                  </Button>
+                  <Button
+                    variant={showAccumulated ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setShowAccumulated(true);
+                      setShowAdjustments(false);
+                    }}
+                  >
+                    Mes + Acumulado
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={!showAdjustments ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setShowAdjustments(false);
+                      setShowAccumulated(false);
+                    }}
+                  >
+                    Vista Normal
+                  </Button>
+                  <Button
+                    variant={showAdjustments ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setShowAdjustments(true);
+                      setShowAccumulated(false);
+                    }}
+                  >
+                    Con Ajustes
+                  </Button>
+                </div>
+              </>
             )}
             <Button onClick={handleExport} disabled={!plData || plData.length === 0} className="gap-2">
               <Download className="h-4 w-4" />
@@ -465,7 +511,14 @@ const ProfitAndLoss = () => {
                     <span className="font-mono text-xs w-20">Código</span>
                     <span>Concepto</span>
                   </div>
-                  {showAccumulated ? (
+                  {showAdjustments ? (
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm w-32 text-right text-muted-foreground">Calculado</span>
+                      <span className="text-sm w-32 text-right bg-accent px-2 py-1 rounded">A Sumar</span>
+                      <span className="text-sm w-32 text-right font-semibold">Importe</span>
+                      <span className="text-sm w-16 text-right">%</span>
+                    </div>
+                  ) : showAccumulated ? (
                     <div className="flex items-center gap-4">
                       <span className="text-sm w-32 text-right">Mes €</span>
                       <span className="text-sm w-20 text-right">Mes %</span>
@@ -483,7 +536,8 @@ const ProfitAndLoss = () => {
                 {/* Filas de datos */}
                 {plData.map((line: any, idx) => {
                   const isAccumulatedData = 'amount_period' in line;
-                  const displayAmount = isAccumulatedData ? line.amount_period : line.amount;
+                  const isAdjustmentData = 'amount_calculated' in line;
+                  const displayAmount = isAccumulatedData ? line.amount_period : isAdjustmentData ? line.amount_final : line.amount;
                   const displayPercentage = isAccumulatedData ? line.percentage_period : line.percentage;
 
                   return (
@@ -523,7 +577,46 @@ const ProfitAndLoss = () => {
                         </span>
                       </div>
                       
-                      {showAccumulated && isAccumulatedData ? (
+                      {showAdjustments && isAdjustmentData ? (
+                        <div className="flex items-center gap-4">
+                          {/* Calculado */}
+                          <span className="font-mono text-right w-32 text-muted-foreground">
+                            {line.amount_calculated.toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}€
+                          </span>
+                          {/* A Sumar (editable) */}
+                          <div className="w-32 bg-accent px-2 py-1 rounded">
+                            <AdjustmentCell
+                              rubricCode={line.rubric_code}
+                              currentAdjustment={getAdjustmentAmount(line.rubric_code)}
+                              onUpdate={(amount) =>
+                                upsertAdjustment.mutate({
+                                  rubricCode: line.rubric_code,
+                                  amount,
+                                })
+                              }
+                              isDisabled={line.is_total}
+                            />
+                          </div>
+                          {/* Importe (final) */}
+                          <span
+                            className={`font-mono font-semibold text-right w-32 ${
+                              line.amount_final >= 0 ? "text-success" : "text-foreground"
+                            }`}
+                          >
+                            {line.amount_final.toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}€
+                          </span>
+                          {/* % */}
+                          <span className="text-sm text-muted-foreground text-right w-16">
+                            {Math.abs(line.percentage || 0).toFixed(1)}%
+                          </span>
+                        </div>
+                      ) : showAccumulated && isAccumulatedData ? (
                         <div className="flex items-center gap-4">
                           {/* Mes € */}
                           <span

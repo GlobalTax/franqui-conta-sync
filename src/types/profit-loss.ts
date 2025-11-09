@@ -104,6 +104,30 @@ export interface PLReportParams {
   endDate?: string;
   showAccumulated?: boolean; // Vista dual (mes + acumulado)
   periodDate?: string; // Fecha del mes para vista acumulada (YYYY-MM-DD)
+  includeAdjustments?: boolean; // Vista con ajustes manuales
+}
+
+// Ajuste manual
+export interface PLAdjustment {
+  id: string;
+  company_id?: string;
+  centro_code: string;
+  template_code: string;
+  rubric_code: string;
+  period_date: string; // YYYY-MM-DD
+  adjustment_amount: number;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Línea de P&L con ajustes manuales
+export interface PLReportLineWithAdjustments extends Omit<PLReportLine, 'amount'> {
+  amount_calculated: number;  // Calculado automáticamente
+  amount_adjustment: number;   // Ajuste manual (A Sumar)
+  amount_final: number;        // Total final
+  amount: number;              // Para compatibilidad (igual a amount_final)
 }
 
 export interface CreatePLRuleInput {

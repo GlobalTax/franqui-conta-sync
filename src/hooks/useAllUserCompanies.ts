@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface CentreData {
+  id: string;
+  codigo: string;
+  nombre: string;
+}
+
 export interface CompanyWithFranchisee {
   id: string;
   razon_social: string;
@@ -12,6 +18,7 @@ export interface CompanyWithFranchisee {
     id: string;
     name: string;
   };
+  centres?: CentreData[];
 }
 
 export interface FranchiseeWithCompanies {
@@ -71,10 +78,40 @@ export function useAllUserCompanies() {
 
       if (companiesError) throw companiesError;
 
+      // Get centres for each company via centre_companies
+      const companiesWithCentres = await Promise.all(
+        (companies || []).map(async (company) => {
+          const { data: centreCos, error: centresError } = await supabase
+            .from("centre_companies")
+            .select(`
+              centre:centres!inner (
+                id,
+                codigo,
+                nombre
+              )
+            `)
+            .eq("cif", company.cif)
+            .eq("activo", true);
+
+          if (centresError) {
+            console.error("Error fetching centres for company:", centresError);
+            return company;
+          }
+
+          const centres = centreCos?.map((cc: any) => cc.centre).filter(Boolean) || [];
+          
+          // Only include centres if company has 2 or more
+          return {
+            ...company,
+            centres: centres.length >= 2 ? centres : undefined
+          };
+        })
+      );
+
       // Group companies by franchisee
       const franchiseeMap = new Map<string, FranchiseeWithCompanies>();
 
-      companies?.forEach((company: any) => {
+      companiesWithCentres?.forEach((company: any) => {
         const franchiseeId = company.franchisee_id;
         const franchiseeName = company.franchisee?.name || "Sin Franquiciado";
 
@@ -97,6 +134,7 @@ export function useAllUserCompanies() {
             id: franchiseeId,
             name: franchiseeName,
           },
+          centres: company.centres,
         });
       });
 

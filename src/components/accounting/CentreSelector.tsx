@@ -141,48 +141,36 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
                 </div>
                 {/* Companies for this franchisee */}
                 {franchisee.companies.map((company) => (
-                  <SelectItem 
-                    key={company.id} 
-                    value={`company:${company.id}`}
-                    className="pl-8"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-blue-500" />
-                      <span>{company.razon_social}</span>
-                      <span className="text-xs text-muted-foreground">({company.cif})</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </div>
-            ))}
-          </>
-        )}
-        
-        {/* Centros individuales agrupados por franquiciado */}
-        {franchiseesWithCentres && franchiseesWithCentres.length > 0 && (
-          <>
-            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky z-10 mt-1">
-              🏪 Centros Individuales
-            </div>
-            {franchiseesWithCentres.map((franchisee) => (
-              <div key={`centre-franchisee-${franchisee.id}`}>
-                {/* Franchisee header */}
-                <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
-                  <Users className="h-3 w-3" />
-                  {franchisee.name}
-                </div>
-                {/* Centres for this franchisee */}
-                {franchisee.centres.map((centre) => (
-                  <SelectItem 
-                    key={centre.id} 
-                    value={`centre:${centre.id}`}
-                    className="pl-8"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Store className="h-4 w-4 text-success" />
-                      <span>{centre.codigo} - {centre.nombre}</span>
-                    </div>
-                  </SelectItem>
+                  <div key={company.id}>
+                    <SelectItem 
+                      value={`company:${company.id}`}
+                      className="pl-8"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 text-blue-500" />
+                        <span>{company.razon_social}</span>
+                        <span className="text-xs text-muted-foreground">({company.cif})</span>
+                      </div>
+                    </SelectItem>
+                    
+                    {/* Nested centres if company has 2+ centres */}
+                    {company.centres && company.centres.length >= 2 && (
+                      <div className="bg-muted/20">
+                        {company.centres.map((centre) => (
+                          <SelectItem 
+                            key={centre.id} 
+                            value={`centre:${centre.id}`}
+                            className="pl-12"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Store className="h-3 w-3 text-success" />
+                              <span className="text-sm">{centre.codigo} - {centre.nombre}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ))}

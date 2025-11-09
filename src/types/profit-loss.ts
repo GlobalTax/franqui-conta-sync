@@ -92,6 +92,7 @@ export interface PLReportParams {
   templateCode: string;
   companyId?: string;
   centroCode?: string;
+  centroCodes?: string[]; // Para consolidado multi-restaurante
   startDate?: string;
   endDate?: string;
 }

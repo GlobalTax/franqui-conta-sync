@@ -7,9 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCentres } from "@/hooks/useCentres";
 import { usePLTemplates } from "@/hooks/usePLTemplates";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import type { PLReportLine } from "@/types/profit-loss";
+import { usePLReport } from "@/hooks/usePLReport";
 import { exportPLConsolidated } from "@/lib/pl-export-excel";
 import {
   Select,
@@ -37,27 +35,15 @@ const ProfitAndLossConsolidated = () => {
   const lastDay = new Date(year, month, 0).getDate();
   const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
-  // Fetch consolidado - Por ahora usar calculate_pl_report individual
-  // TODO: Implementar RPC consolidado en backend cuando esté disponible
-  const { data: plData, isLoading: isLoadingPL } = useQuery({
-    queryKey: ["pl-consolidated", selectedTemplate, selectedCentres, startDate, endDate],
-    queryFn: async () => {
-      // Temporal: usar primer centro seleccionado
-      if (selectedCentres.length === 0) return [];
-      
-      const { data, error } = await supabase.rpc("calculate_pl_report", {
-        p_template_code: selectedTemplate,
-        p_company_id: null,
-        p_centro_code: selectedCentres[0],
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
-
-      if (error) throw error;
-      return (data || []) as PLReportLine[];
-    },
-    enabled: selectedCentres.length > 0 && !!selectedTemplate,
+  // Fetch consolidado usando usePLReport con centroCodes
+  const { data: plResponse, isLoading: isLoadingPL } = usePLReport({
+    templateCode: selectedTemplate,
+    centroCodes: selectedCentres.length > 0 ? selectedCentres : undefined,
+    startDate,
+    endDate,
   });
+
+  const plData = plResponse?.plData;
 
   const handleCentreToggle = (centreId: string) => {
     setSelectedCentres((prev) =>

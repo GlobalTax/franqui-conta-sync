@@ -10,12 +10,44 @@ export const usePLReport = ({
   templateCode,
   companyId,
   centroCode,
+  centroCodes,
   startDate,
   endDate,
 }: PLReportParams) => {
   return useQuery({
-    queryKey: ["pl-report", templateCode, companyId, centroCode, startDate, endDate],
+    queryKey: ["pl-report", templateCode, companyId, centroCode, centroCodes, startDate, endDate],
     queryFn: async () => {
+      // Si hay múltiples centros, usar RPC consolidado
+      if (centroCodes && centroCodes.length > 0) {
+        const { data, error } = await supabase.rpc(
+          "calculate_pl_report_consolidated" as any, // Temporal: función aún no en tipos
+          {
+            p_template_code: templateCode,
+            p_centro_codes: centroCodes,
+            p_start_date: startDate || null,
+            p_end_date: endDate || null,
+          }
+        );
+
+        if (error) throw error;
+
+        const plData: PLReportLine[] = (data || []).map((row: any) => ({
+          rubric_code: row.rubric_code,
+          rubric_name: row.rubric_name,
+          parent_code: row.parent_code,
+          level: row.level,
+          sort: row.sort,
+          is_total: row.is_total,
+          amount: row.amount,
+          sign: row.sign,
+          percentage: row.percentage,
+        }));
+
+        const summary = calculateSummary(plData);
+        return { plData, summary };
+      }
+
+      // RPC individual (centro o compañía)
       const { data, error } = await supabase.rpc("calculate_pl_report", {
         p_template_code: templateCode,
         p_company_id: companyId || null,
@@ -53,7 +85,7 @@ export const usePLReport = ({
         summary,
       };
     },
-    enabled: !!templateCode && (!!companyId || !!centroCode),
+    enabled: !!templateCode && (!!companyId || !!centroCode || (!!centroCodes && centroCodes.length > 0)),
   });
 };
 

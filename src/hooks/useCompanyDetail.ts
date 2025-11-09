@@ -11,28 +11,12 @@ export interface CompanyDetailData {
   activo: boolean;
   created_at: string;
   updated_at: string;
-  code?: string;
-  legal_type?: string;
-  nif_prefix?: string;
-  nif_number?: string;
-  country_fiscal_code?: string;
-  phone1?: string;
-  phone2?: string;
-  phone3?: string;
-  phone4?: string;
-  contact_name?: string;
-  email?: string;
-  address_fiscal_id?: string;
-  address_social_id?: string;
-  pgc_verified?: boolean;
   franchisee?: {
     id: string;
     name: string;
     email: string;
     company_tax_id: string;
   };
-  fiscal_address?: any;
-  social_address?: any;
 }
 
 export interface AssociatedCentre {
@@ -65,12 +49,6 @@ export function useCompanyDetail(companyId?: string) {
             name,
             email,
             company_tax_id
-          ),
-          fiscal_address:address_fiscal_id (
-            *
-          ),
-          social_address:address_social_id (
-            *
           )
         `)
         .eq("id", companyId)

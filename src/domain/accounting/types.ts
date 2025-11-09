@@ -6,6 +6,21 @@
 export type MovementType = 'debit' | 'credit';
 export type AccountingEntryStatus = 'draft' | 'posted' | 'closed';
 
+// Entidad de cuenta contable
+export interface Account {
+  id: string;
+  code: string;
+  name: string;
+  accountType: string;
+  centroCode: string;
+  companyId?: string | null;
+  parentCode?: string | null;
+  level: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Entidad de transacción contable (línea de asiento)
 export interface Transaction {
   id?: string;

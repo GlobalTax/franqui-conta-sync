@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { EntryValidator } from "@/domain/accounting/services/EntryValidator";
 import { EntryCalculator } from "@/domain/accounting/services/EntryCalculator";
 import { Transaction } from "@/domain/accounting/types";
+import { getJournalEntries, createJournalEntry, getNextEntryNumber } from "@/infrastructure/persistence/supabase/queries/EntryQueries";
 
 export function useAccountingEntries(centroCode?: string, filters?: {
   startDate?: string;
@@ -15,39 +16,45 @@ export function useAccountingEntries(centroCode?: string, filters?: {
   return useQuery({
     queryKey: ["accounting-entries", centroCode, filters],
     queryFn: async () => {
-      let query = supabase
-        .from("accounting_entries")
-        .select(`
-          *,
-          accounting_transactions(*)
-        `)
-        .order("entry_date", { ascending: false })
-        .order("entry_number", { ascending: false });
+      // Usar nueva capa de queries centralizada
+      const statusFilter = filters?.status && filters.status !== 'all' 
+        ? (filters.status as 'draft' | 'posted' | 'closed')
+        : undefined;
 
-      if (centroCode) {
-        query = query.eq("centro_code", centroCode);
-      }
+      const result = await getJournalEntries({
+        centroCode,
+        startDate: filters?.startDate,
+        endDate: filters?.endDate,
+        status: statusFilter,
+        searchTerm: filters?.searchTerm,
+      });
 
-      if (filters?.startDate) {
-        query = query.gte("entry_date", filters.startDate);
-      }
-
-      if (filters?.endDate) {
-        query = query.lte("entry_date", filters.endDate);
-      }
-
-      if (filters?.status && filters.status !== 'all' && (filters.status === 'draft' || filters.status === 'posted' || filters.status === 'closed')) {
-        query = query.eq("status", filters.status);
-      }
-
-      if (filters?.searchTerm) {
-        query = query.or(`description.ilike.%${filters.searchTerm}%,entry_number.eq.${parseInt(filters.searchTerm) || 0}`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as AccountingEntryWithTransactions[];
+      // Mapear de dominio a formato esperado por UI (temporal hasta migrar tipos)
+      return result.entries.map(entry => ({
+        id: entry.id,
+        entry_number: entry.entryNumber,
+        entry_date: entry.entryDate,
+        description: entry.description,
+        centro_code: entry.centroCode,
+        fiscal_year_id: entry.fiscalYearId || null,
+        status: entry.status,
+        total_debit: entry.totalDebit,
+        total_credit: entry.totalCredit,
+        created_by: entry.createdBy || null,
+        created_at: entry.createdAt || '',
+        updated_at: entry.updatedAt || '',
+        accounting_transactions: entry.transactions.map(t => ({
+          id: t.id || '',
+          entry_id: entry.id,
+          account_code: t.accountCode,
+          movement_type: t.movementType,
+          amount: t.amount,
+          description: t.description || null,
+          document_ref: null,
+          line_number: t.lineNumber || 0,
+          created_at: entry.createdAt || '',
+        })),
+      })) as AccountingEntryWithTransactions[];
     },
   });
 }
@@ -68,16 +75,9 @@ export function useCreateAccountingEntry() {
         .eq("status", "open")
         .single();
 
-      // Get next entry number
-      const { data: lastEntry } = await supabase
-        .from("accounting_entries")
-        .select("entry_number")
-        .eq("fiscal_year_id", fiscalYear?.id)
-        .order("entry_number", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const nextEntryNumber = (lastEntry?.entry_number || 0) + 1;
+      if (!fiscalYear) {
+        throw new Error("No hay ejercicio fiscal abierto para este centro");
+      }
 
       // Convert to domain types for validation
       const domainTransactions: Transaction[] = formData.transactions.map(t => ({
@@ -103,44 +103,38 @@ export function useCreateAccountingEntry() {
 
       // Calculate totals using domain service
       const totals = EntryCalculator.calculateTotals(domainTransactions);
-      const totalDebit = totals.debit;
-      const totalCredit = totals.credit;
 
-      // Create entry
-      const { data: entry, error: entryError } = await supabase
-        .from("accounting_entries")
-        .insert({
-          entry_number: nextEntryNumber,
-          entry_date: formData.entry_date,
-          description: formData.description,
-          centro_code: centroCode,
-          fiscal_year_id: fiscalYear?.id,
-          created_by: user.user.id,
-          total_debit: totalDebit,
-          total_credit: totalCredit,
-        })
-        .select()
-        .single();
+      // Get next entry number using new query layer
+      const nextEntryNumber = await getNextEntryNumber(fiscalYear.id);
 
-      if (entryError) throw entryError;
+      // Create entry using new query layer
+      const createdEntry = await createJournalEntry({
+        entryDate: formData.entry_date,
+        description: formData.description,
+        centroCode: centroCode,
+        fiscalYearId: fiscalYear.id,
+        status: 'draft',
+        totalDebit: totals.debit,
+        totalCredit: totals.credit,
+        transactions: domainTransactions,
+        createdBy: user.user.id,
+      }, nextEntryNumber);
 
-      // Create transactions for database
-      const dbTransactions = formData.transactions.map((t, index) => ({
-        entry_id: entry.id,
-        account_code: t.account_code,
-        movement_type: t.movement_type,
-        amount: t.amount,
-        description: t.description,
-        line_number: index + 1,
-      }));
-
-      const { error: transError } = await supabase
-        .from("accounting_transactions")
-        .insert(dbTransactions);
-
-      if (transError) throw transError;
-
-      return entry;
+      // Mapear de vuelta al formato esperado por UI
+      return {
+        id: createdEntry.id,
+        entry_number: createdEntry.entryNumber,
+        entry_date: createdEntry.entryDate,
+        description: createdEntry.description,
+        centro_code: createdEntry.centroCode,
+        fiscal_year_id: createdEntry.fiscalYearId || null,
+        status: createdEntry.status,
+        total_debit: createdEntry.totalDebit,
+        total_credit: createdEntry.totalCredit,
+        created_by: createdEntry.createdBy || null,
+        created_at: createdEntry.createdAt || '',
+        updated_at: createdEntry.updatedAt || '',
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounting-entries"] });

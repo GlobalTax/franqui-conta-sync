@@ -17,6 +17,7 @@ interface Props {
 export function SocialAddressSection({ address }: Props) {
   const { register, setValue, watch } = useFormContext<CompanyFormData>();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [locationDisplay, setLocationDisplay] = useState("");
   const { toast } = useToast();
 
   const handleLocationSelect = (location: any) => {
@@ -24,6 +25,7 @@ export function SocialAddressSection({ address }: Props) {
     if (location.type === 'municipality') {
       setValue("social_address.municipality_id", parseInt(location.id));
     }
+    setLocationDisplay(`${location.code} - ${location.name}`);
     setSearchOpen(false);
   };
 
@@ -155,7 +157,7 @@ export function SocialAddressSection({ address }: Props) {
               <Input 
                 placeholder="Buscar población o código postal"
                 readOnly
-                value={watch("social_address.postal_code") || ""}
+                value={locationDisplay || watch("social_address.postal_code") || ""}
                 className="cursor-pointer"
                 onClick={() => setSearchOpen(true)}
               />

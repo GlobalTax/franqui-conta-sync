@@ -28,6 +28,30 @@ export function CompanyDataTab({ company, onSave, isLoading }: Props) {
     phone4: company.phone4 || undefined,
     contact_name: company.contact_name || undefined,
     email: company.email || undefined,
+    fiscal_address: company.fiscal_address ? {
+      street_type: company.fiscal_address.street_type || undefined,
+      street_name: company.fiscal_address.street_name || "",
+      number: company.fiscal_address.number || undefined,
+      staircase: company.fiscal_address.staircase || undefined,
+      floor: company.fiscal_address.floor || undefined,
+      door: company.fiscal_address.door || undefined,
+      postal_code: company.fiscal_address.postal_code || undefined,
+      municipality_id: company.fiscal_address.municipality_id || undefined,
+      province_id: company.fiscal_address.province_id || undefined,
+      country_code: company.fiscal_address.country_code || "ES",
+    } : undefined,
+    social_address: company.social_address ? {
+      street_type: company.social_address.street_type || undefined,
+      street_name: company.social_address.street_name || "",
+      number: company.social_address.number || undefined,
+      staircase: company.social_address.staircase || undefined,
+      floor: company.social_address.floor || undefined,
+      door: company.social_address.door || undefined,
+      postal_code: company.social_address.postal_code || undefined,
+      municipality_id: company.social_address.municipality_id || undefined,
+      province_id: company.social_address.province_id || undefined,
+      country_code: company.social_address.country_code || "ES",
+    } : undefined,
   });
 
   useEffect(() => {

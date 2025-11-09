@@ -16,12 +16,14 @@ interface Props {
 export function FiscalAddressSection({ address }: Props) {
   const { register, setValue, watch } = useFormContext<CompanyFormData>();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [locationDisplay, setLocationDisplay] = useState("");
 
   const handleLocationSelect = (location: any) => {
     setValue("fiscal_address.postal_code", location.code);
     if (location.type === 'municipality') {
       setValue("fiscal_address.municipality_id", parseInt(location.id));
     }
+    setLocationDisplay(`${location.code} - ${location.name}`);
     setSearchOpen(false);
   };
 
@@ -128,7 +130,7 @@ export function FiscalAddressSection({ address }: Props) {
               <Input 
                 placeholder="Buscar población o código postal"
                 readOnly
-                value={watch("fiscal_address.postal_code") || ""}
+                value={locationDisplay || watch("fiscal_address.postal_code") || ""}
                 className="cursor-pointer"
                 onClick={() => setSearchOpen(true)}
               />

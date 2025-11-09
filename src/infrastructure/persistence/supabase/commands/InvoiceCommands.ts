@@ -215,6 +215,192 @@ export class InvoiceCommands {
   }
 
   /**
+   * Aprueba múltiples facturas de forma masiva con transacción
+   */
+  static async bulkApprove(command: any): Promise<any> {
+    const { invoiceIds, userId, userRole, approvalLevel, organizationId, comments } = command;
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ invoiceId: string; error: string }>,
+    };
+
+    // Procesar cada factura individualmente (con validación previa)
+    for (const invoiceId of invoiceIds) {
+      try {
+        // Obtener factura actual
+        const { data: invoice, error: fetchError } = await supabase
+          .from('invoices_received')
+          .select('*')
+          .eq('id', invoiceId)
+          .single();
+
+        if (fetchError || !invoice) {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura no encontrada',
+          });
+          continue;
+        }
+
+        // Validar que no esté ya aprobada o rechazada
+        if (invoice.approval_status === 'approved') {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura ya aprobada',
+          });
+          continue;
+        }
+
+        if (invoice.approval_status === 'rejected') {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura rechazada previamente',
+          });
+          continue;
+        }
+
+        // Actualizar estado
+        const { error: updateError } = await supabase
+          .from('invoices_received')
+          .update({
+            approval_status: 'approved',
+            status: 'approved',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', invoiceId);
+
+        if (updateError) {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: updateError.message,
+          });
+          continue;
+        }
+
+        // Registrar en log de auditoría
+        await supabase.from('invoice_approvals').insert({
+          invoice_id: invoiceId,
+          user_id: userId,
+          action: 'approved',
+          approval_level: approvalLevel,
+          comments: comments || `Aprobación masiva (${invoiceIds.length} facturas)`,
+          created_at: new Date().toISOString(),
+        } as any);
+
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          invoiceId,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Rechaza múltiples facturas de forma masiva con transacción
+   */
+  static async bulkReject(command: any): Promise<any> {
+    const { invoiceIds, userId, userRole, organizationId, reason, comments } = command;
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ invoiceId: string; error: string }>,
+    };
+
+    // Procesar cada factura individualmente (con validación previa)
+    for (const invoiceId of invoiceIds) {
+      try {
+        // Obtener factura actual
+        const { data: invoice, error: fetchError } = await supabase
+          .from('invoices_received')
+          .select('*')
+          .eq('id', invoiceId)
+          .single();
+
+        if (fetchError || !invoice) {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura no encontrada',
+          });
+          continue;
+        }
+
+        // Validar que no esté ya rechazada o aprobada
+        if (invoice.approval_status === 'rejected') {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura ya rechazada',
+          });
+          continue;
+        }
+
+        if (invoice.approval_status === 'approved') {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: 'Factura ya aprobada',
+          });
+          continue;
+        }
+
+        // Actualizar estado con información de rechazo
+        const { error: updateError } = await supabase
+          .from('invoices_received')
+          .update({
+            approval_status: 'rejected',
+            status: 'rejected',
+            rejected_by: userId,
+            rejected_at: new Date().toISOString(),
+            rejected_reason: reason,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', invoiceId);
+
+        if (updateError) {
+          results.failed++;
+          results.errors.push({
+            invoiceId,
+            error: updateError.message,
+          });
+          continue;
+        }
+
+        // Registrar en log de auditoría
+        await supabase.from('invoice_approvals').insert({
+          invoice_id: invoiceId,
+          user_id: userId,
+          action: 'rejected',
+          comments: comments || `Rechazo masivo: ${reason}`,
+          created_at: new Date().toISOString(),
+        } as any);
+
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          invoiceId,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Asigna centro a múltiples facturas de forma masiva
    * Implementa transaccionalidad mediante RPC para garantizar atomicidad
    */

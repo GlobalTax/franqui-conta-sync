@@ -10,6 +10,7 @@ import { InboxSearchDialog } from '@/components/invoices/inbox/InboxSearchDialog
 import { useInvoicesReceived, type InvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
 import { useInvoiceReview } from '@/hooks/useInvoiceReview';
+import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -46,6 +47,9 @@ export default function InvoicesInbox() {
   
   // Review actions
   const { assignCentre, generateEntry } = useInvoiceReview(selectedInvoiceId);
+  
+  // Bulk actions
+  const { bulkAssignCentre, bulkApprove, bulkReject, isLoading: isBulkLoading } = useBulkInvoiceActions();
 
   // Contar filtros activos
   const activeFilterCount = useMemo(() => {
@@ -90,12 +94,19 @@ export default function InvoicesInbox() {
   };
 
   const handleBulkApprove = () => {
-    toast.success(`${selectedIds.length} facturas aprobadas`);
+    if (selectedIds.length === 0) return;
+    bulkApprove({ invoiceIds: selectedIds });
     setSelectedIds([]);
   };
 
   const handleBulkReject = () => {
-    toast.error(`${selectedIds.length} facturas rechazadas`);
+    if (selectedIds.length === 0) return;
+    const reason = prompt('Motivo del rechazo masivo:');
+    if (!reason || reason.trim() === '') {
+      toast.error('Debe proporcionar un motivo de rechazo');
+      return;
+    }
+    bulkReject({ invoiceIds: selectedIds, reason: reason.trim() });
     setSelectedIds([]);
   };
 

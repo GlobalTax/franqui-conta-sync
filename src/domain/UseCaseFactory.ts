@@ -23,6 +23,8 @@ import { CreateInvoiceReceivedUseCase } from './invoicing/use-cases/CreateInvoic
 import { ApproveInvoiceUseCase } from './invoicing/use-cases/ApproveInvoice';
 import { RejectInvoiceUseCase } from './invoicing/use-cases/RejectInvoice';
 import { BulkAssignCentreUseCase } from './invoicing/use-cases/BulkAssignCentre';
+import { BulkApproveInvoicesUseCase } from './invoicing/use-cases/BulkApproveInvoices';
+import { BulkRejectInvoicesUseCase } from './invoicing/use-cases/BulkRejectInvoices';
 
 // Invoicing Services
 import { InvoiceCalculator } from './invoicing/services/InvoiceCalculator';
@@ -100,6 +102,20 @@ export class UseCaseFactory {
    */
   static bulkAssignCentreUseCase(): BulkAssignCentreUseCase {
     return new BulkAssignCentreUseCase(this.invoiceRepo);
+  }
+
+  /**
+   * Crea caso de uso para aprobación masiva de facturas
+   */
+  static bulkApproveInvoicesUseCase(): BulkApproveInvoicesUseCase {
+    return new BulkApproveInvoicesUseCase(this.invoiceRepo);
+  }
+
+  /**
+   * Crea caso de uso para rechazo masivo de facturas
+   */
+  static bulkRejectInvoicesUseCase(): BulkRejectInvoicesUseCase {
+    return new BulkRejectInvoicesUseCase(this.invoiceRepo);
   }
 
   // ========== BANKING USE CASES ==========

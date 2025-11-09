@@ -76,4 +76,12 @@ export class InvoiceRepositoryImpl implements IInvoiceRepository {
   async bulkAssignCentre(command: any): Promise<any> {
     return InvoiceCommands.bulkAssignCentre(command);
   }
+
+  async bulkApprove(command: any): Promise<any> {
+    return InvoiceCommands.bulkApprove(command);
+  }
+
+  async bulkReject(command: any): Promise<any> {
+    return InvoiceCommands.bulkReject(command);
+  }
 }

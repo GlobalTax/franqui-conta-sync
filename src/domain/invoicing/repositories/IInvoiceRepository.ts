@@ -45,6 +45,30 @@ export interface BulkAssignCentreResult {
   errors: Array<{ invoiceId: string; error: string }>;
 }
 
+export interface BulkApproveCommand {
+  invoiceIds: string[];
+  userId: string;
+  userRole: 'admin' | 'manager' | 'accountant' | 'viewer';
+  approvalLevel: 'manager' | 'accounting';
+  organizationId: string;
+  comments?: string;
+}
+
+export interface BulkRejectCommand {
+  invoiceIds: string[];
+  userId: string;
+  userRole: 'admin' | 'manager' | 'accountant' | 'viewer';
+  organizationId: string;
+  reason: string;
+  comments?: string;
+}
+
+export interface BulkOperationResult {
+  success: number;
+  failed: number;
+  errors: Array<{ invoiceId: string; error: string }>;
+}
+
 /**
  * Repository Interface para operaciones de facturación
  * Separa la lógica de dominio de la implementación de persistencia
@@ -118,4 +142,14 @@ export interface IInvoiceRepository {
    * Asigna centro a múltiples facturas de forma masiva
    */
   bulkAssignCentre(command: BulkAssignCentreCommand): Promise<BulkAssignCentreResult>;
+  
+  /**
+   * Aprueba múltiples facturas de forma masiva
+   */
+  bulkApprove(command: BulkApproveCommand): Promise<BulkOperationResult>;
+  
+  /**
+   * Rechaza múltiples facturas de forma masiva
+   */
+  bulkReject(command: BulkRejectCommand): Promise<BulkOperationResult>;
 }

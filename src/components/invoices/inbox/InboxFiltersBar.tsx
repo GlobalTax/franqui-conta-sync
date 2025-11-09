@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SupplierSelector } from '../SupplierSelector';
 import { DateRangePicker } from '@/components/reports/DateRangePicker';
@@ -13,6 +14,7 @@ interface InboxFiltersBarProps {
     centro_code?: string;
     date_from?: string;
     date_to?: string;
+    searchTerm?: string;
   };
   onChange: (filters: any) => void;
   activeCount: number;
@@ -29,6 +31,16 @@ export function InboxFiltersBar({ filters, onChange, activeCount }: InboxFilters
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Filter className="h-4 w-4" />
           Filtros:
+        </div>
+
+        {/* Búsqueda por texto */}
+        <div className="flex-1 min-w-[240px]">
+          <Input
+            placeholder="Buscar nº factura, proveedor, CIF..."
+            value={filters.searchTerm || ''}
+            onChange={(e) => onChange({ ...filters, searchTerm: e.target.value.trim() || undefined })}
+            className="w-full"
+          />
         </div>
 
         {/* Estado */}

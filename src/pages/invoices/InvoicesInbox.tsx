@@ -32,7 +32,14 @@ const transformInvoice = (inv: InvoiceReceived) => ({
 
 export default function InvoicesInbox() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<{
+    status?: string;
+    supplier_id?: string;
+    centro_code?: string;
+    date_from?: string;
+    date_to?: string;
+    searchTerm?: string;
+  }>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);

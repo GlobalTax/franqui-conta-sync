@@ -75,6 +75,7 @@ export const useInvoicesReceived = (filters?: {
   status?: string;
   date_from?: string;
   date_to?: string;
+  searchTerm?: string;
 }) => {
   const { currentMembership } = useOrganization();
   const selectedCentro = currentMembership?.restaurant?.codigo;
@@ -90,12 +91,13 @@ export const useInvoicesReceived = (filters?: {
         status: filters?.status as any,
         dateFrom: filters?.date_from,
         dateTo: filters?.date_to,
+        searchTerm: filters?.searchTerm,
       };
 
       const domainInvoices = await InvoiceQueries.findInvoicesReceived(queryFilters);
 
       // Convertir de camelCase (dominio) a snake_case (API legacy)
-      return domainInvoices.map(inv => ({
+      const mappedInvoices = domainInvoices.map(inv => ({
         id: inv.id,
         supplier_id: inv.supplierId,
         centro_code: inv.centroCode,
@@ -134,6 +136,19 @@ export const useInvoicesReceived = (filters?: {
           created_at: a.createdAt,
         })),
       })) as InvoiceReceived[];
+
+      // Filtrado client-side adicional (supplier.name, supplier.tax_id)
+      if (filters?.searchTerm) {
+        const q = filters.searchTerm.toLowerCase().trim();
+        return mappedInvoices.filter(inv => {
+          const matchesNumber = inv.invoice_number?.toLowerCase().includes(q);
+          const matchesSupplier = inv.supplier?.name?.toLowerCase().includes(q);
+          const matchesTaxId = inv.supplier?.tax_id?.toLowerCase().includes(q);
+          return matchesNumber || matchesSupplier || matchesTaxId;
+        });
+      }
+
+      return mappedInvoices;
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
     // ✅ OPTIMIZACIÓN: Caché de 2 minutos para datos transaccionales

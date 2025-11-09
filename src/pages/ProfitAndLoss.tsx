@@ -20,6 +20,7 @@ import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
 import { exportPLHistorical } from "@/lib/pl-export-excel";
 import { YearSelector } from "@/components/pl/YearSelector";
 import { AdjustmentCell } from "@/components/pl/AdjustmentCell";
+import { PLTableSingle } from "@/components/pl/PLTableSingle";
 import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 
 // ✅ Lazy load: Tabla multi-año (solo se carga cuando se activa la vista)
@@ -430,191 +431,15 @@ const ProfitAndLoss = () => {
                 <span className="text-sm">Crea asientos contables para ver el P&L.</span>
               </div>
             ) : (
-              // Vista Single: normal o dual
-              <div className="space-y-1">
-                {/* Header de la tabla */}
-                <div className="flex items-center justify-between py-3 px-4 bg-muted font-semibold sticky top-0 z-10">
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="font-mono text-xs w-8">#</span>
-                    <span>Concepto</span>
-                  </div>
-                  {showAdjustments ? (
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm w-32 text-right text-muted-foreground">Calculado</span>
-                      <span className="text-sm w-32 text-right bg-accent px-2 py-1 rounded">A Sumar</span>
-                      <span className="text-sm w-32 text-right font-semibold">Importe</span>
-                      <span className="text-sm w-16 text-right">%</span>
-                    </div>
-                  ) : showAccumulated ? (
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm w-32 text-right">Mes €</span>
-                      <span className="text-sm w-20 text-right">Mes %</span>
-                      <span className="text-sm w-32 text-right bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">Acum. €</span>
-                      <span className="text-sm w-20 text-right bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">Acum. %</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-8">
-                      <span className="text-sm w-32 text-right">Importe</span>
-                      <span className="text-sm w-16 text-right">%</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Filas de datos */}
-                {plData.map((line: any, idx) => {
-                  const isAccumulatedData = 'amount_period' in line;
-                  const isAdjustmentData = 'amount_calculated' in line;
-                  const displayAmount = isAccumulatedData ? line.amount_period : isAdjustmentData ? line.amount_final : line.amount;
-                  const displayPercentage = isAccumulatedData ? line.percentage_period : line.percentage;
-
-                  return (
-                    <div
-                      key={`${line.rubric_code}-${idx}`}
-                      className={`flex items-center justify-between py-3 px-4 ${
-                        line.is_total
-                          ? "bg-muted/50 font-semibold"
-                          : "hover:bg-accent/30"
-                      } ${
-                        line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                          ? "bg-primary/5 border-t-2 border-primary mt-2"
-                          : ""
-                      } ${
-                        line.rubric_code === 'ebitda' || line.rubric_code === 'margen_bruto' || line.rubric_code === 'gross_margin'
-                          ? "border-l-4 border-l-primary"
-                          : ""
-                      }`}
-                      style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="font-mono text-xs w-8 text-muted-foreground flex-shrink-0">
-                          {String(idx + 1).padStart(2, '0')}
-                        </span>
-                        <span
-                          className={`truncate ${
-                            line.is_total ? "font-semibold text-foreground" : ""
-                          } ${
-                            line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                              ? "font-bold text-lg"
-                              : ""
-                          }`}
-                          title={line.rubric_name}
-                        >
-                          {line.rubric_name}
-                        </span>
-                      </div>
-                      
-                      {showAdjustments && isAdjustmentData ? (
-                        <div className="flex items-center gap-4">
-                          {/* Calculado */}
-                          <span className="font-mono text-right w-32 text-muted-foreground">
-                            {line.amount_calculated.toLocaleString("es-ES", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}€
-                          </span>
-                          {/* A Sumar (editable) */}
-                          <div className="w-32 bg-accent px-2 py-1 rounded">
-                            <AdjustmentCell
-                              rubricCode={line.rubric_code}
-                              currentAdjustment={getAdjustmentAmount(line.rubric_code)}
-                              onUpdate={(amount) =>
-                                upsertAdjustment.mutate({
-                                  rubricCode: line.rubric_code,
-                                  amount,
-                                })
-                              }
-                              isDisabled={line.is_total}
-                            />
-                          </div>
-                          {/* Importe (final) */}
-                          <span
-                            className={`font-mono font-semibold text-right w-32 ${
-                              line.amount_final >= 0 ? "text-success" : "text-foreground"
-                            }`}
-                          >
-                            {line.amount_final.toLocaleString("es-ES", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}€
-                          </span>
-                          {/* % */}
-                          <span className="text-sm text-muted-foreground text-right w-16">
-                            {Math.abs(line.percentage || 0).toFixed(1)}%
-                          </span>
-                        </div>
-                      ) : showAccumulated && isAccumulatedData ? (
-                        <div className="flex items-center gap-4">
-                          {/* Mes € */}
-                          <span
-                            className={`font-mono font-semibold text-right w-32 ${
-                              displayAmount >= 0 ? "text-success" : "text-foreground"
-                            }`}
-                          >
-                            {displayAmount.toLocaleString("es-ES", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}€
-                          </span>
-                          {/* Mes % */}
-                          <span className="text-sm text-muted-foreground text-right w-20">
-                            {Math.abs(displayPercentage || 0).toFixed(1)}%
-                          </span>
-                          {/* Acumulado € */}
-                          <span
-                            className={`font-mono font-bold text-right w-32 bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded ${
-                              line.amount_ytd >= 0 ? "text-success" : "text-foreground"
-                            }`}
-                          >
-                            {line.amount_ytd.toLocaleString("es-ES", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}€
-                          </span>
-                          {/* Acumulado % */}
-                          <span className="text-sm font-semibold text-right w-20 bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">
-                            {Math.abs(line.percentage_ytd || 0).toFixed(1)}%
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-8">
-                          <span
-                            className={`font-mono font-semibold text-right w-32 ${
-                              displayAmount >= 0 ? "text-success" : "text-foreground"
-                            } ${
-                              line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                                ? "text-lg"
-                                : ""
-                            }`}
-                          >
-                            {displayAmount.toLocaleString("es-ES", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}€
-                          </span>
-                          <span
-                            className={`text-sm text-muted-foreground text-right w-16 ${
-                              line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                                ? "font-semibold"
-                                : ""
-                            }`}
-                          >
-                            {Math.abs(displayPercentage || 0).toFixed(1)}%
-                          </span>
-                          {line.is_total && line.rubric_code !== 'resultado_neto' && line.rubric_code !== 'net_result' && (
-                            <div className="w-6">
-                              {displayAmount >= 0 ? (
-                                <TrendingUp className="h-4 w-4 text-success" />
-                              ) : (
-                                <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              // Vista Single con tabla virtualizada
+              <PLTableSingle
+                data={plData}
+                showAccumulated={showAccumulated}
+                showAdjustments={showAdjustments}
+                getAdjustmentAmount={getAdjustmentAmount}
+                upsertAdjustment={upsertAdjustment}
+                enableVirtualization={plData.length > 50}
+              />
             )}
           </CardContent>
         </Card>

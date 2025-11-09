@@ -73,6 +73,7 @@ const Layout = () => {
 
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
+    { icon: Building2, label: "Mi Empresa", path: "/mi-empresa/mis-datos" },
     { icon: FileText, label: "Fact. Recibidas", path: "/invoices" },
     { icon: FileText, label: "Fact. Emitidas", path: "/facturas/emitidas" },
     { icon: Building2, label: "Proveedores", path: "/proveedores" },

@@ -21,6 +21,7 @@ import CentreDetail from "@/pages/admin/CentreDetail";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountingEntries from "@/pages/accounting/AccountingEntries";
 import NewAccountingEntry from "@/pages/accounting/NewAccountingEntry";
+import CompanyConfiguration from "@/pages/admin/CompanyConfiguration";
 import NewInvoiceReceived from "@/pages/invoices/NewInvoiceReceived";
 import InvoicesReceivedOCR from "@/pages/invoices/InvoicesReceivedOCR";
 import NewInvoiceWithOCR from "@/pages/invoices/NewInvoiceWithOCR";
@@ -125,6 +126,7 @@ const App = () => {
             <Route path="/settings" element={<Dashboard />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
+            <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
             <Route path="/notificaciones" element={<Notifications />} />
             
             {/* Style Guide */}

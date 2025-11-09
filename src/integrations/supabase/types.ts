@@ -4283,6 +4283,22 @@ export type Database = {
           nombre_grupo: string
         }[]
       }
+      calculate_balance_sheet_full: {
+        Args: {
+          p_centro_code: string
+          p_fecha_corte: string
+          p_nivel?: number
+          p_show_zero_balance?: boolean
+        }
+        Returns: {
+          account_type: string
+          balance: number
+          codigo: string
+          nivel: number
+          nombre: string
+          parent_code: string
+        }[]
+      }
       calculate_monthly_depreciations: {
         Args: { p_centro_code: string; p_month: number; p_year: number }
         Returns: Json
@@ -4385,6 +4401,25 @@ export type Database = {
           level: number
         }[]
       }
+      calculate_pyg_pgc: {
+        Args: {
+          p_centro_code: string
+          p_fecha_fin: string
+          p_fecha_inicio: string
+          p_nivel?: number
+          p_show_zero_balance?: boolean
+        }
+        Returns: {
+          cuenta: string
+          debe: number
+          haber: number
+          nivel: number
+          nombre: string
+          parent_code: string
+          porcentaje: number
+          saldo: number
+        }[]
+      }
       calculate_required_approvals: {
         Args: { p_centro_code: string; p_total_amount: number }
         Returns: {
@@ -4398,6 +4433,26 @@ export type Database = {
           p_centro_code: string
           p_company_id?: string
           p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          account_type: string
+          balance: number
+          credit_total: number
+          debit_total: number
+          level: number
+          parent_code: string
+        }[]
+      }
+      calculate_trial_balance_full: {
+        Args: {
+          p_centro_code: string
+          p_company_id?: string
+          p_end_date?: string
+          p_nivel?: number
+          p_show_zero_balance?: boolean
           p_start_date?: string
         }
         Returns: {
@@ -4521,6 +4576,25 @@ export type Database = {
           p_account_code?: string
           p_centro_code: string
           p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+          credit: number
+          debit: number
+          description: string
+          entry_date: string
+          entry_number: number
+        }[]
+      }
+      get_general_ledger_full: {
+        Args: {
+          p_account_code?: string
+          p_centro_code: string
+          p_end_date: string
+          p_include_zero_balance?: boolean
           p_start_date: string
         }
         Returns: {

@@ -3203,6 +3203,195 @@ export type Database = {
           },
         ]
       }
+      stg_iva_emitidas: {
+        Row: {
+          base: number
+          centro_code: string
+          created_at: string | null
+          cuota: number
+          fecha: string
+          hash: string | null
+          id: string
+          id_externo: string
+          import_run_id: string
+          nif_cliente: string | null
+          nombre_cliente: string
+          numero: string
+          status: string | null
+          tipo: number
+          total: number
+          validation_errors: Json | null
+        }
+        Insert: {
+          base: number
+          centro_code: string
+          created_at?: string | null
+          cuota: number
+          fecha: string
+          hash?: string | null
+          id?: string
+          id_externo: string
+          import_run_id: string
+          nif_cliente?: string | null
+          nombre_cliente: string
+          numero: string
+          status?: string | null
+          tipo: number
+          total: number
+          validation_errors?: Json | null
+        }
+        Update: {
+          base?: number
+          centro_code?: string
+          created_at?: string | null
+          cuota?: number
+          fecha?: string
+          hash?: string | null
+          id?: string
+          id_externo?: string
+          import_run_id?: string
+          nif_cliente?: string | null
+          nombre_cliente?: string
+          numero?: string
+          status?: string | null
+          tipo?: number
+          total?: number
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stg_iva_emitidas_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stg_iva_recibidas: {
+        Row: {
+          base: number
+          centro_code: string
+          created_at: string | null
+          cuota: number
+          fecha: string
+          hash: string | null
+          id: string
+          id_externo: string
+          import_run_id: string
+          nif_proveedor: string | null
+          nombre_proveedor: string
+          numero: string
+          status: string | null
+          tipo: number
+          total: number
+          validation_errors: Json | null
+        }
+        Insert: {
+          base: number
+          centro_code: string
+          created_at?: string | null
+          cuota: number
+          fecha: string
+          hash?: string | null
+          id?: string
+          id_externo: string
+          import_run_id: string
+          nif_proveedor?: string | null
+          nombre_proveedor: string
+          numero: string
+          status?: string | null
+          tipo: number
+          total: number
+          validation_errors?: Json | null
+        }
+        Update: {
+          base?: number
+          centro_code?: string
+          created_at?: string | null
+          cuota?: number
+          fecha?: string
+          hash?: string | null
+          id?: string
+          id_externo?: string
+          import_run_id?: string
+          nif_proveedor?: string | null
+          nombre_proveedor?: string
+          numero?: string
+          status?: string | null
+          tipo?: number
+          total?: number
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stg_iva_recibidas_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stg_sumas_saldos: {
+        Row: {
+          centro_code: string | null
+          created_at: string | null
+          cuenta: string
+          debe_acum: number | null
+          haber_acum: number | null
+          hash: string | null
+          id: string
+          id_externo: string
+          import_run_id: string
+          periodo: string
+          saldo_acreedor: number | null
+          saldo_deudor: number | null
+          status: string | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          centro_code?: string | null
+          created_at?: string | null
+          cuenta: string
+          debe_acum?: number | null
+          haber_acum?: number | null
+          hash?: string | null
+          id?: string
+          id_externo: string
+          import_run_id: string
+          periodo: string
+          saldo_acreedor?: number | null
+          saldo_deudor?: number | null
+          status?: string | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          centro_code?: string | null
+          created_at?: string | null
+          cuenta?: string
+          debe_acum?: number | null
+          haber_acum?: number | null
+          hash?: string | null
+          id?: string
+          id_externo?: string
+          import_run_id?: string
+          periodo?: string
+          saldo_acreedor?: number | null
+          saldo_deudor?: number | null
+          status?: string | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stg_sumas_saldos_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           active: boolean | null
@@ -4116,6 +4305,18 @@ export type Database = {
         Returns: undefined
       }
       post_diario_import: { Args: { p_import_run_id: string }; Returns: Json }
+      post_iva_emitidas_import: {
+        Args: { p_import_run_id: string }
+        Returns: Json
+      }
+      post_iva_recibidas_import: {
+        Args: { p_import_run_id: string }
+        Returns: Json
+      }
+      post_sumas_saldos_import: {
+        Args: { p_import_run_id: string }
+        Returns: Json
+      }
       reconstruct_franchisee_relationships: {
         Args: never
         Returns: {
@@ -4145,6 +4346,18 @@ export type Database = {
         Returns: undefined
       }
       stage_diario_rows: {
+        Args: { p_import_run_id: string; p_rows: Json }
+        Returns: Json
+      }
+      stage_iva_emitidas_rows: {
+        Args: { p_import_run_id: string; p_rows: Json }
+        Returns: Json
+      }
+      stage_iva_recibidas_rows: {
+        Args: { p_import_run_id: string; p_rows: Json }
+        Returns: Json
+      }
+      stage_sumas_saldos_rows: {
         Args: { p_import_run_id: string; p_rows: Json }
         Returns: Json
       }

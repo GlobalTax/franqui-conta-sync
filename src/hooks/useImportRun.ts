@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export type ImportModule = 'diario' | 'sumas_saldos' | 'iva_emitidas' | 'iva_recibidas' | 'norma43';
+
+export interface StageSumasSaldosParams {
+  importRunId: string;
+  rows: any[];
+}
+
+export interface StageIVAParams {
+  importRunId: string;
+  rows: any[];
+}
 export type ImportSource = 'csv' | 'xlsx' | 'norma43' | 'api';
 export type ImportStatus = 'pending' | 'staging' | 'posting' | 'completed' | 'error';
 
@@ -143,6 +153,156 @@ export function usePostDiarioImport() {
   });
 }
 
+export function useStageSumasSaldosRows() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ importRunId, rows }: StageSumasSaldosParams) => {
+      const { data, error } = await supabase.rpc('stage_sumas_saldos_rows', {
+        p_import_run_id: importRunId,
+        p_rows: rows as any,
+      });
+
+      if (error) throw error;
+      return data as { rows_inserted: number; validation_errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      if (data.validation_errors.length > 0) {
+        toast.warning(`${data.rows_inserted} filas procesadas, ${data.validation_errors.length} errores`);
+      } else {
+        toast.success(`${data.rows_inserted} filas validadas correctamente`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error en staging: ${error.message}`);
+    },
+  });
+}
+
+export function usePostSumasSaldosImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (importRunId: string) => {
+      const { data, error } = await supabase.rpc('post_sumas_saldos_import', {
+        p_import_run_id: importRunId,
+      });
+
+      if (error) throw error;
+      return data as { entries_created: number; entries_updated: number; errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
+      toast.success(`Importación completada: ${data.entries_created} asientos creados`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al contabilizar: ${error.message}`);
+    },
+  });
+}
+
+export function useStageIVAEmitidas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ importRunId, rows }: StageIVAParams) => {
+      const { data, error } = await supabase.rpc('stage_iva_emitidas_rows', {
+        p_import_run_id: importRunId,
+        p_rows: rows as any,
+      });
+
+      if (error) throw error;
+      return data as { rows_inserted: number; validation_errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      if (data.validation_errors.length > 0) {
+        toast.warning(`${data.rows_inserted} filas procesadas, ${data.validation_errors.length} errores`);
+      } else {
+        toast.success(`${data.rows_inserted} filas validadas correctamente`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error en staging: ${error.message}`);
+    },
+  });
+}
+
+export function useStageIVARecibidas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ importRunId, rows }: StageIVAParams) => {
+      const { data, error } = await supabase.rpc('stage_iva_recibidas_rows', {
+        p_import_run_id: importRunId,
+        p_rows: rows as any,
+      });
+
+      if (error) throw error;
+      return data as { rows_inserted: number; validation_errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      if (data.validation_errors.length > 0) {
+        toast.warning(`${data.rows_inserted} filas procesadas, ${data.validation_errors.length} errores`);
+      } else {
+        toast.success(`${data.rows_inserted} filas validadas correctamente`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error en staging: ${error.message}`);
+    },
+  });
+}
+
+export function usePostIVAEmitidasImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (importRunId: string) => {
+      const { data, error } = await supabase.rpc('post_iva_emitidas_import', {
+        p_import_run_id: importRunId,
+      });
+
+      if (error) throw error;
+      return data as { entries_created: number; entries_updated: number; errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
+      toast.success(`Importación completada: ${data.entries_created} asientos creados`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al contabilizar: ${error.message}`);
+    },
+  });
+}
+
+export function usePostIVARecibidasImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (importRunId: string) => {
+      const { data, error } = await supabase.rpc('post_iva_recibidas_import', {
+        p_import_run_id: importRunId,
+      });
+
+      if (error) throw error;
+      return data as { entries_created: number; entries_updated: number; errors: any[] };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
+      toast.success(`Importación completada: ${data.entries_created} asientos creados`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al contabilizar: ${error.message}`);
+    },
+  });
+}
+
 export function useImportRun(importRunId: string | null) {
   return useQuery({
     queryKey: ['import-run', importRunId],
@@ -160,7 +320,6 @@ export function useImportRun(importRunId: string | null) {
     },
     enabled: !!importRunId,
     refetchInterval: (query) => {
-      // Auto-refresh while in progress
       const data = query.state.data;
       if (data && ['pending', 'staging', 'posting'].includes(data.status)) {
         return 2000;

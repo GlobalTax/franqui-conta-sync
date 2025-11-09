@@ -11,6 +11,12 @@ import {
   useStartImport,
   useStageDiarioRows,
   usePostDiarioImport,
+  useStageSumasSaldosRows,
+  usePostSumasSaldosImport,
+  useStageIVAEmitidas,
+  useStageIVARecibidas,
+  usePostIVAEmitidasImport,
+  usePostIVARecibidasImport,
   useImportRun,
   ImportRun,
 } from "@/hooks/useImportRun";
@@ -31,6 +37,12 @@ export default function Imports() {
   const startImport = useStartImport();
   const stageDiarioRows = useStageDiarioRows();
   const postDiarioImport = usePostDiarioImport();
+  const stageSumasSaldosRows = useStageSumasSaldosRows();
+  const postSumasSaldosImport = usePostSumasSaldosImport();
+  const stageIVAEmitidas = useStageIVAEmitidas();
+  const stageIVARecibidas = useStageIVARecibidas();
+  const postIVAEmitidasImport = usePostIVAEmitidasImport();
+  const postIVARecibidasImport = usePostIVARecibidasImport();
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
@@ -65,12 +77,15 @@ export default function Imports() {
 
       setCurrentImportRunId(importRunId);
 
-      // Stage rows (only for diario for now)
+      // Stage rows based on module
       if (activeModule === 'diario') {
-        await stageDiarioRows.mutateAsync({
-          importRunId,
-          rows: parsedData,
-        });
+        await stageDiarioRows.mutateAsync({ importRunId, rows: parsedData });
+      } else if (activeModule === 'sumas_saldos') {
+        await stageSumasSaldosRows.mutateAsync({ importRunId, rows: parsedData });
+      } else if (activeModule === 'iva_emitidas') {
+        await stageIVAEmitidas.mutateAsync({ importRunId, rows: parsedData });
+      } else if (activeModule === 'iva_recibidas') {
+        await stageIVARecibidas.mutateAsync({ importRunId, rows: parsedData });
       }
     } catch (error) {
       console.error('Staging error:', error);
@@ -86,6 +101,12 @@ export default function Imports() {
     try {
       if (activeModule === 'diario') {
         await postDiarioImport.mutateAsync(currentImportRunId);
+      } else if (activeModule === 'sumas_saldos') {
+        await postSumasSaldosImport.mutateAsync(currentImportRunId);
+      } else if (activeModule === 'iva_emitidas') {
+        await postIVAEmitidasImport.mutateAsync(currentImportRunId);
+      } else if (activeModule === 'iva_recibidas') {
+        await postIVARecibidasImport.mutateAsync(currentImportRunId);
       }
       
       // Reset state
@@ -146,13 +167,13 @@ export default function Imports() {
       <Tabs value={activeModule} onValueChange={(v) => setActiveModule(v as ImportModule)}>
         <TabsList>
           <TabsTrigger value="diario">Diario</TabsTrigger>
-          <TabsTrigger value="sumas_saldos" disabled>
+          <TabsTrigger value="sumas_saldos">
             Sumas y Saldos
           </TabsTrigger>
-          <TabsTrigger value="iva_emitidas" disabled>
+          <TabsTrigger value="iva_emitidas">
             Libro IVA Emitidas
           </TabsTrigger>
-          <TabsTrigger value="iva_recibidas" disabled>
+          <TabsTrigger value="iva_recibidas">
             Libro IVA Recibidas
           </TabsTrigger>
         </TabsList>
@@ -169,6 +190,192 @@ export default function Imports() {
               <CardContent>
                 <ImportWizard
                   module="diario"
+                  onFileSelect={handleFileSelect}
+                  onStage={handleStage}
+                  onPost={handlePost}
+                  currentStep={getCurrentStep()}
+                  progress={
+                    currentImportRun?.stats?.rows_inserted && currentImportRun?.stats?.rows_total
+                      ? (currentImportRun.stats.rows_inserted / currentImportRun.stats.rows_total) * 100
+                      : 0
+                  }
+                  stats={currentImportRun?.stats}
+                  errors={currentImportRun?.error_log ? [currentImportRun.error_log] : []}
+                />
+
+                {currentImportRun?.status === 'completed' && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedData([]);
+                        setCurrentImportRunId(null);
+                      }}
+                    >
+                      Nueva importación
+                    </Button>
+                    <Button onClick={() => setViewMode('history')}>
+                      Ver historial
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial de Importaciones</CardTitle>
+                <CardDescription>
+                  Consulta el estado y resultados de importaciones anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportHistoryTable
+                  imports={importHistory}
+                  onDownloadErrors={handleDownloadErrors}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="sumas_saldos" className="space-y-6">
+          {viewMode === 'import' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar Sumas y Saldos</CardTitle>
+                <CardDescription>
+                  Formato CSV: periodo, cuenta, debe_acum, haber_acum, saldo_deudor, saldo_acreedor, centro_code
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportWizard
+                  module="sumas_saldos"
+                  onFileSelect={handleFileSelect}
+                  onStage={handleStage}
+                  onPost={handlePost}
+                  currentStep={getCurrentStep()}
+                  progress={
+                    currentImportRun?.stats?.rows_inserted && currentImportRun?.stats?.rows_total
+                      ? (currentImportRun.stats.rows_inserted / currentImportRun.stats.rows_total) * 100
+                      : 0
+                  }
+                  stats={currentImportRun?.stats}
+                  errors={currentImportRun?.error_log ? [currentImportRun.error_log] : []}
+                />
+
+                {currentImportRun?.status === 'completed' && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedData([]);
+                        setCurrentImportRunId(null);
+                      }}
+                    >
+                      Nueva importación
+                    </Button>
+                    <Button onClick={() => setViewMode('history')}>
+                      Ver historial
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial de Importaciones</CardTitle>
+                <CardDescription>
+                  Consulta el estado y resultados de importaciones anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportHistoryTable
+                  imports={importHistory}
+                  onDownloadErrors={handleDownloadErrors}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="iva_emitidas" className="space-y-6">
+          {viewMode === 'import' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar Libro IVA Emitidas</CardTitle>
+                <CardDescription>
+                  Formato CSV: fecha, numero, nif_cliente, nombre_cliente, base, tipo, cuota, total, centro_code
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportWizard
+                  module="iva_emitidas"
+                  onFileSelect={handleFileSelect}
+                  onStage={handleStage}
+                  onPost={handlePost}
+                  currentStep={getCurrentStep()}
+                  progress={
+                    currentImportRun?.stats?.rows_inserted && currentImportRun?.stats?.rows_total
+                      ? (currentImportRun.stats.rows_inserted / currentImportRun.stats.rows_total) * 100
+                      : 0
+                  }
+                  stats={currentImportRun?.stats}
+                  errors={currentImportRun?.error_log ? [currentImportRun.error_log] : []}
+                />
+
+                {currentImportRun?.status === 'completed' && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedData([]);
+                        setCurrentImportRunId(null);
+                      }}
+                    >
+                      Nueva importación
+                    </Button>
+                    <Button onClick={() => setViewMode('history')}>
+                      Ver historial
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial de Importaciones</CardTitle>
+                <CardDescription>
+                  Consulta el estado y resultados de importaciones anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportHistoryTable
+                  imports={importHistory}
+                  onDownloadErrors={handleDownloadErrors}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="iva_recibidas" className="space-y-6">
+          {viewMode === 'import' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar Libro IVA Recibidas</CardTitle>
+                <CardDescription>
+                  Formato CSV: fecha, numero, nif_proveedor, nombre_proveedor, base, tipo, cuota, total, centro_code
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportWizard
+                  module="iva_recibidas"
                   onFileSelect={handleFileSelect}
                   onStage={handleStage}
                   onPost={handlePost}

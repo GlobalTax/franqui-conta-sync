@@ -12,25 +12,50 @@ interface FranchiseeDataFormProps {
 }
 
 export function FranchiseeDataForm({ franchisee, onUpdate, isUpdating }: FranchiseeDataFormProps) {
-  const [formData, setFormData] = useState({
+  const [initialData] = useState({
     name: franchisee?.name || "",
     email: franchisee?.email || "",
     company_tax_id: franchisee?.company_tax_id || "",
     orquest_business_id: franchisee?.orquest_business_id || "",
     orquest_api_key: franchisee?.orquest_api_key || "",
   });
+  
+  const [formData, setFormData] = useState({
+    name: franchisee?.name || "",
+    email: franchisee?.email || "",
+    company_tax_id: franchisee?.company_tax_id || "",
+    orquest_business_id: franchisee?.orquest_business_id || "",
+    orquest_api_key: "",
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("📝 FranchiseeDataForm - Datos a enviar:", formData);
-    console.log("📝 FranchiseeDataForm - Datos originales:", {
-      name: franchisee?.name,
-      email: franchisee?.email,
-      company_tax_id: franchisee?.company_tax_id,
-      orquest_business_id: franchisee?.orquest_business_id,
-      orquest_api_key: franchisee?.orquest_api_key,
-    });
-    onUpdate(formData);
+    
+    // Enviar solo los campos que han cambiado
+    const updates: any = {};
+    
+    if (formData.name !== initialData.name) {
+      updates.name = formData.name;
+    }
+    if (formData.email !== initialData.email) {
+      updates.email = formData.email;
+    }
+    if (formData.company_tax_id !== initialData.company_tax_id) {
+      updates.company_tax_id = formData.company_tax_id;
+    }
+    if (formData.orquest_business_id !== initialData.orquest_business_id) {
+      updates.orquest_business_id = formData.orquest_business_id;
+    }
+    // Solo enviar orquest_api_key si el usuario escribió algo
+    if (formData.orquest_api_key && formData.orquest_api_key.trim() !== "") {
+      updates.orquest_api_key = formData.orquest_api_key;
+    }
+    
+    console.log("📝 FranchiseeDataForm - Campos modificados a enviar:", updates);
+    console.log("📝 FranchiseeDataForm - Datos originales:", initialData);
+    console.log("📝 FranchiseeDataForm - Datos actuales:", formData);
+    
+    onUpdate(updates);
   };
 
   const handleChange = (field: string, value: string) => {

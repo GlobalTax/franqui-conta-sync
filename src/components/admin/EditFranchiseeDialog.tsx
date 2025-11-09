@@ -133,11 +133,18 @@ export const EditFranchiseeDialog = ({ franchisee, open, onOpenChange }: EditFra
       delete dataToSubmit.orquest_api_key;
     }
     
+    console.log("📝 EditFranchiseeDialog - Datos validados a enviar:", dataToSubmit);
+    console.log("📝 EditFranchiseeDialog - Franchisee original:", franchisee);
+    
     updateFranchisee.mutate(dataToSubmit, {
       onSuccess: () => {
+        console.log("✅ EditFranchiseeDialog - Actualización exitosa");
         onOpenChange(false);
         setErrors({});
         setTouched({});
+      },
+      onError: (error: any) => {
+        console.error("❌ EditFranchiseeDialog - Error al actualizar:", error);
       },
     });
   };

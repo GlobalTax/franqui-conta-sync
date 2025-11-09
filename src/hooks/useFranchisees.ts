@@ -23,13 +23,26 @@ export const useCreateFranchisee = () => {
 
   return useMutation({
     mutationFn: async (franchiseeData: any) => {
+      console.log("🔄 useCreateFranchisee - Iniciando creación...");
+      console.log("📊 Datos a insertar:", franchiseeData);
+      
       const { data, error } = await supabase
         .from("franchisees")
         .insert(franchiseeData)
         .select()
         .single();
       
-      if (error) throw error;
+      console.log("📡 Respuesta de Supabase:", { data, error });
+      
+      if (error) {
+        console.error("❌ Error al crear franchisee:", error);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error details:", error.details);
+        console.error("❌ Error hint:", error.hint);
+        throw error;
+      }
+      
+      console.log("✅ Franchisee creado exitosamente:", data);
       return data;
     },
     onSuccess: () => {
@@ -40,9 +53,18 @@ export const useCreateFranchisee = () => {
       });
     },
     onError: (error: any) => {
+      console.error("❌ onError ejecutado:", error);
+      
+      let description = error.message || "No se pudo crear el franchisee";
+      if (error.code === "23505") {
+        description = "Ya existe un franchisee con ese email o CIF";
+      } else if (error.code === "PGRST301" || error.message?.includes("permission")) {
+        description = "No tienes permisos para crear franchisees";
+      }
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error al crear",
+        description,
         variant: "destructive",
       });
     },
@@ -55,6 +77,10 @@ export const useUpdateFranchisee = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...franchiseeData }: any) => {
+      console.log("🔄 useUpdateFranchisee - Iniciando actualización...");
+      console.log("📊 Datos a actualizar:", franchiseeData);
+      console.log("🆔 Franchisee ID:", id);
+      
       const { data, error } = await supabase
         .from("franchisees")
         .update(franchiseeData)
@@ -62,7 +88,17 @@ export const useUpdateFranchisee = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      console.log("📡 Respuesta de Supabase:", { data, error });
+      
+      if (error) {
+        console.error("❌ Error al actualizar franchisee:", error);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error details:", error.details);
+        console.error("❌ Error hint:", error.hint);
+        throw error;
+      }
+      
+      console.log("✅ Franchisee actualizado exitosamente:", data);
       return data;
     },
     onSuccess: () => {
@@ -73,9 +109,18 @@ export const useUpdateFranchisee = () => {
       });
     },
     onError: (error: any) => {
+      console.error("❌ onError ejecutado:", error);
+      
+      let description = error.message || "No se pudo actualizar el franchisee";
+      if (error.code === "23505") {
+        description = "Ya existe un franchisee con ese email o CIF";
+      } else if (error.code === "PGRST301" || error.message?.includes("permission")) {
+        description = "No tienes permisos para actualizar franchisees";
+      }
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error al actualizar",
+        description,
         variant: "destructive",
       });
     },

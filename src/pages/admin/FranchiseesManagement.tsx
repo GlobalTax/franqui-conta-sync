@@ -42,10 +42,10 @@ const FranchiseesManagement = () => {
       const [centresResult, companiesResult] = await Promise.all([
         supabase.from("centres").select("franchisee_id").in("franchisee_id", franchiseeIds),
         supabase
-          .from("centres")
-          .select("franchisee_id, centre_companies!inner(razon_social, activo)")
+          .from("companies")
+          .select("franchisee_id, razon_social, activo")
           .in("franchisee_id", franchiseeIds)
-          .eq("centre_companies.activo", true)
+          .eq("activo", true)
       ]);
 
       // Agrupar counts por franchisee_id
@@ -57,8 +57,8 @@ const FranchiseesManagement = () => {
       const companiesMap = new Map<string, string[]>();
       (companiesResult.data || []).forEach((row: any) => {
         const societies = companiesMap.get(row.franchisee_id) || [];
-        if (row.centre_companies?.razon_social && !societies.includes(row.centre_companies.razon_social)) {
-          societies.push(row.centre_companies.razon_social);
+        if (row.razon_social && !societies.includes(row.razon_social)) {
+          societies.push(row.razon_social);
         }
         companiesMap.set(row.franchisee_id, societies);
       });

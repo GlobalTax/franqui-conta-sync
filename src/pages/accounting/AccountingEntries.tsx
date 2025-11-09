@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AccountingEntriesTable } from "@/components/accounting/AccountingEntriesTable";
+import { JournalCSVImporter } from "@/components/accounting/JournalCSVImporter";
 import { useAccountingEntries } from "@/hooks/useAccountingEntries";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ export default function AccountingEntries() {
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showImporter, setShowImporter] = useState(false);
 
   const centroCode = selectedRestaurant || currentMembership?.restaurant?.codigo;
 
@@ -60,10 +62,16 @@ export default function AccountingEntries() {
               Gestión de asientos contables y movimientos
             </p>
           </div>
-          <Button onClick={() => navigate("/contabilidad/nuevo-asiento")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Asiento
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowImporter(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar CSV
+            </Button>
+            <Button onClick={() => navigate("/contabilidad/nuevo-asiento")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Asiento
+            </Button>
+          </div>
         </div>
 
         <FilterPanel onApply={handleApplyFilters} onClear={handleClearFilters}>
@@ -132,6 +140,12 @@ export default function AccountingEntries() {
             <AccountingEntriesTable entries={entries} onRefresh={() => refetch()} />
           </div>
         </div>
+
+        <JournalCSVImporter
+          open={showImporter}
+          onOpenChange={setShowImporter}
+          centroCode={centroCode || ""}
+        />
       </div>
     </div>
   );

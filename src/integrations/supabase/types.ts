@@ -1034,7 +1034,7 @@ export type Database = {
           activo: boolean | null
           cif: string
           created_at: string | null
-          franchisee_id: string
+          franchisee_id: string | null
           id: string
           razon_social: string
           tipo_sociedad: string | null
@@ -1044,7 +1044,7 @@ export type Database = {
           activo?: boolean | null
           cif: string
           created_at?: string | null
-          franchisee_id: string
+          franchisee_id?: string | null
           id?: string
           razon_social: string
           tipo_sociedad?: string | null
@@ -1054,7 +1054,7 @@ export type Database = {
           activo?: boolean | null
           cif?: string
           created_at?: string | null
-          franchisee_id?: string
+          franchisee_id?: string | null
           id?: string
           razon_social?: string
           tipo_sociedad?: string | null

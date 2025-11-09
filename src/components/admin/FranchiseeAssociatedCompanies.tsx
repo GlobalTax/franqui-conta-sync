@@ -3,26 +3,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Unlink, Plus } from "lucide-react";
+import { Link2, Unlink, Plus, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { CreateCompanyDialog } from "./CreateCompanyDialog";
 
 interface FranchiseeAssociatedCompaniesProps {
   companies: any[];
+  onCreate: (data: { razon_social: string; cif: string; tipo_sociedad: string }) => void;
   onAssociate: (companyId: string) => void;
   onDissociate: (companyId: string) => void;
   isLoading: boolean;
+  isCreating: boolean;
 }
 
 export function FranchiseeAssociatedCompanies({ 
-  companies, 
+  companies,
+  onCreate,
   onAssociate, 
   onDissociate,
-  isLoading 
+  isLoading,
+  isCreating
 }: FranchiseeAssociatedCompaniesProps) {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [associateDialogOpen, setAssociateDialogOpen] = useState(false);
   const [dissociateDialogOpen, setDissociateDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
@@ -58,6 +64,11 @@ export function FranchiseeAssociatedCompanies({
     }
   };
 
+  const handleCreate = (data: { razon_social: string; cif: string; tipo_sociedad: string }) => {
+    onCreate(data);
+    setCreateDialogOpen(false);
+  };
+
   const handleAssociate = (companyId: string) => {
     onAssociate(companyId);
     setAssociateDialogOpen(false);
@@ -79,10 +90,16 @@ export function FranchiseeAssociatedCompanies({
                 Gestiona las sociedades asignadas a este franquiciado
               </CardDescription>
             </div>
-            <Button onClick={() => setAssociateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Asociar Sociedad
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setAssociateDialogOpen(true)}>
+                <Link2 className="mr-2 h-4 w-4" />
+                Asociar Existente
+              </Button>
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Building2 className="mr-2 h-4 w-4" />
+                Crear Nueva
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -129,13 +146,21 @@ export function FranchiseeAssociatedCompanies({
         </CardContent>
       </Card>
 
+      {/* Create Company Dialog */}
+      <CreateCompanyDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreate={handleCreate}
+        isCreating={isCreating}
+      />
+
       {/* Associate Company Dialog */}
       <Dialog open={associateDialogOpen} onOpenChange={setAssociateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Asociar Sociedad</DialogTitle>
+            <DialogTitle>Asociar Sociedad Existente</DialogTitle>
             <DialogDescription>
-              Selecciona una sociedad para asociar a este franquiciado
+              Selecciona una sociedad sin franquiciado asignado para asociarla
             </DialogDescription>
           </DialogHeader>
 

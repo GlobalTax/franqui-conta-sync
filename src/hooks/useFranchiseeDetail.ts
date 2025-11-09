@@ -169,6 +169,40 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     },
   });
 
+  // Mutation: Create company
+  const createCompany = useMutation({
+    mutationFn: async (companyData: { razon_social: string; cif: string; tipo_sociedad: string }) => {
+      const { data, error } = await supabase
+        .from("companies")
+        .insert({
+          ...companyData,
+          franchisee_id: franchiseeId,
+          activo: true
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["franchisee-companies", franchiseeId] });
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: ["available-companies"] });
+      toast({
+        title: "Sociedad creada",
+        description: "La sociedad se ha creado y asociado correctamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al crear sociedad",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mutation: Associate company
   const associateCompany = useMutation({
     mutationFn: async (companyId: string) => {
@@ -185,6 +219,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["franchisee-companies", franchiseeId] });
       queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: ["available-companies"] });
       toast({
         title: "Sociedad asociada",
         description: "La sociedad se ha asociado correctamente",
@@ -215,6 +250,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["franchisee-companies", franchiseeId] });
       queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: ["available-companies"] });
       toast({
         title: "Sociedad desasociada",
         description: "La sociedad se ha desasociado correctamente",
@@ -263,6 +299,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     updateFranchisee,
     associateCentre,
     dissociateCentre,
+    createCompany,
     associateCompany,
     dissociateCompany,
     deleteFranchisee,

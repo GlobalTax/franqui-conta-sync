@@ -36,6 +36,7 @@ export default function FranchiseeDetail() {
     updateFranchisee,
     associateCentre,
     dissociateCentre,
+    createCompany,
     associateCompany,
     dissociateCompany,
     deleteFranchisee,
@@ -181,9 +182,11 @@ export default function FranchiseeDetail() {
         <TabsContent value="companies">
           <FranchiseeAssociatedCompanies
             companies={companies}
+            onCreate={(data) => createCompany.mutate(data)}
             onAssociate={(companyId) => associateCompany.mutate(companyId)}
             onDissociate={(companyId) => dissociateCompany.mutate(companyId)}
             isLoading={isLoading}
+            isCreating={createCompany.isPending}
           />
         </TabsContent>
 

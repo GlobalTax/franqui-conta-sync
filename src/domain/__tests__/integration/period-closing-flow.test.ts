@@ -57,14 +57,14 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
           entryDate: `2025-01-${String(10 + i).padStart(2, '0')}`,
           description: `Asiento ${i} del período`,
           transactions: [
-            { accountCode: '6000000', debit: 100 * i, credit: 0, description: 'Compras' },
-            { accountCode: '5720000', debit: 0, credit: 100 * i, description: 'Banco' },
+            { accountCode: '6000000', movementType: 'debit' as const, amount: 100 * i, description: 'Compras' },
+            { accountCode: '5720000', movementType: 'credit' as const, amount: 100 * i, description: 'Banco' },
           ],
         })
       );
 
       expect(entryResult.entry.status).toBe('draft');
-      entryIds.push(entryResult.entry.id);
+      entryIds.push(entryResult.entry.id!);
     }
 
     expect(entryIds.length).toBe(5);
@@ -134,13 +134,9 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
     // ========================================================================
     // STEP 4: Validate period can be closed (no draft entries)
     // ========================================================================
-    vi.mocked(PeriodValidator.canClosePeriod).mockResolvedValue({
-      valid: true,
-      error: null,
-      details: null,
-    });
+    vi.mocked(PeriodValidator.canClosePeriod).mockResolvedValue({ valid: true, error: undefined, details: undefined });
 
-    const canClose = await PeriodValidator.canClosePeriod(centroCode, year, month);
+    const canClose = await PeriodValidator.canClosePeriod(year, month, centroCode);
     expect(canClose.valid).toBe(true);
 
     // ========================================================================
@@ -191,7 +187,7 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
     // ========================================================================
     vi.mocked(PeriodValidator.isPeriodOpen).mockResolvedValue(false);
 
-    const isPeriodOpen = await PeriodValidator.isPeriodOpen(centroCode, year, month);
+    const isPeriodOpen = await PeriodValidator.isPeriodOpen(year, month, centroCode);
     expect(isPeriodOpen).toBe(false);
 
     // Should throw when trying to create entry in closed period
@@ -230,8 +226,8 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
         entryDate: '2024-12-31',
         description: 'Ingresos del ejercicio',
         transactions: [
-          { accountCode: '5720000', debit: 10000, credit: 0, description: 'Banco' },
-          { accountCode: '7000000', debit: 0, credit: 10000, description: 'Ventas' },
+          { accountCode: '5720000', movementType: 'debit' as const, amount: 10000, description: 'Banco' },
+          { accountCode: '7000000', movementType: 'credit' as const, amount: 10000, description: 'Ventas' },
         ],
       })
     );
@@ -251,8 +247,8 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
         entryDate: '2024-12-31',
         description: 'Gastos del ejercicio',
         transactions: [
-          { accountCode: '6000000', debit: 7000, credit: 0, description: 'Compras' },
-          { accountCode: '5720000', debit: 0, credit: 7000, description: 'Banco' },
+          { accountCode: '6000000', movementType: 'debit' as const, amount: 7000, description: 'Compras' },
+          { accountCode: '5720000', movementType: 'credit' as const, amount: 7000, description: 'Banco' },
         ],
       })
     );
@@ -260,14 +256,16 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
     // ========================================================================
     // STEP 2: Mock balance calculation with P&L groups
     // ========================================================================
-    vi.mocked(BalanceCalculator.sumByAccountGroup).mockImplementation((group: string) => {
-      if (group === '7') return 10000; // Income
-      if (group === '6') return 7000;  // Expenses
-      return 0;
-    });
+    vi.mocked(BalanceCalculator.sumByAccountGroup).mockImplementation(
+      async (group: string, centroCode: string, startDate: string, endDate: string) => {
+        if (group === '7') return 10000; // Income
+        if (group === '6') return 7000;  // Expenses
+        return 0;
+      }
+    );
 
-    const income = BalanceCalculator.sumByAccountGroup('7');
-    const expenses = BalanceCalculator.sumByAccountGroup('6');
+    const income = await BalanceCalculator.sumByAccountGroup('7', centroCode, '2024-01-01', '2024-12-31');
+    const expenses = await BalanceCalculator.sumByAccountGroup('6', centroCode, '2024-01-01', '2024-12-31');
     const result = income - expenses;
 
     expect(result).toBe(3000); // Profit
@@ -298,7 +296,7 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
       }),
     } as any);
 
-    vi.mocked(PeriodValidator.canClosePeriod).mockResolvedValue({ valid: true, error: null, details: null });
+    vi.mocked(PeriodValidator.canClosePeriod).mockResolvedValue({ valid: true, error: undefined, details: undefined });
 
     const closeUseCase = new CloseAccountingPeriodUseCase();
     const closeResult = await closeUseCase.execute({
@@ -324,7 +322,7 @@ describe('E2E: Flujo completo de Asientos del mes → Cierre → Regularización
     // ========================================================================
     vi.mocked(PeriodValidator.validatePeriodSequence).mockReturnValue({
       valid: false,
-      errors: ['Debe cerrar primero los períodos anteriores (enero, febrero)'],
+      error: 'Debe cerrar primero los períodos anteriores (enero, febrero)',
     });
 
     // ========================================================================

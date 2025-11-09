@@ -31,34 +31,42 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
     // ========================================================================
     const invoiceData = createTestInvoiceReceived({
       invoiceNumber: 'F2025-001',
-      totalAmount: 1000.00,
-      vatAmount: 210.00,
-      approvalStatus: 'pending_manager' as const,
+      subtotal: 1000.00,
+      taxTotal: 210.00,
+      total: 1210.00,
+      approvalStatus: 'pending_manager',
     });
 
     const invoiceLines = createTestInvoiceLines(1);
 
     // Mock create invoice
-    let currentInvoice = { ...invoiceData, approvalStatus: 'draft' as const };
-    vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue(currentInvoice as any);
+    vi.spyOn(InvoiceCommands, 'createInvoiceReceived').mockResolvedValue({
+      ...invoiceData,
+      approvalStatus: 'pending_manager',
+    } as any);
 
     // ========================================================================
     // ACT + ASSERT: STEP 1 - Create Invoice
     // ========================================================================
     const createUseCase = new CreateInvoiceReceivedUseCase();
     const createResult = await createUseCase.execute({
-      invoice: invoiceData,
+      supplierId: invoiceData.supplierId!,
+      centroCode: invoiceData.centroCode,
+      invoiceNumber: invoiceData.invoiceNumber,
+      invoiceDate: invoiceData.invoiceDate,
       lines: invoiceLines,
     });
 
     expect(createResult.invoice.approvalStatus).toBe('pending_manager');
-    expect(createResult.invoice.totalAmount).toBe(1000.00);
+    expect(createResult.invoice.total).toBe(1210.00);
 
     // ========================================================================
     // ACT + ASSERT: STEP 2 - Manager Approval
     // ========================================================================
-    currentInvoice = { ...currentInvoice, approvalStatus: 'pending_accounting' as const };
-    vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(currentInvoice as any);
+    vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue({
+      ...invoiceData,
+      approvalStatus: 'pending_accounting',
+    } as any);
 
     const approveUseCase = new ApproveInvoiceUseCase();
     const managerApproval = await approveUseCase.execute({
@@ -74,13 +82,15 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
     // ========================================================================
     // ACT + ASSERT: STEP 3 - Accounting Approval
     // ========================================================================
-    currentInvoice = { ...currentInvoice, approvalStatus: 'approved' as const };
-    vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue(currentInvoice as any);
+    vi.spyOn(InvoiceCommands, 'updateInvoiceReceived').mockResolvedValue({
+      ...invoiceData,
+      approvalStatus: 'approved',
+    } as any);
 
     const accountingApproval = await approveUseCase.execute({
       invoice: managerApproval.updatedInvoice,
       approverUserId: 'accountant-123',
-      approverRole: 'accounting',
+      approverRole: 'accountant',
       approvalLevel: 'accounting',
       comments: 'Aprobada para contabilizar',
     });
@@ -98,6 +108,7 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
       status: 'draft' as const,
       totalDebit: 1210.00,
       totalCredit: 1210.00,
+      transactions: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -119,6 +130,10 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
     expect(entryResult.entry.status).toBe('draft');
     expect(entryResult.entry.totalDebit).toBe(1210.00);
     expect(entryResult.entry.totalCredit).toBe(1210.00);
+    
+    // Verify entry is balanced
+    const entryTotals = entryResult.entry;
+    expect(entryTotals.totalDebit).toBe(entryTotals.totalCredit);
 
     // ========================================================================
     // ACT + ASSERT: STEP 5 - Post Entry
@@ -128,7 +143,7 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
 
     const postUseCase = new PostEntryUseCase();
     await postUseCase.execute({
-      entryId: entryResult.entry.id,
+      entryId: entryResult.entry.id!,
       userId: 'accountant-123',
     });
 
@@ -138,7 +153,6 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
     // FINAL VERIFICATION
     // ========================================================================
     expect(accountingApproval.updatedInvoice.approvalStatus).toBe('approved');
-    expect(entryResult.isBalanced).toBe(true);
   });
 
   it('debe rechazar factura correctamente en nivel Manager', async () => {
@@ -153,7 +167,10 @@ describe('E2E: Flujo completo de Factura Recibida → Aprobación → Asiento Co
 
     const createUseCase = new CreateInvoiceReceivedUseCase();
     const createResult = await createUseCase.execute({
-      invoice,
+      supplierId: invoice.supplierId!,
+      centroCode: invoice.centroCode,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceDate: invoice.invoiceDate,
       lines: createTestInvoiceLines(1),
     });
 

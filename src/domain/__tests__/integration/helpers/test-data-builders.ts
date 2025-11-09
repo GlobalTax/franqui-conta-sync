@@ -3,7 +3,7 @@
 // Helper functions to create consistent test data
 // ============================================================================
 
-import type { InvoiceReceived } from '@/domain/invoicing/types';
+import type { InvoiceReceived, InvoiceLine } from '@/domain/invoicing/types';
 import type { BankTransaction } from '@/domain/banking/types';
 
 /**
@@ -30,35 +30,49 @@ export function createTestInvoiceReceived(overrides?: Partial<InvoiceReceived>):
     invoiceNumber: `F${Date.now()}`,
     invoiceDate: '2025-01-15',
     dueDate: '2025-02-15',
-    totalAmount: 1000.00,
-    vatAmount: 210.00,
-    netAmount: 1000.00,
-    totalWithVat: 1210.00,
-    approvalStatus: 'draft',
-    paymentStatus: 'pending',
-    currency: 'EUR',
+    subtotal: 1000.00,
+    taxTotal: 210.00,
+    total: 1210.00,
+    status: 'draft',
+    documentPath: null,
+    entryId: null,
+    paymentTransactionId: null,
+    ocrConfidence: null,
+    notes: null,
+    approvalStatus: 'pending_manager',
+    requiresManagerApproval: true,
+    requiresAccountingApproval: true,
+    rejectedBy: null,
+    rejectedAt: null,
+    rejectedReason: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    createdBy: 'test-user-123',
     ...overrides,
-  } as InvoiceReceived;
+  };
 }
 
 /**
  * Creates test invoice lines
  */
-export function createTestInvoiceLines(count: number = 1) {
+export function createTestInvoiceLines(count: number = 1): Omit<InvoiceLine, 'id' | 'invoiceId' | 'invoiceType'>[] {
   return Array.from({ length: count }, (_, i) => ({
+    lineNumber: i + 1,
     description: `Línea ${i + 1}`,
     quantity: 10,
     unitPrice: 100,
-    vatRate: 21,
-    totalAmount: 1000,
-    vatAmount: 210,
+    discountPercentage: 0,
+    discountAmount: 0,
+    subtotal: 1000,
+    taxRate: 21,
+    taxAmount: 210,
+    total: 1210,
+    accountCode: '6000000',
   }));
 }
 
 /**
- * Creates a test accounting entry
+ * Creates a test accounting entry input
  */
 export function createTestAccountingEntry(overrides?: Partial<any>) {
   return {
@@ -66,8 +80,8 @@ export function createTestAccountingEntry(overrides?: Partial<any>) {
     entryDate: '2025-01-15',
     description: `Asiento test ${Date.now()}`,
     transactions: [
-      { accountCode: '6000000', debit: 1000, credit: 0, description: 'Compras' },
-      { accountCode: '5720000', debit: 0, credit: 1000, description: 'Banco' },
+      { accountCode: '6000000', movementType: 'debit' as const, amount: 1000, description: 'Compras' },
+      { accountCode: '5720000', movementType: 'credit' as const, amount: 1000, description: 'Banco' },
     ],
     createdBy: 'test-user-123',
     ...overrides,
@@ -87,12 +101,14 @@ export function createTestBankTransaction(overrides?: Partial<BankTransaction>):
     description: 'PAGO FACTURA F2025-001',
     reference: `REF${Date.now()}`,
     balance: 10000.00,
-    reconciliationStatus: 'unreconciled',
-    centroCode: 'C001',
-    currency: 'EUR',
+    status: 'pending',
+    matchedEntryId: null,
+    matchedInvoiceId: null,
+    reconciliationId: null,
+    importBatchId: null,
     createdAt: new Date().toISOString(),
     ...overrides,
-  } as BankTransaction;
+  };
 }
 
 /**
@@ -138,7 +154,7 @@ export async function saveBankTransactions(transactions: BankTransaction[]): Pro
   return transactions.map(tx => ({
     ...tx,
     id: tx.id || crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
+    createdAt: tx.createdAt || new Date().toISOString(),
   }));
 }
 

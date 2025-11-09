@@ -49,7 +49,7 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
     // ========================================================================
     const matchingInvoice = createTestInvoiceReceived({
       invoiceNumber: 'F2025-001',
-      totalWithVat: 1210.00,
+      total: 1210.00,
       approvalStatus: 'approved',
     });
 
@@ -57,13 +57,15 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
     // STEP 3: Suggest reconciliation matches
     // ========================================================================
     const suggestUseCase = new SuggestReconciliationMatchesUseCase();
-    const tx1 = importResult.transactions[0];
+    const tx1 = createTestBankTransaction({
+      amount: 1210.00,
+      description: 'PAGO FACTURA F2025-001',
+    });
 
     const suggestions = suggestUseCase.execute({
       transaction: tx1,
       centroCode: 'C001',
       invoices: [matchingInvoice],
-      entries: [],
     });
 
     expect(suggestions.suggestions.length).toBeGreaterThan(0);
@@ -80,7 +82,6 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
       matchType: 'invoice_received',
       matchedId: matchingInvoice.id,
       confidenceScore: suggestions.suggestions[0].confidenceScore,
-      ruleId: suggestions.suggestions[0].ruleId,
       userId: 'treasurer-123',
       notes: 'Auto-matched by invoice number',
     });
@@ -120,12 +121,16 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
     // ========================================================================
     // STEP 2: Try to find matches (should be empty)
     // ========================================================================
+    const tx1 = createTestBankTransaction({
+      amount: 250.00,
+      description: 'INGRESO DESCONOCIDO',
+    });
+
     const suggestUseCase = new SuggestReconciliationMatchesUseCase();
     const suggestions = suggestUseCase.execute({
-      transaction: importResult.transactions[0],
+      transaction: tx1,
       centroCode: 'C001',
       invoices: [], // No invoices to match
-      entries: [],  // No entries to match
     });
 
     expect(suggestions.suggestions.length).toBe(0);
@@ -139,28 +144,23 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
       entryDate: '2025-01-20',
       description: 'Regularización ingreso desconocido - Conciliación bancaria',
       transactions: [
-        { accountCode: '5720000', debit: 250.00, credit: 0, description: 'Banco' },
-        { accountCode: '7590000', debit: 0, credit: 250.00, description: 'Otros ingresos' },
+        { accountCode: '5720000', movementType: 'debit' as const, amount: 250.00, description: 'Banco' },
+        { accountCode: '7590000', movementType: 'credit' as const, amount: 250.00, description: 'Otros ingresos' },
       ],
       createdBy: 'accountant-123',
-      metadata: {
-        bankTransactionId: importResult.transactions[0].id,
-        reconciliationType: 'manual',
-      },
     });
 
     expect(entryResult.entry.totalDebit).toBe(250.00);
     expect(entryResult.entry.totalCredit).toBe(250.00);
-    expect(entryResult.isBalanced).toBe(true);
 
     // ========================================================================
     // STEP 4: Now reconcile with the created entry
     // ========================================================================
     const reconcileUseCase = new ReconcileBankTransactionUseCase();
     const reconciliation = reconcileUseCase.execute({
-      transaction: importResult.transactions[0],
+      transaction: tx1,
       matchType: 'entry',
-      matchedId: entryResult.entry.id,
+      matchedId: entryResult.entry.id!,
       confidenceScore: 100, // Manual match
       userId: 'accountant-123',
       notes: 'Manual regularization entry',
@@ -229,19 +229,19 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
 
     const invoice1 = createTestInvoiceReceived({
       invoiceNumber: 'F2025-001',
-      totalWithVat: 1000.00, // Exact match
+      total: 1000.00, // Exact match
       supplierId: 'supplier-abc',
     });
 
     const invoice2 = createTestInvoiceReceived({
       invoiceNumber: 'F2025-002',
-      totalWithVat: 1050.00, // Close match
+      total: 1050.00, // Close match
       supplierId: 'supplier-abc',
     });
 
     const invoice3 = createTestInvoiceReceived({
       invoiceNumber: 'F2025-003',
-      totalWithVat: 500.00, // Poor match
+      total: 500.00, // Poor match
       supplierId: 'supplier-xyz',
     });
 
@@ -253,7 +253,6 @@ describe('E2E: Flujo completo de Norma43 → Conciliación → Asiento', () => {
       transaction,
       centroCode: 'C001',
       invoices: [invoice1, invoice2, invoice3],
-      entries: [],
     });
 
     // ========================================================================

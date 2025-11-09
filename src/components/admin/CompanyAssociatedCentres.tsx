@@ -76,6 +76,17 @@ const CompanyAssociatedCentres = ({ centres, companyId }: Props) => {
 
   return (
     <div className="space-y-4">
+      {!company.franchisee_id && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>⚠️ Advertencia:</strong> Esta sociedad no tiene un franquiciado asignado. 
+            Se están mostrando TODOS los centros activos del sistema. 
+            Para evitar asociaciones incorrectas, <strong>asigne primero un franquiciado</strong> en la pestaña "Datos Generales".
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>

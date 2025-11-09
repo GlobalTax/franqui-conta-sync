@@ -277,10 +277,10 @@ export function useCompanyDetail(companyId?: string) {
   const { data: availableCentres, isLoading: isLoadingAvailable } = useQuery({
     queryKey: ["available-centres", companyId, company?.franchisee_id, company?.cif],
     queryFn: async () => {
-      if (!company?.franchisee_id || !company?.cif) return [];
+      if (!company?.cif) return [];
 
-      // Get all centres from the same franchisee
-      const { data: allCentres, error: centresError } = await supabase
+      // Build query based on whether franchisee_id exists
+      let query = supabase
         .from("centres")
         .select(`
           id,
@@ -292,8 +292,15 @@ export function useCompanyDetail(companyId?: string) {
           franchisee_id,
           franchisees!centres_franchisee_id_fkey (name, email)
         `)
-        .eq("franchisee_id", company.franchisee_id)
         .eq("activo", true);
+
+      // If company has franchisee, filter by it
+      // If not, show ALL active centres (with warning in UI)
+      if (company.franchisee_id) {
+        query = query.eq("franchisee_id", company.franchisee_id);
+      }
+
+      const { data: allCentres, error: centresError } = await query;
 
       if (centresError) throw centresError;
 
@@ -311,7 +318,7 @@ export function useCompanyDetail(companyId?: string) {
       // Filter out already associated centres
       return (allCentres || []).filter(c => !associatedIds.includes(c.id));
     },
-    enabled: !!companyId && !!company?.franchisee_id && !!company?.cif,
+    enabled: !!companyId && !!company?.cif,
   });
 
   const associateCentre = useMutation({

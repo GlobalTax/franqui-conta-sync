@@ -406,7 +406,7 @@ const ProfitAndLoss = () => {
                     {/* Header de años */}
                     <div className="flex items-center justify-between py-3 px-4 bg-muted font-semibold sticky top-0 z-10">
                       <div className="flex items-center gap-3 flex-1">
-                        <span className="font-mono text-xs w-20">Código</span>
+                        <span className="font-mono text-xs w-8">#</span>
                         <span>Concepto</span>
                       </div>
                       <div className="flex items-center gap-4">
@@ -444,6 +444,9 @@ const ProfitAndLoss = () => {
                           style={{ paddingLeft: `${baseLine.level * 2 + 1}rem` }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <span className="font-mono text-xs w-8 text-muted-foreground flex-shrink-0">
+                              {String(idx + 1).padStart(2, '0')}
+                            </span>
                             <span
                               className={`truncate ${
                                 baseLine.is_total ? "font-semibold text-foreground" : ""
@@ -505,7 +508,7 @@ const ProfitAndLoss = () => {
                 {/* Header de la tabla */}
                 <div className="flex items-center justify-between py-3 px-4 bg-muted font-semibold sticky top-0 z-10">
                   <div className="flex items-center gap-3 flex-1">
-                    <span className="font-mono text-xs w-20">Código</span>
+                    <span className="font-mono text-xs w-8">#</span>
                     <span>Concepto</span>
                   </div>
                   {showAdjustments ? (
@@ -556,6 +559,9 @@ const ProfitAndLoss = () => {
                       style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className="font-mono text-xs w-8 text-muted-foreground flex-shrink-0">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
                         <span
                           className={`truncate ${
                             line.is_total ? "font-semibold text-foreground" : ""

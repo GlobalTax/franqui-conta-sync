@@ -62,6 +62,8 @@ const Layout = () => {
   // Ensure a default view is selected when data loads
   useEnsureDefaultView();
 
+  console.log('[Layout] 🔐 isAdmin:', isAdmin);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -255,6 +257,26 @@ const Layout = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* Admin Section */}
+          {isAdmin && (
+            <div className="pt-2 border-t border-border">
+              <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+                Sistema
+              </h3>
+              <NavLink
+                to="/admin"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group relative"
+                activeClassName="bg-primary/10 text-primary font-medium"
+              >
+                <Shield className="h-4 w-4" strokeWidth={2} />
+                <span className="text-sm font-medium">Administración</span>
+                <Badge className="ml-auto bg-primary/20 text-primary border-0 text-[10px] px-1.5 py-0">
+                  ADMIN
+                </Badge>
+              </NavLink>
+            </div>
+          )}
         </nav>
 
         {/* Footer */}

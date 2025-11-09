@@ -172,7 +172,7 @@ const Layout = () => {
               Principal
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(0, 7).map((item) => (
+              {navItems.slice(0, 5).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -191,7 +191,7 @@ const Layout = () => {
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(4, 7).map((item) => (
+              {navItems.slice(5, 10).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

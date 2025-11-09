@@ -141,29 +141,43 @@ const CentreDetail = () => {
 
         <TabsContent value="companies" className="mt-6">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Sociedades del Centro</h3>
-              <Button onClick={() => setCompaniesDialogOpen(true)}>Gestionar Sociedades</Button>
-            </div>
-            <div className="space-y-2">
-              {centre.centre_companies?.map((company: any) => (
-                <div key={company.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="font-medium">{company.razon_social}</div>
-                    <div className="text-sm text-muted-foreground">CIF: {company.cif}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    {company.es_principal && <Badge>Principal</Badge>}
-                    <Badge variant={company.activo ? "default" : "secondary"}>
-                      {company.activo ? "Activa" : "Inactiva"}
-                    </Badge>
-                  </div>
+            {centre.centre_companies && centre.centre_companies.length > 0 ? (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Sociedades del Centro</h3>
+                  <Button onClick={() => setCompaniesDialogOpen(true)}>Gestionar Sociedades</Button>
                 </div>
-              ))}
-              {(!centre.centre_companies || centre.centre_companies.length === 0) && (
-                <p className="text-center text-muted-foreground py-4">No hay sociedades asociadas</p>
-              )}
-            </div>
+                <div className="space-y-2">
+                  {centre.centre_companies?.map((company: any) => (
+                    <div key={company.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">{company.razon_social}</div>
+                        <div className="text-sm text-muted-foreground">CIF: {company.cif}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        {company.es_principal && <Badge>Principal</Badge>}
+                        <Badge variant={company.activo ? "default" : "secondary"}>
+                          {company.activo ? "Activa" : "Inactiva"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <Alert>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Este centro no tiene ninguna sociedad asociada.</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCompaniesDialogOpen(true)}
+                  >
+                    Gestionar Sociedades
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </Card>
         </TabsContent>
 

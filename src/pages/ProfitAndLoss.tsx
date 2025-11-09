@@ -10,13 +10,19 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { useView } from "@/contexts/ViewContext";
-import { useProfitAndLoss } from "@/hooks/useProfitAndLoss";
+import { usePLTemplates } from "@/hooks/usePLTemplates";
+import { usePLReport } from "@/hooks/usePLReport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
 
 const ProfitAndLoss = () => {
   const { selectedView } = useView();
   const [period, setPeriod] = useState("2024-01");
+  const [selectedTemplate, setSelectedTemplate] = useState("PGC_2025");
+  
+  // Obtener plantillas disponibles
+  const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
   
   // Calcular fechas del periodo seleccionado
   const [year, month] = period.split("-").map(Number);
@@ -24,22 +30,27 @@ const ProfitAndLoss = () => {
   const lastDay = new Date(year, month, 0).getDate();
   const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
-  const { data, isLoading, isError } = useProfitAndLoss(
-    selectedView,
+  // Nuevo hook de P&L basado en reglas
+  const { data, isLoading, isError } = usePLReport({
+    templateCode: selectedTemplate,
+    companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+    centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
     startDate,
-    endDate
-  );
+    endDate,
+  });
 
   const plData = data?.plData || [];
   const summary = data?.summary || {
     netResult: 0,
     ebitda: 0,
+    ebit: 0,
     totalIncome: 0,
     totalExpenses: 0,
-    ebitdaMargin: 0,
-    netMargin: 0,
     grossMargin: 0,
-    operatingMargin: 0,
+    grossMarginPercent: 0,
+    ebitdaMarginPercent: 0,
+    ebitMarginPercent: 0,
+    netMarginPercent: 0,
   };
 
   if (!selectedView) {
@@ -105,6 +116,30 @@ const ProfitAndLoss = () => {
       <div className="mx-auto max-w-7xl p-6 space-y-6">
 
         <div className="flex items-center gap-4">
+          {/* Selector de Plantilla */}
+          {isLoadingTemplates ? (
+            <Skeleton className="h-10 w-48" />
+          ) : (
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Seleccionar plantilla" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates?.map((template) => (
+                  <SelectItem key={template.id} value={template.code}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          
+          {/* Badge de plantilla activa */}
+          <Badge variant="outline" className="hidden sm:inline-flex">
+            {templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate}
+          </Badge>
+          
+          {/* Selector de Periodo */}
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Seleccionar periodo" />
@@ -146,7 +181,7 @@ const ProfitAndLoss = () => {
                 })}€
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {summary.netMargin.toFixed(1)}% margen neto
+                {summary.netMarginPercent.toFixed(1)}% margen neto
               </p>
             </div>
 
@@ -161,7 +196,7 @@ const ProfitAndLoss = () => {
                 })}€
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Margen EBITDA: {summary.ebitdaMargin.toFixed(1)}%
+                Margen EBITDA: {summary.ebitdaMarginPercent.toFixed(1)}%
               </p>
             </div>
 
@@ -170,7 +205,7 @@ const ProfitAndLoss = () => {
                 <p className="text-sm font-medium text-muted-foreground">Ingresos</p>
               </div>
               <div className="text-2xl font-bold text-success">
-                {summary.totalIncome.toLocaleString("es-ES", {
+                {Math.abs(summary.totalIncome).toLocaleString("es-ES", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}€
@@ -191,7 +226,10 @@ const ProfitAndLoss = () => {
                 })}€
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((summary.totalExpenses / summary.totalIncome) * 100).toFixed(1)}% sobre ingresos
+                {summary.totalIncome !== 0 
+                  ? ((summary.totalExpenses / Math.abs(summary.totalIncome)) * 100).toFixed(1)
+                  : '0.0'
+                }% sobre ingresos
               </p>
             </div>
           </div>
@@ -200,7 +238,12 @@ const ProfitAndLoss = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              PyG Consolidada - {new Date(startDate).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
+              {selectedTemplate === 'PGC_2025' 
+                ? 'PyG Consolidada'
+                : selectedTemplate === 'McD_v1'
+                ? 'P&L McDonald\'s'
+                : 'Cuenta de Resultados'
+              } - {new Date(startDate).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -219,64 +262,76 @@ const ProfitAndLoss = () => {
             ) : (
               <div className="space-y-1">
                 {plData.map((line, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center justify-between py-3 px-4 ${
-                    line.isHeader
-                      ? "bg-muted/50 font-semibold"
-                      : "hover:bg-accent/30"
-                  } ${
-                    line.final
-                      ? "bg-primary/5 border-t-2 border-primary mt-2"
-                      : ""
-                  } ${line.highlight ? "border-l-4 border-l-primary" : ""}`}
-                  style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    {line.code && (
-                      <span className="font-mono text-xs text-muted-foreground w-16">
-                        {line.code}
+                  <div
+                    key={`${line.rubric_code}-${idx}`}
+                    className={`flex items-center justify-between py-3 px-4 ${
+                      line.is_total
+                        ? "bg-muted/50 font-semibold"
+                        : "hover:bg-accent/30"
+                    } ${
+                      line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                        ? "bg-primary/5 border-t-2 border-primary mt-2"
+                        : ""
+                    } ${
+                      line.rubric_code === 'ebitda' || line.rubric_code === 'margen_bruto' || line.rubric_code === 'gross_margin'
+                        ? "border-l-4 border-l-primary"
+                        : ""
+                    }`}
+                    style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {line.rubric_code && (
+                        <span className="font-mono text-xs text-muted-foreground w-20">
+                          {line.rubric_code}
+                        </span>
+                      )}
+                      <span
+                        className={`${
+                          line.is_total ? "font-semibold text-foreground" : ""
+                        } ${
+                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                            ? "font-bold text-lg"
+                            : ""
+                        }`}
+                      >
+                        {line.rubric_name}
                       </span>
-                    )}
-                    <span
-                      className={`${
-                        line.isHeader ? "font-semibold text-foreground" : ""
-                      } ${line.final ? "font-bold text-lg" : ""}`}
-                    >
-                      {line.name}
-                    </span>
+                    </div>
+                    <div className="flex items-center gap-8">
+                      <span
+                        className={`font-mono font-semibold text-right w-32 ${
+                          line.amount >= 0 ? "text-success" : "text-foreground"
+                        } ${
+                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                            ? "text-lg"
+                            : ""
+                        }`}
+                      >
+                        {line.amount.toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}€
+                      </span>
+                      <span
+                        className={`text-sm text-muted-foreground text-right w-16 ${
+                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                            ? "font-semibold"
+                            : ""
+                        }`}
+                      >
+                        {Math.abs(line.percentage || 0).toFixed(1)}%
+                      </span>
+                      {line.is_total && line.rubric_code !== 'resultado_neto' && line.rubric_code !== 'net_result' && (
+                        <div className="w-6">
+                          {line.amount >= 0 ? (
+                            <TrendingUp className="h-4 w-4 text-success" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-8">
-                    <span
-                      className={`font-mono font-semibold text-right w-32 ${
-                        line.amount >= 0 ? "text-success" : "text-foreground"
-                      } ${line.final ? "text-lg" : ""}`}
-                    >
-                      {line.amount.toLocaleString("es-ES", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                      €
-                    </span>
-                    <span
-                      className={`text-sm text-muted-foreground text-right w-16 ${
-                        line.final ? "font-semibold" : ""
-                      }`}
-                    >
-                      {line.percentage >= 0 ? "" : ""}
-                      {Math.abs(line.percentage).toFixed(1)}%
-                    </span>
-                    {line.isHeader && !line.final && (
-                      <div className="w-6">
-                        {line.amount >= 0 ? (
-                          <TrendingUp className="h-4 w-4 text-success" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
                 ))}
               </div>
             )}
@@ -291,26 +346,26 @@ const ProfitAndLoss = () => {
             <CardContent className="grid gap-4 md:grid-cols-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Margen Bruto</span>
-                <span className={`font-semibold ${summary.grossMargin >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {summary.grossMargin.toFixed(1)}%
+                <span className={`font-semibold ${summary.grossMarginPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {summary.grossMarginPercent.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Margen Operativo</span>
-                <span className={`font-semibold ${summary.operatingMargin >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {summary.operatingMargin.toFixed(1)}%
+                <span className="text-sm text-muted-foreground">Margen EBIT</span>
+                <span className={`font-semibold ${summary.ebitMarginPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {summary.ebitMarginPercent.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Margen EBITDA</span>
-                <span className={`font-semibold ${summary.ebitdaMargin >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {summary.ebitdaMargin.toFixed(1)}%
+                <span className={`font-semibold ${summary.ebitdaMarginPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {summary.ebitdaMarginPercent.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Margen Neto</span>
-                <span className={`font-semibold ${summary.netMargin >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {summary.netMargin.toFixed(1)}%
+                <span className={`font-semibold ${summary.netMarginPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {summary.netMarginPercent.toFixed(1)}%
                 </span>
               </div>
             </CardContent>

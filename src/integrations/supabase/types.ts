@@ -2805,6 +2805,70 @@ export type Database = {
           },
         ]
       }
+      pl_manual_adjustments: {
+        Row: {
+          adjustment_amount: number
+          centro_code: string
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          period_date: string
+          rubric_code: string
+          template_code: string
+          updated_at: string | null
+        }
+        Insert: {
+          adjustment_amount?: number
+          centro_code: string
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_date: string
+          rubric_code: string
+          template_code: string
+          updated_at?: string | null
+        }
+        Update: {
+          adjustment_amount?: number
+          centro_code?: string
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_date?: string
+          rubric_code?: string
+          template_code?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pl_manual_adjustments_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "pl_manual_adjustments_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "pl_manual_adjustments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pl_rubrics: {
         Row: {
           code: string
@@ -4263,6 +4327,28 @@ export type Database = {
               sort: number
             }[]
           }
+      calculate_pl_report_accumulated: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_period_date: string
+          p_show_accumulated?: boolean
+          p_template_code: string
+        }
+        Returns: {
+          amount_period: number
+          amount_ytd: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          percentage_period: number
+          percentage_ytd: number
+          rubric_code: string
+          rubric_name: string
+          sign: string
+          sort: number
+        }[]
+      }
       calculate_pl_report_consolidated: {
         Args: {
           p_centro_codes: string[]
@@ -4272,6 +4358,28 @@ export type Database = {
         }
         Returns: {
           amount: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          percentage: number
+          rubric_code: string
+          rubric_name: string
+          sign: string
+          sort: number
+        }[]
+      }
+      calculate_pl_report_with_adjustments: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_end_date?: string
+          p_start_date?: string
+          p_template_code: string
+        }
+        Returns: {
+          amount_adjustment: number
+          amount_calculated: number
+          amount_final: number
           is_total: boolean
           level: number
           parent_code: string

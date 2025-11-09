@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { InvoiceCalculator } from "@/domain/invoicing/services/InvoiceCalculator";
 
 export interface InvoiceLine {
   id?: string;
@@ -73,28 +74,35 @@ export function InvoiceLineItemsTable({ lines, onChange, readonly = false }: Inv
   };
 
   const calculateLineTotal = (line: InvoiceLine) => {
-    const subtotal = line.quantity * line.unit_price;
-    const discountAmount = (subtotal * line.discount_percentage) / 100;
-    const subtotalAfterDiscount = subtotal - discountAmount;
-    const taxAmount = (subtotalAfterDiscount * line.tax_rate) / 100;
-    return subtotalAfterDiscount + taxAmount;
+    const normalized = InvoiceCalculator.normalizeLineForCalculation({
+      quantity: line.quantity,
+      unit_price: line.unit_price,
+      discount_percentage: line.discount_percentage,
+      tax_rate: line.tax_rate,
+    });
+    
+    const calc = InvoiceCalculator.calculateLine(normalized);
+    return calc.total;
   };
 
-  const totals = localLines.reduce(
-    (acc, line) => {
-      const subtotal = line.quantity * line.unit_price;
-      const discountAmount = (subtotal * line.discount_percentage) / 100;
-      const subtotalAfterDiscount = subtotal - discountAmount;
-      const taxAmount = (subtotalAfterDiscount * line.tax_rate) / 100;
-      
-      return {
-        subtotal: acc.subtotal + subtotalAfterDiscount,
-        tax: acc.tax + taxAmount,
-        total: acc.total + subtotalAfterDiscount + taxAmount,
-      };
-    },
-    { subtotal: 0, tax: 0, total: 0 }
-  );
+  const totals = (() => {
+    const normalizedLines = localLines.map(line => 
+      InvoiceCalculator.normalizeLineForCalculation({
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        discount_percentage: line.discount_percentage,
+        tax_rate: line.tax_rate,
+      })
+    );
+    
+    const invoiceTotals = InvoiceCalculator.calculateInvoiceTotals(normalizedLines);
+    
+    return {
+      subtotal: invoiceTotals.subtotal,
+      tax: invoiceTotals.totalTax,
+      total: invoiceTotals.total,
+    };
+  })();
 
   return (
     <div className="space-y-4">

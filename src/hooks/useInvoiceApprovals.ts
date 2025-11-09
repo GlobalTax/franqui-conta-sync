@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { ApproveInvoiceUseCase } from '@/domain/invoicing/use-cases/ApproveInvoice';
+import { RejectInvoiceUseCase } from '@/domain/invoicing/use-cases/RejectInvoice';
 import { toast } from 'sonner';
+import type { InvoiceReceived } from '@/domain/invoicing/types';
 
 export interface InvoiceApproval {
   id: string;
@@ -41,6 +45,10 @@ export function useInvoiceApprovals(invoiceId?: string) {
   });
 }
 
+/**
+ * Hook para aprobar facturas usando el caso de uso ApproveInvoice
+ * Delega la lógica de permisos y estado al caso de uso
+ */
 export function useApproveInvoice() {
   const queryClient = useQueryClient();
 
@@ -49,43 +57,66 @@ export function useApproveInvoice() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('invoice_approvals')
-        .insert({
-          invoice_id: params.invoice_id,
-          approver_id: userData.user.id,
-          approval_level: params.approval_level,
-          action: params.action,
+      // Obtener rol del usuario (simplificado, idealmente desde user_metadata o tabla de permisos)
+      const userRole = (userData.user.user_metadata?.role as 'admin' | 'manager' | 'accountant') || 'accountant';
+
+      // Obtener factura completa
+      const invoice = await InvoiceQueries.getInvoiceReceivedById(params.invoice_id);
+      if (!invoice) throw new Error('Factura no encontrada');
+
+      if (params.action === 'approved') {
+        // Usar caso de uso de aprobación
+        const useCase = new ApproveInvoiceUseCase();
+        const result = await useCase.execute({
+          invoice,
+          approverUserId: userData.user.id,
+          approverRole: userRole,
+          approvalLevel: params.approval_level,
           comments: params.comments,
-        })
-        .select()
-        .single();
+        });
 
-      if (error) throw error;
+        return result.updatedInvoice;
+      } else if (params.action === 'rejected') {
+        // Usar caso de uso de rechazo
+        const useCase = new RejectInvoiceUseCase();
+        const result = await useCase.execute({
+          invoice,
+          rejectorUserId: userData.user.id,
+          rejectorRole: userRole,
+          reason: params.comments || 'Sin razón especificada',
+          comments: params.comments,
+        });
 
-      // Update rejection fields if rejected
-      if (params.action === 'rejected') {
-        const { error: updateError } = await supabase
-          .from('invoices_received')
-          .update({
-            rejected_by: userData.user.id,
-            rejected_at: new Date().toISOString(),
-            rejected_reason: params.comments,
+        return result.updatedInvoice;
+      } else {
+        // Para 'requested_changes', mantener lógica anterior (insertar en invoice_approvals)
+        const { data, error } = await supabase
+          .from('invoice_approvals')
+          .insert({
+            invoice_id: params.invoice_id,
+            approver_id: userData.user.id,
+            approval_level: params.approval_level,
+            action: params.action,
+            comments: params.comments,
           })
-          .eq('id', params.invoice_id);
+          .select()
+          .single();
 
-        if (updateError) throw updateError;
+        if (error) throw error;
+        return data;
       }
-
-      return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-approvals', variables.invoice_id] });
       queryClient.invalidateQueries({ queryKey: ['pending-tasks'] });
 
-      const actionText = variables.action === 'approved' ? 'aprobada' : 
-                        variables.action === 'rejected' ? 'rechazada' : 'marcada para revisión';
+      const actionText =
+        variables.action === 'approved'
+          ? 'aprobada'
+          : variables.action === 'rejected'
+          ? 'rechazada'
+          : 'marcada para revisión';
       toast.success(`Factura ${actionText} correctamente`);
     },
     onError: (error: Error) => {

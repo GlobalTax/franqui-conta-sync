@@ -60,7 +60,7 @@ export function useAllUserCompanies() {
         .from("companies")
         .select(`
           *,
-          franchisee:franchisee_id (
+          franchisee:franchisees!companies_franchisee_id_fkey (
             id,
             name
           )

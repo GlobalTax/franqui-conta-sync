@@ -44,7 +44,7 @@ export function useAllUserCentres() {
         .from("centres")
         .select(`
           *,
-          franchisee:franchisee_id (
+          franchisee:franchisees!centres_franchisee_id_fkey (
             id,
             name
           )

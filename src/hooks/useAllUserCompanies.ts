@@ -84,7 +84,7 @@ export function useAllUserCompanies() {
           const { data: centreCos, error: centresError } = await supabase
             .from("centre_companies")
             .select(`
-              centre:centres!inner (
+              centre:centres!centre_companies_centre_id_fkey (
                 id,
                 codigo,
                 nombre

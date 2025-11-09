@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,8 @@ import { useCentres } from "@/hooks/useCentres";
 import { usePLTemplates } from "@/hooks/usePLTemplates";
 import { usePLReport } from "@/hooks/usePLReport";
 import { exportPLConsolidated } from "@/lib/pl-export-excel";
+import { useView } from "@/contexts/ViewContext";
+import { useAllUserCompanies } from "@/hooks/useAllUserCompanies";
 import {
   Select,
   SelectContent,
@@ -26,8 +28,36 @@ const ProfitAndLossConsolidated = () => {
   const [selectedCentres, setSelectedCentres] = useState<string[]>([]);
   const [period, setPeriod] = useState("2024-01");
 
+  const { selectedView } = useView();
+  const { data: franchiseesWithCompanies } = useAllUserCompanies();
   const { data: centres, isLoading: isLoadingCentres } = useCentres();
   const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
+
+  // Auto-selección de centros basada en selectedView
+  useEffect(() => {
+    if (!selectedView || !centres || !franchiseesWithCompanies) return;
+
+    if (selectedView.type === 'company') {
+      // Buscar la empresa seleccionada en todas las franquicias
+      let targetCompany = null;
+      for (const franchisee of franchiseesWithCompanies) {
+        targetCompany = franchisee.companies.find(c => c.id === selectedView.id);
+        if (targetCompany) break;
+      }
+
+      // Si la empresa tiene centros, auto-seleccionarlos
+      if (targetCompany?.centres && targetCompany.centres.length > 0) {
+        const companyCentreCodes = targetCompany.centres.map(c => c.codigo);
+        setSelectedCentres(companyCentreCodes);
+      }
+    } else if (selectedView.type === 'centre') {
+      // Buscar el centro específico y auto-seleccionarlo
+      const targetCentre = centres.find(c => c.id === selectedView.id);
+      if (targetCentre) {
+        setSelectedCentres([targetCentre.codigo]);
+      }
+    }
+  }, [selectedView, centres, franchiseesWithCompanies]);
 
   // Calcular fechas del periodo
   const [year, month] = period.split("-").map(Number);
@@ -169,6 +199,22 @@ const ProfitAndLossConsolidated = () => {
                     : "Seleccionar Todos"}
                 </Button>
               </div>
+              
+              {/* Indicador de auto-selección */}
+              {selectedView?.type === 'company' && selectedCentres.length > 0 && (
+                <div className="px-3 py-2 mb-3 bg-primary/10 border border-primary/20 rounded-md text-xs">
+                  <span className="font-medium">Vista: {selectedView.name}</span>
+                  <span className="text-muted-foreground ml-2">
+                    (Auto-seleccionados {selectedCentres.length} restaurante{selectedCentres.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
+              )}
+              {selectedView?.type === 'centre' && selectedCentres.length === 1 && (
+                <div className="px-3 py-2 mb-3 bg-primary/10 border border-primary/20 rounded-md text-xs">
+                  <span className="font-medium">Centro: {selectedView.name}</span>
+                  <span className="text-muted-foreground ml-2">(Auto-seleccionado)</span>
+                </div>
+              )}
               {isLoadingCentres ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (

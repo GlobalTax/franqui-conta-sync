@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Unlink, AlertCircle } from "lucide-react";
+import { MapPin, Star, Unlink, AlertCircle, Plus } from "lucide-react";
 import { useCompanyDetail, AssociatedCentre } from "@/hooks/useCompanyDetail";
 import {
   AlertDialog,
@@ -16,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AssociateCentreToCompanyDialog from "./AssociateCentreToCompanyDialog";
 
 interface Props {
   centres: AssociatedCentre[];
@@ -23,19 +25,52 @@ interface Props {
 }
 
 const CompanyAssociatedCentres = ({ centres, companyId }: Props) => {
-  const { dissociateCentre, isDissociating, setPrincipalCentre, isSettingPrincipal } = useCompanyDetail(companyId);
+  const { 
+    company,
+    dissociateCentre, 
+    isDissociating, 
+    setPrincipalCentre, 
+    isSettingPrincipal,
+    availableCentres,
+    isLoadingAvailable,
+    associateCentre,
+    isAssociating,
+  } = useCompanyDetail(companyId);
+
+  const [associateDialogOpen, setAssociateDialogOpen] = useState(false);
+
+  if (!company) return null;
 
   if (centres.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="text-center py-8">
-          <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-lg font-semibold mb-2">No hay centros asociados</h3>
-          <p className="text-muted-foreground">
-            Esta sociedad no tiene centros asociados actualmente.
-          </p>
-        </div>
-      </Card>
+      <>
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <h3 className="text-lg font-semibold mb-2">No hay centros asociados</h3>
+            <p className="text-muted-foreground mb-4">
+              Esta sociedad no tiene centros asociados actualmente.
+            </p>
+            <Button onClick={() => setAssociateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Asociar Primer Centro
+            </Button>
+          </div>
+        </Card>
+
+        <AssociateCentreToCompanyDialog
+          company={company}
+          availableCentres={availableCentres}
+          isLoading={isLoadingAvailable}
+          open={associateDialogOpen}
+          onOpenChange={setAssociateDialogOpen}
+          onAssociate={(centreId, asPrincipal) => {
+            associateCentre({ centreId, asPrincipal });
+            setAssociateDialogOpen(false);
+          }}
+          isAssociating={isAssociating}
+        />
+      </>
     );
   }
 
@@ -50,11 +85,17 @@ const CompanyAssociatedCentres = ({ centres, companyId }: Props) => {
       </Alert>
 
       <Card className="p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Centros Asociados</h3>
-          <p className="text-sm text-muted-foreground">
-            Total: {centres.length} centro(s)
-          </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Centros Asociados</h3>
+            <p className="text-sm text-muted-foreground">
+              Total: {centres.length} centro(s)
+            </p>
+          </div>
+          <Button onClick={() => setAssociateDialogOpen(true)} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Asociar Centro
+          </Button>
         </div>
 
         <Table>
@@ -151,6 +192,19 @@ const CompanyAssociatedCentres = ({ centres, companyId }: Props) => {
           </TableBody>
         </Table>
       </Card>
+
+      <AssociateCentreToCompanyDialog
+        company={company}
+        availableCentres={availableCentres}
+        isLoading={isLoadingAvailable}
+        open={associateDialogOpen}
+        onOpenChange={setAssociateDialogOpen}
+        onAssociate={(centreId, asPrincipal) => {
+          associateCentre({ centreId, asPrincipal });
+          setAssociateDialogOpen(false);
+        }}
+        isAssociating={isAssociating}
+      />
     </div>
   );
 };

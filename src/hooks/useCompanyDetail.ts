@@ -274,6 +274,95 @@ export function useCompanyDetail(companyId?: string) {
     },
   });
 
+  const { data: availableCentres, isLoading: isLoadingAvailable } = useQuery({
+    queryKey: ["available-centres", companyId, company?.franchisee_id, company?.cif],
+    queryFn: async () => {
+      if (!company?.franchisee_id || !company?.cif) return [];
+
+      // Get all centres from the same franchisee
+      const { data: allCentres, error: centresError } = await supabase
+        .from("centres")
+        .select(`
+          id,
+          codigo,
+          nombre,
+          direccion,
+          ciudad,
+          activo,
+          franchisee_id,
+          franchisees!centres_franchisee_id_fkey (name, email)
+        `)
+        .eq("franchisee_id", company.franchisee_id)
+        .eq("activo", true);
+
+      if (centresError) throw centresError;
+
+      // Get already associated centres
+      const { data: associatedCC, error: ccError } = await supabase
+        .from("centre_companies")
+        .select("centre_id")
+        .eq("cif", company.cif)
+        .eq("activo", true);
+
+      if (ccError) throw ccError;
+
+      const associatedIds = associatedCC?.map(a => a.centre_id) || [];
+
+      // Filter out already associated centres
+      return (allCentres || []).filter(c => !associatedIds.includes(c.id));
+    },
+    enabled: !!companyId && !!company?.franchisee_id && !!company?.cif,
+  });
+
+  const associateCentre = useMutation({
+    mutationFn: async ({ 
+      centreId, 
+      asPrincipal 
+    }: { 
+      centreId: string; 
+      asPrincipal: boolean 
+    }) => {
+      if (!company) throw new Error("Company not found");
+
+      // If marking as principal, unmark all others first
+      if (asPrincipal) {
+        await supabase
+          .from("centre_companies")
+          .update({ es_principal: false })
+          .eq("cif", company.cif);
+      }
+
+      // Create association in centre_companies
+      const { error } = await supabase
+        .from("centre_companies")
+        .insert({
+          centre_id: centreId,
+          cif: company.cif,
+          razon_social: company.razon_social,
+          tipo_sociedad: company.tipo_sociedad,
+          es_principal: asPrincipal,
+          activo: true
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["company-centres", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["available-centres", companyId] });
+      toast({
+        title: "Éxito",
+        description: "Centro asociado correctamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo asociar el centro",
+        variant: "destructive",
+      });
+    },
+  });
+
   const stats = {
     totalCentres: associatedCentres?.length || 0,
     activeCentres: associatedCentres?.filter(c => c.activo).length || 0,
@@ -283,13 +372,17 @@ export function useCompanyDetail(companyId?: string) {
   return {
     company,
     associatedCentres: associatedCentres || [],
+    availableCentres: availableCentres || [],
     stats,
     isLoading: isLoadingCompany || isLoadingCentres,
+    isLoadingAvailable,
     updateCompany: updateCompany.mutate,
     isUpdating: updateCompany.isPending,
     dissociateCentre: dissociateCentre.mutate,
     isDissociating: dissociateCentre.isPending,
     setPrincipalCentre: setPrincipalCentre.mutate,
     isSettingPrincipal: setPrincipalCentre.isPending,
+    associateCentre: associateCentre.mutate,
+    isAssociating: associateCentre.isPending,
   };
 }

@@ -50,8 +50,8 @@ BEGIN
       p_template_code,
       p_company_id,
       p_centro_code,
-      v_period_start::TEXT,
-      v_period_end::TEXT
+      v_period_start,
+      v_period_end
     )
   ),
   ytd_data AS (
@@ -60,8 +60,8 @@ BEGIN
       p_template_code,
       p_company_id,
       p_centro_code,
-      v_ytd_start::TEXT,
-      v_ytd_end::TEXT
+      v_ytd_start,
+      v_ytd_end
     )
   )
   SELECT 

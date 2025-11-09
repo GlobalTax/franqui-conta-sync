@@ -38,6 +38,7 @@ import LibroIVASoportado from "@/pages/iva/LibroIVASoportado";
 import Modelo303 from "@/pages/iva/Modelo303";
 import FiscalYearClosing from "@/pages/accounting/FiscalYearClosing";
 import Notifications from "@/pages/Notifications";
+import StyleGuide from "@/pages/examples/StyleGuide";
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -118,6 +119,9 @@ const App = () => {
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />
             <Route path="/notificaciones" element={<Notifications />} />
+            
+            {/* Style Guide */}
+            <Route path="/style-guide" element={<StyleGuide />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

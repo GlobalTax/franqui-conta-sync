@@ -23,7 +23,19 @@ serve(async (req) => {
       }
     );
 
-    const { token, userId } = await req.json();
+    // 🔐 Security: Validate JWT and extract user from token
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const authToken = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authToken);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { token } = await req.json();
 
     // Get invite
     const { data: invite, error: inviteError } = await supabase
@@ -49,9 +61,17 @@ serve(async (req) => {
       );
     }
 
-    // Create membership
+    // 🔐 Security: Validate email match if invite has email
+    if (invite.email && user.email && invite.email.toLowerCase() !== user.email.toLowerCase()) {
+      return new Response(
+        JSON.stringify({ error: "El email de la invitación no coincide con tu cuenta" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create membership using authenticated user ID
     const { error: membershipError } = await supabase.from("memberships").insert({
-      user_id: userId,
+      user_id: user.id,
       organization_id: invite.organization_id,
       role: invite.accounting_role,
       restaurant_id: invite.restaurant_id,

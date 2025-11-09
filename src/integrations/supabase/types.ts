@@ -3835,7 +3835,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      reconstruct_franchisee_relationships: {
+        Args: never
+        Returns: {
+          action_type: string
+          franchisee_id: string
+          franchisee_name: string
+          match_reason: string
+          related_id: string
+          related_name: string
+        }[]
+      }
       refresh_user_memberships: { Args: never; Returns: undefined }
+      run_franchisee_reconstruction: { Args: never; Returns: Json }
       set_primary_company: {
         Args: { _centre_id: string; _company_id: string }
         Returns: undefined

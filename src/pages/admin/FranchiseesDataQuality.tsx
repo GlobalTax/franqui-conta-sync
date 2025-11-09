@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { 
   AlertTriangle, 
   CheckCircle2, 
@@ -13,9 +15,13 @@ import {
   Users, 
   Building2,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  RefreshCw
 } from "lucide-react";
 import { useFranchiseesDataQuality } from "@/hooks/useFranchiseesDataQuality";
+import { FranchiseesMergeTool } from "@/components/admin/FranchiseesMergeTool";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -26,7 +32,42 @@ import {
 } from "@/components/ui/table";
 
 const FranchiseesDataQuality = () => {
-  const { data, isLoading } = useFranchiseesDataQuality();
+  const { data, isLoading, refetch } = useFranchiseesDataQuality();
+  const { toast } = useToast();
+  const [selectedDuplicate, setSelectedDuplicate] = useState<any>(null);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
+  const [isReconstructing, setIsReconstructing] = useState(false);
+
+  const handleReconstruct = async () => {
+    setIsReconstructing(true);
+    try {
+      const { data: result, error } = await supabase.rpc('run_franchisee_reconstruction');
+      
+      if (error) throw error;
+      
+      const resultData = result as any;
+      
+      toast({
+        title: "Reconstrucción completada",
+        description: resultData?.message || "Relaciones reconstruidas exitosamente",
+      });
+      
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error en la reconstrucción",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsReconstructing(false);
+    }
+  };
+
+  const openMergeTool = (duplicate: any) => {
+    setSelectedDuplicate(duplicate);
+    setIsMergeDialogOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -63,9 +104,19 @@ const FranchiseesDataQuality = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Diagnóstico de Calidad de Franquiciados</h2>
-        <p className="text-muted-foreground">Análisis completo de problemas de datos y relaciones</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Diagnóstico de Calidad de Franquiciados</h2>
+          <p className="text-muted-foreground">Análisis completo de problemas de datos y relaciones</p>
+        </div>
+        <Button
+          onClick={handleReconstruct}
+          disabled={isReconstructing}
+          variant="outline"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isReconstructing ? 'animate-spin' : ''}`} />
+          {isReconstructing ? "Reconstruyendo..." : "Reconstruir Relaciones"}
+        </Button>
       </div>
 
       {/* Quality Score Card */}
@@ -165,7 +216,17 @@ const FranchiseesDataQuality = () => {
               {duplicates.map((dup) => (
                 <Alert key={dup.id} className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertTitle className="font-semibold">{dup.name}</AlertTitle>
+                  <AlertTitle className="font-semibold flex items-center justify-between">
+                    <span>{dup.name}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMergeTool(dup)}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Fusionar
+                    </Button>
+                  </AlertTitle>
                   <AlertDescription>
                     <div className="mt-2 space-y-2">
                       <div className="text-sm">
@@ -349,6 +410,19 @@ const FranchiseesDataQuality = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Merge Tool Dialog */}
+      {selectedDuplicate && (
+        <FranchiseesMergeTool
+          duplicate={selectedDuplicate}
+          open={isMergeDialogOpen}
+          onOpenChange={setIsMergeDialogOpen}
+          onSuccess={() => {
+            refetch();
+            setSelectedDuplicate(null);
+          }}
+        />
+      )}
     </div>
   );
 };

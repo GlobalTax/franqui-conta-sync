@@ -4,10 +4,22 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreateFranchiseeDialog } from "@/components/admin/CreateFranchiseeDialog";
+import { EditFranchiseeDialog } from "@/components/admin/EditFranchiseeDialog";
+import { useDeleteFranchisee } from "@/hooks/useFranchisees";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const FranchiseesManagement = () => {
   const { toast } = useToast();
@@ -15,6 +27,12 @@ const FranchiseesManagement = () => {
   const [franchisees, setFranchisees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingFranchisee, setEditingFranchisee] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [franchiseeToDelete, setFranchiseeToDelete] = useState<any>(null);
+  
+  const deleteMutation = useDeleteFranchisee();
 
   useEffect(() => {
     loadFranchisees();
@@ -83,6 +101,24 @@ const FranchiseesManagement = () => {
     }
   };
 
+  const handleEdit = (franchisee: any) => {
+    setEditingFranchisee(franchisee);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (franchisee: any) => {
+    setFranchiseeToDelete(franchisee);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!franchiseeToDelete) return;
+    
+    await deleteMutation.mutateAsync(franchiseeToDelete.id);
+    setDeleteDialogOpen(false);
+    setFranchiseeToDelete(null);
+    loadFranchisees();
+  };
 
   if (loading) {
     return <div className="text-center py-8">Cargando franchisees...</div>;
@@ -135,14 +171,34 @@ const FranchiseesManagement = () => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <Button 
-                  size="sm" 
-                  variant="ghost"
-                  onClick={() => navigate(`/admin/franchisees/${franchisee.id}`)}
-                  title="Ver detalles"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handleEdit(franchisee)}
+                    title="Editar franchisee"
+                  >
+                    <Pencil className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => navigate(`/admin/franchisees/${franchisee.id}`)}
+                    title="Ver detalles"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handleDeleteClick(franchisee)}
+                    title="Eliminar franchisee"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -163,6 +219,54 @@ const FranchiseesManagement = () => {
         if (!open) loadFranchisees();
       }}
     />
+
+    <EditFranchiseeDialog
+      franchisee={editingFranchisee}
+      open={editDialogOpen}
+      onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          setEditingFranchisee(null);
+          loadFranchisees();
+        }
+      }}
+    />
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar franchisee?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Estás a punto de eliminar a <strong>{franchiseeToDelete?.name}</strong>.
+            <br />
+            <br />
+            ⚠️ Esta acción <strong>NO se puede deshacer</strong>. 
+            {franchiseeToDelete?.centres_count > 0 && (
+              <>
+                <br />
+                <br />
+                Este franchisee tiene <strong>{franchiseeToDelete.centres_count} centros</strong> asociados.
+              </>
+            )}
+            {franchiseeToDelete?.societies?.length > 0 && (
+              <>
+                <br />
+                Tiene <strong>{franchiseeToDelete.societies.length} sociedades</strong> asociadas.
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={confirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
   </>
   );

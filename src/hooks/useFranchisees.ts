@@ -126,3 +126,51 @@ export const useUpdateFranchisee = () => {
     },
   });
 };
+
+export const useDeleteFranchisee = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (franchiseeId: string) => {
+      console.log("🔄 useDeleteFranchisee - Iniciando eliminación...");
+      console.log("🆔 Franchisee ID:", franchiseeId);
+      
+      const { error } = await supabase
+        .from("franchisees")
+        .delete()
+        .eq("id", franchiseeId);
+      
+      if (error) {
+        console.error("❌ Error al eliminar franchisee:", error);
+        throw error;
+      }
+      
+      console.log("✅ Franchisee eliminado exitosamente");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["franchisees"] });
+      queryClient.invalidateQueries({ queryKey: ["franchisee-detail"] });
+      toast({
+        title: "Franchisee eliminado",
+        description: "El franchisee ha sido eliminado exitosamente",
+      });
+    },
+    onError: (error: any) => {
+      console.error("❌ onError ejecutado:", error);
+      
+      let description = error.message || "No se pudo eliminar el franchisee";
+      if (error.code === "23503") {
+        description = "No se puede eliminar: el franchisee tiene centros o sociedades asociadas";
+      } else if (error.code === "PGRST301" || error.message?.includes("permission")) {
+        description = "No tienes permisos para eliminar franchisees";
+      }
+      
+      toast({
+        title: "Error al eliminar",
+        description,
+        variant: "destructive",
+      });
+    },
+  });
+};

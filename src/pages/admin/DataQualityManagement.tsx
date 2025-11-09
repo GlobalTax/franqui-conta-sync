@@ -98,16 +98,16 @@ export default function DataQualityManagement() {
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <Select
-              value={filters.tipo || ""}
+              value={filters.tipo || "all"}
               onValueChange={(value) =>
-                setFilters({ ...filters, tipo: value || undefined })
+                setFilters({ ...filters, tipo: value === "all" ? undefined : value })
               }
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="PLAN_SIN_REAL">Plan sin real</SelectItem>
                 <SelectItem value="REAL_SIN_PLAN">Real sin plan</SelectItem>
                 <SelectItem value="COSTE_ATIPICO">Coste atípico</SelectItem>
@@ -116,16 +116,16 @@ export default function DataQualityManagement() {
             </Select>
 
             <Select
-              value={filters.severidad || ""}
+              value={filters.severidad || "all"}
               onValueChange={(value) =>
-                setFilters({ ...filters, severidad: value || undefined })
+                setFilters({ ...filters, severidad: value === "all" ? undefined : value })
               }
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Severidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="critica">Crítica</SelectItem>
                 <SelectItem value="alta">Alta</SelectItem>
                 <SelectItem value="media">Media</SelectItem>
@@ -135,7 +135,7 @@ export default function DataQualityManagement() {
             <Select
               value={
                 filters.resuelto === undefined
-                  ? ""
+                  ? "all"
                   : filters.resuelto
                   ? "true"
                   : "false"
@@ -143,7 +143,7 @@ export default function DataQualityManagement() {
               onValueChange={(value) =>
                 setFilters({
                   ...filters,
-                  resuelto: value === "" ? undefined : value === "true",
+                  resuelto: value === "all" ? undefined : value === "true",
                 })
               }
             >
@@ -151,7 +151,7 @@ export default function DataQualityManagement() {
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="false">Pendientes</SelectItem>
                 <SelectItem value="true">Resueltos</SelectItem>
               </SelectContent>

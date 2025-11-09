@@ -48,16 +48,16 @@ export default function AlertsManagement() {
           {/* Filtros */}
           <div className="flex gap-4 mb-6">
             <Select
-              value={filters.tipo || ""}
+              value={filters.tipo || "all"}
               onValueChange={(value) =>
-                setFilters({ ...filters, tipo: value || undefined })
+                setFilters({ ...filters, tipo: value === "all" ? undefined : value })
               }
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo de alerta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="FACTURA_VENCIMIENTO">Vencimiento</SelectItem>
                 <SelectItem value="MOVIMIENTO_SIN_CONCILIAR">Sin conciliar</SelectItem>
                 <SelectItem value="ASIENTO_BORRADOR">Borradores</SelectItem>
@@ -68,12 +68,12 @@ export default function AlertsManagement() {
 
             <Select
               value={
-                filters.activo === undefined ? "" : filters.activo ? "true" : "false"
+                filters.activo === undefined ? "all" : filters.activo ? "true" : "false"
               }
               onValueChange={(value) =>
                 setFilters({
                   ...filters,
-                  activo: value === "" ? undefined : value === "true",
+                  activo: value === "all" ? undefined : value === "true",
                 })
               }
             >
@@ -81,7 +81,7 @@ export default function AlertsManagement() {
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="true">Activas</SelectItem>
                 <SelectItem value="false">Inactivas</SelectItem>
               </SelectContent>

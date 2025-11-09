@@ -10,6 +10,7 @@ import PermissionsManagement from "./admin/PermissionsManagement";
 import AlertsManagement from "./admin/AlertsManagement";
 import DataQualityManagement from "./admin/DataQualityManagement";
 import DataQualityDashboard from "./admin/DataQualityDashboard";
+import FranchiseesDataQuality from "./admin/FranchiseesDataQuality";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
 
@@ -29,6 +30,7 @@ const Admin = () => {
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
+          <TabsTrigger value="franchisees-dq">DQ Franchisees</TabsTrigger>
           <TabsTrigger value="companies">Sociedades</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
           <TabsTrigger value="orquest">Orquest</TabsTrigger>
@@ -50,6 +52,10 @@ const Admin = () => {
 
         <TabsContent value="franchisees" className="mt-6">
           <FranchiseesManagement />
+        </TabsContent>
+
+        <TabsContent value="franchisees-dq" className="mt-6">
+          <FranchiseesDataQuality />
         </TabsContent>
 
         <TabsContent value="companies" className="mt-6">

@@ -5,16 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Eye, Users, Building2, Plus, Pencil } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { toggleCentreStatus } from "@/lib/supabase-queries";
-import { ManageRestaurantUsersDialog } from "@/components/admin/ManageRestaurantUsersDialog";
-import { ManageRestaurantCompaniesDialog } from "@/components/admin/ManageRestaurantCompaniesDialog";
 import { CreateCentreDialog } from "@/components/admin/CreateCentreDialog";
-import { EditCentreDialog } from "@/components/admin/EditCentreDialog";
 
 const CentresManagement = () => {
   const { toast } = useToast();
@@ -23,15 +17,7 @@ const CentresManagement = () => {
   const [filteredCentres, setFilteredCentres] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [franchiseeFilter, setFranchiseeFilter] = useState("all");
-  const [franchisees, setFranchisees] = useState<any[]>([]);
-  
-  const [selectedCentre, setSelectedCentre] = useState<any>(null);
-  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
-  const [companiesDialogOpen, setCompaniesDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -39,59 +25,19 @@ const CentresManagement = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [centres, searchTerm, statusFilter, franchiseeFilter]);
+  }, [centres, searchTerm]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Paso 1: Cargar centros con companies (sin joins ambiguos)
-      const centresResult = await supabase
+      const { data, error } = await supabase
         .from("centres")
-        .select("*, centre_companies(id, cif, razon_social, es_principal, activo)")
+        .select("id, site_number, codigo, nombre, direccion, activo")
         .order("nombre");
 
-      if (centresResult.error) throw centresResult.error;
+      if (error) throw error;
 
-      const centresData = centresResult.data || [];
-
-      // Paso 2: Cargar franchisees por separado
-      const franchiseeIds = Array.from(new Set(centresData.map((c: any) => c.franchisee_id).filter(Boolean)));
-      const franchiseesResult = await supabase
-        .from("franchisees")
-        .select("id, name")
-        .in("id", franchiseeIds);
-
-      const franchiseesMap = new Map((franchiseesResult.data || []).map((f: any) => [f.id, f]));
-
-      // Paso 3: Cargar user_roles counts por centro
-      const centroCodes = centresData.map((c: any) => c.codigo);
-      const rolesResult = await supabase
-        .from("user_roles")
-        .select("centro")
-        .in("centro", centroCodes);
-
-      const rolesMap = new Map<string, number>();
-      (rolesResult.data || []).forEach((row: any) => {
-        rolesMap.set(row.centro, (rolesMap.get(row.centro) || 0) + 1);
-      });
-
-      // Paso 4: Recomponer
-      const enrichedCentres = centresData.map((c: any) => ({
-        ...c,
-        franchisees: c.franchisee_id ? franchiseesMap.get(c.franchisee_id) || null : null,
-        user_roles: [{ count: rolesMap.get(c.codigo) || 0 }]
-      }));
-
-      // Cargar lista de franchisees para el filtro
-      const allFranchiseesData = await supabase
-        .from("franchisees")
-        .select("id, name")
-        .order("name");
-
-      if (allFranchiseesData.error) throw allFranchiseesData.error;
-
-      setCentres(enrichedCentres);
-      setFranchisees(allFranchiseesData.data || []);
+      setCentres(data || []);
     } catch (error: any) {
       console.error("Error al cargar datos:", error);
       toast({
@@ -107,69 +53,16 @@ const CentresManagement = () => {
   const applyFilters = () => {
     let filtered = centres;
 
-    // Status filter
-    if (statusFilter === "active") {
-      filtered = filtered.filter(c => c.activo);
-    } else if (statusFilter === "inactive") {
-      filtered = filtered.filter(c => !c.activo);
-    }
-
-    // Franchisee filter
-    if (franchiseeFilter !== "all") {
-      filtered = filtered.filter(c => c.franchisee_id === franchiseeFilter);
-    }
-
-    // Search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(c => 
-        c.codigo?.toLowerCase().includes(term) ||
         c.nombre?.toLowerCase().includes(term) ||
-        c.ciudad?.toLowerCase().includes(term)
+        c.direccion?.toLowerCase().includes(term) ||
+        c.site_number?.toLowerCase().includes(term)
       );
     }
 
     setFilteredCentres(filtered);
-  };
-
-  const handleToggleStatus = async (centreId: string, currentStatus: boolean) => {
-    try {
-      await toggleCentreStatus(centreId, !currentStatus);
-      toast({
-        title: currentStatus ? "Centro desactivado" : "Centro activado",
-        description: "El estado del centro ha sido actualizado",
-      });
-      loadData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const openUsersDialog = (centre: any) => {
-    setSelectedCentre(centre);
-    setUsersDialogOpen(true);
-  };
-
-  const openCompaniesDialog = (centre: any) => {
-    setSelectedCentre(centre);
-    setCompaniesDialogOpen(true);
-  };
-
-  const openEditDialog = (centre: any) => {
-    setSelectedCentre(centre);
-    setEditDialogOpen(true);
-  };
-
-  const getCompanyCount = (centre: any) => {
-    return centre.centre_companies?.filter((c: any) => c.activo).length || 0;
-  };
-
-  const getPrincipalCIF = (centre: any) => {
-    return centre.centre_companies?.find((c: any) => c.es_principal && c.activo)?.cif;
   };
 
   if (loading) {
@@ -187,38 +80,13 @@ const CentresManagement = () => {
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="active">Solo Activos</SelectItem>
-              <SelectItem value="inactive">Solo Inactivos</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={franchiseeFilter} onValueChange={setFranchiseeFilter}>
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Franchisee" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los franchisees</SelectItem>
-              {franchisees.map((f) => (
-                <SelectItem key={f.id} value={f.id}>
-                  {f.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
+        {/* Search */}
+        <div className="mb-6">
           <Input
-            placeholder="Buscar por código, nombre o ciudad..."
+            placeholder="Buscar por nombre, dirección o site..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 min-w-[300px]"
+            className="max-w-md"
           />
         </div>
 
@@ -227,90 +95,35 @@ const CentresManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
+                <TableHead>Site</TableHead>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Franchisee</TableHead>
-                <TableHead>Ciudad</TableHead>
-                <TableHead>Usuarios</TableHead>
-                <TableHead>Sociedades</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
+                <TableHead>Dirección</TableHead>
+                <TableHead className="w-20">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCentres.map((centre) => (
                 <TableRow key={centre.id}>
                   <TableCell>
-                    <Badge variant="outline">{centre.codigo}</Badge>
+                    <Badge variant="outline">{centre.site_number || centre.codigo}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{centre.nombre}</div>
                   </TableCell>
-                  <TableCell>{centre.franchisees?.name || "—"}</TableCell>
-                  <TableCell>{centre.ciudad || "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {centre.user_roles?.[0]?.count || 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        {getCompanyCount(centre)} CIF{getCompanyCount(centre) !== 1 ? 's' : ''}
-                      </Badge>
-                      {getPrincipalCIF(centre) && (
-                        <Badge variant="secondary" className="text-xs">
-                          {getPrincipalCIF(centre)}
-                        </Badge>
-                      )}
+                  <TableCell className="max-w-md">
+                    <div className="text-sm text-muted-foreground truncate">
+                      {centre.direccion || "—"}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={centre.activo}
-                        onCheckedChange={() => handleToggleStatus(centre.id, centre.activo)}
-                      />
-                      <Badge variant={centre.activo ? "default" : "secondary"}>
-                        {centre.activo ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        title="Ver detalles"
-                        onClick={() => navigate(`/admin/centros/${centre.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => openEditDialog(centre)}
-                        title="Editar centro"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => openUsersDialog(centre)}
-                        title="Gestionar usuarios"
-                      >
-                        <Users className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => openCompaniesDialog(centre)}
-                        title="Gestionar sociedades"
-                      >
-                        <Building2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      title="Ver detalles"
+                      onClick={() => navigate(`/admin/centros/${centre.id}`)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -331,29 +144,6 @@ const CentresManagement = () => {
           setCreateDialogOpen(open);
           if (!open) loadData();
         }}
-      />
-
-      <EditCentreDialog
-        centre={selectedCentre}
-        open={editDialogOpen}
-        onOpenChange={(open) => {
-          setEditDialogOpen(open);
-          if (!open) loadData();
-        }}
-      />
-
-      <ManageRestaurantUsersDialog
-        centre={selectedCentre}
-        open={usersDialogOpen}
-        onOpenChange={setUsersDialogOpen}
-        onUpdate={loadData}
-      />
-
-      <ManageRestaurantCompaniesDialog
-        centre={selectedCentre}
-        open={companiesDialogOpen}
-        onOpenChange={setCompaniesDialogOpen}
-        onUpdate={loadData}
       />
     </>
   );

@@ -8,7 +8,7 @@ export function useReconciliationRules(centroCode?: string, bankAccountId?: stri
     queryKey: ['reconciliation-rules', centroCode, bankAccountId],
     queryFn: async () => {
       let query = supabase
-        .from('bank_reconciliation_rules')
+        .from('reconciliation_rules' as any)
         .select('*')
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
@@ -22,7 +22,7 @@ export function useReconciliationRules(centroCode?: string, bankAccountId?: stri
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as ReconciliationRule[];
+      return data as any as ReconciliationRule[];
     },
   });
 }
@@ -33,7 +33,7 @@ export function useCreateReconciliationRule() {
   return useMutation({
     mutationFn: async (rule: Omit<Partial<ReconciliationRule>, 'id' | 'created_at' | 'updated_at'> & { centro_code: string; bank_account_id: string; rule_name: string; auto_match_type: string }) => {
       const { data, error } = await supabase
-        .from('bank_reconciliation_rules')
+        .from('reconciliation_rules' as any)
         .insert([rule])
         .select()
         .single();
@@ -57,7 +57,7 @@ export function useUpdateReconciliationRule() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ReconciliationRule> & { id: string }) => {
       const { data, error } = await supabase
-        .from('bank_reconciliation_rules')
+        .from('reconciliation_rules' as any)
         .update(updates)
         .eq('id', id)
         .select()
@@ -82,7 +82,7 @@ export function useDeleteReconciliationRule() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('bank_reconciliation_rules')
+        .from('reconciliation_rules' as any)
         .delete()
         .eq('id', id);
 
@@ -104,7 +104,7 @@ export function useToggleRuleActive() {
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
       const { data, error } = await supabase
-        .from('bank_reconciliation_rules')
+        .from('reconciliation_rules' as any)
         .update({ active })
         .eq('id', id)
         .select()

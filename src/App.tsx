@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
 import Banks from "@/pages/Banks";
 import Reconciliation from "@/pages/Reconciliation";
+import BankReconciliation from "@/pages/treasury/BankReconciliation";
 import JournalEntries from "@/pages/JournalEntries";
 import ChartOfAccounts from "@/pages/ChartOfAccounts";
 import ProfitAndLoss from "@/pages/ProfitAndLoss";
@@ -112,6 +113,7 @@ const App = () => {
             <Route path="/proveedores" element={<Suppliers />} />
             <Route path="/banks" element={<Banks />} />
             <Route path="/reconciliation" element={<Reconciliation />} />
+            <Route path="/treasury/reconciliation" element={<BankReconciliation />} />
             <Route path="/journal" element={<JournalEntries />} />
             <Route path="/accounts" element={<ChartOfAccounts />} />
             <Route path="/pnl" element={<ProfitAndLoss />} />

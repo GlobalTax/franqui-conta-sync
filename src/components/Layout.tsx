@@ -80,7 +80,7 @@ const Layout = () => {
     { icon: FileText, label: "Fact. Emitidas", path: "/facturas/emitidas" },
     { icon: Building2, label: "Proveedores", path: "/proveedores" },
     { icon: CreditCard, label: "Bancos", path: "/banks" },
-    { icon: GitCompare, label: "Conciliación", path: "/reconciliation" },
+    { icon: GitCompare, label: "Conciliación", path: "/treasury/reconciliation" },
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },
@@ -172,7 +172,7 @@ const Layout = () => {
               Principal
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(0, 4).map((item) => (
+              {navItems.slice(0, 7).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

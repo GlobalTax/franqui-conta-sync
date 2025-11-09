@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, AlertCircle, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -246,9 +246,10 @@ const ProfitAndLoss = () => {
                           <TooltipTrigger asChild>
                             <Badge 
                               variant="outline" 
-                              className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-in fade-in-0 slide-in-from-left-1 duration-200"
+                              className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 animate-in fade-in-0 slide-in-from-left-1 duration-200 flex items-center gap-1"
                             >
-                              ⚡ Listo
+                              <span>⚡ Listo</span>
+                              <Info className="h-3 w-3" />
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>

@@ -9,6 +9,7 @@ import { Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreateCentreDialog } from "@/components/admin/CreateCentreDialog";
+import { logger } from "@/lib/logger";
 
 const CentresManagement = () => {
   const { toast } = useToast();
@@ -39,7 +40,7 @@ const CentresManagement = () => {
 
       setCentres(data || []);
     } catch (error: any) {
-      console.error("Error al cargar datos:", error);
+      logger.error('CentresManagement', 'Error al cargar datos:', error?.message);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos",

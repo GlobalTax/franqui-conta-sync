@@ -1,10 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { logger } from "@/lib/logger";
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, loading } = useAdminCheck();
 
-  console.log('[AdminRoute] 🛡️ Estado:', { isAdmin, loading });
+  logger.debug('AdminRoute', '🛡️ Estado:', { isAdmin, loading });
 
   if (loading) {
     return (
@@ -19,10 +20,10 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAdmin) {
-    console.log('[AdminRoute] 🚫 Acceso denegado - Redirigiendo a /');
+    logger.debug('AdminRoute', '🚫 Acceso denegado - Redirigiendo a /');
     return <Navigate to="/" replace />;
   }
 
-  console.log('[AdminRoute] ✅ Acceso permitido');
+  logger.debug('AdminRoute', '✅ Acceso permitido');
   return <>{children}</>;
 }

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useUpdateFranchisee } from "@/hooks/useFranchisees";
 import { franchiseeSchema, validateCIF, validateEmail, isEmail } from "@/lib/franchisee-validation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface EditFranchiseeDialogProps {
   franchisee: any;
@@ -133,18 +134,17 @@ export const EditFranchiseeDialog = ({ franchisee, open, onOpenChange }: EditFra
       delete dataToSubmit.orquest_api_key;
     }
     
-    console.log("📝 EditFranchiseeDialog - Datos validados a enviar:", dataToSubmit);
-    console.log("📝 EditFranchiseeDialog - Franchisee original:", franchisee);
+    logger.debug('EditFranchiseeDialog', '📝 Datos validados a enviar:', dataToSubmit);
     
     updateFranchisee.mutate(dataToSubmit, {
       onSuccess: () => {
-        console.log("✅ EditFranchiseeDialog - Actualización exitosa");
+        logger.info('EditFranchiseeDialog', '✅ Actualización exitosa');
         onOpenChange(false);
         setErrors({});
         setTouched({});
       },
       onError: (error: any) => {
-        console.error("❌ EditFranchiseeDialog - Error al actualizar:", error);
+        logger.error('EditFranchiseeDialog', '❌ Error al actualizar:', error?.message);
       },
     });
   };

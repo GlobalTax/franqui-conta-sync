@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export const useFranchisees = () => {
   return useQuery({
@@ -23,8 +24,7 @@ export const useCreateFranchisee = () => {
 
   return useMutation({
     mutationFn: async (franchiseeData: any) => {
-      console.log("🔄 useCreateFranchisee - Iniciando creación...");
-      console.log("📊 Datos a insertar:", franchiseeData);
+      logger.debug('useCreateFranchisee', '🔄 Iniciando creación...', franchiseeData);
       
       const { data, error } = await supabase
         .from("franchisees")
@@ -32,17 +32,12 @@ export const useCreateFranchisee = () => {
         .select()
         .single();
       
-      console.log("📡 Respuesta de Supabase:", { data, error });
-      
       if (error) {
-        console.error("❌ Error al crear franchisee:", error);
-        console.error("❌ Error code:", error.code);
-        console.error("❌ Error details:", error.details);
-        console.error("❌ Error hint:", error.hint);
+        logger.error('useCreateFranchisee', '❌ Error al crear:', error.code, error.message);
         throw error;
       }
       
-      console.log("✅ Franchisee creado exitosamente:", data);
+      logger.info('useCreateFranchisee', '✅ Franchisee creado:', data.id);
       return data;
     },
     onSuccess: () => {
@@ -53,7 +48,7 @@ export const useCreateFranchisee = () => {
       });
     },
     onError: (error: any) => {
-      console.error("❌ onError ejecutado:", error);
+      logger.error('useCreateFranchisee', '❌ Error en onError:', error.code, error.message);
       
       let description = error.message || "No se pudo crear el franchisee";
       if (error.code === "23505") {
@@ -77,9 +72,7 @@ export const useUpdateFranchisee = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...franchiseeData }: any) => {
-      console.log("🔄 useUpdateFranchisee - Iniciando actualización...");
-      console.log("📊 Datos a actualizar:", franchiseeData);
-      console.log("🆔 Franchisee ID:", id);
+      logger.debug('useUpdateFranchisee', '🔄 Iniciando actualización...', { id, ...franchiseeData });
       
       const { data, error } = await supabase
         .from("franchisees")
@@ -88,17 +81,12 @@ export const useUpdateFranchisee = () => {
         .select()
         .single();
       
-      console.log("📡 Respuesta de Supabase:", { data, error });
-      
       if (error) {
-        console.error("❌ Error al actualizar franchisee:", error);
-        console.error("❌ Error code:", error.code);
-        console.error("❌ Error details:", error.details);
-        console.error("❌ Error hint:", error.hint);
+        logger.error('useUpdateFranchisee', '❌ Error al actualizar:', error.code, error.message);
         throw error;
       }
       
-      console.log("✅ Franchisee actualizado exitosamente:", data);
+      logger.info('useUpdateFranchisee', '✅ Franchisee actualizado:', data.id);
       return data;
     },
     onSuccess: () => {
@@ -109,7 +97,7 @@ export const useUpdateFranchisee = () => {
       });
     },
     onError: (error: any) => {
-      console.error("❌ onError ejecutado:", error);
+      logger.error('useUpdateFranchisee', '❌ Error en onError:', error.code, error.message);
       
       let description = error.message || "No se pudo actualizar el franchisee";
       if (error.code === "23505") {
@@ -133,8 +121,7 @@ export const useDeleteFranchisee = () => {
 
   return useMutation({
     mutationFn: async (franchiseeId: string) => {
-      console.log("🔄 useDeleteFranchisee - Iniciando eliminación...");
-      console.log("🆔 Franchisee ID:", franchiseeId);
+      logger.debug('useDeleteFranchisee', '🔄 Iniciando eliminación...', franchiseeId);
       
       const { error } = await supabase
         .from("franchisees")
@@ -142,11 +129,11 @@ export const useDeleteFranchisee = () => {
         .eq("id", franchiseeId);
       
       if (error) {
-        console.error("❌ Error al eliminar franchisee:", error);
+        logger.error('useDeleteFranchisee', '❌ Error al eliminar:', error.code, error.message);
         throw error;
       }
       
-      console.log("✅ Franchisee eliminado exitosamente");
+      logger.info('useDeleteFranchisee', '✅ Franchisee eliminado');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["franchisees"] });
@@ -157,7 +144,7 @@ export const useDeleteFranchisee = () => {
       });
     },
     onError: (error: any) => {
-      console.error("❌ onError ejecutado:", error);
+      logger.error('useDeleteFranchisee', '❌ Error en onError:', error.code, error.message);
       
       let description = error.message || "No se pudo eliminar el franchisee";
       if (error.code === "23503") {

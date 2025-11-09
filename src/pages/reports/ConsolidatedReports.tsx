@@ -11,6 +11,7 @@ import { RankingCards } from "@/components/reports/RankingCards";
 import { KPISummaryTable } from "@/components/reports/KPISummaryTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent, getPeriodOptions, getPeriodDates } from "@/lib/reports-utils";
+import { logger } from "@/lib/logger";
 
 export default function ConsolidatedReports() {
   const { selectedView } = useView();
@@ -29,7 +30,7 @@ export default function ConsolidatedReports() {
 
   const handleExport = () => {
     // TODO: Implement Excel export
-    console.log("Exporting to Excel...");
+    logger.info('ConsolidatedReports', 'Exporting to Excel...');
   };
 
   if (!selectedView) {

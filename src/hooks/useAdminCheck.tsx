@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function useAdminCheck() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -7,14 +8,14 @@ export function useAdminCheck() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      console.log('[useAdminCheck] 🔍 Iniciando verificación de admin...');
+      logger.debug('useAdminCheck', '🔍 Iniciando verificación de admin...');
       
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      console.log('[useAdminCheck] 👤 Usuario:', user?.id, userError ? `ERROR: ${userError.message}` : '✓');
+      logger.debug('useAdminCheck', '👤 Usuario:', user?.id, userError ? `ERROR: ${userError.message}` : '✓');
       
       if (!user || userError) {
-        console.log('[useAdminCheck] ❌ No hay usuario autenticado');
+        logger.debug('useAdminCheck', '❌ No hay usuario autenticado');
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -27,10 +28,10 @@ export function useAdminCheck() {
           _role: 'admin' 
         });
 
-      console.log('[useAdminCheck] 🔐 Resultado has_role:', { data, error: error?.message });
+      logger.debug('useAdminCheck', '🔐 Resultado has_role:', { data, error: error?.message });
       
       const isAdminUser = data === true && !error;
-      console.log('[useAdminCheck] ✅ ¿Es Admin?:', isAdminUser);
+      logger.debug('useAdminCheck', '✅ ¿Es Admin?:', isAdminUser);
       
       setIsAdmin(isAdminUser);
       setLoading(false);

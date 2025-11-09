@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/select";
 import { NavLink } from "./NavLink";
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const Layout = () => {
   // Ensure a default view is selected when data loads
   useEnsureDefaultView();
 
-  console.log('[Layout] 🔐 isAdmin:', isAdmin);
+  logger.debug('Layout', '🔐 isAdmin:', isAdmin);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

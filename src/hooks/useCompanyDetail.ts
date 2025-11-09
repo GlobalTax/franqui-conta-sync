@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export interface CompanyDetailData {
   id: string;
@@ -63,20 +64,16 @@ export function useCompanyDetail(companyId?: string) {
   const { data: associatedCentres, isLoading: isLoadingCentres } = useQuery({
     queryKey: ["company-centres", companyId, company?.cif],
     queryFn: async () => {
-      console.log("🔍 Fetching centres for company:", {
-        companyId,
-        cif: company?.cif,
-        companyLoaded: !!company
-      });
+      logger.debug('useCompanyDetail', '🔍 Fetching centres for company:', { companyId, cif: company?.cif });
 
       if (!companyId) {
-        console.warn("⚠️ Missing companyId, skipping centres query");
+        logger.warn('useCompanyDetail', '⚠️ Missing companyId, skipping centres query');
         return [];
       }
 
       const companyCif = company?.cif;
       if (!companyCif) {
-        console.warn("⚠️ Missing company CIF, skipping centres query");
+        logger.warn('useCompanyDetail', '⚠️ Missing company CIF, skipping centres query');
         return [];
       }
 
@@ -100,7 +97,7 @@ export function useCompanyDetail(companyId?: string) {
           .eq("activo", true);
 
         if (ccError) {
-          console.error("❌ Error fetching centre_companies:", ccError);
+          logger.error('useCompanyDetail', '❌ Error fetching centre_companies:', ccError.code, ccError.message);
           throw ccError;
         }
 
@@ -112,7 +109,7 @@ export function useCompanyDetail(companyId?: string) {
           .eq("activo", true);
 
         if (dcError) {
-          console.error("❌ Error fetching direct centres:", dcError);
+          logger.error('useCompanyDetail', '❌ Error fetching direct centres:', dcError.code, dcError.message);
           throw dcError;
         }
 
@@ -144,20 +141,15 @@ export function useCompanyDetail(companyId?: string) {
             source: 'company_id' as const,
           }));
 
-        console.log("✅ Centres fetched successfully:", {
-          fromCentreCompanies: centresFromCC.length,
+        logger.info('useCompanyDetail', '✅ Centres fetched:', {
+          fromCC: centresFromCC.length,
           fromDirect: centresFromDirect.length,
           total: centresFromCC.length + centresFromDirect.length
         });
 
         return [...centresFromCC, ...centresFromDirect];
       } catch (error: any) {
-        console.error("❌ Error fetching centres:", {
-          error,
-          code: error?.code,
-          message: error?.message,
-          cif: companyCif
-        });
+        logger.error('useCompanyDetail', '❌ Error fetching centres:', error?.code, error?.message);
         throw error;
       }
     },
@@ -165,7 +157,7 @@ export function useCompanyDetail(companyId?: string) {
     retry: (failureCount, error: any) => {
       // No reintentar si es error 400 (datos inválidos)
       if (error?.code === 'PGRST116' || error?.status === 400) {
-        console.warn("⚠️ Not retrying 400 error for centres query");
+        logger.warn('useCompanyDetail', '⚠️ Not retrying 400 error for centres query');
         return false;
       }
       return failureCount < 3;

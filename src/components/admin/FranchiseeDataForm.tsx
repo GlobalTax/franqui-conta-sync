@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface FranchiseeDataFormProps {
   franchisee: any;
@@ -51,9 +52,7 @@ export function FranchiseeDataForm({ franchisee, onUpdate, isUpdating }: Franchi
       updates.orquest_api_key = formData.orquest_api_key;
     }
     
-    console.log("📝 FranchiseeDataForm - Campos modificados a enviar:", updates);
-    console.log("📝 FranchiseeDataForm - Datos originales:", initialData);
-    console.log("📝 FranchiseeDataForm - Datos actuales:", formData);
+    logger.debug('FranchiseeDataForm', '📝 Campos modificados:', updates);
     
     onUpdate(updates);
   };

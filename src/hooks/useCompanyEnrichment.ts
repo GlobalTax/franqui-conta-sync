@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 // Cache configuration
 const CACHE_PREFIX = 'company_enrichment_';
@@ -55,7 +56,7 @@ const getFromLocalCache = (cif: string): EnrichedCompanyData | null => {
       return null;
     }
 
-    console.log(`✅ localStorage cache hit for ${cif}`);
+    logger.info('CompanyEnrichment', `✅ Cache hit for ${cif}`);
     return cached.data;
   } catch (error) {
     console.error('Error reading from localStorage cache:', error);
@@ -71,7 +72,7 @@ const saveToLocalCache = (cif: string, data: EnrichedCompanyData): void => {
       timestamp: Date.now()
     };
     localStorage.setItem(cacheKey, JSON.stringify(cached));
-    console.log(`✅ Saved to localStorage cache: ${cif}`);
+    logger.info('CompanyEnrichment', `✅ Saved to cache: ${cif}`);
   } catch (error) {
     console.error('Error saving to localStorage cache:', error);
   }

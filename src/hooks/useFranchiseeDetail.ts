@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export const useFranchiseeDetail = (franchiseeId: string) => {
   const { toast } = useToast();
@@ -55,9 +56,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
   // Mutation: Update franchisee data
   const updateFranchisee = useMutation({
     mutationFn: async (updates: any) => {
-      console.log("🔄 useFranchiseeDetail - Iniciando actualización...");
-      console.log("📊 Datos a enviar a Supabase:", updates);
-      console.log("🆔 Franchisee ID:", franchiseeId);
+      logger.debug('useFranchiseeDetail', '🔄 Iniciando actualización...', { franchiseeId, updates });
       
       const { data, error } = await supabase
         .from("franchisees")
@@ -66,21 +65,16 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
         .select()
         .single();
 
-      console.log("📡 Respuesta de Supabase:", { data, error });
-
       if (error) {
-        console.error("❌ Error de Supabase:", error);
-        console.error("❌ Error code:", error.code);
-        console.error("❌ Error details:", error.details);
-        console.error("❌ Error hint:", error.hint);
+        logger.error('useFranchiseeDetail', '❌ Error de Supabase:', error.code, error.message);
         throw error;
       }
       
-      console.log("✅ Actualización exitosa - Datos devueltos:", data);
+      logger.info('useFranchiseeDetail', '✅ Actualización exitosa:', data.id);
       return data;
     },
     onSuccess: (data) => {
-      console.log("✅ onSuccess ejecutado - Datos actualizados:", data);
+      logger.info('useFranchiseeDetail', '✅ onSuccess ejecutado:', data.id);
       queryClient.invalidateQueries({ 
         queryKey: ["franchisee-detail", franchiseeId],
         exact: true 
@@ -99,8 +93,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
       });
     },
     onError: (error: any) => {
-      console.error("❌ onError ejecutado:", error);
-      console.error("❌ Error completo:", JSON.stringify(error, null, 2));
+      logger.error('useFranchiseeDetail', '❌ onError ejecutado:', error.code, error.message);
       toast({
         title: "Error al actualizar",
         description: error.message || "No se pudo guardar los cambios. Verifica la consola para más detalles.",

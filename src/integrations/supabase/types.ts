@@ -2805,6 +2805,154 @@ export type Database = {
           },
         ]
       }
+      pl_rubrics: {
+        Row: {
+          code: string
+          created_at: string
+          formula: string | null
+          id: string
+          is_total: boolean
+          level: number
+          name: string
+          notes: string | null
+          parent_code: string | null
+          sign: string
+          sort: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          formula?: string | null
+          id?: string
+          is_total?: boolean
+          level: number
+          name: string
+          notes?: string | null
+          parent_code?: string | null
+          sign?: string
+          sort: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          formula?: string | null
+          id?: string
+          is_total?: boolean
+          level?: number
+          name?: string
+          notes?: string | null
+          parent_code?: string | null
+          sign?: string
+          sort?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pl_rubrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "pl_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pl_rules: {
+        Row: {
+          account: string | null
+          account_from: string | null
+          account_like: string | null
+          account_to: string | null
+          centre_id: string | null
+          channel: string | null
+          created_at: string
+          group_code: string | null
+          id: string
+          match_kind: string
+          notes: string | null
+          priority: number
+          rubric_code: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          account?: string | null
+          account_from?: string | null
+          account_like?: string | null
+          account_to?: string | null
+          centre_id?: string | null
+          channel?: string | null
+          created_at?: string
+          group_code?: string | null
+          id?: string
+          match_kind: string
+          notes?: string | null
+          priority?: number
+          rubric_code: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          account?: string | null
+          account_from?: string | null
+          account_like?: string | null
+          account_to?: string | null
+          centre_id?: string | null
+          channel?: string | null
+          created_at?: string
+          group_code?: string | null
+          id?: string
+          match_kind?: string
+          notes?: string | null
+          priority?: number
+          rubric_code?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pl_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "pl_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pl_templates: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           apellidos: string | null
@@ -3870,12 +4018,125 @@ export type Database = {
       }
     }
     Views: {
+      mv_gl_ledger_month: {
+        Row: {
+          account_code: string | null
+          amount: number | null
+          centro_code: string | null
+          company_id: string | null
+          period_month: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "centres_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_companies_reconstruction_report: {
         Row: {
           metric: string | null
           value: string | null
         }
         Relationships: []
+      }
+      v_pl_rubric_month: {
+        Row: {
+          amount: number | null
+          centro_code: string | null
+          company_id: string | null
+          period_month: string | null
+          rubric_code: string | null
+          template_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "centres_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pl_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "pl_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_pl_rule_winner: {
+        Row: {
+          account_code: string | null
+          centro_code: string | null
+          company_id: string | null
+          period_month: string | null
+          priority: number | null
+          rubric_code: string | null
+          template_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accounting_entries_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "centres_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pl_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "pl_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_user_centres: {
         Row: {
@@ -3962,10 +4223,49 @@ export type Database = {
         Args: { p_centro_code: string; p_month: number; p_year: number }
         Returns: Json
       }
-      calculate_pl_report: {
+      calculate_pl_report:
+        | {
+            Args: {
+              p_centro_code?: string
+              p_company_id?: string
+              p_end_date?: string
+              p_start_date?: string
+              p_template_code: string
+            }
+            Returns: {
+              amount: number
+              is_total: boolean
+              level: number
+              parent_code: string
+              rubric_code: string
+              rubric_name: string
+              sign: string
+              sort: number
+            }[]
+          }
+        | {
+            Args: {
+              p_centro_code?: string
+              p_company_id?: string
+              p_end_date?: string
+              p_start_date?: string
+              p_template_code: string
+            }
+            Returns: {
+              amount: number
+              is_total: boolean
+              level: number
+              parent_code: string
+              percentage: number
+              rubric_code: string
+              rubric_name: string
+              sign: string
+              sort: number
+            }[]
+          }
+      calculate_pl_report_consolidated: {
         Args: {
-          p_centro_code?: string
-          p_company_id?: string
+          p_centro_codes: string[]
           p_end_date?: string
           p_start_date?: string
           p_template_code: string
@@ -3975,6 +4275,7 @@ export type Database = {
           is_total: boolean
           level: number
           parent_code: string
+          percentage: number
           rubric_code: string
           rubric_name: string
           sign: string

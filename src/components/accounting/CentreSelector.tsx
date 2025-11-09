@@ -21,20 +21,36 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
   const isError = centresIsError;
   const error = centresError;
 
-  // Auto-select first company when data loads and no view is selected
+  // Auto-select centre 1050 - Islazul when data loads and no view is selected (temporary for testing)
   useEffect(() => {
-    if (!isLoading && !value && franchiseesWithCompanies?.length) {
-      const firstFranchisee = franchiseesWithCompanies[0];
-      const firstCompany = firstFranchisee?.companies[0];
-      if (firstCompany) {
+    if (!isLoading && !value && franchiseesWithCentres?.length) {
+      // Search for centre with code "1050" (Islazul)
+      let found1050 = null;
+      for (const franchisee of franchiseesWithCentres) {
+        found1050 = franchisee.centres.find(c => c.codigo === '1050');
+        if (found1050) break;
+      }
+      
+      if (found1050) {
         onChange({
-          type: 'company',
-          id: firstCompany.id,
-          name: firstCompany.razon_social
+          type: 'centre',
+          id: found1050.id,
+          name: `${found1050.codigo} - ${found1050.nombre}`
         });
+      } else {
+        // Fallback: select first company if 1050 not found
+        const firstFranchisee = franchiseesWithCompanies?.[0];
+        const firstCompany = firstFranchisee?.companies[0];
+        if (firstCompany) {
+          onChange({
+            type: 'company',
+            id: firstCompany.id,
+            name: firstCompany.razon_social
+          });
+        }
       }
     }
-  }, [franchiseesWithCompanies, value, onChange, isLoading]);
+  }, [franchiseesWithCentres, franchiseesWithCompanies, value, onChange, isLoading]);
 
   if (isLoading) {
     return (

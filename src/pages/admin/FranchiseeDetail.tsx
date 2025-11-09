@@ -1,18 +1,32 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, Store } from "lucide-react";
+import { ArrowLeft, Building2, Store, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useFranchiseeDetail } from "@/hooks/useFranchiseeDetail";
 import { FranchiseeDataForm } from "@/components/admin/FranchiseeDataForm";
 import { FranchiseeAssociatedCentres } from "@/components/admin/FranchiseeAssociatedCentres";
 import { FranchiseeAssociatedCompanies } from "@/components/admin/FranchiseeAssociatedCompanies";
 import { FranchiseeAuditLog } from "@/components/admin/FranchiseeAuditLog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FranchiseeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {
     franchisee,
@@ -24,6 +38,7 @@ export default function FranchiseeDetail() {
     dissociateCentre,
     associateCompany,
     dissociateCompany,
+    deleteFranchisee,
   } = useFranchiseeDetail(id!);
 
   if (isLoading) {
@@ -43,6 +58,22 @@ export default function FranchiseeDetail() {
   }
 
   const activeCentres = centres.filter(c => c.activo).length;
+  const canDelete = centres.length === 0 && companies.length === 0;
+
+  const handleDelete = async () => {
+    if (!canDelete) {
+      toast({
+        title: "No se puede eliminar",
+        description: "Desasocia todos los centros y sociedades primero",
+        variant: "destructive",
+      });
+      setDeleteDialogOpen(false);
+      return;
+    }
+    
+    await deleteFranchisee.mutateAsync();
+    navigate("/admin?tab=franchisees");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -63,7 +94,17 @@ export default function FranchiseeDetail() {
             </div>
           </div>
         </div>
-        <Badge variant="default">Activo</Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="default">Activo</Badge>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar Franquiciado
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -150,6 +191,52 @@ export default function FranchiseeDetail() {
           <FranchiseeAuditLog franchiseeId={id!} />
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {canDelete ? "¿Eliminar franquiciado?" : "No se puede eliminar"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {canDelete ? (
+                <div className="space-y-3">
+                  <p>Esta acción no se puede deshacer. El franquiciado <strong>{franchisee?.name}</strong> será eliminado permanentemente.</p>
+                  <div className="space-y-1 text-sm">
+                    <p className="text-green-600 dark:text-green-400">✓ No tiene centros asociados</p>
+                    <p className="text-green-600 dark:text-green-400">✓ No tiene sociedades asociadas</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="font-semibold text-destructive">Este franquiciado tiene datos asociados:</p>
+                  <div className="space-y-1 text-sm">
+                    {centres.length > 0 && (
+                      <p className="text-destructive">• {centres.length} centro(s) asociado(s)</p>
+                    )}
+                    {companies.length > 0 && (
+                      <p className="text-destructive">• {companies.length} sociedad(es) asociada(s)</p>
+                    )}
+                  </div>
+                  <p className="mt-3">Debes desasociar todos los centros y sociedades antes de eliminar este franquiciado.</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            {canDelete && (
+              <AlertDialogAction 
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Eliminar
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

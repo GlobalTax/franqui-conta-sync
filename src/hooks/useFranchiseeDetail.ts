@@ -202,6 +202,32 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     },
   });
 
+  // Mutation: Delete franchisee
+  const deleteFranchisee = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("franchisees")
+        .delete()
+        .eq("id", franchiseeId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["franchisees"] });
+      toast({
+        title: "Franquiciado eliminado",
+        description: "El franquiciado se ha eliminado correctamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al eliminar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     franchisee: franchiseeQuery.data,
     centres: centresQuery.data || [],
@@ -212,5 +238,6 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     dissociateCentre,
     associateCompany,
     dissociateCompany,
+    deleteFranchisee,
   };
 };

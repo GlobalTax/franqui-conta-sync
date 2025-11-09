@@ -15,11 +15,15 @@ import { usePLReport } from "@/hooks/usePLReport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { PLQSRKPICards } from "@/components/pl/PLQSRKPICards";
+import { exportPLHistorical } from "@/lib/pl-export-excel";
 
 const ProfitAndLoss = () => {
   const { selectedView } = useView();
   const [period, setPeriod] = useState("2024-01");
-  const [selectedTemplate, setSelectedTemplate] = useState("PGC_2025");
+  const [selectedTemplate, setSelectedTemplate] = useState("McD_QSR_v1");
+  const [compareYears, setCompareYears] = useState<number[]>([2024, 2023, 2022]);
+  const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
   
   // Obtener plantillas disponibles
   const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
@@ -51,6 +55,28 @@ const ProfitAndLoss = () => {
     ebitdaMarginPercent: 0,
     ebitMarginPercent: 0,
     netMarginPercent: 0,
+  };
+
+  // Detectar si es plantilla QSR (McD_QSR_v1)
+  const isQSRTemplate = selectedTemplate === "McD_QSR_v1";
+
+  // Export Excel con formato histórico
+  const handleExport = () => {
+    if (!plData || plData.length === 0) return;
+
+    if (viewMode === "multi-year") {
+      // Multi-año: exportar comparativo
+      exportPLHistorical({
+        plDataByYear: [plData], // Aquí deberías tener data de múltiples años
+        years: compareYears,
+        restaurantName: selectedView?.name || "Restaurante",
+        templateName: templates?.find((t) => t.code === selectedTemplate)?.name || selectedTemplate,
+      });
+    } else {
+      // Single: exportar PDF o Excel simple
+      // TODO: Implementar export simple
+      console.log("Export single period");
+    }
   };
 
   if (!selectedView) {
@@ -107,10 +133,21 @@ const ProfitAndLoss = () => {
             : `Centro: ${selectedView.name}`
         }
         actions={
-          <Button className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as "single" | "multi-year")}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="single">Vista Mensual</SelectItem>
+                <SelectItem value="multi-year">Multi-Año</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleExport} disabled={!plData || plData.length === 0} className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </Button>
+          </div>
         }
       />
       <div className="mx-auto max-w-7xl p-6 space-y-6">
@@ -168,6 +205,8 @@ const ProfitAndLoss = () => {
               </Card>
             ))}
           </div>
+        ) : isQSRTemplate ? (
+          <PLQSRKPICards plData={plData} summary={summary} />
         ) : (
           <div className="grid gap-4 md:grid-cols-4">
             <div className="p-6 bg-card rounded-2xl shadow-minimal hover:shadow-minimal-md transition-all duration-200">

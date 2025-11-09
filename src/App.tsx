@@ -16,6 +16,7 @@ import BankReconciliation from "@/pages/treasury/BankReconciliation";
 import JournalEntries from "@/pages/JournalEntries";
 import ChartOfAccounts from "@/pages/ChartOfAccounts";
 import ProfitAndLoss from "@/pages/ProfitAndLoss";
+import ProfitAndLossConsolidated from "@/pages/ProfitAndLossConsolidated";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
 import CentreDetail from "@/pages/admin/CentreDetail";
@@ -118,6 +119,7 @@ const App = () => {
             <Route path="/journal" element={<JournalEntries />} />
             <Route path="/accounts" element={<ChartOfAccounts />} />
             <Route path="/pnl" element={<ProfitAndLoss />} />
+            <Route path="/pnl/consolidado" element={<ProfitAndLossConsolidated />} />
             <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
             <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
             <Route path="/reportes/balance" element={<BalanceSheet />} />

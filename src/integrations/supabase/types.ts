@@ -4331,8 +4331,8 @@ export type Database = {
       calculate_pl_report_consolidated: {
         Args: {
           p_centro_codes: string[]
-          p_end_date?: string
-          p_start_date?: string
+          p_end_date: string
+          p_start_date: string
           p_template_code: string
         }
         Returns: {
@@ -4349,10 +4349,10 @@ export type Database = {
       }
       calculate_pl_report_with_adjustments: {
         Args: {
-          p_centro_code?: string
-          p_company_id?: string
-          p_end_date?: string
-          p_start_date?: string
+          p_centro_code: string
+          p_company_id: string
+          p_end_date: string
+          p_start_date: string
           p_template_code: string
         }
         Returns: {

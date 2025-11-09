@@ -2,10 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOrganization } from './useOrganization';
-import { 
-  getInvoicesReceived, 
-  getInvoiceLines 
-} from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
 import type { InvoiceFilters } from '@/domain/invoicing/types';
 
 // Tipos exportados para retrocompatibilidad (mapeo snake_case → camelCase)
@@ -95,7 +92,7 @@ export const useInvoicesReceived = (filters?: {
         dateTo: filters?.date_to,
       };
 
-      const domainInvoices = await getInvoicesReceived(queryFilters);
+      const domainInvoices = await InvoiceQueries.findInvoicesReceived(queryFilters);
 
       // Convertir de camelCase (dominio) a snake_case (API legacy)
       return domainInvoices.map(inv => ({
@@ -233,7 +230,7 @@ export const useInvoiceLines = (invoiceId: string, invoiceType: 'received' | 'is
   return useQuery({
     queryKey: ['invoice_lines', invoiceId, invoiceType],
     queryFn: async () => {
-      const domainLines = await getInvoiceLines(invoiceId, invoiceType);
+      const domainLines = await InvoiceQueries.getInvoiceLines(invoiceId, invoiceType);
       
       // Convertir de camelCase (dominio) a snake_case (API legacy)
       return domainLines.map(line => ({

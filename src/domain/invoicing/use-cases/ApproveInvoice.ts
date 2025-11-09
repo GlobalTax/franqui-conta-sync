@@ -5,7 +5,8 @@
 
 import { InvoiceValidator } from '../services/InvoiceValidator';
 import { ApprovalEngine } from '../services/ApprovalEngine';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { InvoiceReceived, ApprovalStatus } from '../types';
 
 export interface ApproveInvoiceInput {
@@ -77,9 +78,11 @@ export class ApproveInvoiceUseCase {
     );
 
     // PASO 5: Actualizar factura en base de datos
-    const updatedInvoice = await InvoiceQueries.updateInvoiceReceived(input.invoice.id, {
-      approvalStatus: nextStatus,
-      status: nextStatus === 'approved' ? 'approved' : 'pending',
+    const updatedInvoice = await InvoiceCommands.updateInvoiceReceived(input.invoice.id, {
+      updates: {
+        approvalStatus: nextStatus,
+        status: nextStatus === 'approved' ? 'approved' : 'pending',
+      } as any,
     });
 
     // PASO 6: Registrar aprobación en historial (tabla invoice_approvals)

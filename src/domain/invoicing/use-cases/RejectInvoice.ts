@@ -5,7 +5,7 @@
 
 import { InvoiceValidator } from '../services/InvoiceValidator';
 import { ApprovalEngine } from '../services/ApprovalEngine';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { InvoiceReceived } from '../types';
 
 export interface RejectInvoiceInput {
@@ -67,15 +67,17 @@ export class RejectInvoiceUseCase {
     }
 
     // PASO 4: Actualizar factura con datos de rechazo
-    const updatedInvoice = await InvoiceQueries.updateInvoiceReceived(input.invoice.id, {
-      approvalStatus: 'rejected',
-      status: 'rejected',
-      rejectedBy: input.rejectorUserId,
-      rejectedAt: new Date().toISOString(),
-      rejectedReason: input.reason,
-      notes: input.comments
-        ? `${input.invoice.notes || ''}\n\n[Rechazada] ${input.comments}`.trim()
-        : input.invoice.notes,
+    const updatedInvoice = await InvoiceCommands.updateInvoiceReceived(input.invoice.id, {
+      updates: {
+        approvalStatus: 'rejected',
+        status: 'rejected',
+        rejectedBy: input.rejectorUserId,
+        rejectedAt: new Date().toISOString(),
+        rejectedReason: input.reason,
+        notes: input.comments
+          ? `${input.invoice.notes || ''}\n\n[Rechazada] ${input.comments}`.trim()
+          : input.invoice.notes,
+      } as any,
     });
 
     // PASO 5: Registrar rechazo en historial (tabla invoice_approvals)

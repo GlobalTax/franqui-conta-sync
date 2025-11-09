@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
 import { ApproveInvoiceUseCase } from '@/domain/invoicing/use-cases/ApproveInvoice';
 import { RejectInvoiceUseCase } from '@/domain/invoicing/use-cases/RejectInvoice';
 import { toast } from 'sonner';
@@ -61,7 +61,7 @@ export function useApproveInvoice() {
       const userRole = (userData.user.user_metadata?.role as 'admin' | 'manager' | 'accountant') || 'accountant';
 
       // Obtener factura completa
-      const invoice = await InvoiceQueries.getInvoiceReceivedById(params.invoice_id);
+      const invoice = await InvoiceQueries.findInvoiceReceivedById(params.invoice_id);
       if (!invoice) throw new Error('Factura no encontrada');
 
       if (params.action === 'approved') {

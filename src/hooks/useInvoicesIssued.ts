@@ -2,10 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOrganization } from './useOrganization';
-import { 
-  getInvoicesIssued, 
-  getNextInvoiceNumber
-} from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
 import type { InvoiceFilters } from '@/domain/invoicing/types';
 
 export interface InvoiceIssued {
@@ -80,7 +77,7 @@ export const useInvoicesIssued = (filters?: {
         dateTo: filters?.date_to,
       };
 
-      const domainInvoices = await getInvoicesIssued(queryFilters);
+      const domainInvoices = await InvoiceQueries.findInvoicesIssued(queryFilters);
 
       // Convertir de camelCase (dominio) a snake_case (API legacy)
       return domainInvoices.map(inv => ({
@@ -117,7 +114,7 @@ export const useInvoicesIssued = (filters?: {
 export const useGetNextInvoiceNumber = () => {
   return useMutation({
     mutationFn: async ({ centro_code, series }: { centro_code: string; series: string }) => {
-      return await getNextInvoiceNumber(centro_code, series);
+      return await InvoiceQueries.getNextInvoiceNumber(centro_code, series);
     },
   });
 };

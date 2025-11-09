@@ -6,7 +6,7 @@
 import { InvoiceCalculator } from '../services/InvoiceCalculator';
 import { InvoiceValidator } from '../services/InvoiceValidator';
 import { ApprovalEngine } from '../services/ApprovalEngine';
-import * as InvoiceQueries from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import type { InvoiceReceived, InvoiceLine } from '../types';
 
 export interface CreateInvoiceReceivedInput {
@@ -109,16 +109,10 @@ export class CreateInvoiceReceivedUseCase {
     }
 
     // PASO 5: Persistir en base de datos
-    // Agregar invoiceType a las líneas (requerido por la interfaz de persistencia)
-    const linesWithType = input.lines.map(line => ({
-      ...line,
-      invoiceType: 'received' as const,
-    }));
-    
-    const createdInvoice = await InvoiceQueries.createInvoiceReceived(
+    const createdInvoice = await InvoiceCommands.createInvoiceReceived({
       invoice,
-      linesWithType
-    );
+      lines: input.lines as any,
+    });
 
     return {
       invoice: createdInvoice,

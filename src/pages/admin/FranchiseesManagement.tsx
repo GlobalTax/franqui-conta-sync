@@ -4,11 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Users, Plus, Pencil } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreateFranchiseeDialog } from "@/components/admin/CreateFranchiseeDialog";
-import { EditFranchiseeDialog } from "@/components/admin/EditFranchiseeDialog";
 
 const FranchiseesManagement = () => {
   const { toast } = useToast();
@@ -16,8 +15,6 @@ const FranchiseesManagement = () => {
   const [franchisees, setFranchisees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedFranchisee, setSelectedFranchisee] = useState<any>(null);
 
   useEffect(() => {
     loadFranchisees();
@@ -27,10 +24,9 @@ const FranchiseesManagement = () => {
     setLoading(true);
     
     try {
-      // Paso 1: Cargar franchisees sin joins
       const { data: franchiseesData, error } = await supabase
         .from("franchisees")
-        .select("*")
+        .select("id, name, email")
         .order("name");
 
       if (error) throw error;
@@ -42,28 +38,36 @@ const FranchiseesManagement = () => {
         return;
       }
 
-      // Paso 2: Cargar centros y user_roles para contar
-      const [centresResult, rolesResult] = await Promise.all([
+      // Cargar centros y sociedades
+      const [centresResult, companiesResult] = await Promise.all([
         supabase.from("centres").select("franchisee_id").in("franchisee_id", franchiseeIds),
-        supabase.from("user_roles").select("franchisee_id").in("franchisee_id", franchiseeIds)
+        supabase
+          .from("centres")
+          .select("franchisee_id, centre_companies!inner(razon_social, activo)")
+          .in("franchisee_id", franchiseeIds)
+          .eq("centre_companies.activo", true)
       ]);
 
-      // Paso 3: Agrupar counts por franchisee_id
+      // Agrupar counts por franchisee_id
       const centresMap = new Map<string, number>();
       (centresResult.data || []).forEach((row: any) => {
         centresMap.set(row.franchisee_id, (centresMap.get(row.franchisee_id) || 0) + 1);
       });
 
-      const rolesMap = new Map<string, number>();
-      (rolesResult.data || []).forEach((row: any) => {
-        rolesMap.set(row.franchisee_id, (rolesMap.get(row.franchisee_id) || 0) + 1);
+      const companiesMap = new Map<string, string[]>();
+      (companiesResult.data || []).forEach((row: any) => {
+        const societies = companiesMap.get(row.franchisee_id) || [];
+        if (row.centre_companies?.razon_social && !societies.includes(row.centre_companies.razon_social)) {
+          societies.push(row.centre_companies.razon_social);
+        }
+        companiesMap.set(row.franchisee_id, societies);
       });
 
-      // Paso 4: Recomponer con counts reales
+      // Recomponer con counts y sociedades
       const enrichedData = franchiseesData.map((f: any) => ({
         ...f,
-        centres: [{ count: centresMap.get(f.id) || 0 }],
-        user_roles: [{ count: rolesMap.get(f.id) || 0 }]
+        centres_count: centresMap.get(f.id) || 0,
+        societies: companiesMap.get(f.id) || []
       }));
 
       setFranchisees(enrichedData);
@@ -79,10 +83,6 @@ const FranchiseesManagement = () => {
     }
   };
 
-  const openEditDialog = (franchisee: any) => {
-    setSelectedFranchisee(franchisee);
-    setEditDialogOpen(true);
-  };
 
   if (loading) {
     return <div className="text-center py-8">Cargando franchisees...</div>;
@@ -104,9 +104,8 @@ const FranchiseesManagement = () => {
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>CIF</TableHead>
+            <TableHead>Sociedades</TableHead>
             <TableHead>Centros</TableHead>
-            <TableHead>Usuarios</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -117,36 +116,33 @@ const FranchiseesManagement = () => {
                 <div className="font-medium">{franchisee.name}</div>
               </TableCell>
               <TableCell>{franchisee.email}</TableCell>
-              <TableCell>{franchisee.company_tax_id || "—"}</TableCell>
               <TableCell>
-                <Badge variant="secondary">
-                  {franchisee.centres?.length || 0} centros
-                </Badge>
+                <div className="flex flex-wrap gap-1">
+                  {franchisee.societies?.length > 0 ? (
+                    franchisee.societies.map((society: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {society}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Sin sociedades</span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <Badge variant="outline">
-                  {franchisee.user_roles?.length || 0} usuarios
+                  {franchisee.centres_count} centros
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => openEditDialog(franchisee)}
-                    title="Editar franchisee"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => navigate(`/admin?tab=centres&franchisee=${franchisee.id}`)}
-                    title="Ver centros"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => navigate(`/admin?tab=centres&franchisee=${franchisee.id}`)}
+                  title="Ver detalles"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -168,14 +164,6 @@ const FranchiseesManagement = () => {
       }}
     />
 
-    <EditFranchiseeDialog
-      franchisee={selectedFranchisee}
-      open={editDialogOpen}
-      onOpenChange={(open) => {
-        setEditDialogOpen(open);
-        if (!open) loadFranchisees();
-      }}
-    />
   </>
   );
 };

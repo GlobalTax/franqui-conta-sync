@@ -26,6 +26,20 @@ import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 // ✅ Lazy load: Tabla multi-año (solo se carga cuando se activa la vista)
 const PLTableMultiYear = lazy(() => import("@/components/pl/PLTableMultiYear").then(m => ({ default: m.PLTableMultiYear })));
 
+// ✅ Función de preload para cargar el componente antes del clic
+let isPreloaded = false;
+const preloadMultiYearTable = () => {
+  if (!isPreloaded) {
+    isPreloaded = true;
+    import("@/components/pl/PLTableMultiYear").then(() => {
+      console.log("✅ PLTableMultiYear precargado");
+    }).catch((err) => {
+      console.warn("⚠️ Error al precargar PLTableMultiYear:", err);
+      isPreloaded = false;
+    });
+  }
+};
+
 // Skeleton para lazy loading
 function PLTableMultiYearSkeleton() {
   return (
@@ -197,13 +211,33 @@ const ProfitAndLoss = () => {
         }
         actions={
           <div className="flex items-center gap-2">
-            <Select value={viewMode} onValueChange={(v) => setViewMode(v as "single" | "multi-year")}>
-              <SelectTrigger className="w-40">
+            <Select 
+              value={viewMode} 
+              onValueChange={(v) => setViewMode(v as "single" | "multi-year")}
+              onOpenChange={(open) => {
+                if (open && viewMode === "single") {
+                  preloadMultiYearTable();
+                }
+              }}
+            >
+              <SelectTrigger 
+                className="w-40"
+                onMouseEnter={() => {
+                  if (viewMode === "single") {
+                    preloadMultiYearTable();
+                  }
+                }}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="single">Vista Mensual</SelectItem>
-                <SelectItem value="multi-year">Multi-Año</SelectItem>
+                <SelectItem 
+                  value="multi-year"
+                  onMouseEnter={preloadMultiYearTable}
+                >
+                  Multi-Año
+                </SelectItem>
               </SelectContent>
             </Select>
             {viewMode === "single" && (

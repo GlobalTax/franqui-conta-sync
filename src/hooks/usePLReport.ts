@@ -49,32 +49,102 @@ export const usePLReport = ({
 
       // Vista dual: Mes + Acumulado
       if (showAccumulated && periodDate) {
-        const { data, error } = await supabase.rpc(
-          "calculate_pl_report_accumulated" as any,
-          {
-            p_template_code: templateCode,
-            p_company_id: companyId || null,
-            p_centro_code: centroCode || null,
-            p_period_date: periodDate,
-            p_show_accumulated: true,
+        try {
+          const { data, error } = await supabase.rpc(
+            "calculate_pl_report_accumulated" as any,
+            {
+              p_template_code: templateCode,
+              p_company_id: companyId || null,
+              p_centro_code: centroCode || null,
+              p_period_date: periodDate,
+              p_show_accumulated: true,
+            }
+          );
+
+          if (error) throw error;
+
+          const plDataAccumulated = (data || []) as any as PLReportLineAccumulated[];
+          
+          // Calcular summary usando datos del periodo
+          const summaryData: PLReportLine[] = plDataAccumulated.map(line => ({
+            ...line,
+            amount: line.amount_period,
+            percentage: line.percentage_period,
+          }));
+
+          return {
+            plData: plDataAccumulated,
+            summary: calculateSummary(summaryData),
+          };
+        } catch (err: any) {
+          // Fallback: si el RPC acumulado no existe o falla, hacer dos llamadas separadas
+          if (err.code === '404' || err.code === '400' || err.code === '42883') {
+            console.warn('calculate_pl_report_accumulated no disponible, usando fallback dual');
+            
+            const periodDateObj = new Date(periodDate);
+            const year = periodDateObj.getFullYear();
+            const month = periodDateObj.getMonth();
+            
+            // Periodo mensual
+            const periodStart = new Date(year, month, 1).toISOString().split('T')[0];
+            const periodEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
+            
+            // Acumulado del año
+            const ytdStart = `${year}-01-01`;
+            const ytdEnd = periodEnd;
+
+            // Llamada para el periodo mensual
+            const { data: periodData } = await supabase.rpc("calculate_pl_report", {
+              p_template_code: templateCode,
+              p_company_id: companyId || null,
+              p_centro_code: centroCode || null,
+              p_start_date: periodStart,
+              p_end_date: periodEnd,
+            });
+
+            // Llamada para el acumulado
+            const { data: ytdData } = await supabase.rpc("calculate_pl_report", {
+              p_template_code: templateCode,
+              p_company_id: companyId || null,
+              p_centro_code: centroCode || null,
+              p_start_date: ytdStart,
+              p_end_date: ytdEnd,
+            });
+
+            const periodLines = (periodData || []) as any[];
+            const ytdLines = (ytdData || []) as any[];
+
+            // Combinar ambos resultados
+            const plDataAccumulated: PLReportLineAccumulated[] = periodLines.map(pLine => {
+              const ytdLine = ytdLines.find(y => y.rubric_code === pLine.rubric_code);
+              return {
+                rubric_code: pLine.rubric_code,
+                rubric_name: pLine.rubric_name,
+                parent_code: pLine.parent_code,
+                level: pLine.level,
+                sort: pLine.sort,
+                is_total: pLine.is_total,
+                sign: pLine.sign,
+                amount_period: pLine.amount || 0,
+                amount_ytd: ytdLine?.amount || 0,
+                percentage_period: pLine.percentage || 0,
+                percentage_ytd: ytdLine?.percentage || 0,
+              };
+            });
+
+            const summaryData: PLReportLine[] = plDataAccumulated.map(line => ({
+              ...line,
+              amount: line.amount_period,
+              percentage: line.percentage_period,
+            }));
+
+            return {
+              plData: plDataAccumulated,
+              summary: calculateSummary(summaryData),
+            };
           }
-        );
-
-        if (error) throw error;
-
-        const plDataAccumulated = (data || []) as any as PLReportLineAccumulated[];
-        
-        // Calcular summary usando datos del periodo
-        const summaryData: PLReportLine[] = plDataAccumulated.map(line => ({
-          ...line,
-          amount: line.amount_period,
-          percentage: line.percentage_period,
-        }));
-
-        return {
-          plData: plDataAccumulated,
-          summary: calculateSummary(summaryData),
-        };
+          throw err;
+        }
       }
       // Si hay múltiples centros, usar RPC consolidado
       if (centroCodes && centroCodes.length > 0) {

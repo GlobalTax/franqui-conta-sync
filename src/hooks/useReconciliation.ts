@@ -69,7 +69,7 @@ export const useReconciliation = (centroCode?: string) => {
           )
         `)
         .eq("status", "approved")
-        .order("matched_at", { ascending: false });
+        .order("approved_at", { ascending: false });
 
       if (centroCode) {
         query = query.eq("bank_transactions.bank_accounts.centro_code", centroCode);
@@ -86,7 +86,7 @@ export const useReconciliation = (centroCode?: string) => {
       const { data: session } = await supabase.auth.getSession();
       const userId = session.session?.user.id;
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("reconciliation_matches")
         .update({
           status: "approved",
@@ -97,14 +97,31 @@ export const useReconciliation = (centroCode?: string) => {
         .select()
         .single();
 
+      // Fallback: si matched_at/matched_by no existen, usar approved_at/approved_by
+      if (error && (error as any).code === '42703') {
+        const fallbackResult = await supabase
+          .from("reconciliation_matches")
+          .update({
+            status: "approved",
+            approved_by: userId,
+            approved_at: new Date().toISOString(),
+          })
+          .eq("id", matchId)
+          .select()
+          .single();
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
+
       if (error) throw error;
 
-      // Update transaction status
+      // Update transaction status usando bank_transaction_id o transaction_id
       const match = data as any;
+      const txId = match.bank_transaction_id || match.transaction_id;
       await supabase
         .from("bank_transactions")
         .update({ status: "reconciled" })
-        .eq("id", match.bank_transaction_id);
+        .eq("id", txId);
 
       return data;
     },

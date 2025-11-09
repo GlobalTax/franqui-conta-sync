@@ -20,7 +20,28 @@ export function useReconciliationRules(centroCode?: string, bankAccountId?: stri
         query = query.eq('bank_account_id', bankAccountId);
       }
 
-      const { data, error } = await query;
+      let { data, error } = await query;
+      
+      // Fallback: si reconciliation_rules no existe, intentar bank_reconciliation_rules
+      if (error && (error as any).code === '42P01') {
+        query = supabase
+          .from('bank_reconciliation_rules' as any)
+          .select('*')
+          .order('priority', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (centroCode) {
+          query = query.eq('centro_code', centroCode);
+        }
+        if (bankAccountId) {
+          query = query.eq('bank_account_id', bankAccountId);
+        }
+
+        const fallbackResult = await query;
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
+      
       if (error) throw error;
       return data as any as ReconciliationRule[];
     },
@@ -32,11 +53,22 @@ export function useCreateReconciliationRule() {
 
   return useMutation({
     mutationFn: async (rule: Omit<Partial<ReconciliationRule>, 'id' | 'created_at' | 'updated_at'> & { centro_code: string; bank_account_id: string; rule_name: string; auto_match_type: string }) => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('reconciliation_rules' as any)
         .insert([rule])
         .select()
         .single();
+
+      // Fallback a bank_reconciliation_rules si no existe reconciliation_rules
+      if (error && (error as any).code === '42P01') {
+        const fallbackResult = await supabase
+          .from('bank_reconciliation_rules' as any)
+          .insert([rule])
+          .select()
+          .single();
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
       return data;
@@ -56,12 +88,24 @@ export function useUpdateReconciliationRule() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ReconciliationRule> & { id: string }) => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('reconciliation_rules' as any)
         .update(updates)
         .eq('id', id)
         .select()
         .single();
+
+      // Fallback a bank_reconciliation_rules
+      if (error && (error as any).code === '42P01') {
+        const fallbackResult = await supabase
+          .from('bank_reconciliation_rules' as any)
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
       return data;
@@ -81,10 +125,19 @@ export function useDeleteReconciliationRule() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('reconciliation_rules' as any)
         .delete()
         .eq('id', id);
+
+      // Fallback a bank_reconciliation_rules
+      if (error && (error as any).code === '42P01') {
+        const fallbackResult = await supabase
+          .from('bank_reconciliation_rules' as any)
+          .delete()
+          .eq('id', id);
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
     },
@@ -103,12 +156,24 @@ export function useToggleRuleActive() {
 
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('reconciliation_rules' as any)
         .update({ active })
         .eq('id', id)
         .select()
         .single();
+
+      // Fallback a bank_reconciliation_rules
+      if (error && (error as any).code === '42P01') {
+        const fallbackResult = await supabase
+          .from('bank_reconciliation_rules' as any)
+          .update({ active })
+          .eq('id', id)
+          .select()
+          .single();
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
       return data;

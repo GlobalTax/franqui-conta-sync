@@ -73,16 +73,28 @@ export const useCentre = (id: string) => {
   return useQuery({
     queryKey: ["centre", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Intentar primero con embeds simples (sin !fkey)
+      let { data, error } = await supabase
         .from("centres")
         .select(`
           *,
-          franchisees!centres_franchisee_id_fkey (name, email),
-          orquest_services!centres_orquest_service_id_fkey (id, nombre, service_name, business_id, zona_horaria),
+          franchisees (name, email),
+          orquest_services (id, nombre, service_name, business_id, zona_horaria),
           centre_companies (id, razon_social, cif, tipo_sociedad, es_principal)
         `)
         .eq("id", id)
         .single();
+
+      // Fallback: si los embeds fallan, obtener solo el centro
+      if (error && (error as any).code === '400') {
+        const fallbackResult = await supabase
+          .from("centres")
+          .select("*")
+          .eq("id", id)
+          .single();
+        data = fallbackResult.data as any;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
       

@@ -1,22 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ViewSelection } from "@/contexts/ViewContext";
-
-interface BalanceSheetItem {
-  grupo: string;
-  nombre_grupo: string;
-  balance: number;
-}
+import { BalanceSheetItem, BalanceSheetData, NivelPGC } from "@/types/pgc-reports";
 
 // Función auxiliar para consolidar balances
 const consolidateBalances = (balances: BalanceSheetItem[][]): BalanceSheetItem[] => {
-  const consolidated: Record<string, { nombre_grupo: string; balance: number }> = {};
+  const consolidated: Record<string, { 
+    nombre_grupo: string; 
+    nivel: number; 
+    parent_code: string | null; 
+    balance: number 
+  }> = {};
   
   balances.forEach(balance => {
     balance?.forEach((item) => {
       const key = item.grupo;
       if (!consolidated[key]) {
-        consolidated[key] = { nombre_grupo: item.nombre_grupo, balance: 0 };
+        consolidated[key] = { 
+          nombre_grupo: item.nombre_grupo, 
+          nivel: item.nivel,
+          parent_code: item.parent_code,
+          balance: 0 
+        };
       }
       consolidated[key].balance += Number(item.balance);
     });
@@ -25,17 +30,21 @@ const consolidateBalances = (balances: BalanceSheetItem[][]): BalanceSheetItem[]
   return Object.entries(consolidated).map(([grupo, data]) => ({
     grupo,
     nombre_grupo: data.nombre_grupo,
+    nivel: data.nivel,
+    parent_code: data.parent_code,
     balance: data.balance,
   }));
 };
 
 export const useBalanceSheet = (
   viewSelection: ViewSelection | null,
-  fechaCorte: string
+  fechaCorte: string,
+  nivel: NivelPGC = 1,
+  showZeroBalance: boolean = true
 ) => {
   return useQuery({
-    queryKey: ["balance-sheet", viewSelection, fechaCorte],
-    queryFn: async () => {
+    queryKey: ["balance-sheet", viewSelection, fechaCorte, nivel, showZeroBalance],
+    queryFn: async (): Promise<BalanceSheetData | null> => {
       if (!viewSelection) return null;
 
       let items: BalanceSheetItem[] = [];
@@ -54,15 +63,26 @@ export const useBalanceSheet = (
 
         // Consolidar datos de todos los centros
         const promises = centres.map(c =>
-          supabase.rpc("calculate_balance_sheet", {
+          supabase.rpc("calculate_balance_sheet_full", {
             p_centro_code: c.codigo,
             p_fecha_corte: fechaCorte,
+            p_nivel: nivel,
+            p_show_zero_balance: showZeroBalance
           })
         );
 
         const results = await Promise.all(promises);
         const allBalances = results
-          .map(r => (r.data || []) as BalanceSheetItem[])
+          .map(r => {
+            const rawData = (r.data || []) as any[];
+            return rawData.map(item => ({
+              grupo: item.codigo,
+              nombre_grupo: item.nombre,
+              nivel: item.nivel,
+              parent_code: item.parent_code,
+              balance: item.balance
+            }));
+          })
           .filter(b => b.length > 0);
         
         items = consolidateBalances(allBalances);
@@ -76,13 +96,22 @@ export const useBalanceSheet = (
 
         if (!centre) return null;
 
-        const { data, error } = await supabase.rpc("calculate_balance_sheet", {
+        const { data, error } = await supabase.rpc("calculate_balance_sheet_full", {
           p_centro_code: centre.codigo,
           p_fecha_corte: fechaCorte,
+          p_nivel: nivel,
+          p_show_zero_balance: showZeroBalance
         });
 
         if (error) throw error;
-        items = (data || []) as BalanceSheetItem[];
+        const rawData = (data || []) as any[];
+        items = rawData.map(item => ({
+          grupo: item.codigo,
+          nombre_grupo: item.nombre,
+          nivel: item.nivel,
+          parent_code: item.parent_code,
+          balance: item.balance
+        }));
       }
 
       // Agrupar en Activo, Pasivo y Patrimonio Neto

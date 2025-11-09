@@ -37,10 +37,10 @@ const TrialBalance = () => {
 
   // Group by level for better visualization
   const groupedByLevel = trialBalance?.reduce((acc, row) => {
-    if (!acc[row.level]) {
-      acc[row.level] = [];
+    if (!acc[row.nivel]) {
+      acc[row.nivel] = [];
     }
-    acc[row.level].push(row);
+    acc[row.nivel].push(row);
     return acc;
   }, {} as Record<number, typeof trialBalance>);
 
@@ -169,7 +169,7 @@ const TrialBalance = () => {
                               {row.account_code}
                             </TableCell>
                             <TableCell>{row.account_name}</TableCell>
-                            <TableCell className="text-center">{row.level}</TableCell>
+                            <TableCell className="text-center">{row.nivel}</TableCell>
                             <TableCell className="text-right font-mono">
                               {row.debit_total > 0 ? formatAmount(row.debit_total) : "-"}
                             </TableCell>

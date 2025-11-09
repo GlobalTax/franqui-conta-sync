@@ -19,10 +19,11 @@ export const useGeneralLedger = (
   viewSelection: ViewSelection | null,
   startDate: string,
   endDate: string,
-  accountCode?: string
+  accountCode?: string,
+  includeZeroBalance: boolean = false
 ) => {
   return useQuery({
-    queryKey: ["general-ledger", viewSelection, startDate, endDate, accountCode],
+    queryKey: ["general-ledger", viewSelection, startDate, endDate, accountCode, includeZeroBalance],
     queryFn: async () => {
       if (!viewSelection) return [];
 
@@ -39,11 +40,12 @@ export const useGeneralLedger = (
         if (!centres || centres.length === 0) return [];
 
         const promises = centres.map(c =>
-          supabase.rpc("get_general_ledger_official", {
+          supabase.rpc("get_general_ledger_full", {
             p_centro_code: c.codigo,
             p_start_date: startDate,
             p_end_date: endDate,
             p_account_code: accountCode || null,
+            p_include_zero_balance: includeZeroBalance
           })
         );
 
@@ -66,11 +68,12 @@ export const useGeneralLedger = (
 
         if (!centre) return [];
 
-        const { data, error } = await supabase.rpc("get_general_ledger_official", {
+        const { data, error } = await supabase.rpc("get_general_ledger_full", {
           p_centro_code: centre.codigo,
           p_start_date: startDate,
           p_end_date: endDate,
           p_account_code: accountCode || null,
+          p_include_zero_balance: includeZeroBalance
         });
 
         if (error) throw error;

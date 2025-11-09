@@ -87,17 +87,25 @@ const CompaniesManagement = () => {
 
       if (error) throw error;
 
-      // Get centre counts for each company
+      // Get centre counts for each company from BOTH sources
       const companiesWithCounts = await Promise.all(
         (data || []).map(async (company: any) => {
-          const { count } = await supabase
+          // Count centres via company_id (direct association)
+          const { count: countViaCompanyId } = await supabase
             .from("centres")
             .select("*", { count: "exact", head: true })
             .eq("company_id", company.id);
 
+          // Count centres via centre_companies (join table association)
+          const { count: countViaCentreCompanies } = await supabase
+            .from("centre_companies")
+            .select("*", { count: "exact", head: true })
+            .eq("cif", company.cif)
+            .eq("activo", true);
+
           return {
             ...company,
-            centros_count: count || 0,
+            centros_count: (countViaCompanyId || 0) + (countViaCentreCompanies || 0),
           };
         })
       );

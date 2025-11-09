@@ -1840,6 +1840,69 @@ export type Database = {
         }
         Relationships: []
       }
+      import_runs: {
+        Row: {
+          centro_code: string | null
+          created_at: string
+          created_by: string | null
+          error_log: Json | null
+          filename: string | null
+          finished_at: string | null
+          id: string
+          module: string
+          source: string
+          started_at: string
+          stats: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_log?: Json | null
+          filename?: string | null
+          finished_at?: string | null
+          id?: string
+          module: string
+          source: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_log?: Json | null
+          filename?: string | null
+          finished_at?: string | null
+          id?: string
+          module?: string
+          source?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_runs_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "import_runs_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
       invites: {
         Row: {
           accepted_at: string | null
@@ -2248,6 +2311,51 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_source: {
+        Row: {
+          created_at: string
+          entry_id: string
+          hash: string | null
+          id: string
+          id_externo: string
+          import_run_id: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          hash?: string | null
+          id?: string
+          id_externo: string
+          import_run_id?: string | null
+          source: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          hash?: string | null
+          id?: string
+          id_externo?: string
+          import_run_id?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_source_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_source_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -3032,6 +3140,65 @@ export type Database = {
             columns: ["franchisee_id"]
             isOneToOne: false
             referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stg_diario: {
+        Row: {
+          centro_code: string | null
+          concepto: string | null
+          created_at: string
+          cuenta: string
+          debe: number | null
+          documento: string | null
+          fecha: string
+          haber: number | null
+          hash: string | null
+          id: string
+          id_externo: string
+          import_run_id: string
+          status: string | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          centro_code?: string | null
+          concepto?: string | null
+          created_at?: string
+          cuenta: string
+          debe?: number | null
+          documento?: string | null
+          fecha: string
+          haber?: number | null
+          hash?: string | null
+          id?: string
+          id_externo: string
+          import_run_id: string
+          status?: string | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          centro_code?: string | null
+          concepto?: string | null
+          created_at?: string
+          cuenta?: string
+          debe?: number | null
+          documento?: string | null
+          fecha?: string
+          haber?: number | null
+          hash?: string | null
+          id?: string
+          id_externo?: string
+          import_run_id?: string
+          status?: string | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stg_diario_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -3948,6 +4115,7 @@ export type Database = {
         Args: { p_cif: string }
         Returns: undefined
       }
+      post_diario_import: { Args: { p_import_run_id: string }; Returns: Json }
       reconstruct_franchisee_relationships: {
         Args: never
         Returns: {
@@ -3975,6 +4143,19 @@ export type Database = {
       set_primary_company: {
         Args: { _centre_id: string; _company_id: string }
         Returns: undefined
+      }
+      stage_diario_rows: {
+        Args: { p_import_run_id: string; p_rows: Json }
+        Returns: Json
+      }
+      start_import: {
+        Args: {
+          p_centro_code?: string
+          p_filename: string
+          p_module: string
+          p_source: string
+        }
+        Returns: string
       }
       upsert_company_with_addresses: {
         Args: {

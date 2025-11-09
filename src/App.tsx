@@ -50,7 +50,26 @@ const FiscalYearClosing = lazy(() => import("@/pages/accounting/FiscalYearClosin
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const StyleGuide = lazy(() => import("@/pages/examples/StyleGuide"));
 
-const queryClient = new QueryClient();
+/**
+ * React Query Configuration
+ * 
+ * - refetchOnWindowFocus: true (detectar cambios al volver a la pestaña)
+ * - retry: 1 (fallar rápido en errores, no esperar 3 reintentos)
+ * - staleTime: 5 min (caché razonable para datos semi-estáticos)
+ * - gcTime: 30 min (mantener datos en memoria para navegación rápida)
+ * 
+ * Los hooks individuales pueden sobrescribir estos defaults según su criticidad.
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    },
+  },
+});
 
 const App = () => {
   const [session, setSession] = useState<Session | null>(null);

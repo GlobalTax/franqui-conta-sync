@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Mail, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,13 @@ import { CompanyConfigTabs } from "@/components/company/CompanyConfigTabs";
 import { useView } from "@/contexts/ViewContext";
 import { useCompanyConfiguration } from "@/hooks/useCompanyConfiguration";
 import { useCentre } from "@/hooks/useCentres";
+import { ManageRestaurantCompaniesDialog } from "@/components/admin/ManageRestaurantCompaniesDialog";
 
 export default function CompanyConfiguration() {
   const { selectedView } = useView();
   const isCentreView = selectedView?.type === 'centre';
   const centreId = isCentreView ? selectedView.id : undefined;
+  const [showManageCompaniesDialog, setShowManageCompaniesDialog] = useState(false);
 
   // Obtener datos del centro (para derivar companyId) cuando aplique
   const { data: centre, isLoading: isCentreLoading } = useCentre((centreId as string) || "");
@@ -100,12 +103,32 @@ export default function CompanyConfiguration() {
 
   if (isCentreView && !isCentreLoading && !targetCompanyId) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
         <Alert>
-          <AlertDescription>
-            Este centro no tiene ninguna sociedad asociada. Asócialo desde Administración → Centros.
+          <AlertDescription className="flex items-center justify-between">
+            <span>Este centro no tiene ninguna sociedad asociada.</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowManageCompaniesDialog(true)}
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Gestionar Sociedades
+            </Button>
           </AlertDescription>
         </Alert>
+
+        {centre && (
+          <ManageRestaurantCompaniesDialog
+            centre={centre}
+            open={showManageCompaniesDialog}
+            onOpenChange={setShowManageCompaniesDialog}
+            onUpdate={() => {
+              // Refrescar datos del centro
+              window.location.reload();
+            }}
+          />
+        )}
       </div>
     );
   }

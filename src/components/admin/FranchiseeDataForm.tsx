@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 
 interface FranchiseeDataFormProps {
   franchisee: any;
@@ -22,6 +22,14 @@ export function FranchiseeDataForm({ franchisee, onUpdate, isUpdating }: Franchi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("📝 FranchiseeDataForm - Datos a enviar:", formData);
+    console.log("📝 FranchiseeDataForm - Datos originales:", {
+      name: franchisee?.name,
+      email: franchisee?.email,
+      company_tax_id: franchisee?.company_tax_id,
+      orquest_business_id: franchisee?.orquest_business_id,
+      orquest_api_key: franchisee?.orquest_api_key,
+    });
     onUpdate(formData);
   };
 
@@ -92,8 +100,17 @@ export function FranchiseeDataForm({ franchisee, onUpdate, isUpdating }: Franchi
 
           <div className="flex justify-end">
             <Button type="submit" disabled={isUpdating}>
-              <Save className="mr-2 h-4 w-4" />
-              Guardar Cambios
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Cambios
+                </>
+              )}
             </Button>
           </div>
         </form>

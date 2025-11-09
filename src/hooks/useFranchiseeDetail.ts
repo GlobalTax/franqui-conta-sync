@@ -55,17 +55,32 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
   // Mutation: Update franchisee data
   const updateFranchisee = useMutation({
     mutationFn: async (updates: any) => {
+      console.log("🔄 useFranchiseeDetail - Iniciando actualización...");
+      console.log("📊 Datos a enviar a Supabase:", updates);
+      console.log("🆔 Franchisee ID:", franchiseeId);
+      
       const { data, error } = await supabase
         .from("franchisees")
         .update(updates)
         .eq("id", franchiseeId)
         .select()
         .single();
+
+      console.log("📡 Respuesta de Supabase:", { data, error });
+
+      if (error) {
+        console.error("❌ Error de Supabase:", error);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error details:", error.details);
+        console.error("❌ Error hint:", error.hint);
+        throw error;
+      }
       
-      if (error) throw error;
+      console.log("✅ Actualización exitosa - Datos devueltos:", data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("✅ onSuccess ejecutado - Datos actualizados:", data);
       queryClient.invalidateQueries({ queryKey: ["franchisee-detail", franchiseeId] });
       queryClient.invalidateQueries({ queryKey: ["franchisees"] });
       toast({
@@ -74,9 +89,11 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
       });
     },
     onError: (error: any) => {
+      console.error("❌ onError ejecutado:", error);
+      console.error("❌ Error completo:", JSON.stringify(error, null, 2));
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error al actualizar",
+        description: error.message || "No se pudo guardar los cambios. Verifica la consola para más detalles.",
         variant: "destructive",
       });
     },

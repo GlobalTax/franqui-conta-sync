@@ -3,6 +3,7 @@ import { Shield } from "lucide-react";
 import UsersManagement from "./admin/UsersManagement";
 import RolesManagement from "./admin/RolesManagement";
 import FranchiseesManagement from "./admin/FranchiseesManagement";
+import CompaniesManagement from "./admin/CompaniesManagement";
 import CentresManagement from "./admin/CentresManagement";
 import OrquestServicesManagement from "./admin/OrquestServicesManagement";
 import PermissionsManagement from "./admin/PermissionsManagement";
@@ -24,10 +25,11 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
+          <TabsTrigger value="companies">Sociedades</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
           <TabsTrigger value="orquest">Orquest</TabsTrigger>
           <TabsTrigger value="permissions">Permisos</TabsTrigger>
@@ -48,6 +50,10 @@ const Admin = () => {
 
         <TabsContent value="franchisees" className="mt-6">
           <FranchiseesManagement />
+        </TabsContent>
+
+        <TabsContent value="companies" className="mt-6">
+          <CompaniesManagement />
         </TabsContent>
 
         <TabsContent value="centres" className="mt-6">

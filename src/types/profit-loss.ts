@@ -66,6 +66,13 @@ export interface PLReportLine {
   percentage?: number;
 }
 
+export interface PLReportLineAccumulated extends Omit<PLReportLine, 'amount' | 'percentage'> {
+  amount_period: number;     // Importe del mes
+  amount_ytd: number;         // Importe acumulado año
+  percentage_period: number;  // % sobre ventas del mes
+  percentage_ytd: number;     // % sobre ventas acumuladas año
+}
+
 export interface PLReportSummary {
   totalIncome: number;
   totalExpenses: number;
@@ -95,6 +102,8 @@ export interface PLReportParams {
   centroCodes?: string[]; // Para consolidado multi-restaurante
   startDate?: string;
   endDate?: string;
+  showAccumulated?: boolean; // Vista dual (mes + acumulado)
+  periodDate?: string; // Fecha del mes para vista acumulada (YYYY-MM-DD)
 }
 
 export interface CreatePLRuleInput {

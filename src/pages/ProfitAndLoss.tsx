@@ -25,6 +25,7 @@ const ProfitAndLoss = () => {
   const [selectedTemplate, setSelectedTemplate] = useState("McD_QSR_v1");
   const [compareYears, setCompareYears] = useState<number[]>([2024, 2023, 2022]);
   const [viewMode, setViewMode] = useState<"single" | "multi-year">("single");
+  const [showAccumulated, setShowAccumulated] = useState(false);
   
   // Obtener plantillas disponibles
   const { data: templates, isLoading: isLoadingTemplates } = usePLTemplates();
@@ -48,13 +49,15 @@ const ProfitAndLoss = () => {
     });
   });
 
-  // Vista single (mensual)
+  // Vista single (mensual o dual)
   const { data, isLoading, isError } = usePLReport({
     templateCode: selectedTemplate,
     companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
     centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
-    startDate,
-    endDate,
+    startDate: showAccumulated ? undefined : startDate,
+    endDate: showAccumulated ? undefined : endDate,
+    showAccumulated,
+    periodDate: showAccumulated ? startDate : undefined,
   });
 
   // Determinar si estamos cargando o hay error
@@ -167,6 +170,24 @@ const ProfitAndLoss = () => {
                 <SelectItem value="multi-year">Multi-Año</SelectItem>
               </SelectContent>
             </Select>
+            {viewMode === "single" && (
+              <div className="flex gap-2">
+                <Button
+                  variant={!showAccumulated ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowAccumulated(false)}
+                >
+                  Mensual
+                </Button>
+                <Button
+                  variant={showAccumulated ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowAccumulated(true)}
+                >
+                  Mes + Acumulado
+                </Button>
+              </div>
+            )}
             <Button onClick={handleExport} disabled={!plData || plData.length === 0} className="gap-2">
               <Download className="h-4 w-4" />
               Exportar Excel
@@ -436,80 +457,144 @@ const ProfitAndLoss = () => {
                 <span className="text-sm">Crea asientos contables para ver el P&L.</span>
               </div>
             ) : (
-              // Vista Single normal
+              // Vista Single: normal o dual
               <div className="space-y-1">
-                {plData.map((line, idx) => (
-                  <div
-                    key={`${line.rubric_code}-${idx}`}
-                    className={`flex items-center justify-between py-3 px-4 ${
-                      line.is_total
-                        ? "bg-muted/50 font-semibold"
-                        : "hover:bg-accent/30"
-                    } ${
-                      line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                        ? "bg-primary/5 border-t-2 border-primary mt-2"
-                        : ""
-                    } ${
-                      line.rubric_code === 'ebitda' || line.rubric_code === 'margen_bruto' || line.rubric_code === 'gross_margin'
-                        ? "border-l-4 border-l-primary"
-                        : ""
-                    }`}
-                    style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {line.rubric_code && (
-                        <span className="font-mono text-xs text-muted-foreground w-20">
-                          {line.rubric_code}
-                        </span>
-                      )}
-                      <span
-                        className={`${
-                          line.is_total ? "font-semibold text-foreground" : ""
-                        } ${
-                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                            ? "font-bold text-lg"
-                            : ""
-                        }`}
-                      >
-                        {line.rubric_name}
-                      </span>
+                {/* Header de la tabla */}
+                <div className="flex items-center justify-between py-3 px-4 bg-muted font-semibold sticky top-0 z-10">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="font-mono text-xs w-20">Código</span>
+                    <span>Concepto</span>
+                  </div>
+                  {showAccumulated ? (
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm w-32 text-right">Mes €</span>
+                      <span className="text-sm w-20 text-right">Mes %</span>
+                      <span className="text-sm w-32 text-right bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">Acum. €</span>
+                      <span className="text-sm w-20 text-right bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">Acum. %</span>
                     </div>
+                  ) : (
                     <div className="flex items-center gap-8">
-                      <span
-                        className={`font-mono font-semibold text-right w-32 ${
-                          line.amount >= 0 ? "text-success" : "text-foreground"
-                        } ${
-                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                            ? "text-lg"
-                            : ""
-                        }`}
-                      >
-                        {line.amount.toLocaleString("es-ES", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}€
-                      </span>
-                      <span
-                        className={`text-sm text-muted-foreground text-right w-16 ${
-                          line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
-                            ? "font-semibold"
-                            : ""
-                        }`}
-                      >
-                        {Math.abs(line.percentage || 0).toFixed(1)}%
-                      </span>
-                      {line.is_total && line.rubric_code !== 'resultado_neto' && line.rubric_code !== 'net_result' && (
-                        <div className="w-6">
-                          {line.amount >= 0 ? (
-                            <TrendingUp className="h-4 w-4 text-success" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm w-32 text-right">Importe</span>
+                      <span className="text-sm w-16 text-right">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Filas de datos */}
+                {plData.map((line: any, idx) => {
+                  const isAccumulatedData = 'amount_period' in line;
+                  const displayAmount = isAccumulatedData ? line.amount_period : line.amount;
+                  const displayPercentage = isAccumulatedData ? line.percentage_period : line.percentage;
+
+                  return (
+                    <div
+                      key={`${line.rubric_code}-${idx}`}
+                      className={`flex items-center justify-between py-3 px-4 ${
+                        line.is_total
+                          ? "bg-muted/50 font-semibold"
+                          : "hover:bg-accent/30"
+                      } ${
+                        line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                          ? "bg-primary/5 border-t-2 border-primary mt-2"
+                          : ""
+                      } ${
+                        line.rubric_code === 'ebitda' || line.rubric_code === 'margen_bruto' || line.rubric_code === 'gross_margin'
+                          ? "border-l-4 border-l-primary"
+                          : ""
+                      }`}
+                      style={{ paddingLeft: `${line.level * 2 + 1}rem` }}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {line.rubric_code && (
+                          <span className="font-mono text-xs text-muted-foreground w-20">
+                            {line.rubric_code}
+                          </span>
+                        )}
+                        <span
+                          className={`${
+                            line.is_total ? "font-semibold text-foreground" : ""
+                          } ${
+                            line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                              ? "font-bold text-lg"
+                              : ""
+                          }`}
+                        >
+                          {line.rubric_name}
+                        </span>
+                      </div>
+                      
+                      {showAccumulated && isAccumulatedData ? (
+                        <div className="flex items-center gap-4">
+                          {/* Mes € */}
+                          <span
+                            className={`font-mono font-semibold text-right w-32 ${
+                              displayAmount >= 0 ? "text-success" : "text-foreground"
+                            }`}
+                          >
+                            {displayAmount.toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}€
+                          </span>
+                          {/* Mes % */}
+                          <span className="text-sm text-muted-foreground text-right w-20">
+                            {Math.abs(displayPercentage || 0).toFixed(1)}%
+                          </span>
+                          {/* Acumulado € */}
+                          <span
+                            className={`font-mono font-bold text-right w-32 bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded ${
+                              line.amount_ytd >= 0 ? "text-success" : "text-foreground"
+                            }`}
+                          >
+                            {line.amount_ytd.toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}€
+                          </span>
+                          {/* Acumulado % */}
+                          <span className="text-sm font-semibold text-right w-20 bg-blue-100 dark:bg-blue-950 px-2 py-1 rounded">
+                            {Math.abs(line.percentage_ytd || 0).toFixed(1)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-8">
+                          <span
+                            className={`font-mono font-semibold text-right w-32 ${
+                              displayAmount >= 0 ? "text-success" : "text-foreground"
+                            } ${
+                              line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                                ? "text-lg"
+                                : ""
+                            }`}
+                          >
+                            {displayAmount.toLocaleString("es-ES", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}€
+                          </span>
+                          <span
+                            className={`text-sm text-muted-foreground text-right w-16 ${
+                              line.rubric_code === 'resultado_neto' || line.rubric_code === 'net_result'
+                                ? "font-semibold"
+                                : ""
+                            }`}
+                          >
+                            {Math.abs(displayPercentage || 0).toFixed(1)}%
+                          </span>
+                          {line.is_total && line.rubric_code !== 'resultado_neto' && line.rubric_code !== 'net_result' && (
+                            <div className="w-6">
+                              {displayAmount >= 0 ? (
+                                <TrendingUp className="h-4 w-4 text-success" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

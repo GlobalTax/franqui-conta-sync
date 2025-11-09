@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { PLReportLine, PLReportSummary, PLReportParams } from "@/types/profit-loss";
+import type { PLReportLine, PLReportLineAccumulated, PLReportSummary, PLReportParams } from "@/types/profit-loss";
 
 /**
  * Hook para calcular el informe de P&L dinámicamente
  * Soporta vista consolidada (company) o individual (centre)
+ * Soporta vista dual (mes + acumulado) cuando showAccumulated=true
  */
 export const usePLReport = ({
   templateCode,
@@ -13,10 +14,41 @@ export const usePLReport = ({
   centroCodes,
   startDate,
   endDate,
+  showAccumulated = false,
+  periodDate,
 }: PLReportParams) => {
   return useQuery({
-    queryKey: ["pl-report", templateCode, companyId, centroCode, centroCodes, startDate, endDate],
+    queryKey: ["pl-report", templateCode, companyId, centroCode, centroCodes, startDate, endDate, showAccumulated, periodDate],
     queryFn: async () => {
+      // Vista dual: Mes + Acumulado
+      if (showAccumulated && periodDate) {
+        const { data, error } = await supabase.rpc(
+          "calculate_pl_report_accumulated" as any,
+          {
+            p_template_code: templateCode,
+            p_company_id: companyId || null,
+            p_centro_code: centroCode || null,
+            p_period_date: periodDate,
+            p_show_accumulated: true,
+          }
+        );
+
+        if (error) throw error;
+
+        const plDataAccumulated = (data || []) as any as PLReportLineAccumulated[];
+        
+        // Calcular summary usando datos del periodo
+        const summaryData: PLReportLine[] = plDataAccumulated.map(line => ({
+          ...line,
+          amount: line.amount_period,
+          percentage: line.percentage_period,
+        }));
+
+        return {
+          plData: plDataAccumulated,
+          summary: calculateSummary(summaryData),
+        };
+      }
       // Si hay múltiples centros, usar RPC consolidado
       if (centroCodes && centroCodes.length > 0) {
         const { data, error } = await supabase.rpc(
@@ -86,7 +118,7 @@ export const usePLReport = ({
       };
     },
     enabled: !!templateCode && (!!companyId || !!centroCode || (!!centroCodes && centroCodes.length > 0)),
-  });
+  }) as any; // Type assertion due to conditional return type
 };
 
 /**

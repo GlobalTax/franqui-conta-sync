@@ -8,6 +8,24 @@ const corsHeaders = {
 interface CompanyData {
   razon_social: string;
   tipo_sociedad: "SL" | "SA" | "SLU" | "SC" | "SLL" | "COOP" | "Otros";
+  direccion_fiscal?: {
+    via_completa: string;
+    tipo_via?: string;
+    nombre_via: string;
+    numero?: string;
+    escalera?: string;
+    piso?: string;
+    puerta?: string;
+    codigo_postal: string;
+    poblacion: string;
+    provincia: string;
+    pais_codigo: string;
+  };
+  contacto?: {
+    telefono?: string;
+    email?: string;
+    web?: string;
+  };
   confidence: "high" | "medium" | "low";
   sources?: string[];
 }
@@ -51,25 +69,41 @@ serve(async (req) => {
             role: "system",
             content: `Eres un asistente especializado en buscar información de empresas españolas.
 Tu tarea es buscar información oficial sobre empresas usando su CIF/NIF.
-Debes buscar en fuentes públicas como:
-- Registro Mercantil Central de España
-- BORME (Boletín Oficial del Registro Mercantil)
-- Bases de datos empresariales públicas españolas
-- Información oficial gubernamental
 
-IMPORTANTE: Solo devuelve información si encuentras datos oficiales y verificables.
-Si no encuentras información confiable, indícalo claramente.`
+FUENTES PRIORITARIAS (en orden):
+1. Registro Mercantil Central de España (registradores.org)
+2. BORME - Boletín Oficial del Registro Mercantil
+3. Directorio de empresas del Gobierno (DIRCE)
+4. Páginas web corporativas oficiales
+
+IMPORTANTE: 
+- Solo devuelve información si encuentras datos oficiales y verificables
+- Si algún campo no está disponible, déjalo vacío
+- Indica el nivel de confianza según la calidad de las fuentes
+- Lista las fuentes consultadas`
           },
           {
             role: "user",
-            content: `Busca información oficial sobre la empresa española con CIF/NIF: ${cif}
+            content: `Busca información OFICIAL y VERIFICABLE sobre la empresa española con CIF/NIF: ${cif}
 
-Necesito específicamente:
-1. Razón Social completa (nombre legal de la empresa)
-2. Tipo de Sociedad (SL, SA, SLU, SC, SLL, COOP, u Otros)
+INFORMACIÓN A EXTRAER:
+1. Razón Social (nombre legal completo)
+2. Tipo de Sociedad (SL, SA, SLU, SC, SLL, COOP, Otros)
+3. Dirección Fiscal COMPLETA y estructurada:
+   - Tipo de vía (Calle, Avenida, Plaza, etc.)
+   - Nombre de la vía
+   - Número, escalera, piso, puerta
+   - Código postal (5 dígitos)
+   - Población/Municipio
+   - Provincia
+   - País (código: ES)
+4. Datos de contacto (si disponibles públicamente):
+   - Teléfono
+   - Email corporativo
+   - Sitio web
 
 Responde SOLO si encuentras información oficial y verificable.
-Si no encuentras datos confiables, dímelo claramente.`
+Si no encuentras datos confiables o algún campo específico, indícalo.`
           }
         ],
         tools: [
@@ -89,6 +123,75 @@ Si no encuentras datos confiables, dímelo claramente.`
                     type: "string",
                     enum: ["SL", "SA", "SLU", "SC", "SLL", "COOP", "Otros"],
                     description: "Tipo de sociedad mercantil"
+                  },
+                  direccion_fiscal: {
+                    type: "object",
+                    description: "Dirección fiscal completa estructurada",
+                    properties: {
+                      via_completa: {
+                        type: "string",
+                        description: "Dirección completa en formato texto"
+                      },
+                      tipo_via: {
+                        type: "string",
+                        description: "Tipo de vía (CALLE, AVENIDA, PLAZA, etc.)"
+                      },
+                      nombre_via: {
+                        type: "string",
+                        description: "Nombre de la vía"
+                      },
+                      numero: {
+                        type: "string",
+                        description: "Número de la dirección"
+                      },
+                      escalera: {
+                        type: "string",
+                        description: "Escalera (opcional)"
+                      },
+                      piso: {
+                        type: "string",
+                        description: "Piso (opcional)"
+                      },
+                      puerta: {
+                        type: "string",
+                        description: "Puerta (opcional)"
+                      },
+                      codigo_postal: {
+                        type: "string",
+                        description: "Código postal (5 dígitos)"
+                      },
+                      poblacion: {
+                        type: "string",
+                        description: "Población o municipio"
+                      },
+                      provincia: {
+                        type: "string",
+                        description: "Provincia"
+                      },
+                      pais_codigo: {
+                        type: "string",
+                        description: "Código del país (ES para España)"
+                      }
+                    },
+                    required: ["via_completa", "nombre_via", "codigo_postal", "poblacion", "provincia", "pais_codigo"]
+                  },
+                  contacto: {
+                    type: "object",
+                    description: "Datos de contacto si están disponibles públicamente",
+                    properties: {
+                      telefono: {
+                        type: "string",
+                        description: "Teléfono de contacto"
+                      },
+                      email: {
+                        type: "string",
+                        description: "Email corporativo"
+                      },
+                      web: {
+                        type: "string",
+                        description: "Sitio web corporativo"
+                      }
+                    }
                   },
                   confidence: {
                     type: "string",

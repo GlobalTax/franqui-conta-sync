@@ -5,6 +5,24 @@ import { toast } from 'sonner';
 export interface EnrichedCompanyData {
   razon_social: string;
   tipo_sociedad: "SL" | "SA" | "SLU" | "SC" | "SLL" | "COOP" | "Otros";
+  direccion_fiscal?: {
+    via_completa: string;
+    tipo_via?: string;
+    nombre_via: string;
+    numero?: string;
+    escalera?: string;
+    piso?: string;
+    puerta?: string;
+    codigo_postal: string;
+    poblacion: string;
+    provincia: string;
+    pais_codigo: string;
+  };
+  contacto?: {
+    telefono?: string;
+    email?: string;
+    web?: string;
+  };
   confidence: "high" | "medium" | "low";
   sources?: string[];
 }
@@ -41,9 +59,13 @@ export function useCompanyEnrichment() {
       const companyData = data.data as EnrichedCompanyData;
       setEnrichedData(companyData);
       
-      // Mostrar mensaje según el nivel de confianza
-      if (companyData.confidence === 'high') {
-        toast.success('✅ Información encontrada con alta confianza');
+      // Mostrar mensaje según el nivel de confianza y datos encontrados
+      if (companyData.direccion_fiscal && companyData.contacto) {
+        toast.success(`✅ Empresa, dirección y contacto encontrados (confianza: ${companyData.confidence === 'high' ? 'alta' : companyData.confidence === 'medium' ? 'media' : 'baja'})`);
+      } else if (companyData.direccion_fiscal) {
+        toast.success(`✅ Empresa y dirección encontradas (confianza: ${companyData.confidence === 'high' ? 'alta' : companyData.confidence === 'medium' ? 'media' : 'baja'})`);
+      } else if (companyData.confidence === 'high') {
+        toast.success('✅ Información básica encontrada con alta confianza');
       } else if (companyData.confidence === 'medium') {
         toast.success('⚠️ Información encontrada - Verifica los datos');
       } else {

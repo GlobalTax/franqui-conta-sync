@@ -122,6 +122,42 @@ export function CompanyDataEnrichment({ cif, disabled, onAccept }: CompanyDataEn
                 </div>
               </div>
 
+              {/* Dirección Fiscal */}
+              {enrichedData.direccion_fiscal && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">📍 Dirección Fiscal</label>
+                  <div className="p-3 bg-muted rounded-md space-y-1">
+                    <p className="font-semibold">
+                      {enrichedData.direccion_fiscal.via_completa}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {enrichedData.direccion_fiscal.codigo_postal} - {enrichedData.direccion_fiscal.poblacion}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {enrichedData.direccion_fiscal.provincia}, {enrichedData.direccion_fiscal.pais_codigo}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Contacto */}
+              {enrichedData.contacto && (enrichedData.contacto.telefono || enrichedData.contacto.email || enrichedData.contacto.web) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">📞 Contacto</label>
+                  <div className="p-3 bg-muted rounded-md space-y-1 text-sm">
+                    {enrichedData.contacto.telefono && (
+                      <p>☎️ {enrichedData.contacto.telefono}</p>
+                    )}
+                    {enrichedData.contacto.email && (
+                      <p>📧 {enrichedData.contacto.email}</p>
+                    )}
+                    {enrichedData.contacto.web && (
+                      <p>🌐 {enrichedData.contacto.web}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Fuentes (si disponibles) */}
               {enrichedData.sources && enrichedData.sources.length > 0 && (
                 <div className="space-y-2">

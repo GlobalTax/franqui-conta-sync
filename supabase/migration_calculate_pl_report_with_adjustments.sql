@@ -6,8 +6,8 @@ CREATE OR REPLACE FUNCTION calculate_pl_report_with_adjustments(
   p_template_code TEXT,
   p_company_id UUID DEFAULT NULL,
   p_centro_code TEXT DEFAULT NULL,
-  p_start_date TEXT DEFAULT NULL,
-  p_end_date TEXT DEFAULT NULL
+  p_start_date DATE DEFAULT NULL,
+  p_end_date DATE DEFAULT NULL
 )
 RETURNS TABLE (
   rubric_code TEXT,

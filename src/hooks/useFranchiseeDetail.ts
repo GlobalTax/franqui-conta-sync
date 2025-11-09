@@ -81,8 +81,18 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
     },
     onSuccess: (data) => {
       console.log("✅ onSuccess ejecutado - Datos actualizados:", data);
-      queryClient.invalidateQueries({ queryKey: ["franchisee-detail", franchiseeId] });
-      queryClient.invalidateQueries({ queryKey: ["franchisees"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["franchisee-detail", franchiseeId],
+        exact: true 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["franchisees"],
+        exact: true 
+      });
+      // Invalidar también companies por si cambió alguna relación
+      queryClient.invalidateQueries({ 
+        queryKey: ["company-detail"] 
+      });
       toast({
         title: "Franquiciado actualizado",
         description: "Los datos se han guardado correctamente",

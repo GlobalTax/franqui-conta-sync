@@ -61,70 +61,115 @@ export function useCompanyDetail(companyId?: string) {
   });
 
   const { data: associatedCentres, isLoading: isLoadingCentres } = useQuery({
-    queryKey: ["company-centres", companyId],
+    queryKey: ["company-centres", companyId, company?.cif],
     queryFn: async () => {
-      if (!companyId) return [];
+      console.log("🔍 Fetching centres for company:", {
+        companyId,
+        cif: company?.cif,
+        companyLoaded: !!company
+      });
 
-      // Get centres from centre_companies
-      const { data: centreCompaniesData, error: ccError } = await supabase
-        .from("centre_companies")
-        .select(`
-          id,
-          es_principal,
-          centres:centre_id (
+      if (!companyId) {
+        console.warn("⚠️ Missing companyId, skipping centres query");
+        return [];
+      }
+
+      const companyCif = company?.cif;
+      if (!companyCif) {
+        console.warn("⚠️ Missing company CIF, skipping centres query");
+        return [];
+      }
+
+      try {
+        // Get centres from centre_companies
+        const { data: centreCompaniesData, error: ccError } = await supabase
+          .from("centre_companies")
+          .select(`
             id,
-            codigo,
-            nombre,
-            direccion,
-            ciudad,
-            activo
-          )
-        `)
-        .eq("cif", company?.cif || "")
-        .eq("activo", true);
+            es_principal,
+            centres:centre_id (
+              id,
+              codigo,
+              nombre,
+              direccion,
+              ciudad,
+              activo
+            )
+          `)
+          .eq("cif", companyCif)
+          .eq("activo", true);
 
-      if (ccError) throw ccError;
+        if (ccError) {
+          console.error("❌ Error fetching centre_companies:", ccError);
+          throw ccError;
+        }
 
-      // Get centres from centres.company_id
-      const { data: directCentres, error: dcError } = await supabase
-        .from("centres")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("activo", true);
+        // Get centres from centres.company_id
+        const { data: directCentres, error: dcError } = await supabase
+          .from("centres")
+          .select("*")
+          .eq("company_id", companyId)
+          .eq("activo", true);
 
-      if (dcError) throw dcError;
+        if (dcError) {
+          console.error("❌ Error fetching direct centres:", dcError);
+          throw dcError;
+        }
 
-      // Merge results
-      const centresFromCC: AssociatedCentre[] = (centreCompaniesData || [])
-        .filter(cc => cc.centres)
-        .map(cc => ({
-          id: cc.centres.id,
-          codigo: cc.centres.codigo,
-          nombre: cc.centres.nombre,
-          direccion: cc.centres.direccion,
-          ciudad: cc.centres.ciudad,
-          activo: cc.centres.activo,
-          es_principal: cc.es_principal,
-          source: 'centre_companies' as const,
-          centre_company_id: cc.id,
-        }));
+        // Merge results
+        const centresFromCC: AssociatedCentre[] = (centreCompaniesData || [])
+          .filter(cc => cc.centres)
+          .map(cc => ({
+            id: cc.centres.id,
+            codigo: cc.centres.codigo,
+            nombre: cc.centres.nombre,
+            direccion: cc.centres.direccion,
+            ciudad: cc.centres.ciudad,
+            activo: cc.centres.activo,
+            es_principal: cc.es_principal,
+            source: 'centre_companies' as const,
+            centre_company_id: cc.id,
+          }));
 
-      const centresFromDirect: AssociatedCentre[] = (directCentres || [])
-        .filter(c => !centresFromCC.some(cc => cc.id === c.id))
-        .map(c => ({
-          id: c.id,
-          codigo: c.codigo,
-          nombre: c.nombre,
-          direccion: c.direccion,
-          ciudad: c.ciudad,
-          activo: c.activo,
-          es_principal: false,
-          source: 'company_id' as const,
-        }));
+        const centresFromDirect: AssociatedCentre[] = (directCentres || [])
+          .filter(c => !centresFromCC.some(cc => cc.id === c.id))
+          .map(c => ({
+            id: c.id,
+            codigo: c.codigo,
+            nombre: c.nombre,
+            direccion: c.direccion,
+            ciudad: c.ciudad,
+            activo: c.activo,
+            es_principal: false,
+            source: 'company_id' as const,
+          }));
 
-      return [...centresFromCC, ...centresFromDirect];
+        console.log("✅ Centres fetched successfully:", {
+          fromCentreCompanies: centresFromCC.length,
+          fromDirect: centresFromDirect.length,
+          total: centresFromCC.length + centresFromDirect.length
+        });
+
+        return [...centresFromCC, ...centresFromDirect];
+      } catch (error: any) {
+        console.error("❌ Error fetching centres:", {
+          error,
+          code: error?.code,
+          message: error?.message,
+          cif: companyCif
+        });
+        throw error;
+      }
     },
-    enabled: !!companyId && !!company?.cif,
+    enabled: !!companyId && !!company?.cif && company.cif !== "",
+    retry: (failureCount, error: any) => {
+      // No reintentar si es error 400 (datos inválidos)
+      if (error?.code === 'PGRST116' || error?.status === 400) {
+        console.warn("⚠️ Not retrying 400 error for centres query");
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   const updateCompany = useMutation({

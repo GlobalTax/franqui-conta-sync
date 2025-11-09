@@ -7,12 +7,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyConfigTabs } from "@/components/company/CompanyConfigTabs";
 import { useView } from "@/contexts/ViewContext";
 import { useCompanyConfiguration } from "@/hooks/useCompanyConfiguration";
+import { useCentre } from "@/hooks/useCentres";
 
 export default function CompanyConfiguration() {
   const { selectedView } = useView();
-  const companyId = selectedView?.type === 'company' ? selectedView.id : null;
+  const isCentreView = selectedView?.type === 'centre';
+  const centreId = isCentreView ? selectedView.id : undefined;
+
+  // Obtener datos del centro (para derivar companyId) cuando aplique
+  const { data: centre, isLoading: isCentreLoading } = useCentre((centreId as string) || "");
+
+  // Derivar companyId: primero company_id, luego principal, luego primera asociada
+  const targetCompanyId =
+    selectedView?.type === 'company'
+      ? selectedView.id
+      : isCentreView
+        ? (centre?.company_id ||
+           centre?.centre_companies?.find((c: any) => c.es_principal)?.id ||
+           centre?.centre_companies?.[0]?.id ||
+           null)
+        : null;
   
-  const { company, isLoading, updateCompany, isUpdating } = useCompanyConfiguration(companyId || undefined);
+  const { company, isLoading, updateCompany, isUpdating } = useCompanyConfiguration((targetCompanyId as string) || undefined);
 
   const handleSave = () => {
     if (typeof window !== 'undefined' && (window as any).__companyFormSubmit) {
@@ -26,6 +42,68 @@ export default function CompanyConfiguration() {
         <Alert>
           <AlertDescription>
             Selecciona una empresa específica en el selector superior para configurar sus datos
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Centro: estados intermedios y validaciones
+  if (isCentreView && isCentreLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-9 w-36" />
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader className="border-b">
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-64" />
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-2">
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-3">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-3">
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="col-span-4">
+                  <Skeleton className="h-4 w-28 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isCentreView && !isCentreLoading && !targetCompanyId) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>
+            Este centro no tiene ninguna sociedad asociada. Asócialo desde Administración → Centros.
           </AlertDescription>
         </Alert>
       </div>

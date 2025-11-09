@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountingEntry, AccountingEntryWithTransactions, NewAccountingEntryFormData } from "@/types/accounting-entries";
 import { toast } from "sonner";
+import { EntryValidator } from "@/domain/accounting/services/EntryValidator";
+import { EntryCalculator } from "@/domain/accounting/services/EntryCalculator";
+import { Transaction } from "@/domain/accounting/types";
 
 export function useAccountingEntries(centroCode?: string, filters?: {
   startDate?: string;
@@ -76,18 +79,32 @@ export function useCreateAccountingEntry() {
 
       const nextEntryNumber = (lastEntry?.entry_number || 0) + 1;
 
-      // Validate balance
-      const totalDebit = formData.transactions
-        .filter(t => t.movement_type === 'debit')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const totalCredit = formData.transactions
-        .filter(t => t.movement_type === 'credit')
-        .reduce((sum, t) => sum + t.amount, 0);
+      // Convert to domain types for validation
+      const domainTransactions: Transaction[] = formData.transactions.map(t => ({
+        accountCode: t.account_code,
+        movementType: t.movement_type,
+        amount: t.amount,
+        description: t.description,
+      }));
 
-      if (Math.abs(totalDebit - totalCredit) > 0.01) {
-        throw new Error("El asiento no está cuadrado. Debe = Haber");
+      // Validate using domain services
+      const validation = EntryValidator.validateEntry({
+        entryDate: formData.entry_date,
+        description: formData.description,
+        centroCode: centroCode,
+        totalDebit: 0, // Will be calculated
+        totalCredit: 0, // Will be calculated
+        transactions: domainTransactions,
+      });
+
+      if (!validation.valid) {
+        throw new Error(validation.details || validation.error);
       }
+
+      // Calculate totals using domain service
+      const totals = EntryCalculator.calculateTotals(domainTransactions);
+      const totalDebit = totals.debit;
+      const totalCredit = totals.credit;
 
       // Create entry
       const { data: entry, error: entryError } = await supabase
@@ -107,8 +124,8 @@ export function useCreateAccountingEntry() {
 
       if (entryError) throw entryError;
 
-      // Create transactions
-      const transactions = formData.transactions.map((t, index) => ({
+      // Create transactions for database
+      const dbTransactions = formData.transactions.map((t, index) => ({
         entry_id: entry.id,
         account_code: t.account_code,
         movement_type: t.movement_type,
@@ -119,7 +136,7 @@ export function useCreateAccountingEntry() {
 
       const { error: transError } = await supabase
         .from("accounting_transactions")
-        .insert(transactions);
+        .insert(dbTransactions);
 
       if (transError) throw transError;
 

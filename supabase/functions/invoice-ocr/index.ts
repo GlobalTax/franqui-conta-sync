@@ -1,9 +1,10 @@
 // ============================================================================
-// INVOICE OCR - Enhanced with Fiscal Normalizer ES + AP Mapping Engine
+// INVOICE OCR - Enhanced with Multi-Engine Orchestrator + Fiscal Normalizer ES + AP Mapping Engine
 // ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
+import { orchestrateOCR } from "./orchestrator.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
   .split(",")
@@ -113,11 +114,6 @@ serve(async (req) => {
 
     console.log(`Processing OCR for document: ${documentPath}`);
 
-    const GOOGLE_VISION_API_KEY = Deno.env.get('GOOGLE_VISION_API_KEY');
-    if (!GOOGLE_VISION_API_KEY) {
-      throw new Error('GOOGLE_VISION_API_KEY is not configured');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -135,46 +131,26 @@ serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const base64Content = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    console.log('Calling Google Vision API...');
+    console.log('Starting OCR orchestration...');
 
-    // Google Vision API
-    const visionResponse = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [{
-            image: { content: base64Content },
-            features: [
-              { type: 'DOCUMENT_TEXT_DETECTION' },
-              { type: 'TEXT_DETECTION' }
-            ]
-          }]
-        })
-      }
+    // ⭐ NUEVO: Usar Orchestrator en lugar de Google Vision directo
+    const orchestratorResult = await orchestrateOCR(
+      base64Content,
+      fileData.type || 'application/pdf',
+      centroCode
     );
 
-    if (!visionResponse.ok) {
-      throw new Error(`Vision API error: ${visionResponse.status}`);
-    }
-
-    const visionData = await visionResponse.json();
-    const fullText = visionData.responses[0]?.fullTextAnnotation?.text || '';
-    
-    console.log('OCR text extracted, length:', fullText.length);
-
-    // 1. Extract basic data
-    const extractedData = extractInvoiceData(fullText);
+    console.log(`[Main] OCR Engine used: ${orchestratorResult.ocr_engine}`);
+    console.log(`[Main] Confidence: ${orchestratorResult.confidence_final}%`);
     
     // 2. Match supplier
     const matchedSupplier = await matchSupplier(supabase, {
-      name: extractedData.issuer.name,
-      taxId: extractedData.issuer.vat_id
+      name: orchestratorResult.final_invoice_json.issuer.name,
+      taxId: orchestratorResult.final_invoice_json.issuer.vat_id
     }, centroCode);
 
     // 3. Fiscal Normalizer ES
-    const normalizedResponse = fiscalNormalizerES(extractedData, fullText, COMPANY_VAT_IDS);
+    const normalizedResponse = fiscalNormalizerES(orchestratorResult.final_invoice_json, '', COMPANY_VAT_IDS);
     
     // 4. AP Mapping Engine
     const apMapping = await apMapperEngine(
@@ -197,14 +173,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        ocr_engine: orchestratorResult.ocr_engine, // ⭐ Nuevo
+        merge_notes: orchestratorResult.merge_notes, // ⭐ Nuevo
         data: normalizedResponse.normalized,
         normalized: normalizedResponse.normalized,
         validation: normalizedResponse.validation,
         autofix_applied: normalizedResponse.autofix_applied,
         ap_mapping: apMapping,
         entry_validation: entryValidation,
-        confidence: normalizedResponse.normalized.confidence_score / 100,
-        rawText: fullText,
+        confidence: orchestratorResult.confidence_final / 100,
+        rawText: '',
         processingTimeMs: processingTime
       }),
       { 

@@ -27,6 +27,7 @@ import {
 import { APMappingSuggestions } from "@/components/invoices/APMappingSuggestions";
 import { OCRDiscrepanciesAlert } from "@/components/invoices/OCRDiscrepanciesAlert";
 import { EntryPreview } from "@/components/invoices/EntryPreview";
+import { OCREngineIndicator } from "@/components/invoices/OCREngineIndicator";
 import { useCreateInvoiceReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Loader2, AlertCircle, CheckCircle, FileText, Scan, ChevronDown, ChevronUp } from "lucide-react";
@@ -47,6 +48,8 @@ export default function NewInvoiceWithOCR() {
   const [rawOCRResponse, setRawOCRResponse] = useState<OCRResponse | null>(null);
   const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
   const [entryValidation, setEntryValidation] = useState<InvoiceEntryValidationResult | null>(null);
+  const [ocrEngine, setOcrEngine] = useState<"openai" | "mindee" | "merged" | "manual_review" | "google_vision">("google_vision");
+  const [mergeNotes, setMergeNotes] = useState<string[]>([]);
   
   // Estado para controlar si el preview está expandido
   const [isPreviewOpen, setIsPreviewOpen] = useState(() => {
@@ -90,6 +93,8 @@ export default function NewInvoiceWithOCR() {
       setOcrWarnings(result.warnings || []);
       setApMapping(result.ap_mapping);
       setEntryValidation(result.entry_validation || null);
+      setOcrEngine(result.ocr_engine || "google_vision");
+      setMergeNotes(result.merge_notes || []);
 
       // Pre-fill form
       const normalizedData = result.normalized || result.data;
@@ -385,6 +390,15 @@ export default function NewInvoiceWithOCR() {
 
         {/* Right: Form */}
         <div className="space-y-4">
+          {/* OCR Engine Indicator */}
+          {status === 'review' && (
+            <OCREngineIndicator
+              ocrEngine={ocrEngine}
+              mergeNotes={mergeNotes}
+              confidence={ocrConfidence}
+            />
+          )}
+
           {/* AP Mapping Suggestions */}
           {status === 'review' && apMapping && (
             <APMappingSuggestions

@@ -1,10 +1,17 @@
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { InvoiceInboxTable } from '@/components/invoices/inbox/InvoiceInboxTable';
 import { InvoiceInboxSidebar } from '@/components/invoices/inbox/InvoiceInboxSidebar';
 import { InboxFiltersBar } from '@/components/invoices/inbox/InboxFiltersBar';
 import { InboxEmptyState } from '@/components/invoices/inbox/InboxEmptyState';
-import { InboxBulkActions } from '@/components/invoices/inbox/InboxBulkActions';
+import { InboxPDFActionsBar } from '@/components/invoices/inbox/InboxPDFActionsBar';
+import { SplitDocumentDialog } from '@/components/invoices/inbox/dialogs/SplitDocumentDialog';
+import { MergeDocumentsDialog } from '@/components/invoices/inbox/dialogs/MergeDocumentsDialog';
+import { BulkPostDialog } from '@/components/invoices/inbox/dialogs/BulkPostDialog';
+import { usePDFOperations } from '@/hooks/usePDFOperations';
+import { useBulkPost } from '@/hooks/useBulkPost';
 import { InboxAssignCentreDialog } from '@/components/invoices/inbox/InboxAssignCentreDialog';
 import { InboxSearchDialog } from '@/components/invoices/inbox/InboxSearchDialog';
 import { useInvoicesReceived, type InvoiceReceived } from '@/hooks/useInvoicesReceived';
@@ -46,6 +53,7 @@ const transformInvoice = (inv: InvoiceReceived) => ({
 
 export default function InvoicesInbox() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     status?: string;
@@ -57,6 +65,13 @@ export default function InvoicesInbox() {
     ocr_engine?: string;
   }>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
+  const [selectedInvoiceForSplit, setSelectedInvoiceForSplit] = useState<any | null>(null);
+  
+  const { splitPDF, mergePDF, isLoading: isPDFLoading } = usePDFOperations();
+  const { bulkPost, isPosting, progress } = useBulkPost();
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -138,6 +153,63 @@ export default function InvoicesInbox() {
 
   const handleBulkAssignCentre = () => {
     setAssignCentreDialogOpen(true);
+  };
+
+  const selectedInvoices = result?.data?.filter(inv => selectedIds.includes(inv.id)) || [];
+
+  const canSplit = selectedIds.length === 1 && selectedInvoices[0]?.ocr_pages && selectedInvoices[0].ocr_pages > 1;
+  const canMerge = selectedIds.length >= 2;
+  const canPost = selectedInvoices.length > 0 && selectedInvoices.every(inv => inv.approval_status === 'approved_accounting' && inv.centro_code && !inv.entry_id);
+
+  const handleSplitDocument = () => {
+    if (!canSplit) return toast.error('Selecciona una factura multipágina');
+    setSelectedInvoiceForSplit(selectedInvoices[0]);
+    setSplitDialogOpen(true);
+  };
+
+  const handleSplitConfirm = (splits: any[]) => {
+    if (!selectedInvoiceForSplit) return;
+    splitPDF({ invoiceId: selectedInvoiceForSplit.id, documentPath: selectedInvoiceForSplit.document_path || '', splits }, {
+      onSuccess: () => { setSplitDialogOpen(false); setSelectedIds([]); setSelectedInvoiceForSplit(null); }
+    });
+  };
+
+  const handleMergeDocuments = () => {
+    if (!canMerge) return toast.error('Selecciona al menos 2 facturas');
+    setMergeDialogOpen(true);
+  };
+
+  const handleMergeConfirm = (primaryInvoiceId: string, order: string[]) => {
+    mergePDF({ invoiceIds: selectedIds, primaryInvoiceId, order }, {
+      onSuccess: () => { setMergeDialogOpen(false); setSelectedIds([]); }
+    });
+  };
+
+  const handleBulkPost = () => {
+    if (!canPost) return toast.error('Algunas facturas no cumplen requisitos');
+    setPostDialogOpen(true);
+  };
+
+  const handlePostConfirm = (postingDate: Date) => {
+    bulkPost({ invoiceIds: selectedIds, postingDate }, {
+      onSuccess: () => { setPostDialogOpen(false); setSelectedIds([]); }
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`¿Eliminar ${selectedIds.length} factura(s)?`)) return;
+    try {
+      for (const id of selectedIds) {
+        const invoice = result?.data?.find(inv => inv.id === id);
+        if (invoice?.document_path) await supabase.storage.from('invoice-documents').remove([invoice.document_path]);
+        await supabase.from('invoices_received').delete().eq('id', id);
+      }
+      toast.success(`${selectedIds.length} factura(s) eliminadas`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    }
   };
 
   // Determinar estado vacío
@@ -265,14 +337,45 @@ export default function InvoicesInbox() {
 
       {/* Acciones masivas */}
       {selectedIds.length > 0 && (
-        <InboxBulkActions
-          count={selectedIds.length}
-          onApprove={handleBulkApprove}
-          onReject={handleBulkReject}
-          onAssignCentre={handleBulkAssignCentre}
+        <InboxPDFActionsBar
+          selectedCount={selectedIds.length}
+          selectedInvoices={selectedInvoices}
+          canSplit={canSplit}
+          canMerge={canMerge}
+          canPost={canPost}
           onDeselect={() => setSelectedIds([])}
+          onSplit={handleSplitDocument}
+          onMerge={handleMergeDocuments}
+          onPost={handleBulkPost}
+          onDelete={handleBulkDelete}
+          isLoading={isPDFLoading || isPosting}
         />
       )}
+
+      <SplitDocumentDialog
+        open={splitDialogOpen}
+        onOpenChange={setSplitDialogOpen}
+        invoice={selectedInvoiceForSplit}
+        onConfirm={handleSplitConfirm}
+        isLoading={isPDFLoading}
+      />
+
+      <MergeDocumentsDialog
+        open={mergeDialogOpen}
+        onOpenChange={setMergeDialogOpen}
+        invoices={selectedInvoices}
+        onConfirm={handleMergeConfirm}
+        isLoading={isPDFLoading}
+      />
+
+      <BulkPostDialog
+        open={postDialogOpen}
+        onOpenChange={setPostDialogOpen}
+        invoices={selectedInvoices}
+        onConfirm={handlePostConfirm}
+        isLoading={isPosting}
+        progress={progress}
+      />
 
       {/* Panel lateral */}
       <InvoiceInboxSidebar

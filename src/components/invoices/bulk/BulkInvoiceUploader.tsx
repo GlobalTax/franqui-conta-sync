@@ -15,7 +15,17 @@ interface BulkInvoiceUploaderProps {
 
 export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) => {
   const navigate = useNavigate();
-  const { files, stats, isProcessing, addFiles, removeFile, clearAll, processAll } = useBulkInvoiceUpload(centroCode);
+  const { 
+    files, 
+    stats, 
+    isProcessing, 
+    addFiles, 
+    removeFile, 
+    clearAll, 
+    clearCompleted, 
+    clearErrors, 
+    processAll 
+  } = useBulkInvoiceUpload(centroCode);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     addFiles(acceptedFiles);
@@ -71,6 +81,8 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
 
   const canProcess = stats.pending > 0 && !isProcessing;
   const allCompleted = stats.total > 0 && stats.pending === 0 && stats.uploading === 0 && stats.processing === 0;
+  const hasCompleted = stats.completed > 0;
+  const hasErrors = stats.errors > 0;
 
   return (
     <div className="space-y-6">
@@ -109,7 +121,7 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
             <h3 className="text-lg font-semibold">Estado del lote</h3>
             <div className="flex gap-2">
               {canProcess && (
-                <Button onClick={processAll} disabled={isProcessing}>
+                <Button onClick={processAll} disabled={isProcessing} size="sm">
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -123,10 +135,21 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
                   )}
                 </Button>
               )}
-              {allCompleted && (
-                <Button onClick={clearAll} variant="outline">
+              {hasCompleted && !isProcessing && (
+                <Button onClick={clearCompleted} variant="outline" size="sm">
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Limpiar completados
+                </Button>
+              )}
+              {hasErrors && !isProcessing && (
+                <Button onClick={clearErrors} variant="outline" size="sm">
+                  <X className="w-4 h-4 mr-2" />
+                  Limpiar errores
+                </Button>
+              )}
+              {files.length > 0 && !isProcessing && (
+                <Button onClick={clearAll} variant="ghost" size="sm">
+                  Limpiar todo
                 </Button>
               )}
             </div>
@@ -259,15 +282,60 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
 
       {/* Success Animation */}
       {allCompleted && stats.errors === 0 && (
-        <Card className="p-8 text-center bg-green-50 dark:bg-green-950/20 border-green-200">
-          <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-600 animate-pulse" />
-          <h3 className="text-xl font-semibold text-green-900 dark:text-green-100 mb-2">
-            ¡Lote procesado correctamente!
+        <Card className="p-8 text-center bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-300 shadow-lg">
+          <div className="animate-bounce mb-4">
+            <CheckCircle2 className="w-20 h-20 mx-auto text-green-600 drop-shadow-lg" />
+          </div>
+          <h3 className="text-2xl font-bold text-green-900 dark:text-green-100 mb-2">
+            ¡Lote procesado correctamente! 🎉
           </h3>
-          <p className="text-sm text-green-700 dark:text-green-300">
+          <p className="text-sm text-green-700 dark:text-green-300 mb-4">
             {stats.completed} facturas procesadas exitosamente
             {stats.needsReview > 0 && ` · ${stats.needsReview} requieren revisión manual`}
           </p>
+          <div className="flex justify-center gap-3">
+            <Button 
+              onClick={() => navigate('/invoices/received')}
+              size="sm"
+            >
+              Ver facturas recibidas
+            </Button>
+            <Button 
+              onClick={clearCompleted}
+              variant="outline"
+              size="sm"
+            >
+              Limpiar y continuar
+            </Button>
+          </div>
+        </Card>
+      )}
+      
+      {/* Partial Success with Errors */}
+      {allCompleted && stats.errors > 0 && (
+        <Card className="p-8 text-center bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-yellow-300 shadow-lg">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
+          <h3 className="text-xl font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+            Lote completado con advertencias
+          </h3>
+          <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+            {stats.completed} procesadas correctamente · {stats.needsReview} requieren revisión · {stats.errors} con errores
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button 
+              onClick={() => navigate('/invoices/received')}
+              size="sm"
+            >
+              Ver facturas procesadas
+            </Button>
+            <Button 
+              onClick={clearErrors}
+              variant="outline"
+              size="sm"
+            >
+              Limpiar errores
+            </Button>
+          </div>
         </Card>
       )}
     </div>

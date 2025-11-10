@@ -305,6 +305,18 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
     }
   };
 
+  // Clear completed files
+  const clearCompleted = useCallback(() => {
+    setFiles(prev => prev.filter(f => f.status !== 'processed'));
+    toast.success('Archivos completados eliminados');
+  }, []);
+
+  // Clear error files
+  const clearErrors = useCallback(() => {
+    setFiles(prev => prev.filter(f => f.status !== 'error'));
+    toast.success('Archivos con error eliminados');
+  }, []);
+
   // Process all files
   const processAll = useCallback(async () => {
     setIsProcessing(true);
@@ -317,17 +329,35 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
       return;
     }
 
-    toast.info(`Procesando ${pendingFiles.length} archivo(s)...`);
+    toast.info(`🚀 Iniciando procesamiento de ${pendingFiles.length} archivo(s)...`);
 
     // Process files in batches of 3
     const BATCH_SIZE = 3;
     for (let i = 0; i < pendingFiles.length; i += BATCH_SIZE) {
       const batch = pendingFiles.slice(i, i + BATCH_SIZE);
       await Promise.all(batch.map(file => uploadFile(file)));
+      
+      // Progress toast
+      const processed = Math.min(i + BATCH_SIZE, pendingFiles.length);
+      if (processed < pendingFiles.length) {
+        toast.loading(`Procesados ${processed}/${pendingFiles.length} archivos...`);
+      }
     }
 
     setIsProcessing(false);
-    toast.success('Proceso de carga completado');
+    
+    // Final summary toast
+    const finalStats = {
+      completed: files.filter(f => f.status === 'processed').length,
+      needsReview: files.filter(f => f.status === 'needs_review').length,
+      errors: files.filter(f => f.status === 'error').length,
+    };
+    
+    if (finalStats.errors === 0) {
+      toast.success(`✅ ¡Lote completado! ${finalStats.completed} procesados, ${finalStats.needsReview} requieren revisión`);
+    } else {
+      toast.warning(`⚠️ Lote completado con ${finalStats.errors} errores. ${finalStats.completed} procesados correctamente.`);
+    }
   }, [files, uploadFile]);
 
   return {
@@ -337,6 +367,8 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
     addFiles,
     removeFile,
     clearAll,
+    clearCompleted,
+    clearErrors,
     processAll,
   };
 };

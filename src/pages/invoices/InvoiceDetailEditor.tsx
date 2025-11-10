@@ -202,22 +202,19 @@ export default function InvoiceDetailEditor() {
       let invoiceId = id;
       
       if (!isEditMode) {
-        const newInvoice = await createInvoice.mutateAsync({
-          invoice: {
-            centro_code: data.centro_code,
-            supplier_id: data.supplier_id,
-            invoice_number: data.invoice_number,
-            invoice_date: data.invoice_date,
-            due_date: data.due_date,
-            subtotal: data.subtotal,
-            tax_total: data.tax_total,
-            total: data.total,
-            currency: data.currency,
-            notes: data.notes,
-            status: 'draft'
-          },
-          lines: []
-        });
+      const newInvoice = await createInvoice.mutateAsync({
+        centro_code: data.centro_code,
+        supplier_id: data.supplier_id,
+        invoice_number: data.invoice_number,
+        invoice_date: data.invoice_date,
+        due_date: data.due_date,
+        subtotal: data.subtotal,
+        tax_total: data.tax_total,
+        total: data.total,
+        notes: data.notes,
+        status: 'draft',
+        lines: []
+      });
         invoiceId = newInvoice.id;
       } else {
         await updateInvoice.mutateAsync({ 

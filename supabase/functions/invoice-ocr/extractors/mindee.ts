@@ -158,13 +158,67 @@ export async function extractWithMindee(
     }
   });
 
-  // Calcular confidences por campo
+  // ============================================================================
+  // GENERADOR DE CONFIDENCE NOTES
+  // ============================================================================
+  
+  function generateConfidenceNotes(confidenceByField: Record<string, number>): string[] {
+    const CONFIDENCE_THRESHOLD = 80;
+    const notes: string[] = [];
+    
+    const fieldLabels: Record<string, string> = {
+      'issuer.name': 'Nombre proveedor',
+      'issuer.vat_id': 'NIF/CIF proveedor',
+      'invoice_number': 'Número de factura',
+      'totals.total': 'Total factura',
+      'issue_date': 'Fecha de emisión',
+      'due_date': 'Fecha de vencimiento',
+      'receiver.vat_id': 'NIF cliente',
+      'line_items': 'Líneas de factura'
+    };
+    
+    for (const [field, confidence] of Object.entries(confidenceByField)) {
+      if (confidence < CONFIDENCE_THRESHOLD && confidence > 0) {
+        const label = fieldLabels[field] || field;
+        const level = confidence < 50 ? 'CRÍTICO' : confidence < 70 ? 'bajo' : 'medio';
+        const emoji = confidence < 50 ? '🔴' : confidence < 70 ? '⚠️' : '⚡';
+        
+        notes.push(`${emoji} ${label}: confidence ${level} (${Math.round(confidence)}%) - revisar`);
+      }
+    }
+    
+    // Notas especiales para campos críticos ausentes
+    if (!confidenceByField['issuer.vat_id'] || confidenceByField['issuer.vat_id'] === 0) {
+      notes.push('🔴 NIF proveedor NO detectado - entrada manual requerida');
+    }
+    
+    if (!confidenceByField['invoice_number'] || confidenceByField['invoice_number'] === 0) {
+      notes.push('🔴 Número de factura NO detectado - entrada manual requerida');
+    }
+    
+    if (!confidenceByField['issue_date'] || confidenceByField['issue_date'] === 0) {
+      notes.push('🔴 Fecha de emisión NO detectada - entrada manual requerida');
+    }
+    
+    return notes;
+  }
+
+  // ============================================================================
+  // CÁLCULO DE CONFIDENCE POR CAMPO (ENRIQUECIDO)
+  // ============================================================================
+  
   const confidenceByField: Record<string, number> = {
     'issuer.name': (prediction.supplier_name?.confidence || 0) * 100,
     'issuer.vat_id': (prediction.supplier_company_registrations?.[0]?.confidence || 0) * 100,
     'invoice_number': (prediction.invoice_number?.confidence || 0) * 100,
     'totals.total': (prediction.total_amount?.confidence || 0) * 100,
-    'issue_date': (prediction.date?.confidence || 0) * 100
+    'issue_date': (prediction.date?.confidence || 0) * 100,
+    'due_date': (prediction.due_date?.confidence || 0) * 100,
+    'receiver.vat_id': (prediction.customer_company_registrations?.[0]?.confidence || 0) * 100,
+    'line_items': prediction.line_items?.length > 0 
+      ? (prediction.line_items.reduce((sum: number, item: any) => 
+          sum + (item.confidence || 0), 0) / prediction.line_items.length) * 100 
+      : 0
   };
 
   const criticalFields = ['issuer.vat_id', 'invoice_number', 'totals.total', 'issue_date'];
@@ -176,6 +230,18 @@ export async function extractWithMindee(
     .reduce((sum, c) => sum + c, 0) / Object.keys(confidenceByField).length;
 
   const avgConfidence = (criticalConfidence * 0.7) + (allFieldsConfidence * 0.3);
+
+  // ============================================================================
+  // GENERAR CONFIDENCE NOTES Y ACTUALIZAR DATA
+  // ============================================================================
+  
+  data.confidence_notes = generateConfidenceNotes(confidenceByField);
+  data.confidence_score = Math.round(avgConfidence);
+
+  // Log de advertencias si hay notas
+  if (data.confidence_notes.length > 0) {
+    console.log(`[Mindee] ⚠️ Confidence warnings (${data.confidence_notes.length}):`, data.confidence_notes);
+  }
 
   console.log(`[Mindee] Confidence: ${Math.round(avgConfidence)}%`);
 

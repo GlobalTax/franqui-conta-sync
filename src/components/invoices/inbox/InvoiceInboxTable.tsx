@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Eye, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -21,12 +21,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { OCREngineBadge } from './OCREngineBadge';
 import { DocumentTypeBadge } from './DocumentTypeBadge';
+import { InvoiceTypeBadge } from './InvoiceTypeBadge';
 
 interface Invoice {
   id: string;
   supplier_name: string;
   supplier_tax_id?: string;
   invoice_date: string;
+  invoice_number: string;
   total_amount: number;
   base_amount?: number;
   tax_amount?: number;
@@ -38,6 +40,14 @@ interface Invoice {
   ocr_engine?: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
   ocr_confidence?: number;
   processing_time_ms?: number;
+  
+  // 🔴 Sprint 3: Nuevos campos críticos
+  invoice_type: 'received' | 'issued';
+  file_name: string;
+  created_at: string;
+  posted: boolean;
+  file_size_kb?: number;
+  page_count?: number;
 }
 
 interface InvoiceInboxTableProps {
@@ -105,14 +115,17 @@ export function InvoiceInboxTable({
                 </TooltipContent>
               </Tooltip>
             </TableHead>
-            <TableHead className="w-[100px]">Tipo</TableHead>
-            <TableHead>Proveedor</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead className="text-right">Importe</TableHead>
+            <TableHead className="w-[100px]">Motor OCR</TableHead>
+            <TableHead className="w-[110px]">Tipo</TableHead>
+            <TableHead className="min-w-[200px]">Archivo</TableHead>
+            <TableHead className="w-[100px]">Fecha Alta</TableHead>
+            <TableHead className="w-[100px]">Periodo</TableHead>
+            <TableHead className="w-48">Proveedor</TableHead>
+            <TableHead className="text-right w-32">Importe</TableHead>
+            <TableHead className="w-[120px]">Revisado</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Centro</TableHead>
-            <TableHead className="w-[120px]">Motor OCR</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
+            <TableHead className="text-right w-16">⚙️</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -134,22 +147,71 @@ export function InvoiceInboxTable({
                   aria-label={`Seleccionar factura de ${invoice.supplier_name}`}
                 />
               </TableCell>
-              <TableCell className={cn(compact && "py-1 text-xs")}>
-                <DocumentTypeBadge type={invoice.document_type || 'invoice'} />
+              
+              {/* Motor OCR */}
+              <TableCell className={cn(compact && "py-1")}>
+                <OCREngineBadge
+                  engine={invoice.ocr_engine}
+                  confidence={invoice.ocr_confidence}
+                  processingTime={invoice.processing_time_ms}
+                />
               </TableCell>
+              
+              {/* 🔴 NUEVO: Tipo (Recibida/Emitida) */}
+              <TableCell className={cn(compact && "py-1")}>
+                <InvoiceTypeBadge type={invoice.invoice_type} compact={compact} />
+              </TableCell>
+              
+              {/* 🔴 NUEVO: Nombre archivo */}
               <TableCell className={cn(compact && "py-1 text-xs")}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="font-medium">{invoice.supplier_name}</div>
+                    <div className="flex items-center gap-2 max-w-[200px]">
+                      <FileText className={cn("h-4 w-4 text-muted-foreground flex-shrink-0", compact && "h-3 w-3")} />
+                      <span className="truncate font-medium">
+                        {invoice.file_name}
+                      </span>
+                    </div>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>CIF: {invoice.supplier_tax_id || 'N/A'}</p>
+                  <TooltipContent side="top" className="max-w-[300px]">
+                    <p className="text-xs break-all">{invoice.file_name}</p>
                   </TooltipContent>
                 </Tooltip>
               </TableCell>
+              
+              {/* 🔴 NUEVO: Fecha Alta */}
               <TableCell className={cn(compact && "py-1 text-xs")}>
-                {format(new Date(invoice.invoice_date), 'dd/MM/yyyy')}
+                <span className="text-sm text-muted-foreground">
+                  {format(new Date(invoice.created_at), 'dd/MM/yyyy')}
+                </span>
               </TableCell>
+              
+              {/* Periodo (Fecha factura) */}
+              <TableCell className={cn(compact && "py-1 text-xs")}>
+                <span className="text-sm">
+                  {format(new Date(invoice.invoice_date), 'dd/MM/yyyy')}
+                </span>
+              </TableCell>
+              
+              {/* Proveedor */}
+              <TableCell className={cn(compact && "py-1 text-xs")}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="font-medium truncate max-w-[180px]">
+                      {invoice.supplier_name}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs space-y-1">
+                      <p className="font-medium">{invoice.supplier_name}</p>
+                      <p>CIF: {invoice.supplier_tax_id || 'N/A'}</p>
+                      <p>Nº: {invoice.invoice_number}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TableCell>
+              
+              {/* Importe */}
               <TableCell className={cn("text-right", compact && "py-1 text-xs")}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -166,24 +228,45 @@ export function InvoiceInboxTable({
                   </TooltipContent>
                 </Tooltip>
               </TableCell>
+              
+              {/* 🔴 NUEVO: Revisado (peso KB + nº páginas) */}
+              <TableCell className={cn(compact && "py-1 text-xs")}>
+                <div className="flex flex-col gap-0.5 text-muted-foreground">
+                  {invoice.file_size_kb && (
+                    <span className="text-xs">
+                      {invoice.file_size_kb < 1024 
+                        ? `${invoice.file_size_kb.toFixed(0)} KB`
+                        : `${(invoice.file_size_kb / 1024).toFixed(1)} MB`
+                      }
+                    </span>
+                  )}
+                  {invoice.page_count && (
+                    <span className="text-xs">
+                      {invoice.page_count} pág{invoice.page_count > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {!invoice.file_size_kb && !invoice.page_count && (
+                    <span className="text-xs">-</span>
+                  )}
+                </div>
+              </TableCell>
+              
+              {/* Estado */}
               <TableCell className={cn(compact && "py-1")}>
                 <InboxStatusBadge
                   status={invoice.status}
                   hasEntry={!!invoice.accounting_entry_id}
                 />
               </TableCell>
+              
+              {/* Centro */}
               <TableCell className={cn(compact && "py-1 text-xs")}>
                 <span className="text-sm text-muted-foreground">
                   {invoice.centro_code || '-'}
                 </span>
               </TableCell>
-              <TableCell className={cn(compact && "py-1")}>
-                <OCREngineBadge
-                  engine={invoice.ocr_engine}
-                  confidence={invoice.ocr_confidence}
-                  processingTime={invoice.processing_time_ms}
-                />
-              </TableCell>
+              
+              {/* Acciones */}
               <TableCell className={cn("text-right", compact && "py-1")} onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">
                   <Tooltip>

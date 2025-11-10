@@ -43,6 +43,11 @@ export interface InvoiceReceived {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  
+  // 🔴 Sprint 3: Nuevos campos críticos
+  invoice_type?: 'received' | 'issued';
+  file_size_kb?: number;
+  page_count?: number;
   supplier?: {
     id: string;
     name: string;
@@ -151,6 +156,12 @@ export const useInvoicesReceived = (filters?: {
         created_at: inv.createdAt,
         updated_at: inv.updatedAt,
         created_by: inv.createdBy,
+        
+        // 🔴 Sprint 3: Nuevos campos (derivados en frontend)
+        invoice_type: 'received' as const,
+        file_size_kb: undefined, // TODO: agregar si existe en dominio
+        page_count: inv.ocrPages, // Usar ocr_pages como page_count
+        
         supplier: inv.supplier ? {
           id: inv.supplier.id,
           name: inv.supplier.name,

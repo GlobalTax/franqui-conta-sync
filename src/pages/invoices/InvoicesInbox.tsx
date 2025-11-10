@@ -38,6 +38,15 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   accounting_entry_id: inv.entry_id,
   iva_percentage: inv.tax_total && inv.subtotal ? ((inv.tax_total / inv.subtotal) * 100) : undefined,
   document_type: 'invoice' as const,
+  
+  // 🔴 Sprint 3: Nuevos campos críticos
+  invoice_type: (inv.invoice_type || 'received') as 'received' | 'issued',
+  file_name: inv.document_path?.split('/').pop() || inv.invoice_number || 'sin_nombre.pdf',
+  created_at: inv.created_at,
+  posted: !!inv.entry_id,
+  file_size_kb: inv.file_size_kb,
+  page_count: inv.page_count,
+  
   // Campos OCR reales
   ocr_engine: inv.ocr_engine,
   ocr_confidence: inv.ocr_confidence,

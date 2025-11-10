@@ -132,7 +132,7 @@ const App = () => {
             <Route path="/invoices/received/:id/edit" element={<InvoiceDetailEditor />} />
             <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
-              <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />
+              <Route path="/facturas/nueva-ocr" element={<Navigate to="/invoices/new-received" replace />} />
               <Route path="/facturas/emitidas" element={<InvoicesIssued />} />
               <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
               <Route path="/facturas/:id" element={<InvoiceDetail />} />

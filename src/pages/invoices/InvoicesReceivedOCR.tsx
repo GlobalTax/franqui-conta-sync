@@ -107,7 +107,7 @@ export default function InvoicesReceivedOCR() {
         title="Facturas Recibidas con OCR"
         subtitle="Revisa y aprueba facturas procesadas automáticamente"
         actions={
-          <Button onClick={() => navigate("/facturas/nueva-ocr")}>
+          <Button onClick={() => navigate("/invoices/new-received")}>
             <Plus className="h-4 w-4 mr-2" />
             Nueva con OCR
           </Button>

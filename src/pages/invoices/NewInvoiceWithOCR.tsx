@@ -29,8 +29,10 @@ import { APMappingSuggestions } from "@/components/invoices/APMappingSuggestions
 import { OCRDiscrepanciesAlert } from "@/components/invoices/OCRDiscrepanciesAlert";
 import { EntryPreview } from "@/components/invoices/EntryPreview";
 import { OCREngineIndicator } from "@/components/invoices/OCREngineIndicator";
+import { NormalizationChangesAlert } from "@/components/invoices/NormalizationChangesAlert";
 import { useCreateInvoiceReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
+import { stripAndNormalize, type NormalizationChange } from "@/lib/fiscal-normalizer";
 import { Loader2, AlertCircle, CheckCircle, FileText, Scan, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +53,8 @@ export default function NewInvoiceWithOCR() {
   const [entryValidation, setEntryValidation] = useState<InvoiceEntryValidationResult | null>(null);
   const [ocrEngine, setOcrEngine] = useState<"openai" | "mindee" | "merged" | "manual_review" | "google_vision">("google_vision");
   const [mergeNotes, setMergeNotes] = useState<string[]>([]);
+  const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
+  const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   
   // Estado para controlar si el preview está expandido
   const [isPreviewOpen, setIsPreviewOpen] = useState(() => {
@@ -90,7 +94,16 @@ export default function NewInvoiceWithOCR() {
       });
 
       setRawOCRResponse(result);
-      setOcrData(result.normalized || result.data);
+      
+      // ⭐ FASE 4: APLICAR STRIPPER (Fiscal Normalizer)
+      const dataToNormalize = result.normalized || result.data;
+      const { normalized, changes, warnings } = stripAndNormalize(dataToNormalize);
+      
+      // Guardar datos normalizados y tracking de cambios
+      setOcrData(normalized);
+      setNormalizationChanges(changes);
+      setNormalizationWarnings(warnings);
+      
       setOcrConfidence(result.confidence);
       setOcrWarnings(result.warnings || []);
       setApMapping(result.ap_mapping);
@@ -98,17 +111,16 @@ export default function NewInvoiceWithOCR() {
       setOcrEngine(result.ocr_engine || "google_vision");
       setMergeNotes(result.merge_notes || []);
 
-      // Pre-fill form
-      const normalizedData = result.normalized || result.data;
-      if (normalizedData.supplier?.matchedId) {
-        setSupplierId(normalizedData.supplier.matchedId);
+      // Pre-fill form con datos normalizados
+      if (normalized.supplier?.matchedId) {
+        setSupplierId(normalized.supplier.matchedId);
       }
-      setInvoiceNumber(normalizedData.invoice_number || normalizedData.invoiceNumber || '');
-      setInvoiceDate(normalizedData.issue_date || normalizedData.invoiceDate || '');
-      setDueDate(normalizedData.due_date || normalizedData.dueDate || "");
+      setInvoiceNumber(normalized.invoice_number || normalized.invoiceNumber || '');
+      setInvoiceDate(normalized.issue_date || normalized.invoiceDate || '');
+      setDueDate(normalized.due_date || normalized.dueDate || "");
       
-      // Pre-fill lines with AP mapping suggestions
-      setLines(normalizedData.lines.map((line: any, index: number) => ({
+      // Pre-fill lines con datos normalizados y AP mapping
+      setLines(normalized.lines.map((line: any, index: number) => ({
         id: `temp-${index}`,
         description: line.description,
         quantity: line.quantity || 1,
@@ -120,9 +132,17 @@ export default function NewInvoiceWithOCR() {
 
       setStatus('review');
       
+      // Notificación con info de normalización
+      const changesMsg = changes.length > 0 
+        ? ` · ${changes.length} normalización(es) aplicada(s)` 
+        : '';
+      const warningsMsg = warnings.length > 0 
+        ? ` · ${warnings.length} advertencia(s)` 
+        : '';
+        
       toast.success(
-        `Documento procesado con ${Math.round(result.confidence * 100)}% de confianza`,
-        { duration: 3000 }
+        `Documento procesado con ${Math.round(result.confidence * 100)}% de confianza${changesMsg}${warningsMsg}`,
+        { duration: 4000 }
       );
 
     } catch (error: any) {
@@ -439,6 +459,14 @@ export default function NewInvoiceWithOCR() {
               ocrEngine={ocrEngine}
               mergeNotes={mergeNotes}
               confidence={ocrConfidence}
+            />
+          )}
+
+          {/* Normalization Changes Alert */}
+          {status === 'review' && (normalizationChanges.length > 0 || normalizationWarnings.length > 0) && (
+            <NormalizationChangesAlert
+              changes={normalizationChanges}
+              warnings={normalizationWarnings}
             />
           )}
 

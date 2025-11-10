@@ -38,6 +38,7 @@ const InvoicesIssued = lazy(() => import("@/pages/invoices/InvoicesIssued"));
 const NewInvoiceIssued = lazy(() => import("@/pages/invoices/NewInvoiceIssued"));
 const InvoiceDetail = lazy(() => import("@/pages/invoices/InvoiceDetail"));
 const InvoicesInbox = lazy(() => import("@/pages/invoices/InvoicesInbox"));
+const InvoiceDetailEditor = lazy(() => import("@/pages/invoices/InvoiceDetailEditor"));
 const Suppliers = lazy(() => import("@/pages/Suppliers"));
 const BalanceSheet = lazy(() => import("@/pages/reports/BalanceSheet"));
 const GeneralLedger = lazy(() => import("@/pages/reports/GeneralLedger"));
@@ -127,6 +128,8 @@ const App = () => {
             <Route path="/digitalizacion/papelera" element={<InvoicesInbox />} />
             {/* Mantener ruta legacy por compatibilidad */}
             <Route path="/invoices/inbox" element={<InvoicesInbox />} />
+            <Route path="/invoices/new-received" element={<InvoiceDetailEditor />} />
+            <Route path="/invoices/received/:id/edit" element={<InvoiceDetailEditor />} />
             <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />

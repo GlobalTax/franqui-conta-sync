@@ -33,7 +33,6 @@ const NewAccountingEntry = lazy(() => import("@/pages/accounting/NewAccountingEn
 const CompanyConfiguration = lazy(() => import("@/pages/admin/CompanyConfiguration"));
 const NewInvoiceReceived = lazy(() => import("@/pages/invoices/NewInvoiceReceived"));
 const InvoicesReceivedOCR = lazy(() => import("@/pages/invoices/InvoicesReceivedOCR"));
-const NewInvoiceWithOCR = lazy(() => import("@/pages/invoices/NewInvoiceWithOCR"));
 const InvoicesIssued = lazy(() => import("@/pages/invoices/InvoicesIssued"));
 const NewInvoiceIssued = lazy(() => import("@/pages/invoices/NewInvoiceIssued"));
 const InvoiceDetail = lazy(() => import("@/pages/invoices/InvoiceDetail"));

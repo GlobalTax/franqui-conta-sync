@@ -21,10 +21,12 @@ import {
   getFieldConfidenceColor,
   type OCRInvoiceData,
   type OCRResponse,
-  type APMappingResult
+  type APMappingResult,
+  type InvoiceEntryValidationResult
 } from "@/hooks/useInvoiceOCR";
 import { APMappingSuggestions } from "@/components/invoices/APMappingSuggestions";
 import { OCRDiscrepanciesAlert } from "@/components/invoices/OCRDiscrepanciesAlert";
+import { EntryPreview } from "@/components/invoices/EntryPreview";
 import { useCreateInvoiceReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Loader2, AlertCircle, CheckCircle, FileText, Scan, ChevronDown, ChevronUp } from "lucide-react";
@@ -44,6 +46,7 @@ export default function NewInvoiceWithOCR() {
   const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
   const [rawOCRResponse, setRawOCRResponse] = useState<OCRResponse | null>(null);
   const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
+  const [entryValidation, setEntryValidation] = useState<InvoiceEntryValidationResult | null>(null);
   
   // Estado para controlar si el preview está expandido
   const [isPreviewOpen, setIsPreviewOpen] = useState(() => {
@@ -86,6 +89,7 @@ export default function NewInvoiceWithOCR() {
       setOcrConfidence(result.confidence);
       setOcrWarnings(result.warnings || []);
       setApMapping(result.ap_mapping);
+      setEntryValidation(result.entry_validation || null);
 
       // Pre-fill form
       const normalizedData = result.normalized || result.data;
@@ -404,6 +408,18 @@ export default function NewInvoiceWithOCR() {
                   handleProcessOCR();
                 }
               }}
+            />
+          )}
+
+          {/* Entry Preview */}
+          {status === 'review' && entryValidation && (
+            <EntryPreview
+              readyToPost={entryValidation.ready_to_post}
+              blockingIssues={entryValidation.blocking_issues}
+              warnings={entryValidation.warnings}
+              confidenceScore={entryValidation.confidence_score}
+              preview={entryValidation.post_preview}
+              isLoading={createInvoice.isPending}
             />
           )}
 

@@ -80,6 +80,31 @@ export interface APMappingResult {
   line_level: APMappingSuggestion[];
 }
 
+export interface EntryPreviewLine {
+  account: string;
+  account_name?: string;
+  debit: number;
+  credit: number;
+  description: string;
+  centre_id?: string;
+  line_number: number;
+}
+
+export interface InvoiceEntryValidationResult {
+  ready_to_post: boolean;
+  blocking_issues: string[];
+  warnings: string[];
+  confidence_score: number;
+  post_preview: EntryPreviewLine[];
+  validation_details: {
+    invoice_data_valid: boolean;
+    totals_match: boolean;
+    ap_suggestions_valid: boolean;
+    preview_balanced: boolean;
+    fiscal_year_open: boolean;
+  };
+}
+
 export interface OCRResponse {
   success: boolean;
   confidence: number;
@@ -92,6 +117,7 @@ export interface OCRResponse {
   };
   autofix_applied: string[];
   ap_mapping: APMappingResult;
+  entry_validation?: InvoiceEntryValidationResult;
   rawText?: string;
   processingTimeMs: number;
   warnings?: string[];

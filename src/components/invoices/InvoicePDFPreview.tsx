@@ -46,8 +46,8 @@ export function InvoicePDFPreview({
       { keys: ["Click"], description: "Ajustar al ancho del contenedor" },
     ],
     navigation: [
-      { keys: ["←"], description: "Página anterior" },
-      { keys: ["→"], description: "Página siguiente" },
+      { keys: ["←", "PgUp"], description: "Página anterior" },
+      { keys: ["→", "PgDn"], description: "Página siguiente" },
       { keys: ["Home"], description: "Ir a la primera página" },
       { keys: ["End"], description: "Ir a la última página" },
     ],
@@ -155,6 +155,20 @@ export function InvoicePDFPreview({
         else if (e.key === 'End') {
           e.preventDefault();
           setPageNumber(numPages);
+        }
+        // Página Anterior: PageUp (alias de Arrow Left)
+        else if (e.key === 'PageUp') {
+          e.preventDefault();
+          if (pageNumber > 1) {
+            goToPrevPage();
+          }
+        }
+        // Página Siguiente: PageDown (alias de Arrow Right)
+        else if (e.key === 'PageDown') {
+          e.preventDefault();
+          if (pageNumber < numPages) {
+            goToNextPage();
+          }
         }
       }
 

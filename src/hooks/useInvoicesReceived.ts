@@ -74,6 +74,7 @@ export interface InvoiceReceivedFormData {
   total: number;
   status?: string;
   notes?: string;
+  document_path?: string | null;
   lines: InvoiceLineFormData[];
 }
 

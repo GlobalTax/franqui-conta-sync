@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InvoicePDFPreview } from '@/components/invoices/InvoicePDFPreview';
+import { InvoicePDFUploader } from '@/components/invoices/InvoicePDFUploader';
 import { InvoiceFormHeader } from '@/components/invoices/form/InvoiceFormHeader';
 import { InvoiceSupplierSection } from '@/components/invoices/form/InvoiceSupplierSection';
 import { InvoiceDataSection } from '@/components/invoices/form/InvoiceDataSection';
@@ -25,6 +26,7 @@ import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 // Schema de validación
 const invoiceFormSchema = z.object({
@@ -74,6 +76,9 @@ export default function InvoiceDetailEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
+  
+  // Estado local para document_path
+  const [documentPath, setDocumentPath] = useState<string | null>(null);
 
   // Hooks
   const { data: invoicesData } = useInvoicesReceived({});
@@ -129,6 +134,7 @@ export default function InvoiceDetailEditor() {
         is_rental: false,
         is_special_regime: false
       });
+      setDocumentPath(invoice.document_path || null);
     }
   }, [invoice, isEditMode, form]);
 
@@ -182,6 +188,7 @@ export default function InvoiceDetailEditor() {
           total: data.total,
           notes: data.notes,
           status: 'draft',
+          document_path: documentPath,
           lines: []
         });
         toast.success('Factura guardada como borrador');
@@ -202,19 +209,20 @@ export default function InvoiceDetailEditor() {
       let invoiceId = id;
       
       if (!isEditMode) {
-      const newInvoice = await createInvoice.mutateAsync({
-        centro_code: data.centro_code,
-        supplier_id: data.supplier_id,
-        invoice_number: data.invoice_number,
-        invoice_date: data.invoice_date,
-        due_date: data.due_date,
-        subtotal: data.subtotal,
-        tax_total: data.tax_total,
-        total: data.total,
-        notes: data.notes,
-        status: 'draft',
-        lines: []
-      });
+        const newInvoice = await createInvoice.mutateAsync({
+          centro_code: data.centro_code,
+          supplier_id: data.supplier_id,
+          invoice_number: data.invoice_number,
+          invoice_date: data.invoice_date,
+          due_date: data.due_date,
+          subtotal: data.subtotal,
+          tax_total: data.tax_total,
+          total: data.total,
+          notes: data.notes,
+          status: 'draft',
+          document_path: documentPath,
+          lines: []
+        });
         invoiceId = newInvoice.id;
       } else {
         await updateInvoice.mutateAsync({ 
@@ -293,6 +301,13 @@ export default function InvoiceDetailEditor() {
     navigate('/invoices/inbox');
   };
 
+  const handleUploadComplete = (path: string | null) => {
+    setDocumentPath(path);
+    if (path) {
+      toast.success('PDF subido correctamente');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
@@ -310,10 +325,22 @@ export default function InvoiceDetailEditor() {
           <div className="sticky top-6 h-[calc(100vh-8rem)] overflow-hidden">
             <Card className="h-full">
               <CardContent className="p-0 h-full">
-                <InvoicePDFPreview
-                  documentPath={invoice?.document_path}
-                  className="h-full"
-                />
+                {documentPath ? (
+                  <InvoicePDFPreview
+                    documentPath={documentPath}
+                    className="h-full"
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center p-6">
+                    <InvoicePDFUploader
+                      invoiceId={id}
+                      invoiceType="received"
+                      centroCode={form.watch('centro_code') || 'temp'}
+                      currentPath={documentPath}
+                      onUploadComplete={handleUploadComplete}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -373,11 +400,23 @@ export default function InvoiceDetailEditor() {
 
             <TabsContent value="pdf" className="mt-6">
               <Card>
-                <CardContent className="p-0 h-[70vh]">
-                  <InvoicePDFPreview
-                    documentPath={invoice?.document_path}
-                    className="h-full"
-                  />
+                <CardContent className="p-6">
+                  {documentPath ? (
+                    <div className="h-[70vh]">
+                      <InvoicePDFPreview
+                        documentPath={documentPath}
+                        className="h-full"
+                      />
+                    </div>
+                  ) : (
+                    <InvoicePDFUploader
+                      invoiceId={id}
+                      invoiceType="received"
+                      centroCode={form.watch('centro_code') || 'temp'}
+                      currentPath={documentPath}
+                      onUploadComplete={handleUploadComplete}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

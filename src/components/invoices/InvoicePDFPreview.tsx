@@ -69,12 +69,9 @@ export function InvoicePDFPreview({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Atajos de teclado para controles de zoom
+  // Atajos de teclado para zoom y navegación
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Solo activar si Ctrl (Windows/Linux) o Cmd (Mac) están presionados
-      if (!(e.ctrlKey || e.metaKey)) return;
-
       // No interferir si el usuario está escribiendo en un input/textarea
       const target = e.target as HTMLElement;
       if (
@@ -85,24 +82,46 @@ export function InvoicePDFPreview({
         return;
       }
 
-      // Zoom In: Ctrl/Cmd + Plus o Ctrl/Cmd + Equal
-      if (e.key === '+' || e.key === '=') {
-        e.preventDefault();
-        if (scale < 3.0) {
-          handleZoomIn();
+      // ===== ATAJOS DE ZOOM (requieren Ctrl/Cmd) =====
+      if (e.ctrlKey || e.metaKey) {
+        // Zoom In: Ctrl/Cmd + Plus o Ctrl/Cmd + Equal
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          if (scale < 3.0) {
+            handleZoomIn();
+          }
+        }
+        // Zoom Out: Ctrl/Cmd + Minus
+        else if (e.key === '-') {
+          e.preventDefault();
+          if (scale > 0.5) {
+            handleZoomOut();
+          }
+        }
+        // Reset: Ctrl/Cmd + 0
+        else if (e.key === '0') {
+          e.preventDefault();
+          handleReset();
         }
       }
-      // Zoom Out: Ctrl/Cmd + Minus
-      else if (e.key === '-') {
-        e.preventDefault();
-        if (scale > 0.5) {
-          handleZoomOut();
+      
+      // ===== ATAJOS DE NAVEGACIÓN (sin Ctrl/Cmd) =====
+      // Solo si NO se está presionando Ctrl/Cmd y hay múltiples páginas
+      else if (numPages > 1) {
+        // Página Anterior: Arrow Left
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          if (pageNumber > 1) {
+            goToPrevPage();
+          }
         }
-      }
-      // Reset: Ctrl/Cmd + 0
-      else if (e.key === '0') {
-        e.preventDefault();
-        handleReset();
+        // Página Siguiente: Arrow Right
+        else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          if (pageNumber < numPages) {
+            goToNextPage();
+          }
+        }
       }
     };
 
@@ -114,7 +133,7 @@ export function InvoicePDFPreview({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [pdfUrl, scale]);
+  }, [pdfUrl, scale, numPages, pageNumber]);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3.0));
@@ -248,6 +267,7 @@ export function InvoicePDFPreview({
                 size="sm"
                 onClick={goToPrevPage}
                 disabled={pageNumber <= 1}
+                title="Página anterior (←)"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -261,6 +281,7 @@ export function InvoicePDFPreview({
                 size="sm"
                 onClick={goToNextPage}
                 disabled={pageNumber >= numPages}
+                title="Página siguiente (→)"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

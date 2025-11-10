@@ -3,8 +3,15 @@ import { Document, Page, pdfjs } from "react-pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, AlertCircle, ZoomIn, ZoomOut, Maximize2, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, FileText, AlertCircle, ZoomIn, ZoomOut, Maximize2, RotateCw, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -27,7 +34,24 @@ export function InvoicePDFPreview({
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [containerWidth, setContainerWidth] = useState<number>(0);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Datos de atajos de teclado
+  const keyboardShortcuts = {
+    zoom: [
+      { keys: ["Ctrl/Cmd", "+"], description: "Acercar (+25%)" },
+      { keys: ["Ctrl/Cmd", "-"], description: "Alejar (-25%)" },
+      { keys: ["Ctrl/Cmd", "0"], description: "Restablecer zoom (100%)" },
+      { keys: ["Click"], description: "Ajustar al ancho del contenedor" },
+    ],
+    navigation: [
+      { keys: ["←"], description: "Página anterior" },
+      { keys: ["→"], description: "Página siguiente" },
+      { keys: ["Home"], description: "Ir a la primera página" },
+      { keys: ["End"], description: "Ir a la última página" },
+    ],
+  };
 
   useEffect(() => {
     if (!documentPath) return;
@@ -132,6 +156,13 @@ export function InvoicePDFPreview({
           e.preventDefault();
           setPageNumber(numPages);
         }
+      }
+
+      // ===== AYUDA DE ATAJOS (siempre disponible) =====
+      // Abrir modal de ayuda: Shift + ?
+      if (e.key === '?' && e.shiftKey) {
+        e.preventDefault();
+        setShowShortcutsModal(true);
       }
     };
 
@@ -267,6 +298,17 @@ export function InvoicePDFPreview({
             <span className="text-sm text-muted-foreground ml-2 min-w-[60px]">
               {Math.round(scale * 100)}%
             </span>
+
+            {/* Botón de ayuda de atajos */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShortcutsModal(true)}
+              title="Ver atajos de teclado (Shift + ?)"
+              className="ml-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Navegación de páginas */}
@@ -328,6 +370,90 @@ export function InvoicePDFPreview({
           </Document>
         </div>
       </ScrollArea>
+
+      {/* Modal de Ayuda de Atajos de Teclado */}
+      <Dialog open={showShortcutsModal} onOpenChange={setShowShortcutsModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-primary" />
+              Atajos de Teclado
+            </DialogTitle>
+            <DialogDescription>
+              Navega y controla el visor PDF con estos atajos
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Sección: Control de Zoom */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <ZoomIn className="h-4 w-4" />
+                Control de Zoom
+              </h3>
+              <div className="space-y-2">
+                {keyboardShortcuts.zoom.map((shortcut, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      {shortcut.keys.map((key, keyIndex) => (
+                        <kbd
+                          key={keyIndex}
+                          className="px-2 py-1 bg-muted border border-border rounded font-mono text-xs"
+                        >
+                          {key}
+                        </kbd>
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {shortcut.description}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sección: Navegación de Páginas */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <ChevronRight className="h-4 w-4" />
+                Navegación de Páginas
+              </h3>
+              <div className="space-y-2">
+                {keyboardShortcuts.navigation.map((shortcut, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      {shortcut.keys.map((key, keyIndex) => (
+                        <kbd
+                          key={keyIndex}
+                          className="px-2 py-1 bg-muted border border-border rounded font-mono text-xs"
+                        >
+                          {key}
+                        </kbd>
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {shortcut.description}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nota sobre compatibilidad Mac */}
+            <div className="border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">
+                💡 <strong>Nota:</strong> En macOS, usa <kbd className="px-1 py-0.5 bg-muted border border-border rounded font-mono text-[10px]">Cmd</kbd> en lugar de <kbd className="px-1 py-0.5 bg-muted border border-border rounded font-mono text-[10px]">Ctrl</kbd>
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

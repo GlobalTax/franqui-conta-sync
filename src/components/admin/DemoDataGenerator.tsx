@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { useCreateFranchisee } from "@/hooks/useFranchisees";
 import { useCreateCompany } from "@/hooks/useCompanyMutations";
 import { useCreateCentre } from "@/hooks/useCentres";
@@ -32,6 +32,111 @@ export default function DemoDataGenerator() {
       }
       return [...prev, { name, status, message }];
     });
+  };
+
+  const cleanDemoData = async () => {
+    setIsGenerating(true);
+    setSteps([]);
+
+    try {
+      // Paso 1: Eliminar fiscal_years de centros demo
+      updateStep("Fiscal Years", "loading");
+      const { error: fyError } = await supabase
+        .from('fiscal_years')
+        .delete()
+        .in('centro_code', ['DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004']);
+      
+      if (fyError) throw fyError;
+      updateStep("Fiscal Years", "success", "Años fiscales eliminados");
+      logger.info('DemoDataGenerator', '🗑️ Fiscal years eliminados');
+
+      // Paso 2: Eliminar accounting_entries de centros demo
+      updateStep("Accounting Entries", "loading");
+      const { error: aeError } = await supabase
+        .from('accounting_entries')
+        .delete()
+        .in('centro_code', ['DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004']);
+      
+      if (aeError) throw aeError;
+      updateStep("Accounting Entries", "success", "Asientos contables eliminados");
+      logger.info('DemoDataGenerator', '🗑️ Accounting entries eliminados');
+
+      // Paso 3: Eliminar user_roles de centros demo
+      updateStep("User Roles", "loading");
+      const { error: urError } = await supabase
+        .from('user_roles')
+        .delete()
+        .in('centro', ['DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004']);
+      
+      if (urError) throw urError;
+      updateStep("User Roles", "success", "Roles de usuario eliminados");
+      logger.info('DemoDataGenerator', '🗑️ User roles eliminados');
+
+      // Paso 4: Eliminar centres demo
+      updateStep("Centres", "loading");
+      const { error: centresError } = await supabase
+        .from('centres')
+        .delete()
+        .in('codigo', ['DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004']);
+      
+      if (centresError) throw centresError;
+      updateStep("Centres", "success", "4 centros eliminados");
+      logger.info('DemoDataGenerator', '🗑️ Centres eliminados');
+
+      // Paso 5: Eliminar companies demo
+      updateStep("Companies", "loading");
+      const { error: companiesError } = await supabase
+        .from('companies')
+        .delete()
+        .in('cif', ['B88888888', 'B77777777']);
+      
+      if (companiesError) throw companiesError;
+      updateStep("Companies", "success", "2 sociedades eliminadas");
+      logger.info('DemoDataGenerator', '🗑️ Companies eliminadas');
+
+      // Paso 6: Eliminar suppliers demo
+      updateStep("Suppliers", "loading");
+      const { error: suppliersError } = await supabase
+        .from('suppliers')
+        .delete()
+        .in('tax_id', ['B11111111', 'B22222222', 'B33333333']);
+      
+      if (suppliersError) throw suppliersError;
+      updateStep("Suppliers", "success", "Proveedores eliminados");
+      logger.info('DemoDataGenerator', '🗑️ Suppliers eliminados');
+
+      // Paso 7: Eliminar franchisee demo
+      updateStep("Franchisee", "loading");
+      const { error: franchiseeError } = await supabase
+        .from('franchisees')
+        .delete()
+        .eq('email', 'demo@mcdonalds-group.es');
+      
+      if (franchiseeError) throw franchiseeError;
+      updateStep("Franchisee", "success", "Franchisee eliminado");
+      logger.info('DemoDataGenerator', '🗑️ Franchisee eliminado');
+
+      // Éxito total
+      toast({
+        title: "🗑️ Datos Demo Eliminados",
+        description: "Todos los datos demo han sido eliminados correctamente. Ahora puedes regenerarlos.",
+      });
+
+    } catch (error: any) {
+      logger.error('DemoDataGenerator', '❌ Error al eliminar datos:', error);
+      const lastStep = steps[steps.length - 1];
+      if (lastStep) {
+        updateStep(lastStep.name, "error", error.message);
+      }
+      
+      toast({
+        title: "Error al eliminar datos demo",
+        description: error.message || "Ocurrió un error durante la eliminación",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const generateDemoData = async () => {
@@ -329,24 +434,46 @@ export default function DemoDataGenerator() {
           </div>
         )}
 
-        <Button
-          onClick={generateDemoData}
-          disabled={isGenerating}
-          className="w-full"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando Datos Demo...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generar Grupo Demo McDonald's
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={cleanDemoData}
+            disabled={isGenerating}
+            variant="destructive"
+            className="flex-1"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Eliminando...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Limpiar Datos Demo
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={generateDemoData}
+            disabled={isGenerating}
+            className="flex-1"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generando Datos Demo...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generar Grupo Demo McDonald's
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

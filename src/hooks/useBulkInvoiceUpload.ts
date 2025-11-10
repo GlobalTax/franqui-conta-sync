@@ -121,37 +121,32 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
       // Calculate hash for deduplication
       const fileHash = await calculateHash(fileItem.file);
 
-      // TODO: Check for duplicates (commented out due to TS type inference issue)
-      // We can add this back with a different approach or RPC call
-      /*
-      const existingCheck = await supabase
+      // Check for duplicates using direct query
+      const { data: duplicates } = await supabase
         .from('invoices_received')
-        .select('id')
+        .select('id, invoice_number, invoice_date')
         .eq('document_hash', fileHash)
         .eq('centro_code', centroCode)
-        .maybeSingle();
-
-      if (existingCheck.data) {
+        .limit(1);
+      
+      if (duplicates && duplicates.length > 0) {
+        const dup = duplicates[0];
         setFiles(prev => prev.map(f => 
           f.id === fileItem.id 
             ? { 
                 ...f, 
                 status: 'error', 
-                error: 'Archivo duplicado (ya procesado anteriormente)',
+                error: `Archivo duplicado: Factura ${dup.invoice_number || ''} del ${dup.invoice_date || ''}`,
                 progress: 100 
               } 
             : f
         ));
         return;
       }
-      */
 
-      // Upload to storage
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const fileName = `${fileHash.substring(0, 8)}_${Date.now()}.pdf`;
-      const path = `received/${centroCode}/${year}/${month}/${fileName}`;
+      // Upload to storage: invoices/raw/ según especificaciones
+      const fileName = `${fileHash.substring(0, 12)}_${Date.now()}.pdf`;
+      const path = `invoices/raw/${centroCode}/${fileName}`;
 
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id ? { ...f, progress: 30 } : f
@@ -170,17 +165,25 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         f.id === fileItem.id ? { ...f, progress: 50, documentPath: path } : f
       ));
 
-      // Create invoice record
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Create invoice record with all required fields
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices_received')
         .insert({
           centro_code: centroCode,
-          invoice_number: `PENDING-${Date.now()}`, // Temporary
+          invoice_number: `PENDING-${Date.now()}`, // Temporary until OCR completes
           invoice_date: new Date().toISOString().split('T')[0],
           total: 0, // Will be updated by OCR
-          status: 'pending',
-          document_path: path,
+          status: 'pending', // Estados: pending | processing | processed_ok | needs_review | error
+          file_name: fileItem.file.name,
+          file_path: path,
+          document_path: path, // Keep both for compatibility
           document_hash: fileHash,
+          ocr_engine: null, // Will be set by OCR orchestrator
+          uploaded_by: user?.id,
+          uploaded_at: new Date().toISOString(),
           approval_status: 'pending',
         })
         .select()
@@ -218,7 +221,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
 
       // Update invoice with OCR results
       const ocrData = ocrResult.data || ocrResult.normalized;
-      const finalStatus = ocrResult.status || 'needs_review';
+      const finalStatus = ocrResult.status || (ocrResult.confidence >= 0.7 ? 'processed_ok' : 'needs_review');
 
       const { error: updateError } = await supabase
         .from('invoices_received')
@@ -229,10 +232,17 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           subtotal: ocrData.totals?.total ? ocrData.totals.total / (1 + (ocrData.totals?.vat_21 || 0) / 100) : 0,
           tax_total: ocrData.totals?.vat_21 || ocrData.totals?.vat_10 || 0,
           total: ocrData.totals?.total || 0,
-          status: finalStatus,
+          status: finalStatus, // Estados: pending | processing | processed_ok | needs_review | error
           ocr_confidence: ocrResult.confidence || 0,
-          ocr_engine: ocrResult.ocr_engine,
+          ocr_engine: ocrResult.ocr_engine || 'openai',
+          ocr_payload: ocrResult, // Guardar payload completo
           ocr_processing_time_ms: ocrResult.processingTimeMs,
+          ocr_ms_openai: ocrResult.msOpenai,
+          ocr_ms_mindee: ocrResult.msMindee,
+          ocr_pages: ocrResult.pages || 1,
+          ocr_tokens_in: ocrResult.tokensIn,
+          ocr_tokens_out: ocrResult.tokensOut,
+          ocr_cost_estimate_eur: ocrResult.costEstimateEur,
           ocr_confidence_notes: ocrResult.validation?.warnings || [],
           ocr_merge_notes: ocrResult.merge_notes || [],
           ocr_extracted_data: ocrData,

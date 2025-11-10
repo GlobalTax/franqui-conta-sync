@@ -2500,14 +2500,29 @@ export type Database = {
           centro_code: string
           created_at: string | null
           created_by: string | null
+          document_hash: string | null
           document_path: string | null
           due_date: string | null
           entry_id: string | null
+          file_name: string | null
+          file_path: string | null
           id: string
           invoice_date: string
           invoice_number: string
           notes: string | null
           ocr_confidence: number | null
+          ocr_confidence_notes: string[] | null
+          ocr_cost_estimate_eur: number | null
+          ocr_engine: string | null
+          ocr_extracted_data: Json | null
+          ocr_merge_notes: string[] | null
+          ocr_ms_mindee: number | null
+          ocr_ms_openai: number | null
+          ocr_pages: number | null
+          ocr_payload: Json | null
+          ocr_processing_time_ms: number | null
+          ocr_tokens_in: number | null
+          ocr_tokens_out: number | null
           payment_transaction_id: string | null
           rejected_at: string | null
           rejected_by: string | null
@@ -2520,6 +2535,8 @@ export type Database = {
           tax_total: number | null
           total: number
           updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
           verifactu_hash: string | null
           verifactu_verified: boolean | null
           verifactu_verified_at: string | null
@@ -2529,14 +2546,29 @@ export type Database = {
           centro_code: string
           created_at?: string | null
           created_by?: string | null
+          document_hash?: string | null
           document_path?: string | null
           due_date?: string | null
           entry_id?: string | null
+          file_name?: string | null
+          file_path?: string | null
           id?: string
           invoice_date: string
           invoice_number: string
           notes?: string | null
           ocr_confidence?: number | null
+          ocr_confidence_notes?: string[] | null
+          ocr_cost_estimate_eur?: number | null
+          ocr_engine?: string | null
+          ocr_extracted_data?: Json | null
+          ocr_merge_notes?: string[] | null
+          ocr_ms_mindee?: number | null
+          ocr_ms_openai?: number | null
+          ocr_pages?: number | null
+          ocr_payload?: Json | null
+          ocr_processing_time_ms?: number | null
+          ocr_tokens_in?: number | null
+          ocr_tokens_out?: number | null
           payment_transaction_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
@@ -2549,6 +2581,8 @@ export type Database = {
           tax_total?: number | null
           total: number
           updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
           verifactu_hash?: string | null
           verifactu_verified?: boolean | null
           verifactu_verified_at?: string | null
@@ -2558,14 +2592,29 @@ export type Database = {
           centro_code?: string
           created_at?: string | null
           created_by?: string | null
+          document_hash?: string | null
           document_path?: string | null
           due_date?: string | null
           entry_id?: string | null
+          file_name?: string | null
+          file_path?: string | null
           id?: string
           invoice_date?: string
           invoice_number?: string
           notes?: string | null
           ocr_confidence?: number | null
+          ocr_confidence_notes?: string[] | null
+          ocr_cost_estimate_eur?: number | null
+          ocr_engine?: string | null
+          ocr_extracted_data?: Json | null
+          ocr_merge_notes?: string[] | null
+          ocr_ms_mindee?: number | null
+          ocr_ms_openai?: number | null
+          ocr_pages?: number | null
+          ocr_payload?: Json | null
+          ocr_processing_time_ms?: number | null
+          ocr_tokens_in?: number | null
+          ocr_tokens_out?: number | null
           payment_transaction_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
@@ -2578,6 +2627,8 @@ export type Database = {
           tax_total?: number | null
           total?: number
           updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
           verifactu_hash?: string | null
           verifactu_verified?: boolean | null
           verifactu_verified_at?: string | null

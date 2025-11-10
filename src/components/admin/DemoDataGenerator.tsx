@@ -8,6 +8,8 @@ import { useCreateCompany } from "@/hooks/useCompanyMutations";
 import { useCreateCentre } from "@/hooks/useCentres";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { DemoDataConfig, getDefaultDemoConfig } from "@/types/demo-config";
+import { DemoDataConfigDialog } from "./DemoDataConfigDialog";
 
 interface GenerationStep {
   name: string;
@@ -19,6 +21,8 @@ export default function DemoDataGenerator() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [steps, setSteps] = useState<GenerationStep[]>([]);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [demoConfig, setDemoConfig] = useState<DemoDataConfig>(getDefaultDemoConfig());
   
   const createFranchisee = useCreateFranchisee();
   const createCompany = useCreateCompany();
@@ -139,7 +143,7 @@ export default function DemoDataGenerator() {
     }
   };
 
-  const generateDemoData = async () => {
+  const generateDemoData = async (config: DemoDataConfig) => {
     setIsGenerating(true);
     setSteps([]);
 
@@ -147,16 +151,16 @@ export default function DemoDataGenerator() {
       // Paso 1: Crear o recuperar Franchisee existente
       updateStep("Franchisee", "loading");
       const franchiseeData = {
-        name: "Grupo Demo McDonald's",
-        company_tax_id: "B99999999",
-        email: "demo@mcdonalds-group.es",
+        name: config.franchisee.name,
+        company_tax_id: config.franchisee.company_tax_id,
+        email: config.franchisee.email,
       };
       
       // Verificar si ya existe el franchisee demo
       const { data: existingFranchisee } = await supabase
         .from('franchisees')
         .select('*')
-        .eq('email', 'demo@mcdonalds-group.es')
+        .eq('email', config.franchisee.email)
         .maybeSingle();
 
       let franchisee;
@@ -172,20 +176,12 @@ export default function DemoDataGenerator() {
 
       // Paso 2: Crear o recuperar Companies
       updateStep("Companies", "loading");
-      const companiesData = [
-        {
-          razon_social: "Demo Restaurantes Madrid SL",
-          cif: "B88888888",
-          tipo_sociedad: "SL",
-          franchisee_id: franchisee.id
-        },
-        {
-          razon_social: "Demo Food Services Barcelona SL",
-          cif: "B77777777",
-          tipo_sociedad: "SL",
-          franchisee_id: franchisee.id
-        }
-      ];
+      const companiesData = config.companies.map(company => ({
+        razon_social: company.razon_social,
+        cif: company.cif,
+        tipo_sociedad: company.tipo_sociedad,
+        franchisee_id: franchisee.id
+      }));
 
       const companies = await Promise.all(
         companiesData.map(async (companyData) => {
@@ -214,68 +210,21 @@ export default function DemoDataGenerator() {
 
       // Paso 3: Crear o recuperar Centres
       updateStep("Centres", "loading");
-      const centresData = [
-        {
-          codigo: "DEMO-001",
-          nombre: "McDonald's Gran Vía",
-          direccion: "Gran Vía 28",
-          ciudad: "Madrid",
-          postal_code: "28013",
-          state: "Madrid",
-          pais: "España",
-          franchisee_id: franchisee.id,
-          company_id: companies[0].id,
-          opening_date: "2020-01-15",
-          seating_capacity: 120,
-          square_meters: 350,
-          activo: true
-        },
-        {
-          codigo: "DEMO-002",
-          nombre: "McDonald's Castellana",
-          direccion: "Paseo de la Castellana 120",
-          ciudad: "Madrid",
-          postal_code: "28046",
-          state: "Madrid",
-          pais: "España",
-          franchisee_id: franchisee.id,
-          company_id: companies[0].id,
-          opening_date: "2019-06-20",
-          seating_capacity: 80,
-          square_meters: 280,
-          activo: true
-        },
-        {
-          codigo: "DEMO-003",
-          nombre: "McDonald's Diagonal Barcelona",
-          direccion: "Avinguda Diagonal 500",
-          ciudad: "Barcelona",
-          postal_code: "08006",
-          state: "Barcelona",
-          pais: "España",
-          franchisee_id: franchisee.id,
-          company_id: companies[1].id,
-          opening_date: "2018-03-10",
-          seating_capacity: 100,
-          square_meters: 320,
-          activo: true
-        },
-        {
-          codigo: "DEMO-004",
-          nombre: "McDonald's La Maquinista",
-          direccion: "CC La Maquinista, Potosí 2",
-          ciudad: "Barcelona",
-          postal_code: "08030",
-          state: "Barcelona",
-          pais: "España",
-          franchisee_id: franchisee.id,
-          company_id: companies[1].id,
-          opening_date: "2021-11-05",
-          seating_capacity: 150,
-          square_meters: 400,
-          activo: true
-        }
-      ];
+      const centresData = config.centres.map(centre => ({
+        codigo: centre.codigo,
+        nombre: centre.nombre,
+        direccion: centre.direccion,
+        ciudad: centre.ciudad,
+        postal_code: centre.postal_code,
+        state: centre.state,
+        pais: centre.pais,
+        franchisee_id: franchisee.id,
+        company_id: companies[centre.company_index].id,
+        opening_date: centre.opening_date,
+        seating_capacity: centre.seating_capacity,
+        square_meters: centre.square_meters,
+        activo: true
+      }));
 
       const centres = await Promise.all(
         centresData.map(async (centreData) => {
@@ -302,14 +251,14 @@ export default function DemoDataGenerator() {
       const reusedCentresCount = centres.length - newCentresCount;
       updateStep("Centres", "success", `${centres.length} centros (${reusedCentresCount > 0 ? `${reusedCentresCount} reutilizados` : 'todos nuevos'})`);
 
-      // Paso 4: Crear o recuperar año fiscal para DEMO-001
+      // Paso 4: Crear o recuperar año fiscal para primer centro
       updateStep("Fiscal Year", "loading");
       
       // Verificar si ya existe el año fiscal
       const { data: existingFY } = await supabase
         .from("fiscal_years")
         .select('*')
-        .eq('centro_code', 'DEMO-001')
+        .eq('centro_code', config.centres[0].codigo)
         .eq('year', 2025)
         .maybeSingle();
 
@@ -317,7 +266,7 @@ export default function DemoDataGenerator() {
         const { error: fyError } = await supabase
           .from("fiscal_years")
           .insert({
-            centro_code: "DEMO-001",
+            centro_code: config.centres[0].codigo,
             year: 2025,
             start_date: "2025-01-01",
             end_date: "2025-12-31",
@@ -334,17 +283,14 @@ export default function DemoDataGenerator() {
 
       // Paso 5: Crear o recuperar suppliers
       updateStep("Suppliers", "loading");
-      const suppliersData = [
-        { name: "Proveedores Demo SA", tax_id: "B11111111" },
-        { name: "Distribuciones Demo SL", tax_id: "B22222222" },
-        { name: "Servicios Demo Group", tax_id: "B33333333" }
-      ];
+      const suppliersData = config.suppliers;
 
       // Verificar cuáles suppliers ya existen
+      const supplierTaxIds = config.suppliers.map(s => s.tax_id);
       const { data: existingSuppliers } = await supabase
         .from("suppliers")
         .select('*')
-        .in('tax_id', ['B11111111', 'B22222222', 'B33333333']);
+        .in('tax_id', supplierTaxIds);
 
       const existingTaxIds = new Set(existingSuppliers?.map(s => s.tax_id) || []);
       const newSuppliers = suppliersData.filter(s => !existingTaxIds.has(s.tax_id));
@@ -398,83 +344,96 @@ export default function DemoDataGenerator() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Generador de Datos Demo
-        </CardTitle>
-        <CardDescription>
-          Crea un grupo completo de restaurantes McDonald's con datos de ejemplo para pruebas y demostraciones
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-          <h4 className="font-medium text-sm">Se crearán:</h4>
-          <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-            <li>• 1 Franchisee: Grupo Demo McDonald's</li>
-            <li>• 2 Sociedades: Madrid SL y Barcelona SL</li>
-            <li>• 4 Centros: Gran Vía, Castellana, Diagonal y La Maquinista</li>
-            <li>• 1 Año fiscal 2025 para DEMO-001</li>
-            <li>• 3 Proveedores demo</li>
-          </ul>
-        </div>
-
-        {steps.length > 0 && (
-          <div className="space-y-2">
-            {steps.map((step, idx) => (
-              <div key={idx} className="flex items-center gap-3 text-sm p-2 rounded-md bg-muted/30">
-                {getStepIcon(step.status)}
-                <span className="font-medium">{step.name}</span>
-                {step.message && (
-                  <span className="text-muted-foreground ml-auto">{step.message}</span>
-                )}
-              </div>
-            ))}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Generador de Datos Demo
+          </CardTitle>
+          <CardDescription>
+            Crea un grupo completo de restaurantes McDonald's con datos de ejemplo para pruebas y demostraciones
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+            <h4 className="font-medium text-sm">Se crearán:</h4>
+            <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+              <li>• 1 Franchisee: Grupo Demo McDonald's</li>
+              <li>• 2 Sociedades: Madrid SL y Barcelona SL</li>
+              <li>• 4 Centros: Gran Vía, Castellana, Diagonal y La Maquinista</li>
+              <li>• 1 Año fiscal 2025 para DEMO-001</li>
+              <li>• 3 Proveedores demo</li>
+            </ul>
           </div>
-        )}
 
-        <div className="flex gap-2">
-          <Button
-            onClick={cleanDemoData}
-            disabled={isGenerating}
-            variant="destructive"
-            className="flex-1"
-            size="lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Limpiar Datos Demo
-              </>
-            )}
-          </Button>
+          {steps.length > 0 && (
+            <div className="space-y-2">
+              {steps.map((step, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-sm p-2 rounded-md bg-muted/30">
+                  {getStepIcon(step.status)}
+                  <span className="font-medium">{step.name}</span>
+                  {step.message && (
+                    <span className="text-muted-foreground ml-auto">{step.message}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-          <Button
-            onClick={generateDemoData}
-            disabled={isGenerating}
-            className="flex-1"
-            size="lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generando Datos Demo...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generar Grupo Demo McDonald's
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="flex gap-2">
+            <Button
+              onClick={cleanDemoData}
+              disabled={isGenerating}
+              variant="destructive"
+              className="flex-1"
+              size="lg"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Limpiar Datos Demo
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={() => setShowConfigDialog(true)}
+              disabled={isGenerating}
+              className="flex-1"
+              size="lg"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generando Datos Demo...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Configurar y Generar Demo
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <DemoDataConfigDialog
+        open={showConfigDialog}
+        onOpenChange={setShowConfigDialog}
+        config={demoConfig}
+        onGenerate={(config) => {
+          setDemoConfig(config);
+          setShowConfigDialog(false);
+          generateDemoData(config);
+        }}
+      />
+    </>
   );
 }

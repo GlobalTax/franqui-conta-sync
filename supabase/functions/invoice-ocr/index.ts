@@ -205,6 +205,7 @@ serve(async (req) => {
 
     console.log(`[Main] OCR Engine used: ${orchestratorResult.ocr_engine}`);
     console.log(`[Main] Confidence: ${orchestratorResult.confidence_final}%`);
+    console.log(`[Main] Status: ${orchestratorResult.status}`);
 
     // ⭐ CACHE SYSTEM: Calculate structural hash after OCR extraction
     const structuralHash = createStructuralHash(
@@ -372,6 +373,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         ocr_engine: orchestratorResult.ocr_engine,
+        status: orchestratorResult.status, // ⭐ Estado final del documento
         merge_notes: orchestratorResult.merge_notes,
         data: normalizedResponse.normalized,
         normalized: normalizedResponse.normalized,

@@ -110,10 +110,13 @@ interface EnhancedInvoiceData {
   } | null;
 }
 
+export type InvoiceStatus = "processed_ok" | "needs_review" | "posted";
+
 export interface OrchestratorResult {
   ocr_engine: "openai" | "mindee" | "merged" | "manual_review";
   final_invoice_json: EnhancedInvoiceData;
   confidence_final: number;
+  status: InvoiceStatus; // ⭐ Estado final del documento
   merge_notes: string[];
   raw_responses: {
     openai?: OpenAIExtractionResult;
@@ -125,7 +128,11 @@ export interface OrchestratorResult {
   };
 }
 
-const CONFIDENCE_THRESHOLD = 70;
+// ============================================================================
+// CONFIDENCE THRESHOLDS AND CRITICAL FIELDS
+// ============================================================================
+const CONFIDENCE_THRESHOLD_FALLBACK = 70;  // < 70 → fallback a Mindee
+const CONFIDENCE_THRESHOLD_AUTO_POST = 85; // ≥ 85 → auto-post elegible
 const CRITICAL_FIELDS = ['issuer.vat_id', 'invoice_number', 'totals.total'];
 
 function getFieldValue(obj: any, path: string): any {
@@ -199,27 +206,47 @@ export async function orchestrateOCR(
     mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
   }
 
-  // Validar campos críticos de OpenAI
+  // ========================================================================
+  // VALIDACIÓN DE CAMPOS CRÍTICOS
+  // ========================================================================
+  // Campos críticos: issuer.vat_id, invoice_number, totals.total
   const criticalFieldsOK = openaiResult && CRITICAL_FIELDS.every(field => {
     const value = getFieldValue(openaiResult!.data, field);
     return value !== null && value !== undefined && value !== '';
   });
+  
+  if (!criticalFieldsOK && openaiResult) {
+    const missingFields = CRITICAL_FIELDS.filter(field => {
+      const value = getFieldValue(openaiResult!.data, field);
+      return !value || value === '' || value === null || value === undefined;
+    });
+    console.log(`[Orchestrator] ⚠️ Critical fields missing: ${missingFields.join(', ')}`);
+  }
 
   // ========================================================================
   // PASO 2: Decidir si usar OpenAI o intentar con Mindee
   // ========================================================================
   
+  // ========================================================================
+  // DECISIÓN: ¿Usar OpenAI o hacer fallback a Mindee?
+  // ========================================================================
   if (openaiResult && 
-      openaiResult.confidence_score >= CONFIDENCE_THRESHOLD && 
+      openaiResult.confidence_score >= CONFIDENCE_THRESHOLD_FALLBACK && 
       criticalFieldsOK) {
-    // OpenAI es suficientemente bueno
-    console.log('[Orchestrator] ✅ Using OpenAI result (high confidence + all critical fields)');
+    // OpenAI es suficientemente bueno (≥ 70 + campos críticos)
+    const status: InvoiceStatus = openaiResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
+      ? 'processed_ok'    // ≥ 85 → elegible para auto-post
+      : 'needs_review';   // 70-84 → requiere revisión
+      
+    console.log(`[Orchestrator] ✅ Using OpenAI result (confidence: ${openaiResult.confidence_score}%, status: ${status})`);
     mergeNotes.push(`✅ OpenAI Vision usado (confidence ${openaiResult.confidence_score}%)`);
+    mergeNotes.push(`📊 Estado final: ${status}`);
     
     return {
       ocr_engine: 'openai',
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
+      status,
       merge_notes: mergeNotes,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
@@ -293,10 +320,21 @@ export async function orchestrateOCR(
     
     const merged = intelligentMerge(openaiResult, mindeeResult, mergeNotes, supplierHistory);
     
+    // ⭐ Determinar estado basado en confidence final del merge
+    const status: InvoiceStatus = merged.confidence >= CONFIDENCE_THRESHOLD_AUTO_POST
+      ? 'processed_ok'    // ≥ 85 → elegible para auto-post
+      : merged.confidence >= CONFIDENCE_THRESHOLD_FALLBACK
+        ? 'needs_review'  // 70-84 → requiere revisión
+        : 'needs_review'; // < 70 → requiere revisión
+    
+    console.log(`[Orchestrator] 🔀 Merge completed: confidence ${merged.confidence}%, status: ${status}`);
+    mergeNotes.push(`📊 Estado final: ${status} (confidence: ${merged.confidence}%)`);
+    
     return {
       ocr_engine: 'merged',
       final_invoice_json: merged.data,
       confidence_final: merged.confidence,
+      status,
       merge_notes: mergeNotes,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
@@ -307,13 +345,24 @@ export async function orchestrateOCR(
   // PASO 5: Usar el mejor disponible o marcar para revisión manual
   // ========================================================================
   
-  if (mindeeResult && mindeeResult.confidence_score >= 50) {
-    console.log('[Orchestrator] ✅ Using Mindee result');
+  // ========================================================================
+  // PASO 5: Determinar el mejor resultado disponible
+  // ========================================================================
+  
+  if (mindeeResult && mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_FALLBACK) {
+    const status: InvoiceStatus = mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
+      ? 'processed_ok'
+      : 'needs_review';
+      
+    console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
     mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
+    mergeNotes.push(`📊 Estado final: ${status}`);
+    
     return {
       ocr_engine: 'mindee',
       final_invoice_json: mindeeResult.data,
       confidence_final: mindeeResult.confidence_score,
+      status,
       merge_notes: mergeNotes,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
@@ -321,12 +370,15 @@ export async function orchestrateOCR(
   }
 
   if (openaiResult && openaiResult.confidence_score >= 40) {
-    console.log('[Orchestrator] ⚠️ Using OpenAI result (best available)');
+    console.log('[Orchestrator] ⚠️ Using OpenAI result (best available but low confidence)');
     mergeNotes.push(`⚠️ Usando OpenAI con confianza baja (${openaiResult.confidence_score}%)`);
+    mergeNotes.push(`📊 Estado final: needs_review (confidence < ${CONFIDENCE_THRESHOLD_FALLBACK}%)`);
+    
     return {
       ocr_engine: 'openai',
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
+      status: 'needs_review',
       merge_notes: mergeNotes,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
@@ -337,13 +389,19 @@ export async function orchestrateOCR(
   // PASO 6: Todos los motores fallaron → manual_review
   // ========================================================================
   
+  // ========================================================================
+  // PASO 6: Todos los motores fallaron → needs_review
+  // ========================================================================
+  
   console.log('[Orchestrator] ❌ All OCR engines failed, flagging for manual review');
   mergeNotes.push('❌ Todos los motores OCR fallaron. Se requiere revisión manual.');
+  mergeNotes.push('📊 Estado final: needs_review (confidence: 0%)');
   
   return {
     ocr_engine: 'manual_review',
     final_invoice_json: openaiResult?.data || mindeeResult?.data || createEmptyInvoiceData(),
     confidence_final: 0,
+    status: 'needs_review',
     merge_notes: mergeNotes,
     raw_responses: rawResponses,
     timing: { ms_openai, ms_mindee }

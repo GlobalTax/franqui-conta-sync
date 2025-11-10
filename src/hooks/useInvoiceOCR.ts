@@ -107,7 +107,8 @@ export interface InvoiceEntryValidationResult {
 
 export interface OCRResponse {
   success: boolean;
-  ocr_engine?: "openai" | "mindee" | "merged" | "manual_review" | "google_vision";
+  ocr_engine?: "openai" | "mindee" | "merged" | "manual_review";
+  status?: "processed_ok" | "needs_review" | "posted"; // ⭐ Estado final del documento
   merge_notes?: string[];
   confidence: number;
   data: OCRInvoiceData;

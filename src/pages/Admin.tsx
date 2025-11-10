@@ -13,6 +13,7 @@ import DataQualityDashboard from "./admin/DataQualityDashboard";
 import FranchiseesDataQuality from "./admin/FranchiseesDataQuality";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
+import DemoDataGenerator from "@/components/admin/DemoDataGenerator";
 
 const Admin = () => {
   return (
@@ -27,6 +28,7 @@ const Admin = () => {
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-12">
+          <TabsTrigger value="demo">Demo</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
@@ -41,6 +43,10 @@ const Admin = () => {
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
           <TabsTrigger value="settings">Config</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="demo" className="mt-6">
+          <DemoDataGenerator />
+        </TabsContent>
 
         <TabsContent value="users" className="mt-6">
           <UsersManagement />

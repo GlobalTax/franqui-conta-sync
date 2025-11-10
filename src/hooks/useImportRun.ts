@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type ImportModule = 'diario' | 'sumas_saldos' | 'iva_emitidas' | 'iva_recibidas' | 'norma43';
+export type ImportModule = 'diario' | 'sumas_saldos' | 'iva_emitidas' | 'iva_recibidas' | 'norma43' | 'tpv' | 'nominas';
 
 export interface StageSumasSaldosParams {
   importRunId: string;
@@ -299,6 +299,106 @@ export function usePostIVARecibidasImport() {
     },
     onError: (error: Error) => {
       toast.error(`Error al contabilizar: ${error.message}`);
+    },
+  });
+}
+
+export function useStageTVPRows() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ importRunId, rows }: StageIVAParams) => {
+      const { data, error } = await supabase.rpc('stage_tpv_rows' as any, {
+        p_import_run_id: importRunId,
+        p_rows: rows as any,
+      });
+
+      if (error) throw error;
+      return data as { rows_inserted: number; rows_error: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      if (data.rows_error > 0) {
+        toast.warning(`${data.rows_inserted} filas válidas, ${data.rows_error} con errores`);
+      } else {
+        toast.success(`${data.rows_inserted} filas validadas correctamente`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error en staging TPV: ${error.message}`);
+    },
+  });
+}
+
+export function useStageNominasRows() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ importRunId, rows }: StageIVAParams) => {
+      const { data, error } = await supabase.rpc('stage_nominas_rows' as any, {
+        p_import_run_id: importRunId,
+        p_rows: rows as any,
+      });
+
+      if (error) throw error;
+      return data as { rows_inserted: number; rows_error: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      if (data.rows_error > 0) {
+        toast.warning(`${data.rows_inserted} filas válidas, ${data.rows_error} con errores`);
+      } else {
+        toast.success(`${data.rows_inserted} filas validadas correctamente`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error en staging Nóminas: ${error.message}`);
+    },
+  });
+}
+
+export function usePostTVPImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (importRunId: string) => {
+      const { data, error } = await supabase.rpc('post_tpv_import' as any, {
+        p_import_run_id: importRunId,
+      });
+
+      if (error) throw error;
+      return data as { entries_created: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
+      toast.success(`TPV contabilizado: ${data.entries_created} asientos creados`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al contabilizar TPV: ${error.message}`);
+    },
+  });
+}
+
+export function usePostNominasImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (importRunId: string) => {
+      const { data, error } = await supabase.rpc('post_nominas_import' as any, {
+        p_import_run_id: importRunId,
+      });
+
+      if (error) throw error;
+      return data as { entries_created: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['import-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
+      toast.success(`Nóminas contabilizadas: ${data.entries_created} asientos creados`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al contabilizar Nóminas: ${error.message}`);
     },
   });
 }

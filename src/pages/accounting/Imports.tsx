@@ -17,6 +17,10 @@ import {
   useStageIVARecibidas,
   usePostIVAEmitidasImport,
   usePostIVARecibidasImport,
+  useStageTVPRows,
+  useStageNominasRows,
+  usePostTVPImport,
+  usePostNominasImport,
   useImportRun,
   ImportRun,
 } from "@/hooks/useImportRun";
@@ -43,6 +47,10 @@ export default function Imports() {
   const stageIVARecibidas = useStageIVARecibidas();
   const postIVAEmitidasImport = usePostIVAEmitidasImport();
   const postIVARecibidasImport = usePostIVARecibidasImport();
+  const stageTVPRows = useStageTVPRows();
+  const stageNominasRows = useStageNominasRows();
+  const postTVPImport = usePostTVPImport();
+  const postNominasImport = usePostNominasImport();
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
@@ -86,6 +94,10 @@ export default function Imports() {
         await stageIVAEmitidas.mutateAsync({ importRunId, rows: parsedData });
       } else if (activeModule === 'iva_recibidas') {
         await stageIVARecibidas.mutateAsync({ importRunId, rows: parsedData });
+      } else if (activeModule === 'tpv') {
+        await stageTVPRows.mutateAsync({ importRunId, rows: parsedData });
+      } else if (activeModule === 'nominas') {
+        await stageNominasRows.mutateAsync({ importRunId, rows: parsedData });
       }
     } catch (error) {
       console.error('Staging error:', error);
@@ -107,6 +119,10 @@ export default function Imports() {
         await postIVAEmitidasImport.mutateAsync(currentImportRunId);
       } else if (activeModule === 'iva_recibidas') {
         await postIVARecibidasImport.mutateAsync(currentImportRunId);
+      } else if (activeModule === 'tpv') {
+        await postTVPImport.mutateAsync(currentImportRunId);
+      } else if (activeModule === 'nominas') {
+        await postNominasImport.mutateAsync(currentImportRunId);
       }
       
       // Reset state
@@ -176,6 +192,8 @@ export default function Imports() {
           <TabsTrigger value="iva_recibidas">
             Libro IVA Recibidas
           </TabsTrigger>
+          <TabsTrigger value="tpv">TPV (Ventas)</TabsTrigger>
+          <TabsTrigger value="nominas">Nóminas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="diario" className="space-y-6">
@@ -414,6 +432,133 @@ export default function Imports() {
                 <CardTitle>Historial de Importaciones</CardTitle>
                 <CardDescription>
                   Consulta el estado y resultados de importaciones anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportHistoryTable
+                  imports={importHistory}
+                  onDownloadErrors={handleDownloadErrors}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tpv" className="space-y-6">
+          {viewMode === 'import' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar TPV (Ventas por Canal)</CardTitle>
+                <CardDescription>
+                  Formato CSV esperado: fecha, centro_code, canal (dine_in/drive_thru/delivery/takeaway/mccafe/kiosk), 
+                  ventas_netas, iva_repercutido, turno (opcional), num_transacciones (opcional)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportWizard
+                  module="tpv"
+                  onFileSelect={handleFileSelect}
+                  onStage={handleStage}
+                  onPost={handlePost}
+                  currentStep={getCurrentStep()}
+                  progress={
+                    currentImportRun?.stats?.rows_inserted && currentImportRun?.stats?.rows_total
+                      ? (currentImportRun.stats.rows_inserted / currentImportRun.stats.rows_total) * 100
+                      : 0
+                  }
+                  stats={currentImportRun?.stats}
+                  errors={currentImportRun?.error_log ? [currentImportRun.error_log] : []}
+                />
+
+                {currentImportRun?.status === 'completed' && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedData([]);
+                        setCurrentImportRunId(null);
+                      }}
+                    >
+                      Nueva importación
+                    </Button>
+                    <Button onClick={() => setViewMode('history')}>
+                      Ver historial
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial TPV</CardTitle>
+                <CardDescription>
+                  Consulta el estado y resultados de importaciones de TPV
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportHistoryTable
+                  imports={importHistory}
+                  onDownloadErrors={handleDownloadErrors}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="nominas" className="space-y-6">
+          {viewMode === 'import' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar Nóminas</CardTitle>
+                <CardDescription>
+                  Formato CSV esperado: fecha, centro_code, empleado_nif (opcional), empleado_nombre (opcional),
+                  sueldos_salarios, seguridad_social_cargo, importe_bruto, importe_neto, retencion_irpf, 
+                  seguridad_social_empleado, periodo_liquidacion (YYYY-MM), tipo_nomina (mensual/extraordinaria/finiquito)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportWizard
+                  module="nominas"
+                  onFileSelect={handleFileSelect}
+                  onStage={handleStage}
+                  onPost={handlePost}
+                  currentStep={getCurrentStep()}
+                  progress={
+                    currentImportRun?.stats?.rows_inserted && currentImportRun?.stats?.rows_total
+                      ? (currentImportRun.stats.rows_inserted / currentImportRun.stats.rows_total) * 100
+                      : 0
+                  }
+                  stats={currentImportRun?.stats}
+                  errors={currentImportRun?.error_log ? [currentImportRun.error_log] : []}
+                />
+
+                {currentImportRun?.status === 'completed' && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedData([]);
+                        setCurrentImportRunId(null);
+                      }}
+                    >
+                      Nueva importación
+                    </Button>
+                    <Button onClick={() => setViewMode('history')}>
+                      Ver historial
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial Nóminas</CardTitle>
+                <CardDescription>
+                  Consulta el estado y resultados de importaciones de nóminas
                 </CardDescription>
               </CardHeader>
               <CardContent>

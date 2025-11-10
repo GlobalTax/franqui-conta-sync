@@ -1,0 +1,7 @@
+fecha,centro_code,canal,turno,ventas_netas,iva_repercutido,propinas,descuentos,food_sales,beverage_sales,dessert_sales,num_transacciones,ticket_medio
+2025-01-15,REST001,dine_in,lunch,2500.00,525.00,15.50,50.00,1800.00,500.00,200.00,125,20.00
+2025-01-15,REST001,drive_thru,lunch,3200.00,672.00,0.00,80.00,2400.00,800.00,0.00,210,15.24
+2025-01-15,REST001,delivery,dinner,1800.00,378.00,25.00,35.00,1300.00,400.00,100.00,85,21.18
+2025-01-15,REST001,takeaway,breakfast,950.00,199.50,0.00,15.00,600.00,350.00,0.00,65,14.62
+2025-01-15,REST001,mccafe,lunch,650.00,136.50,5.00,0.00,100.00,550.00,0.00,48,13.54
+2025-01-15,REST001,kiosk,dinner,1200.00,252.00,0.00,25.00,900.00,200.00,100.00,72,16.67

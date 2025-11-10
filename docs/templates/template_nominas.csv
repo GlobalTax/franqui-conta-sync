@@ -1,0 +1,6 @@
+fecha,centro_code,empleado_nif,empleado_nombre,sueldos_salarios,seguridad_social_cargo,otros_gastos_sociales,indemnizaciones,retencion_irpf,seguridad_social_empleado,importe_bruto,importe_neto,periodo_liquidacion,tipo_nomina
+2025-01-31,REST001,12345678A,Juan Pérez García,2000.00,660.00,50.00,0.00,280.00,132.00,2710.00,2298.00,2025-01,mensual
+2025-01-31,REST001,23456789B,María López Ruiz,1800.00,594.00,50.00,0.00,245.00,119.00,2444.00,2080.00,2025-01,mensual
+2025-01-31,REST001,34567890C,Carlos Martínez Soto,2200.00,726.00,50.00,0.00,315.00,145.00,2976.00,2516.00,2025-01,mensual
+2025-01-31,REST001,45678901D,Ana Fernández Vega,1600.00,528.00,50.00,0.00,210.00,106.00,2178.00,1862.00,2025-01,mensual
+2025-06-30,REST001,12345678A,Juan Pérez García,1000.00,330.00,0.00,0.00,140.00,66.00,1330.00,1124.00,2025-06,extraordinaria

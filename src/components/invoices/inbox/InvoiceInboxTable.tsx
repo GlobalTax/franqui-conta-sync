@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -45,6 +46,7 @@ interface InvoiceInboxTableProps {
   onSelect: (ids: string[]) => void;
   onRowClick: (invoice: Invoice) => void;
   loading?: boolean;
+  compact?: boolean;
 }
 
 export function InvoiceInboxTable({
@@ -53,6 +55,7 @@ export function InvoiceInboxTable({
   onSelect,
   onRowClick,
   loading = false,
+  compact = false,
 }: InvoiceInboxTableProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -116,10 +119,13 @@ export function InvoiceInboxTable({
           {invoices.map((invoice) => (
             <TableRow
               key={invoice.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              className={cn(
+                "cursor-pointer hover:bg-muted/50 transition-colors",
+                compact && "h-10"
+              )}
               onClick={() => onRowClick(invoice)}
             >
-              <TableCell onClick={(e) => e.stopPropagation()}>
+              <TableCell onClick={(e) => e.stopPropagation()} className={cn(compact && "py-1")}>
                 <Checkbox
                   checked={selectedIds.includes(invoice.id)}
                   onCheckedChange={(checked) =>
@@ -128,10 +134,10 @@ export function InvoiceInboxTable({
                   aria-label={`Seleccionar factura de ${invoice.supplier_name}`}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1 text-xs")}>
                 <DocumentTypeBadge type={invoice.document_type || 'invoice'} />
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1 text-xs")}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="font-medium">{invoice.supplier_name}</div>
@@ -141,10 +147,10 @@ export function InvoiceInboxTable({
                   </TooltipContent>
                 </Tooltip>
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1 text-xs")}>
                 {format(new Date(invoice.invoice_date), 'dd/MM/yyyy')}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className={cn("text-right", compact && "py-1 text-xs")}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="font-semibold">
@@ -160,34 +166,34 @@ export function InvoiceInboxTable({
                   </TooltipContent>
                 </Tooltip>
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1")}>
                 <InboxStatusBadge
                   status={invoice.status}
                   hasEntry={!!invoice.accounting_entry_id}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1 text-xs")}>
                 <span className="text-sm text-muted-foreground">
                   {invoice.centro_code || '-'}
                 </span>
               </TableCell>
-              <TableCell>
+              <TableCell className={cn(compact && "py-1")}>
                 <OCREngineBadge
                   engine={invoice.ocr_engine}
                   confidence={invoice.ocr_confidence}
                   processingTime={invoice.processing_time_ms}
                 />
               </TableCell>
-              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+              <TableCell className={cn("text-right", compact && "py-1")} onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="sm"
+                        size={compact ? "sm" : "sm"}
                         variant="ghost"
                         onClick={() => onRowClick(invoice)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className={cn("h-4 w-4", compact && "h-3 w-3")} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

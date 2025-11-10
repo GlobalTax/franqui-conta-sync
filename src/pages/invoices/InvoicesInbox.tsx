@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { InvoiceInboxTable } from '@/components/invoices/inbox/InvoiceInboxTable';
 import { InvoiceInboxSidebar } from '@/components/invoices/inbox/InvoiceInboxSidebar';
-import { InboxFiltersBar } from '@/components/invoices/inbox/InboxFiltersBar';
+import { InboxTopFilters } from '@/components/invoices/inbox/InboxTopFilters';
 import { InboxEmptyState } from '@/components/invoices/inbox/InboxEmptyState';
 import { InboxPDFActionsBar } from '@/components/invoices/inbox/InboxPDFActionsBar';
 import { SplitDocumentDialog } from '@/components/invoices/inbox/dialogs/SplitDocumentDialog';
@@ -72,8 +72,12 @@ export default function InvoicesInbox() {
     date_to?: string;
     searchTerm?: string;
     ocr_engine?: string;
+    posted?: boolean | null;
+    invoice_type?: 'received' | 'issued' | null;
+    data_quality?: 'with_ocr' | 'without_ocr' | 'errors' | null;
   }>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [compactView, setCompactView] = useState(false);
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [postDialogOpen, setPostDialogOpen] = useState(false);
@@ -294,10 +298,14 @@ export default function InvoicesInbox() {
       </div>
 
       {/* Filtros */}
-      <InboxFiltersBar
+      <InboxTopFilters
         filters={filters}
-        onChange={setFilters}
-        activeCount={activeFilterCount}
+        onFiltersChange={setFilters}
+        onApply={() => {
+          queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+        }}
+        compactView={compactView}
+        onCompactViewChange={setCompactView}
       />
 
       {/* Contenido principal */}
@@ -316,6 +324,7 @@ export default function InvoicesInbox() {
               onSelect={setSelectedIds}
               onRowClick={handleRowClick}
               loading={isLoading}
+              compact={compactView}
             />
             
             {/* Controles de paginación */}

@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { ViewProvider } from "@/contexts/ViewContext";
 import App from "./App";
 import "./index.css";
+import "./styles/pdf-viewer.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

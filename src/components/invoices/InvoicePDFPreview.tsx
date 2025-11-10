@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, FileText, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, FileText, AlertCircle, ZoomIn, ZoomOut, Maximize2, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Configurar worker de PDF.js
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface InvoicePDFPreviewProps {
   documentPath: string | null;
@@ -16,6 +23,11 @@ export function InvoicePDFPreview({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!documentPath) return;
@@ -27,7 +39,7 @@ export function InvoicePDFPreview({
       try {
         const { data, error } = await supabase.storage
           .from("invoice-documents")
-          .createSignedUrl(documentPath, 3600); // 1 hour expiry
+          .createSignedUrl(documentPath, 3600);
 
         if (error) throw error;
         setPdfUrl(data.signedUrl);
@@ -41,6 +53,54 @@ export function InvoicePDFPreview({
 
     loadPDF();
   }, [documentPath]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerWidth(containerRef.current.offsetWidth);
+    }
+
+    const handleResize = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleZoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3.0));
+  };
+
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleFitToWidth = () => {
+    if (containerWidth > 0) {
+      const pdfWidth = 595;
+      const newScale = (containerWidth - 40) / pdfWidth;
+      setScale(newScale);
+    }
+  };
+
+  const handleReset = () => {
+    setScale(1.0);
+  };
+
+  const goToPrevPage = () => {
+    setPageNumber(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setPageNumber(prev => Math.min(prev + 1, numPages));
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
 
   if (!documentPath) {
     return (
@@ -85,12 +145,110 @@ export function InvoicePDFPreview({
 
   return (
     <Card className={`border-border/40 shadow-sm overflow-hidden ${className}`}>
-      <ScrollArea className="h-[600px]">
-        <iframe
-          src={pdfUrl || ""}
-          className="w-full h-[600px] border-0"
-          title="Vista previa de factura"
-        />
+      {/* Toolbar de controles */}
+      <div className="border-b border-border bg-muted/30 p-2 lg:p-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2">
+          {/* Controles de zoom */}
+          <div className="flex items-center gap-1 justify-center lg:justify-start">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomOut}
+              disabled={scale <= 0.5}
+              title="Alejar (25%)"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              title="Restablecer (100%)"
+            >
+              <RotateCw className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={scale >= 3.0}
+              title="Acercar (25%)"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFitToWidth}
+              title="Ajustar al ancho"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+
+            <span className="text-sm text-muted-foreground ml-2 min-w-[60px]">
+              {Math.round(scale * 100)}%
+            </span>
+          </div>
+
+          {/* Navegación de páginas */}
+          {numPages > 1 && (
+            <div className="flex items-center gap-1 justify-center lg:justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPrevPage}
+                disabled={pageNumber <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <span className="text-sm text-muted-foreground px-2 whitespace-nowrap">
+                Página {pageNumber} de {numPages}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToNextPage}
+                disabled={pageNumber >= numPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Área de visualización del PDF */}
+      <ScrollArea className="h-[400px] lg:h-[600px]">
+        <div ref={containerRef} className="flex justify-center p-4 min-h-full">
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex items-center justify-center h-[400px]">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </div>
+            }
+            error={
+              <div className="flex items-center justify-center h-[400px] text-destructive">
+                <AlertCircle className="mr-2 h-5 w-5" />
+                Error al cargar el PDF
+              </div>
+            }
+          >
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+              className="shadow-lg border border-border rounded-sm"
+            />
+          </Document>
+        </div>
       </ScrollArea>
     </Card>
   );

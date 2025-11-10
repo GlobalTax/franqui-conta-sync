@@ -8,9 +8,10 @@ interface PLTableMultiYearProps {
   }>;
   compareYears: number[];
   isQSRTemplate: boolean;
+  onRubricClick?: (rubricCode: string, rubricName: string, year: number) => void;
 }
 
-export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate }: PLTableMultiYearProps) {
+export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate, onRubricClick }: PLTableMultiYearProps) {
   if (yearQueries.some(q => !q.data?.plData?.length)) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -61,7 +62,16 @@ export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate }: P
                   : baseLine.level === 2
                   ? "bg-muted/40 font-semibold"
                   : ""
+              } ${
+                !baseLine.is_total && onRubricClick
+                  ? "cursor-pointer hover:bg-muted/60 transition-colors"
+                  : ""
               } transition-colors duration-150`}
+              onClick={() => {
+                if (!baseLine.is_total && onRubricClick) {
+                  onRubricClick(baseLine.rubric_code, baseLine.rubric_name, compareYears[0]);
+                }
+              }}
             >
               <div className="flex items-center gap-3 flex-1">
                 <span className="font-mono text-xs text-muted-foreground w-8">

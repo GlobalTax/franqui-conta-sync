@@ -10,6 +10,7 @@ interface PLTableMonthlyProps {
   prevYearMonthlyQueries?: UseQueryResult<{ plData: PLReportLine[]; summary: any }>[];
   year: number;
   showYoY: boolean;
+  onRubricClick?: (rubricCode: string, rubricName: string, month: number) => void;
 }
 
 export const PLTableMonthly = ({
@@ -17,6 +18,7 @@ export const PLTableMonthly = ({
   prevYearMonthlyQueries,
   year,
   showYoY,
+  onRubricClick,
 }: PLTableMonthlyProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
   
@@ -110,7 +112,13 @@ export const PLTableMonthly = ({
                   ${rubric.level === 0 ? 'font-bold text-base bg-primary/5' : ''}
                   ${rubric.level === 1 ? 'font-semibold bg-muted/30' : ''}
                   ${rubric.is_total ? 'font-bold bg-accent/10 border-t-2' : ''}
+                  ${!rubric.is_total && onRubricClick ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''}
                 `}
+                onClick={() => {
+                  if (!rubric.is_total && onRubricClick) {
+                    onRubricClick(rubric.rubric_code, rubric.rubric_name, 1);
+                  }
+                }}
               >
                 <TableCell 
                   className="sticky left-0 z-10 bg-background border-r"

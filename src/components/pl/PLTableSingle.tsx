@@ -11,6 +11,7 @@ interface PLTableSingleProps {
   getAdjustmentAmount?: (rubricCode: string) => number;
   upsertAdjustment?: any;
   enableVirtualization?: boolean;
+  onRubricClick?: (rubricCode: string, rubricName: string) => void;
 }
 
 export function PLTableSingle({
@@ -20,6 +21,7 @@ export function PLTableSingle({
   getAdjustmentAmount,
   upsertAdjustment,
   enableVirtualization,
+  onRubricClick,
 }: PLTableSingleProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const shouldVirtualize = enableVirtualization ?? data.length > 50;
@@ -116,6 +118,10 @@ export function PLTableSingle({
                   line.rubric_code === 'ebitda' || line.rubric_code === 'margen_bruto' || line.rubric_code === 'gross_margin'
                     ? "border-l-4 border-l-primary"
                     : ""
+                } ${
+                  !line.is_total && onRubricClick
+                    ? "cursor-pointer hover:bg-muted/60 transition-colors"
+                    : ""
                 }`}
                 style={{
                   paddingLeft: `${line.level * 2 + 1}rem`,
@@ -127,6 +133,11 @@ export function PLTableSingle({
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   } : {}),
+                }}
+                onClick={() => {
+                  if (!line.is_total && onRubricClick) {
+                    onRubricClick(line.rubric_code, line.rubric_name);
+                  }
                 }}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">

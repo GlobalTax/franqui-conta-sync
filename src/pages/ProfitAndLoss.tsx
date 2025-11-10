@@ -22,6 +22,7 @@ import { exportPLHistorical, exportPLCSV, exportPLMonthlyYoY } from "@/lib/pl-ex
 import { YearSelector } from "@/components/pl/YearSelector";
 import { AdjustmentCell } from "@/components/pl/AdjustmentCell";
 import { PLTableSingle } from "@/components/pl/PLTableSingle";
+import { PLRubricDrilldown } from "@/components/pl/PLRubricDrilldown";
 import type { PLReportLineWithAdjustments } from "@/types/profit-loss";
 
 // ✅ Lazy load: Tablas (solo se cargan cuando se activa la vista)
@@ -51,6 +52,15 @@ const ProfitAndLoss = () => {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [showYoY, setShowYoY] = useState(false);
   const [isPreloaded, setIsPreloaded] = useState(false);
+  
+  // Drill-down state
+  const [drilldownOpen, setDrilldownOpen] = useState(false);
+  const [drilldownConfig, setDrilldownConfig] = useState<{
+    rubricCode: string;
+    rubricName: string;
+    startDate: string;
+    endDate: string;
+  } | null>(null);
   
   // ✅ Función de preload con estado de React
   const preloadMultiYearTable = useCallback(() => {
@@ -302,6 +312,22 @@ const ProfitAndLoss = () => {
         console.warn(`Preset desconocido: ${preset}`);
     }
   }, [dateRange.year]);
+
+  // Handler para abrir drill-down
+  const handleRubricClick = useCallback((
+    rubricCode: string,
+    rubricName: string,
+    startDate: string,
+    endDate: string
+  ) => {
+    setDrilldownConfig({
+      rubricCode,
+      rubricName,
+      startDate,
+      endDate,
+    });
+    setDrilldownOpen(true);
+  }, []);
 
   if (!selectedView) {
     return (
@@ -731,6 +757,17 @@ const ProfitAndLoss = () => {
                   prevYearMonthlyQueries={showYoY ? prevYearMonthlyQueries : undefined}
                   year={dateRange.year}
                   showYoY={showYoY}
+                  onRubricClick={(rubricCode, rubricName, month) => {
+                    const monthStr = String(month).padStart(2, '0');
+                    const year = dateRange.year;
+                    const lastDay = new Date(year, month, 0).getDate();
+                    handleRubricClick(
+                      rubricCode,
+                      rubricName,
+                      `${year}-${monthStr}-01`,
+                      `${year}-${monthStr}-${lastDay}`
+                    );
+                  }}
                 />
               </Suspense>
             ) : viewMode === "multi-year" ? (
@@ -740,6 +777,14 @@ const ProfitAndLoss = () => {
                   yearQueries={yearQueries}
                   compareYears={compareYears}
                   isQSRTemplate={isQSRTemplate}
+                  onRubricClick={(rubricCode, rubricName, year) =>
+                    handleRubricClick(
+                      rubricCode,
+                      rubricName,
+                      `${year}-01-01`,
+                      `${year}-12-31`
+                    )
+                  }
                 />
               </Suspense>
             ) : plData.length === 0 ? (
@@ -758,6 +803,9 @@ const ProfitAndLoss = () => {
                 getAdjustmentAmount={getAdjustmentAmount}
                 upsertAdjustment={upsertAdjustment}
                 enableVirtualization={plData.length > 50}
+                onRubricClick={(rubricCode, rubricName) =>
+                  handleRubricClick(rubricCode, rubricName, dateRange.startDate, dateRange.endDate)
+                }
               />
             )}
           </CardContent>
@@ -797,6 +845,22 @@ const ProfitAndLoss = () => {
           </Card>
         )}
       </div>
+
+      {/* Modal de Drill-down de Rúbrica */}
+      {drilldownConfig && (
+        <PLRubricDrilldown
+          open={drilldownOpen}
+          onOpenChange={setDrilldownOpen}
+          templateCode={selectedTemplate}
+          rubricCode={drilldownConfig.rubricCode}
+          rubricName={drilldownConfig.rubricName}
+          companyId={selectedView?.type === 'company' ? selectedView.id : undefined}
+          centroCode={selectedView?.type === 'centre' ? selectedView.id : undefined}
+          startDate={drilldownConfig.startDate}
+          endDate={drilldownConfig.endDate}
+          compareYoY={viewMode === "single" ? false : showYoY}
+        />
+      )}
     </div>
   );
 };

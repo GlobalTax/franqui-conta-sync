@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.journal-import]
 verify_jwt = true
+
+[functions.pl-rubric-breakdown]
+verify_jwt = true

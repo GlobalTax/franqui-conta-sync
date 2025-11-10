@@ -10,6 +10,7 @@ import { InboxPDFActionsBar } from '@/components/invoices/inbox/InboxPDFActionsB
 import { SplitDocumentDialog } from '@/components/invoices/inbox/dialogs/SplitDocumentDialog';
 import { MergeDocumentsDialog } from '@/components/invoices/inbox/dialogs/MergeDocumentsDialog';
 import { BulkPostDialog } from '@/components/invoices/inbox/dialogs/BulkPostDialog';
+import { ReprocessOCRSimpleDialog } from '@/components/invoices/inbox/ReprocessOCRSimpleDialog';
 import { usePDFOperations } from '@/hooks/usePDFOperations';
 import { useBulkPost } from '@/hooks/useBulkPost';
 import { InboxAssignCentreDialog } from '@/components/invoices/inbox/InboxAssignCentreDialog';
@@ -18,6 +19,7 @@ import { useInvoicesReceived, type InvoiceReceived } from '@/hooks/useInvoicesRe
 import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
 import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
+import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -90,10 +92,13 @@ export default function InvoicesInbox() {
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [postDialogOpen, setPostDialogOpen] = useState(false);
+  const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
+  const [invoiceToReprocess, setInvoiceToReprocess] = useState<string | null>(null);
   const [selectedInvoiceForSplit, setSelectedInvoiceForSplit] = useState<any | null>(null);
   
   const { splitPDF, mergePDF, isLoading: isPDFLoading } = usePDFOperations();
   const { bulkPost, isPosting, progress } = useBulkPost();
+  const invoiceActions = useInvoiceActions();
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -234,6 +239,47 @@ export default function InvoicesInbox() {
     }
   };
 
+  // Handler para reintentar OCR
+  const handleRetryOCR = (invoiceId: string) => {
+    setInvoiceToReprocess(invoiceId);
+    setReprocessDialogOpen(true);
+  };
+
+  const handleReprocessConfirm = async (engine: 'openai' | 'mindee') => {
+    if (!invoiceToReprocess) return;
+    
+    await invoiceActions.reprocessOCR({
+      invoiceId: invoiceToReprocess,
+      engine
+    });
+    
+    setReprocessDialogOpen(false);
+    setInvoiceToReprocess(null);
+  };
+
+  const handleNewInvoice = () => {
+    navigate('/invoices/new-received');
+  };
+
+  const handleEdit = (invoiceId: string) => {
+    navigate(`/invoices/received/${invoiceId}/edit`);
+  };
+
+  const handleDelete = async (invoiceId: string) => {
+    if (!confirm('¿Eliminar esta factura?')) return;
+    try {
+      const invoice = result?.data?.find(inv => inv.id === invoiceId);
+      if (invoice?.document_path) {
+        await supabase.storage.from('invoice-documents').remove([invoice.document_path]);
+      }
+      await supabase.from('invoices_received').delete().eq('id', invoiceId);
+      toast.success('Factura eliminada');
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    }
+  };
+
   // Determinar estado vacío
   const getEmptyVariant = () => {
     if (invoices.length === 0 && activeFilterCount === 0) {
@@ -334,6 +380,9 @@ export default function InvoicesInbox() {
               onRowClick={handleRowClick}
               loading={isLoading}
               compact={compactView}
+              onRetryOCR={handleRetryOCR}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
             
             {/* Controles de paginación */}
@@ -405,21 +454,21 @@ export default function InvoicesInbox() {
       </div>
 
       {/* Acciones masivas */}
-      {selectedIds.length > 0 && (
-        <InboxPDFActionsBar
-          selectedCount={selectedIds.length}
-          selectedInvoices={selectedInvoices}
-          canSplit={canSplit}
-          canMerge={canMerge}
-          canPost={canPost}
-          onDeselect={() => setSelectedIds([])}
-          onSplit={handleSplitDocument}
-          onMerge={handleMergeDocuments}
-          onPost={handleBulkPost}
-          onDelete={handleBulkDelete}
-          isLoading={isPDFLoading || isPosting}
-        />
-      )}
+      <InboxPDFActionsBar
+        selectedCount={selectedIds.length}
+        selectedInvoices={selectedInvoices}
+        canSplit={canSplit}
+        canMerge={canMerge}
+        canPost={canPost}
+        onDeselect={() => setSelectedIds([])}
+        onSplit={handleSplitDocument}
+        onMerge={handleMergeDocuments}
+        onPost={handleBulkPost}
+        onDelete={handleBulkDelete}
+        onNew={handleNewInvoice}
+        showNewButton={true}
+        isLoading={isPDFLoading || isPosting}
+      />
 
       <SplitDocumentDialog
         open={splitDialogOpen}
@@ -474,6 +523,15 @@ export default function InvoicesInbox() {
         onOpenChange={setAssignCentreDialogOpen}
         selectedIds={selectedIds}
         onAssigned={() => setSelectedIds([])}
+      />
+
+      {/* Diálogo de reprocesar OCR */}
+      <ReprocessOCRSimpleDialog
+        open={reprocessDialogOpen}
+        onOpenChange={setReprocessDialogOpen}
+        invoiceId={invoiceToReprocess || ''}
+        onConfirm={handleReprocessConfirm}
+        isLoading={invoiceActions.isReprocessing}
       />
     </div>
   );

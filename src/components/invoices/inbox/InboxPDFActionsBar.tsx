@@ -3,7 +3,7 @@
 // Barra inferior sticky con acciones de manipulación PDF y contabilización
 // ============================================================================
 
-import { X, Scissors, Link2, FileCheck, Trash2 } from 'lucide-react';
+import { X, Scissors, Link2, FileCheck, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -24,6 +24,8 @@ interface InboxPDFActionsBarProps {
   onMerge: () => void;
   onPost: () => void;
   onDelete: () => void;
+  onNew?: () => void;
+  showNewButton?: boolean;
   isLoading?: boolean;
 }
 
@@ -38,8 +40,30 @@ export function InboxPDFActionsBar({
   onMerge,
   onPost,
   onDelete,
+  onNew,
+  showNewButton = true,
   isLoading = false,
 }: InboxPDFActionsBarProps) {
+  // Si no hay selección y se muestra botón Nuevo
+  if (selectedCount === 0 && showNewButton && onNew) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 shadow-[0_-2px_16px_rgba(0,0,0,0.1)]">
+        <div className="container mx-auto max-w-7xl px-6 py-3">
+          <div className="flex items-center justify-end">
+            <Button
+              size="default"
+              onClick={onNew}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Nueva Factura
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (selectedCount === 0) return null;
 
   return (

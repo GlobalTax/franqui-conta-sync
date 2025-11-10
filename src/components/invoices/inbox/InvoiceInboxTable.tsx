@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Eye, FileText } from 'lucide-react';
+import { Eye, FileText, MoreVertical, RefreshCw, Trash2, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -18,10 +18,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OCREngineBadge } from './OCREngineBadge';
 import { DocumentTypeBadge } from './DocumentTypeBadge';
 import { InvoiceTypeBadge } from './InvoiceTypeBadge';
+import { getInvoiceState, canPerformAction } from '@/lib/invoice-states';
 
 interface Invoice {
   id: string;
@@ -57,6 +65,9 @@ interface InvoiceInboxTableProps {
   onRowClick: (invoice: Invoice) => void;
   loading?: boolean;
   compact?: boolean;
+  onRetryOCR?: (invoiceId: string) => void;
+  onEdit?: (invoiceId: string) => void;
+  onDelete?: (invoiceId: string) => void;
 }
 
 export function InvoiceInboxTable({
@@ -66,6 +77,9 @@ export function InvoiceInboxTable({
   onRowClick,
   loading = false,
   compact = false,
+  onRetryOCR,
+  onEdit,
+  onDelete,
 }: InvoiceInboxTableProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -256,6 +270,9 @@ export function InvoiceInboxTable({
                 <InboxStatusBadge
                   status={invoice.status}
                   hasEntry={!!invoice.accounting_entry_id}
+                  ocrEngine={invoice.ocr_engine}
+                  ocrConfidence={invoice.ocr_confidence}
+                  approvalStatus={invoice.status}
                 />
               </TableCell>
               
@@ -268,22 +285,57 @@ export function InvoiceInboxTable({
               
               {/* Acciones */}
               <TableCell className={cn("text-right", compact && "py-1")} onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-end gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size={compact ? "sm" : "sm"}
-                        variant="ghost"
-                        onClick={() => onRowClick(invoice)}
-                      >
-                        <Eye className={cn("h-4 w-4", compact && "h-3 w-3")} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ver detalles (Enter)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="sr-only">Acciones</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => onRowClick(invoice)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Ver detalles
+                    </DropdownMenuItem>
+                    
+                    {canPerformAction(getInvoiceState(invoice), 'retryOCR') && onRetryOCR && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onRetryOCR(invoice.id)}
+                          className="text-blue-600 dark:text-blue-400"
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Reintentar OCR
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    
+                    {canPerformAction(getInvoiceState(invoice), 'edit') && onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(invoice.id)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {onDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(invoice.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { InvoicePDFUploader } from "@/components/invoices/InvoicePDFUploader";
 import { InvoicePDFPreview } from "@/components/invoices/InvoicePDFPreview";
 import { InvoiceLineItemsTable } from "@/components/invoices/InvoiceLineItemsTable";
@@ -22,7 +23,7 @@ import {
 } from "@/hooks/useInvoiceOCR";
 import { useCreateInvoiceReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Loader2, AlertCircle, CheckCircle, FileText, Scan } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, FileText, Scan, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 type OCRStatus = 'idle' | 'uploading' | 'processing' | 'review' | 'saving';
@@ -38,6 +39,12 @@ export default function NewInvoiceWithOCR() {
   const [ocrConfidence, setOcrConfidence] = useState<number>(0);
   const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
   const [rawOCRResponse, setRawOCRResponse] = useState<any>(null);
+  
+  // Estado para controlar si el preview está expandido
+  const [isPreviewOpen, setIsPreviewOpen] = useState(() => {
+    // Abierto por defecto en desktop, cerrado en móvil
+    return window.innerWidth >= 1024;
+  });
   
   const [supplierId, setSupplierId] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -240,35 +247,65 @@ export default function NewInvoiceWithOCR() {
             )}
           </Card>
 
-          {/* PDF Preview */}
+          {/* PDF Preview - Collapsible */}
           {documentPath && (
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Vista Previa
-                </h3>
+            <Collapsible
+              open={isPreviewOpen}
+              onOpenChange={setIsPreviewOpen}
+              className="space-y-2"
+            >
+              <Card className="p-6">
+                {/* Header con trigger */}
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Vista Previa
+                      </h3>
+                      
+                      {/* Badges de estado - siempre visibles */}
+                      <div className="flex items-center gap-2">
+                        {status === 'processing' && (
+                          <Badge variant="secondary" className="animate-pulse">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Procesando...
+                          </Badge>
+                        )}
+                        
+                        {status === 'review' && (
+                          <Badge className="bg-success text-white border-success">
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            Procesado
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Icono indicador */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="p-1 h-auto group-hover:bg-muted"
+                    >
+                      {isPreviewOpen ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </CollapsibleTrigger>
                 
-                {status === 'processing' && (
-                  <Badge variant="secondary" className="animate-pulse">
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    Procesando...
-                  </Badge>
-                )}
-                
-                {status === 'review' && (
-                  <Badge className="bg-success text-white border-success">
-                    <CheckCircle className="mr-1 h-3 w-3" />
-                    Procesado
-                  </Badge>
-                )}
-              </div>
-              
-              <InvoicePDFPreview 
-                documentPath={documentPath}
-                className="h-[600px] rounded-lg overflow-hidden border border-border"
-              />
-            </Card>
+                {/* Contenido collapsible */}
+                <CollapsibleContent className="mt-4">
+                  <InvoicePDFPreview 
+                    documentPath={documentPath}
+                    className="h-[400px] lg:h-[600px] rounded-lg overflow-hidden border border-border"
+                  />
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           )}
 
           {status === 'processing' && (

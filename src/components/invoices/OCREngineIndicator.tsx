@@ -6,9 +6,17 @@ interface Props {
   ocrEngine: "openai" | "mindee" | "merged" | "manual_review" | "google_vision";
   mergeNotes: string[];
   confidence: number;
+  metrics?: {
+    pages?: number;
+    tokens_in?: number;
+    tokens_out?: number;
+    cost_estimate_eur?: number;
+    ms_openai?: number;
+    ms_mindee?: number;
+  };
 }
 
-export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence }: Props) {
+export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics }: Props) {
   
   const engineConfig = {
     openai: {
@@ -70,6 +78,39 @@ export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence }: Props)
               </li>
             ))}
           </ul>
+        )}
+        
+        {metrics && (
+          <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-xs">
+            {metrics.pages && (
+              <div className="flex justify-between">
+                <span className="opacity-70">Páginas:</span>
+                <span className="font-medium">{metrics.pages}</span>
+              </div>
+            )}
+            {metrics.tokens_in && (
+              <div className="flex justify-between">
+                <span className="opacity-70">Tokens (in/out):</span>
+                <span className="font-medium">{metrics.tokens_in.toLocaleString()}/{metrics.tokens_out?.toLocaleString()}</span>
+              </div>
+            )}
+            {metrics.cost_estimate_eur && (
+              <div className="flex justify-between">
+                <span className="opacity-70">Coste estimado:</span>
+                <span className="font-medium">€{metrics.cost_estimate_eur.toFixed(4)}</span>
+              </div>
+            )}
+            {(metrics.ms_openai || metrics.ms_mindee) && (
+              <div className="flex justify-between">
+                <span className="opacity-70">Tiempo:</span>
+                <span className="font-medium">
+                  {metrics.ms_openai ? `${metrics.ms_openai}ms` : ''}
+                  {metrics.ms_openai && metrics.ms_mindee ? ' / ' : ''}
+                  {metrics.ms_mindee ? `${metrics.ms_mindee}ms` : ''}
+                </span>
+              </div>
+            )}
+          </div>
         )}
       </AlertDescription>
     </Alert>

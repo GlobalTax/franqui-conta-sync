@@ -5,7 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +106,7 @@ serve(async (req) => {
       totalPages += pageCount;
 
       const copiedPages = await mergedPdf.copyPages(pdfDoc, Array.from({ length: pageCount }, (_, i) => i));
-      copiedPages.forEach(page => mergedPdf.addPage(page));
+      copiedPages.forEach((page: any) => mergedPdf.addPage(page));
 
       console.log(`[merge-pdf] Added ${pageCount} pages from invoice ${invoice.id}`);
     }
@@ -182,7 +182,8 @@ serve(async (req) => {
       processing_time_ms: processingTime,
       pages_processed: totalPages,
       success: true,
-    }).catch(err => console.warn('Failed to log operation:', err));
+    });
+    // Note: Supabase client doesn't support .catch() - errors are handled in response
 
     return new Response(
       JSON.stringify({
@@ -197,12 +198,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[merge-pdf] Error:', error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error?.message || 'Unknown error',
       }),
       { 
         status: 400,

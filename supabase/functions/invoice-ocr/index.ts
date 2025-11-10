@@ -183,19 +183,20 @@ serve(async (req) => {
       tokens_out: tokens.tokens_out
     });
 
-    // Insertar log en BD
+    // Insertar log en BD con métricas completas
     const ocrLogData = {
       document_path: documentPath,
       ocr_provider: 'multi-engine', // Legacy field
       engine: orchestratorResult.ocr_engine,
-      ms_openai: orchestratorResult.timing.ms_openai,
-      ms_mindee: orchestratorResult.timing.ms_mindee,
-      pages,
       tokens_in: tokens.tokens_in,
       tokens_out: tokens.tokens_out,
+      pages,
       cost_estimate_eur: costBreakdown.cost_total_eur,
+      ms_openai: orchestratorResult.timing.ms_openai,
+      ms_mindee: orchestratorResult.timing.ms_mindee,
       raw_response: orchestratorResult.raw_responses,
       extracted_data: orchestratorResult.final_invoice_json,
+      confidence_score: orchestratorResult.confidence_final,
       confidence: orchestratorResult.confidence_final / 100,
       processing_time_ms: processingTime
     };
@@ -208,7 +209,7 @@ serve(async (req) => {
       console.error('[Main] ❌ Failed to insert OCR log:', logError);
       // No bloqueamos el flujo si falla el logging
     } else {
-      console.log(`[Main] ✅ OCR logged - Engine: ${orchestratorResult.ocr_engine}, Cost: €${costBreakdown.cost_total_eur}, Time: ${processingTime}ms`);
+      console.log(`[Main] ✅ OCR logged - Engine: ${orchestratorResult.ocr_engine}, Cost: €${costBreakdown.cost_total_eur}, Time: ${processingTime}ms, Tokens: ${tokens.tokens_in}/${tokens.tokens_out}`);
     }
 
     console.log(`OCR completed in ${processingTime}ms`);

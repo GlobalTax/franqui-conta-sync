@@ -164,10 +164,18 @@ export const useLogOCRProcessing = () => {
       invoiceId?: string;
       documentPath: string;
       ocrProvider: string;
+      engine?: string;
       rawResponse: any;
       extractedData: any;
       confidence: number;
+      confidenceScore?: number;
       processingTimeMs: number;
+      tokensIn?: number;
+      tokensOut?: number;
+      pages?: number;
+      costEstimateEur?: number;
+      msOpenai?: number;
+      msMindee?: number;
       userCorrections?: any;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -178,10 +186,18 @@ export const useLogOCRProcessing = () => {
           invoice_id: logData.invoiceId || null,
           document_path: logData.documentPath,
           ocr_provider: logData.ocrProvider,
+          engine: logData.engine,
           raw_response: logData.rawResponse,
           extracted_data: logData.extractedData,
           confidence: logData.confidence,
+          confidence_score: logData.confidenceScore,
           processing_time_ms: logData.processingTimeMs,
+          tokens_in: logData.tokensIn,
+          tokens_out: logData.tokensOut,
+          pages: logData.pages,
+          cost_estimate_eur: logData.costEstimateEur,
+          ms_openai: logData.msOpenai,
+          ms_mindee: logData.msMindee,
           user_corrections: logData.userCorrections,
           created_by: user?.id
         });

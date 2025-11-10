@@ -50,6 +50,7 @@ const Modelo303 = lazy(() => import("@/pages/iva/Modelo303"));
 const FiscalYearClosing = lazy(() => import("@/pages/accounting/FiscalYearClosing"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const StyleGuide = lazy(() => import("@/pages/examples/StyleGuide"));
+const APLearningDashboard = lazy(() => import("@/pages/settings/APLearningDashboard"));
 
 /**
  * React Query Configuration
@@ -155,6 +156,7 @@ const App = () => {
               <Route path="/admin-debug" element={<AdminDebug />} />
               <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
               <Route path="/notificaciones" element={<Notifications />} />
+              <Route path="/configuracion/ap-learning" element={<APLearningDashboard />} />
               <Route path="/style-guide" element={<StyleGuide />} />
             </Route>
             <Route path="*" element={<NotFound />} />

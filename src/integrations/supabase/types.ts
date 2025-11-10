@@ -504,6 +504,107 @@ export type Database = {
         }
         Relationships: []
       }
+      ap_learning_corrections: {
+        Row: {
+          centro_code: string | null
+          corrected_account: string
+          created_at: string | null
+          created_by: string | null
+          extracted_keywords: string[] | null
+          generated_rule_id: string | null
+          id: string
+          invoice_id: string | null
+          invoice_line_id: string | null
+          line_amount: number
+          line_description: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rule_status: string | null
+          suggested_account: string
+          suggested_confidence: number | null
+          suggested_rule_id: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          supplier_tax_id: string | null
+        }
+        Insert: {
+          centro_code?: string | null
+          corrected_account: string
+          created_at?: string | null
+          created_by?: string | null
+          extracted_keywords?: string[] | null
+          generated_rule_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          invoice_line_id?: string | null
+          line_amount: number
+          line_description: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_status?: string | null
+          suggested_account: string
+          suggested_confidence?: number | null
+          suggested_rule_id?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+        }
+        Update: {
+          centro_code?: string | null
+          corrected_account?: string
+          created_at?: string | null
+          created_by?: string | null
+          extracted_keywords?: string[] | null
+          generated_rule_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          invoice_line_id?: string | null
+          line_amount?: number
+          line_description?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_status?: string | null
+          suggested_account?: string
+          suggested_confidence?: number | null
+          suggested_rule_id?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_learning_corrections_generated_rule_id_fkey"
+            columns: ["generated_rule_id"]
+            isOneToOne: false
+            referencedRelation: "ap_mapping_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_learning_corrections_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_learning_corrections_invoice_line_id_fkey"
+            columns: ["invoice_line_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_learning_corrections_suggested_rule_id_fkey"
+            columns: ["suggested_rule_id"]
+            isOneToOne: false
+            referencedRelation: "ap_mapping_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_mapping_rules: {
         Row: {
           active: boolean | null

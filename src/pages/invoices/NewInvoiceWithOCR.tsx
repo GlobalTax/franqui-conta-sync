@@ -24,6 +24,7 @@ import {
   type APMappingResult,
   type InvoiceEntryValidationResult
 } from "@/hooks/useInvoiceOCR";
+import { useAPLearning, type APLearningRequest } from "@/hooks/useAPLearning";
 import { APMappingSuggestions } from "@/components/invoices/APMappingSuggestions";
 import { OCRDiscrepanciesAlert } from "@/components/invoices/OCRDiscrepanciesAlert";
 import { EntryPreview } from "@/components/invoices/EntryPreview";
@@ -67,6 +68,7 @@ export default function NewInvoiceWithOCR() {
   const processOCR = useProcessInvoiceOCR();
   const createInvoice = useCreateInvoiceReceived();
   const logOCR = useLogOCRProcessing();
+  const apLearning = useAPLearning();
 
   const handleUploadComplete = (path: string) => {
     setDocumentPath(path);
@@ -189,6 +191,47 @@ export default function NewInvoiceWithOCR() {
           linesModified: JSON.stringify(lines) !== JSON.stringify(ocrData?.lines)
         }
       });
+
+      // ⭐ SISTEMA DE APRENDIZAJE AP (Threshold híbrido: 85%)
+      const correctionLines = lines
+        .map((line, index) => ({
+          lineId: '', // No necesario para aprendizaje
+          description: line.description,
+          amount: line.quantity * line.unit_price,
+          suggestedAccount: apMapping?.line_level?.[index]?.account_suggestion || '',
+          correctedAccount: line.account_code,
+          suggestedRuleId: apMapping?.line_level?.[index]?.matched_rule_id || null,
+          suggestedConfidence: apMapping?.line_level?.[index]?.confidence_score || 0
+        }))
+        .filter(line => line.suggestedAccount && line.suggestedAccount !== line.correctedAccount);
+
+      if (correctionLines.length > 0 && ocrData) {
+        console.log('[AP Learning] Detected corrections, triggering learning...');
+        
+        try {
+          const learningResult = await apLearning.mutateAsync({
+            invoiceId: newInvoice.id,
+            lines: correctionLines,
+            supplierId: supplierId,
+            supplierName: ocrData?.issuer?.name || ocrData?.supplier?.name || '',
+            supplierTaxId: ocrData?.issuer?.vat_id || null,
+            centroCode: currentCentro.codigo
+          });
+
+          if (learningResult.rulesGenerated > 0) {
+            const autoApprovedMsg = learningResult.autoApproved > 0 
+              ? ` (${learningResult.autoApproved} auto-aprobadas)`
+              : '';
+            toast.success(
+              `✨ ${learningResult.rulesGenerated} nueva(s) regla(s) aprendida(s)${autoApprovedMsg}`,
+              { duration: 5000 }
+            );
+          }
+        } catch (error) {
+          console.error('[AP Learning] Error:', error);
+          // No bloqueamos el guardado por errores de aprendizaje
+        }
+      }
 
       toast.success("Factura creada con éxito");
       navigate('/facturas');

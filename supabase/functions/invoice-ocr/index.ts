@@ -590,6 +590,74 @@ function calculateEnhancedConfidence(data: EnhancedInvoiceData): { score: number
 }
 
 // ============================================================================
+// VALIDACIÓN DE CUENTAS PGC
+// ============================================================================
+
+async function validateAccountExists(
+  supabase: any,
+  accountCode: string,
+  centroCode?: string | null
+): Promise<boolean> {
+  const query = supabase
+    .from('accounts')
+    .select('id')
+    .eq('code', accountCode)
+    .eq('active', true);
+  
+  if (centroCode) {
+    query.eq('centro_code', centroCode);
+  }
+  
+  const { data, error } = await query.maybeSingle();
+  
+  if (error) {
+    console.error(`Error validating account ${accountCode}:`, error);
+    return false;
+  }
+  
+  return !!data;
+}
+
+async function validateAndAdjustSuggestion(
+  supabase: any,
+  suggestion: APMappingSuggestion,
+  centroCode?: string | null
+): Promise<APMappingSuggestion> {
+  const accountValid = await validateAccountExists(
+    supabase, 
+    suggestion.account_suggestion,
+    centroCode
+  );
+  
+  const taxAccountValid = await validateAccountExists(
+    supabase,
+    suggestion.tax_account,
+    centroCode
+  );
+  
+  const apAccountValid = await validateAccountExists(
+    supabase,
+    suggestion.ap_account,
+    centroCode
+  );
+  
+  if (!accountValid || !taxAccountValid || !apAccountValid) {
+    const invalidAccounts = [];
+    if (!accountValid) invalidAccounts.push(`Gasto:${suggestion.account_suggestion}`);
+    if (!taxAccountValid) invalidAccounts.push(`IVA:${suggestion.tax_account}`);
+    if (!apAccountValid) invalidAccounts.push(`Proveedor:${suggestion.ap_account}`);
+    
+    return {
+      ...suggestion,
+      confidence_score: 10,
+      rationale: `⚠️ ${suggestion.rationale} | ADVERTENCIA: Cuenta(s) no encontrada(s) en PGC: ${invalidAccounts.join(', ')}`
+    };
+  }
+  
+  return suggestion;
+}
+
+// ============================================================================
 // MOTOR DE MAPEO AP
 // ============================================================================
 
@@ -643,8 +711,18 @@ async function apMapperEngine(
     }
   }
   
+  // Validate invoice-level suggestion
+  invoiceSuggestion = await validateAndAdjustSuggestion(
+    supabase,
+    invoiceSuggestion,
+    normalizedData.centre_hint
+  );
+  
   // Line-level suggestions
-  const lineSuggestions: APMappingSuggestion[] = normalizedData.lines.map(line => {
+  const lineSuggestions: APMappingSuggestion[] = [];
+  for (const line of normalizedData.lines) {
+    let lineSuggestion: APMappingSuggestion | null = null;
+    
     for (const rule of rules) {
       if (rule.match_type === 'text_keywords' && rule.text_keywords) {
         const lineTextLower = line.description.toLowerCase();
@@ -653,7 +731,7 @@ async function apMapperEngine(
         );
         
         if (matchesKeyword) {
-          return {
+          lineSuggestion = {
             account_suggestion: rule.suggested_expense_account,
             tax_account: rule.suggested_tax_account,
             ap_account: rule.suggested_ap_account,
@@ -663,15 +741,27 @@ async function apMapperEngine(
             matched_rule_id: rule.id,
             matched_rule_name: rule.rule_name
           };
+          break;
         }
       }
     }
     
-    return {
-      ...invoiceSuggestion,
-      rationale: `Heredado de factura: ${invoiceSuggestion.rationale}`
-    };
-  });
+    if (!lineSuggestion) {
+      lineSuggestion = {
+        ...invoiceSuggestion,
+        rationale: `Heredado de factura: ${invoiceSuggestion.rationale}`
+      };
+    }
+    
+    // Validate line-level suggestion
+    const validatedLineSuggestion = await validateAndAdjustSuggestion(
+      supabase,
+      lineSuggestion,
+      normalizedData.centre_hint
+    );
+    
+    lineSuggestions.push(validatedLineSuggestion);
+  }
   
   return {
     invoice_level: invoiceSuggestion,

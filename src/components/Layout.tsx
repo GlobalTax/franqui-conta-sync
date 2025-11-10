@@ -22,6 +22,7 @@ import {
   Shield,
   Store,
   Layers,
+  FlaskConical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -287,6 +288,14 @@ const Layout = () => {
                 >
                   <Layers className="h-4 w-4" strokeWidth={2} />
                   <span className="text-sm">Reglas P&L</span>
+                </NavLink>
+                <NavLink
+                  to="/admin/demo-data"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <FlaskConical className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">Datos Demo</span>
                 </NavLink>
               </div>
             </div>

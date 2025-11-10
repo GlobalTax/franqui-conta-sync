@@ -26,6 +26,7 @@ const CompanyDetail = lazy(() => import("@/pages/admin/CompanyDetail"));
 const FranchiseeDetail = lazy(() => import("@/pages/admin/FranchiseeDetail"));
 const AdminDebug = lazy(() => import("@/pages/admin/AdminDebug"));
 const PLRulesManagement = lazy(() => import("@/pages/admin/PLRulesManagement"));
+const DemoData = lazy(() => import("@/pages/admin/DemoData"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const AccountingEntries = lazy(() => import("@/pages/accounting/AccountingEntries"));
 const NewAccountingEntry = lazy(() => import("@/pages/accounting/NewAccountingEntry"));
@@ -150,6 +151,7 @@ const App = () => {
               <Route path="/admin/companies/:id" element={<AdminRoute><CompanyDetail /></AdminRoute>} />
               <Route path="/admin/franchisees/:id" element={<AdminRoute><FranchiseeDetail /></AdminRoute>} />
               <Route path="/admin/pl-rules" element={<AdminRoute><PLRulesManagement /></AdminRoute>} />
+              <Route path="/admin/demo-data" element={<AdminRoute><DemoData /></AdminRoute>} />
               <Route path="/admin-debug" element={<AdminDebug />} />
               <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
               <Route path="/notificaciones" element={<Notifications />} />

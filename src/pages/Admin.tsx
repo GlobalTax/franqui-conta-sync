@@ -29,8 +29,7 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-12">
-          <TabsTrigger value="demo">Demo</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="testing">Testing</TabsTrigger>
           <TabsTrigger value="pl-mapping">P&L</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
@@ -46,10 +45,6 @@ const Admin = () => {
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
           <TabsTrigger value="settings">Config</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="demo" className="mt-6">
-          <DemoDataGenerator />
-        </TabsContent>
 
         <TabsContent value="testing" className="mt-6">
           <TestingSuite />

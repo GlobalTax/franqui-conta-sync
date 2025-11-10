@@ -52,6 +52,47 @@ export type Database = {
           },
         ]
       }
+      account_pl_mapping: {
+        Row: {
+          account_code: string
+          centro_code: string | null
+          created_at: string
+          id: string
+          multiplier: number | null
+          notes: string | null
+          pl_line_code: string
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          centro_code?: string | null
+          created_at?: string
+          id?: string
+          multiplier?: number | null
+          notes?: string | null
+          pl_line_code: string
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          centro_code?: string | null
+          created_at?: string
+          id?: string
+          multiplier?: number | null
+          notes?: string | null
+          pl_line_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_pl_mapping_pl_line_code_fkey"
+            columns: ["pl_line_code"]
+            isOneToOne: false
+            referencedRelation: "pl_lines"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       account_templates: {
         Row: {
           account_type: string
@@ -2805,6 +2846,42 @@ export type Database = {
           },
         ]
       }
+      pl_lines: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          display_order: number
+          id: string
+          is_total: boolean | null
+          name: string
+          parent_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_total?: boolean | null
+          name: string
+          parent_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_total?: boolean | null
+          name?: string
+          parent_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pl_manual_adjustments: {
         Row: {
           adjustment_amount: number
@@ -4787,6 +4864,21 @@ export type Database = {
           horas_formacion: number
           horas_trabajadas: number
           horas_vacaciones: number
+        }[]
+      }
+      get_pl_report: {
+        Args: {
+          p_centro_code: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          amount: number
+          category: string
+          display_order: number
+          is_total: boolean
+          line_code: string
+          line_name: string
         }[]
       }
       get_planned_vs_actual_costs: {

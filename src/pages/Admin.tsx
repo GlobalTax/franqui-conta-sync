@@ -15,6 +15,7 @@ import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
 import DemoDataGenerator from "@/components/admin/DemoDataGenerator";
 import TestingSuite from "@/components/testing/TestingSuite";
+import SimplePLMapping from "./admin/SimplePLMapping";
 
 const Admin = () => {
   return (
@@ -31,6 +32,7 @@ const Admin = () => {
         <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="demo">Demo</TabsTrigger>
           <TabsTrigger value="testing">Testing</TabsTrigger>
+          <TabsTrigger value="pl-mapping">P&L</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
@@ -51,6 +53,10 @@ const Admin = () => {
 
         <TabsContent value="testing" className="mt-6">
           <TestingSuite />
+        </TabsContent>
+
+        <TabsContent value="pl-mapping" className="mt-6">
+          <SimplePLMapping />
         </TabsContent>
 
         <TabsContent value="users" className="mt-6">

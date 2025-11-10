@@ -51,6 +51,7 @@ import {
 import { NavLink } from "./NavLink";
 import { useState } from "react";
 import { logger } from "@/lib/logger";
+import CompactOrgSelector from "@/components/filters/CompactOrgSelector";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -308,9 +309,12 @@ const Layout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end gap-2">
-          <ThemeToggle />
-          <NotificationBell />
+        <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between gap-4">
+          <CompactOrgSelector />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Content */}

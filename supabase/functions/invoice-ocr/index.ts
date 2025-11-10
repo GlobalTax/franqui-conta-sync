@@ -694,6 +694,25 @@ async function loadAPMappingRules(supabase: any) {
   return data || [];
 }
 
+// ============================================================================
+// Motor de Mapeo AP - Plan General Contable Español
+// ============================================================================
+//
+// Prioridad de aplicación:
+// 1. Default genérico (6290000, confidence 30%)
+// 2. Cuenta por defecto del proveedor (confidence 95%)
+// 3. Reglas dinámicas por prioridad DESC (confidence según regla)
+//
+// Match Types soportados:
+// - supplier_exact: UUID de proveedor
+// - supplier_tax_id: NIF/CIF exacto
+// - supplier_name_like: Pattern matching (%)
+// - text_keywords: Array de palabras clave en líneas (con confidence dinámico)
+// - amount_range: Min/max de monto total
+// - centre_code: Código de centro específico
+// - combined: Combinación AND de múltiples criterios
+// ============================================================================
+
 function matchRule(rule: any, invoiceData: EnhancedInvoiceData, supplierData: any | null): boolean {
   switch (rule.match_type) {
     case 'supplier_exact':
@@ -711,13 +730,68 @@ function matchRule(rule: any, invoiceData: EnhancedInvoiceData, supplierData: an
     case 'text_keywords':
       if (!rule.text_keywords || rule.text_keywords.length === 0) return false;
       const allText = invoiceData.lines.map(l => l.description.toLowerCase()).join(' ');
-      return rule.text_keywords.some((kw: string) => allText.includes(kw.toLowerCase()));
+      
+      // Count matched keywords for dynamic confidence
+      const matchedKeywords = rule.text_keywords.filter((kw: string) => 
+        allText.includes(kw.toLowerCase())
+      );
+      
+      if (matchedKeywords.length === 0) return false;
+      
+      // Boost confidence: +10 per keyword match, max +20
+      const confidenceBoost = Math.min(20, matchedKeywords.length * 10);
+      rule.confidence_score = Math.min(100, rule.confidence_score + confidenceBoost);
+      
+      return true;
     
     case 'amount_range':
       const total = Math.abs(invoiceData.totals.total);
       if (rule.amount_min !== null && total < rule.amount_min) return false;
       if (rule.amount_max !== null && total > rule.amount_max) return false;
       return true;
+    
+    case 'centre_code':
+      // Match por código de centro
+      return invoiceData.centre_hint === rule.centro_code;
+    
+    case 'combined':
+      // Lógica AND de múltiples criterios
+      let match = true;
+      
+      // Check supplier_id
+      if (rule.supplier_id) {
+        match = match && (supplierData?.id === rule.supplier_id);
+      }
+      
+      // Check supplier_name_pattern
+      if (rule.supplier_name_pattern) {
+        const pattern = rule.supplier_name_pattern.replace(/%/g, '.*').toLowerCase();
+        const regex = new RegExp(pattern);
+        match = match && regex.test(invoiceData.issuer.name.toLowerCase());
+      }
+      
+      // Check text_keywords
+      if (rule.text_keywords && rule.text_keywords.length > 0) {
+        const allText = invoiceData.lines.map(l => l.description.toLowerCase()).join(' ');
+        const hasKeyword = rule.text_keywords.some((kw: string) => 
+          allText.includes(kw.toLowerCase())
+        );
+        match = match && hasKeyword;
+      }
+      
+      // Check amount_range
+      if (rule.amount_min !== null || rule.amount_max !== null) {
+        const total = Math.abs(invoiceData.totals.total);
+        if (rule.amount_min !== null) match = match && (total >= rule.amount_min);
+        if (rule.amount_max !== null) match = match && (total <= rule.amount_max);
+      }
+      
+      // Check centro_code
+      if (rule.centro_code) {
+        match = match && (invoiceData.centre_hint === rule.centro_code);
+      }
+      
+      return match;
     
     default:
       return false;

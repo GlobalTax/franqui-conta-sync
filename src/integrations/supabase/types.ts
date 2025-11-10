@@ -504,6 +504,81 @@ export type Database = {
         }
         Relationships: []
       }
+      ap_mapping_rules: {
+        Row: {
+          active: boolean | null
+          amount_max: number | null
+          amount_min: number | null
+          centro_code: string | null
+          confidence_score: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          match_type: string
+          priority: number | null
+          rationale: string
+          rule_name: string
+          suggested_ap_account: string
+          suggested_centre_id: string | null
+          suggested_expense_account: string
+          suggested_tax_account: string
+          supplier_id: string | null
+          supplier_name_pattern: string | null
+          supplier_tax_id: string | null
+          text_keywords: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          amount_max?: number | null
+          amount_min?: number | null
+          centro_code?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          match_type: string
+          priority?: number | null
+          rationale: string
+          rule_name: string
+          suggested_ap_account?: string
+          suggested_centre_id?: string | null
+          suggested_expense_account: string
+          suggested_tax_account?: string
+          supplier_id?: string | null
+          supplier_name_pattern?: string | null
+          supplier_tax_id?: string | null
+          text_keywords?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          amount_max?: number | null
+          amount_min?: number | null
+          centro_code?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          match_type?: string
+          priority?: number | null
+          rationale?: string
+          rule_name?: string
+          suggested_ap_account?: string
+          suggested_centre_id?: string | null
+          suggested_expense_account?: string
+          suggested_tax_account?: string
+          supplier_id?: string | null
+          supplier_name_pattern?: string | null
+          supplier_tax_id?: string | null
+          text_keywords?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       approval_rules: {
         Row: {
           active: boolean | null

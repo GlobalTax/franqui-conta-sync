@@ -210,25 +210,36 @@ export default function InvoiceDetailEditor() {
 
   // Handler de procesamiento OCR
   const handleProcessOCR = async () => {
+    console.log('[OCR] Iniciando procesamiento OCR...');
+    console.log('[OCR] documentPath:', documentPath);
+    
     if (!documentPath) {
+      console.error('[OCR] No hay documentPath');
       toast.error("Primero sube un PDF");
       return;
     }
     
     // Usar centro actual o 'temp' si no hay seleccionado
     let centroCode = form.getValues('centro_code');
+    console.log('[OCR] Centro code inicial:', centroCode);
+    
     if (!centroCode) {
+      console.log('[OCR] No hay centro, usando "temp"');
       toast.info("Procesando OCR sin centro asignado. Selecciona un centro después.", {
         duration: 4000
       });
       centroCode = 'temp';
     }
 
+    console.log('[OCR] Invocando edge function con:', { documentPath, centroCode });
+
     try {
       const result = await processOCR.mutateAsync({
         documentPath,
         centroCode
       });
+      
+      console.log('[OCR] Resultado recibido:', result);
 
       setRawOCRResponse(result);
       
@@ -270,19 +281,27 @@ export default function InvoiceDetailEditor() {
       );
 
     } catch (error: any) {
-      console.error('OCR failed:', error);
-      toast.error(`Error OCR: ${error.message}`);
+      console.error('[OCR] Error completo:', error);
+      console.error('[OCR] Error message:', error.message);
+      console.error('[OCR] Error stack:', error.stack);
+      toast.error(`Error OCR: ${error.message}`, {
+        description: 'Revisa la consola para más detalles',
+        duration: 5000
+      });
     }
   };
 
   // Handle PDF upload completion
   const handleUploadComplete = (path: string | null) => {
+    console.log('[Upload] PDF subido, path:', path);
     setDocumentPath(path);
     if (path) {
       toast.success("PDF subido correctamente");
       
+      console.log('[Upload] Programando auto-trigger OCR en 500ms...');
       // Auto-trigger OCR siempre (usará centro actual o 'temp')
       setTimeout(() => {
+        console.log('[Upload] Ejecutando auto-trigger OCR ahora');
         handleProcessOCR();
       }, 500);
     }

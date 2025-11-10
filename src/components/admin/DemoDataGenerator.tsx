@@ -45,7 +45,6 @@ export default function DemoDataGenerator() {
         name: "Grupo Demo McDonald's",
         company_tax_id: "B99999999",
         email: "demo@mcdonalds-group.es",
-        phone: "+34 91 555 0001"
       };
       
       const franchisee = await createFranchisee.mutateAsync(franchiseeData);

@@ -84,6 +84,15 @@ interface CostEstimate {
   cost_total: number;
 }
 
+/**
+ * NOTA: Tarifas actuales (2025):
+ * - OpenAI GPT-4o-mini: $2.50/1M in + $10/1M out (€0.08 promedio/factura)
+ * - Mindee: €0.02/página
+ * 
+ * Para GPT-4o específico: $5/1M in + $15/1M out (~2x coste)
+ * Si necesitas calcular solo GPT-4o, multiplica los resultados por ~2x
+ */
+
 export function estimateOCRCost(params: {
   engine: 'openai' | 'mindee' | 'merged';
   pages?: number;
@@ -186,3 +195,62 @@ export function quickValidateInvoice(data: {
     warnings
   };
 }
+
+// ============================================================================
+// NORMALIZACIÓN RÁPIDA DE DATOS FISCALES
+// ============================================================================
+
+/**
+ * Normaliza JSON de factura: moneda EUR, redondeo a 2 decimales
+ * Útil para pre-procesamiento antes de guardar en DB
+ * @param json - Objeto JSON con datos de factura (totals, lines, etc.)
+ * @returns JSON normalizado con moneda EUR y decimales redondeados
+ */
+export function quickNormalizeES(json: any) {
+  const j = structuredClone(json || {});
+  
+  // Normalizar totales
+  j.totals = j.totals || {};
+  if (!j.totals.currency) j.totals.currency = "EUR";
+  
+  const moneyFields = ["base_10", "vat_10", "base_21", "vat_21", "total"];
+  moneyFields.forEach(k => {
+    if (j.totals[k] != null) j.totals[k] = round2(j.totals[k]);
+  });
+  
+  // Normalizar líneas
+  if (j.lines && Array.isArray(j.lines)) {
+    j.lines = j.lines.map((line: any) => ({
+      ...line,
+      quantity: line.quantity != null ? round2(line.quantity) : null,
+      unit_price: line.unit_price != null ? round2(line.unit_price) : null,
+      amount: line.amount != null ? round2(line.amount) : null,
+    }));
+  }
+  
+  return j;
+}
+
+// ============================================================================
+// HELPERS DE REDONDEO
+// ============================================================================
+
+/**
+ * Redondea a 2 decimales (para importes monetarios)
+ */
+export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/**
+ * Redondea a 4 decimales (para costes precisos)
+ */
+export const round4 = (n: number) => Math.round((n + Number.EPSILON) * 10000) / 10000;
+
+// ============================================================================
+// ALIAS PARA COMPATIBILIDAD
+// ============================================================================
+
+/**
+ * Alias de validateSpanishVAT para código legacy y mayor claridad semántica
+ * @see validateSpanishVAT
+ */
+export const validateNIF = validateSpanishVAT;

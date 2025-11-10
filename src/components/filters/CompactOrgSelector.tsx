@@ -29,13 +29,6 @@ export default function CompactOrgSelector() {
   const { data: companies } = useCompanies(selectedFranchiseeId || undefined);
   const { data: centres } = useCentres(selectedFranchiseeId || undefined);
 
-  // Debug logging
-  console.log('🔍 CompactOrgSelector:', {
-    franchisees: franchisees?.length,
-    selectedFranchiseeId,
-    loadingFranchisees,
-  });
-
   const filteredCentres = selectedCompanyId
     ? centres?.filter(c => c.company_id === selectedCompanyId)
     : centres;
@@ -102,10 +95,7 @@ export default function CompactOrgSelector() {
             ) : (
               <Select
                 value={selectedFranchiseeId || ""}
-                onValueChange={(value) => {
-                  console.log('Franchisee changed:', value);
-                  setFranchiseeId(value === "all" ? null : value);
-                }}
+                onValueChange={(value) => setFranchiseeId(value === "all" ? null : value)}
               >
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Seleccionar franquiciado" />

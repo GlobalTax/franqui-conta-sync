@@ -11,6 +11,7 @@ import { SplitDocumentDialog } from '@/components/invoices/inbox/dialogs/SplitDo
 import { MergeDocumentsDialog } from '@/components/invoices/inbox/dialogs/MergeDocumentsDialog';
 import { BulkPostDialog } from '@/components/invoices/inbox/dialogs/BulkPostDialog';
 import { ReprocessOCRSimpleDialog } from '@/components/invoices/inbox/ReprocessOCRSimpleDialog';
+import { AssignCentreDialog } from '@/components/invoices/inbox/dialogs/AssignCentreDialog';
 import { usePDFOperations } from '@/hooks/usePDFOperations';
 import { useBulkPost } from '@/hooks/useBulkPost';
 import { InboxAssignCentreDialog } from '@/components/invoices/inbox/InboxAssignCentreDialog';
@@ -20,6 +21,7 @@ import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
 import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
+import { useOrganization } from '@/hooks/useOrganization';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -95,14 +97,16 @@ export default function InvoicesInbox() {
   const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
   const [invoiceToReprocess, setInvoiceToReprocess] = useState<string | null>(null);
   const [selectedInvoiceForSplit, setSelectedInvoiceForSplit] = useState<any | null>(null);
+  const [assignCentreDialogOpen, setAssignCentreDialogOpen] = useState(false);
+  const [invoicesToAssignCentre, setInvoicesToAssignCentre] = useState<string[]>([]);
   
   const { splitPDF, mergePDF, isLoading: isPDFLoading } = usePDFOperations();
   const { bulkPost, isPosting, progress } = useBulkPost();
   const invoiceActions = useInvoiceActions();
+  const { currentMembership } = useOrganization();
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [assignCentreDialogOpen, setAssignCentreDialogOpen] = useState(false);
 
   // Fetch invoices con paginación
   const { data: result, isLoading } = useInvoicesReceived({ ...filters, page, limit: 50 });
@@ -280,6 +284,32 @@ export default function InvoicesInbox() {
     }
   };
 
+  const handlePostInvoice = async (invoiceId: string) => {
+    try {
+      await invoiceActions.postInvoice({ invoiceId });
+    } catch (error) {
+      // Los toasts ya están gestionados en el hook
+    }
+  };
+
+  const handleAssignCentreInvoices = (invoiceIds: string[]) => {
+    setInvoicesToAssignCentre(invoiceIds);
+    setAssignCentreDialogOpen(true);
+  };
+
+  const handleConfirmAssignCentre = async (centreCode: string) => {
+    await invoiceActions.assignCentre({ 
+      invoiceIds: invoicesToAssignCentre, 
+      centreCode 
+    });
+    setAssignCentreDialogOpen(false);
+    setInvoicesToAssignCentre([]);
+  };
+
+  const handleDownloadPDF = (documentPath: string) => {
+    invoiceActions.downloadPDF({ documentPath });
+  };
+
   // Determinar estado vacío
   const getEmptyVariant = () => {
     if (invoices.length === 0 && activeFilterCount === 0) {
@@ -376,13 +406,15 @@ export default function InvoicesInbox() {
             <InvoiceInboxTable
               invoices={invoices}
               selectedIds={selectedIds}
-              onSelect={setSelectedIds}
+              onSelectionChange={setSelectedIds}
               onRowClick={handleRowClick}
-              loading={isLoading}
               compact={compactView}
               onRetryOCR={handleRetryOCR}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onPost={handlePostInvoice}
+              onAssignCentre={handleAssignCentreInvoices}
+              onDownloadPDF={handleDownloadPDF}
             />
             
             {/* Controles de paginación */}
@@ -517,12 +549,13 @@ export default function InvoicesInbox() {
         }}
       />
 
-      {/* Diálogo de asignación masiva de centro */}
-      <InboxAssignCentreDialog
+      {/* Diálogo de asignación de centro */}
+      <AssignCentreDialog
         open={assignCentreDialogOpen}
         onOpenChange={setAssignCentreDialogOpen}
-        selectedIds={selectedIds}
-        onAssigned={() => setSelectedIds([])}
+        invoiceIds={invoicesToAssignCentre}
+        onConfirm={handleConfirmAssignCentre}
+        isLoading={invoiceActions.isAssigning}
       />
 
       {/* Diálogo de reprocesar OCR */}

@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Eye, FileText, MoreVertical, RefreshCw, Trash2, Edit } from 'lucide-react';
+import { Eye, FileText, MoreVertical, RefreshCw, Trash2, Edit, FileCheck, MapPin, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -45,6 +45,7 @@ interface Invoice {
   accounting_entry_id?: string;
   iva_percentage?: number;
   document_type?: 'invoice' | 'receipt' | 'delivery_note' | 'credit_note';
+  document_path?: string;
   ocr_engine?: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
   ocr_confidence?: number;
   processing_time_ms?: number;
@@ -61,39 +62,45 @@ interface Invoice {
 interface InvoiceInboxTableProps {
   invoices: Invoice[];
   selectedIds: string[];
-  onSelect: (ids: string[]) => void;
+  onSelectionChange: (ids: string[]) => void;
   onRowClick: (invoice: Invoice) => void;
   loading?: boolean;
   compact?: boolean;
   onRetryOCR?: (invoiceId: string) => void;
   onEdit?: (invoiceId: string) => void;
   onDelete?: (invoiceId: string) => void;
+  onPost?: (invoiceId: string) => void;
+  onAssignCentre?: (invoiceIds: string[]) => void;
+  onDownloadPDF?: (documentPath: string) => void;
 }
 
 export function InvoiceInboxTable({
   invoices,
   selectedIds,
-  onSelect,
+  onSelectionChange,
   onRowClick,
   loading = false,
   compact = false,
   onRetryOCR,
   onEdit,
   onDelete,
+  onPost,
+  onAssignCentre,
+  onDownloadPDF,
 }: InvoiceInboxTableProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      onSelect(invoices.map((inv) => inv.id));
+      onSelectionChange(invoices.map((inv) => inv.id));
     } else {
-      onSelect([]);
+      onSelectionChange([]);
     }
   };
 
   const handleSelectOne = (id: string, checked: boolean) => {
     if (checked) {
-      onSelect([...selectedIds, id]);
+      onSelectionChange([...selectedIds, id]);
     } else {
-      onSelect(selectedIds.filter((selectedId) => selectedId !== id));
+      onSelectionChange(selectedIds.filter((selectedId) => selectedId !== id));
     }
   };
 
@@ -314,12 +321,42 @@ export function InvoiceInboxTable({
                         </DropdownMenuItem>
                       </>
                     )}
+
+                    {onAssignCentre && (
+                      <DropdownMenuItem onClick={() => onAssignCentre([invoice.id])}>
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Asignar Centro
+                      </DropdownMenuItem>
+                    )}
+
+                    {canPerformAction(getInvoiceState(invoice), 'post') && onPost && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onPost(invoice.id)}
+                          className="text-primary font-medium"
+                        >
+                          <FileCheck className="mr-2 h-4 w-4" />
+                          Contabilizar
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    {onDownloadPDF && invoice.document_path && (
+                      <DropdownMenuItem onClick={() => onDownloadPDF(invoice.document_path)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Descargar PDF
+                      </DropdownMenuItem>
+                    )}
                     
                     {canPerformAction(getInvoiceState(invoice), 'edit') && onEdit && (
-                      <DropdownMenuItem onClick={() => onEdit(invoice.id)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onEdit(invoice.id)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                      </>
                     )}
                     
                     {onDelete && (

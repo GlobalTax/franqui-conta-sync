@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, CheckCircle2 } from "lucide-react";
+import { Plus, FileText, CheckCircle2, FileSpreadsheet } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,8 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { JournalAdvancedImporter } from "@/components/accounting/JournalAdvancedImporter";
 
 const JournalEntries = () => {
+  const [advancedImportOpen, setAdvancedImportOpen] = useState(false);
   const entries = [
     {
       id: "1",
@@ -63,10 +66,16 @@ const JournalEntries = () => {
               Registro de operaciones contables
             </p>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Asiento
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setAdvancedImportOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Importación Avanzada
+            </Button>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Asiento
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
@@ -229,6 +238,16 @@ const JournalEntries = () => {
             </div>
           </div>
         </div>
+
+        <JournalAdvancedImporter
+          open={advancedImportOpen}
+          onOpenChange={setAdvancedImportOpen}
+          centroCode="MADRID-001"
+          onSuccess={() => {
+            // Aquí se podría refrescar la lista de asientos
+            console.log('Import successful');
+          }}
+        />
       </div>
     </div>
   );

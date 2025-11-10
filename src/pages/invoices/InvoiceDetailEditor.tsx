@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InvoicePDFPreview } from '@/components/invoices/InvoicePDFPreview';
@@ -39,11 +40,14 @@ import {
   type InvoiceEntryValidationResult
 } from '@/hooks/useInvoiceOCR';
 import { useAPLearning } from '@/hooks/useAPLearning';
+import { useInvoiceStripper } from '@/hooks/useInvoiceStripper';
 import { stripAndNormalize, type NormalizationChange } from '@/lib/fiscal-normalizer';
 import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
+import { StripperBadge } from '@/components/invoices/StripperBadge';
+import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
 import { toast } from 'sonner';
-import { Scan, Loader2, FileText } from 'lucide-react';
+import { Scan, Loader2, FileText, Sparkles } from 'lucide-react';
 
 // Schema de validación
 const invoiceFormSchema = z.object({
@@ -146,6 +150,9 @@ export default function InvoiceDetailEditor() {
       is_special_regime: false
     }
   });
+
+  // Stripper Hook (después de form)
+  const { stripperState, applyStripper, getFieldChange } = useInvoiceStripper(form);
 
   // Cargar datos de la factura en modo edición
   useEffect(() => {
@@ -650,6 +657,20 @@ export default function InvoiceDetailEditor() {
                     ocrConfidence={ocrConfidence}
                   />
 
+                  {/* Badge Stripper + Ver cambios */}
+                  {stripperState.isNormalized && stripperState.appliedAt && (
+                    <div className="flex items-center gap-2">
+                      <StripperBadge 
+                        changesCount={stripperState.changes.length}
+                        appliedAt={stripperState.appliedAt}
+                      />
+                      <StripperChangesDialog 
+                        changes={stripperState.changes}
+                        warnings={stripperState.warnings}
+                      />
+                    </div>
+                  )}
+
                   {/* Alertas de normalización */}
                   {normalizationChanges.length > 0 && (
                     <NormalizationChangesAlert
@@ -736,6 +757,44 @@ export default function InvoiceDetailEditor() {
                     invoiceId={id}
                     ocrData={ocrData}
                   />
+
+                  {/* Botón Aplicar Stripper */}
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-sm">Normalizador de Datos</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Limpia y normaliza campos según estándares fiscales españoles
+                            </p>
+                          </div>
+                          {stripperState.isNormalized && (
+                            <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                              Aplicado
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <Button
+                          onClick={applyStripper}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-purple-600 text-purple-700 hover:bg-purple-50"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          {stripperState.isNormalized ? 'Re-aplicar Stripper' : 'Aplicar Stripper'}
+                        </Button>
+                        
+                        {stripperState.isNormalized && (
+                          <p className="text-xs text-muted-foreground">
+                            ✨ {stripperState.changes.length} campo{stripperState.changes.length !== 1 ? 's' : ''} normalizado{stripperState.changes.length !== 1 ? 's' : ''}
+                            {stripperState.warnings.length > 0 && ` • ${stripperState.warnings.length} advertencia${stripperState.warnings.length !== 1 ? 's' : ''}`}
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </form>
             </FormProvider>
@@ -854,6 +913,20 @@ export default function InvoiceDetailEditor() {
                       ocrConfidence={ocrConfidence}
                     />
 
+                    {/* Badge Stripper + Ver cambios */}
+                    {stripperState.isNormalized && stripperState.appliedAt && (
+                      <div className="flex items-center gap-2">
+                        <StripperBadge 
+                          changesCount={stripperState.changes.length}
+                          appliedAt={stripperState.appliedAt}
+                        />
+                        <StripperChangesDialog 
+                          changes={stripperState.changes}
+                          warnings={stripperState.warnings}
+                        />
+                      </div>
+                    )}
+
                     {/* Alertas de normalización */}
                     {normalizationChanges.length > 0 && (
                       <NormalizationChangesAlert
@@ -940,6 +1013,44 @@ export default function InvoiceDetailEditor() {
                       invoiceId={id}
                       ocrData={ocrData}
                     />
+
+                    {/* Botón Aplicar Stripper */}
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-sm">Normalizador de Datos</h3>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Limpia y normaliza campos según estándares fiscales españoles
+                              </p>
+                            </div>
+                            {stripperState.isNormalized && (
+                              <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                                Aplicado
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <Button
+                            onClick={applyStripper}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-purple-600 text-purple-700 hover:bg-purple-50"
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            {stripperState.isNormalized ? 'Re-aplicar Stripper' : 'Aplicar Stripper'}
+                          </Button>
+                          
+                          {stripperState.isNormalized && (
+                            <p className="text-xs text-muted-foreground">
+                              ✨ {stripperState.changes.length} campo{stripperState.changes.length !== 1 ? 's' : ''} normalizado{stripperState.changes.length !== 1 ? 's' : ''}
+                              {stripperState.warnings.length > 0 && ` • ${stripperState.warnings.length} advertencia${stripperState.warnings.length !== 1 ? 's' : ''}`}
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </form>
               </FormProvider>

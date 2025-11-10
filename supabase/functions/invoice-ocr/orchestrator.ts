@@ -4,6 +4,67 @@
 
 import { extractWithOpenAI, type OpenAIExtractionResult } from "./extractors/openai-vision.ts";
 import { extractWithMindee, type MindeeExtractionResult } from "./extractors/mindee.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+
+// ============================================================================
+// NIF VALIDATION (Spanish VAT validation)
+// ============================================================================
+
+function validateSpanishNIF(nif: string): boolean {
+  if (!nif) return false;
+  
+  const normalized = nif.toUpperCase().trim().replace(/[\s\-\.]/g, '');
+  
+  // NIF/NIE format: 8 digits + letter
+  if (/^[0-9]{8}[A-Z]$/.test(normalized)) {
+    const digits = normalized.slice(0, 8);
+    const letter = normalized.charAt(8);
+    const expectedLetter = 'TRWAGMYFPDXBNJZSQVHLCKE'.charAt(parseInt(digits) % 23);
+    return letter === expectedLetter;
+  }
+  
+  // NIE format: X/Y/Z + 7 digits + letter
+  if (/^[XYZ][0-9]{7}[A-Z]$/.test(normalized)) {
+    const niePrefix = { 'X': '0', 'Y': '1', 'Z': '2' };
+    const prefix = niePrefix[normalized.charAt(0) as 'X' | 'Y' | 'Z'];
+    const digits = prefix + normalized.slice(1, 8);
+    const letter = normalized.charAt(8);
+    const expectedLetter = 'TRWAGMYFPDXBNJZSQVHLCKE'.charAt(parseInt(digits) % 23);
+    return letter === expectedLetter;
+  }
+  
+  // CIF format: Letter + 7 digits + control character
+  if (/^[A-W][0-9]{7}[0-9A-J]$/.test(normalized)) {
+    const cifType = normalized.charAt(0);
+    const digits = normalized.slice(1, 8);
+    const control = normalized.charAt(8);
+    
+    let sum = 0;
+    for (let i = 0; i < 7; i++) {
+      const digit = parseInt(digits.charAt(i));
+      if (i % 2 === 0) {
+        const doubled = digit * 2;
+        sum += Math.floor(doubled / 10) + (doubled % 10);
+      } else {
+        sum += digit;
+      }
+    }
+    
+    const unitDigit = sum % 10;
+    const controlDigit = unitDigit === 0 ? 0 : 10 - unitDigit;
+    const controlLetter = 'JABCDEFGHI'.charAt(controlDigit);
+    
+    // NPQ: solo letra, ABEH: solo número, resto: cualquiera
+    const onlyLetter = ['N', 'P', 'Q', 'S', 'W'];
+    const onlyNumber = ['A', 'B', 'E', 'H'];
+    
+    if (onlyLetter.includes(cifType)) return control === controlLetter;
+    if (onlyNumber.includes(cifType)) return control === String(controlDigit);
+    return control === controlLetter || control === String(controlDigit);
+  }
+  
+  return false;
+}
 
 interface EnhancedInvoiceData {
   document_type: "invoice" | "credit_note" | "ticket";
@@ -197,7 +258,40 @@ export async function orchestrateOCR(
   if (openaiResult && mindeeResult) {
     console.log('[Orchestrator] 🔀 Performing intelligent merge...');
     
-    const merged = intelligentMerge(openaiResult, mindeeResult, mergeNotes);
+    // ⭐ Consultar historial del proveedor para priorización inteligente
+    let supplierHistory = null;
+    const supplierVat = mindeeResult.data.issuer.vat_id || openaiResult.data.issuer.vat_id;
+    
+    if (supplierVat) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: history } = await supabase
+          .from('invoices_received')
+          .select('ocr_engine, confidence_score')
+          .eq('supplier_vat_id', supplierVat)
+          .gte('confidence_score', 70)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (history && history.length > 0) {
+          supplierHistory = history;
+          const mindeeCount = history.filter(h => h.ocr_engine === 'mindee' || h.ocr_engine === 'merged').length;
+          const mindeeWinRate = mindeeCount / history.length;
+          console.log(`[Orchestrator] 📊 Supplier history: ${history.length} invoices, Mindee rate: ${(mindeeWinRate * 100).toFixed(0)}%`);
+          
+          if (mindeeWinRate > 0.6) {
+            mergeNotes.push(`🎯 Proveedor recurrente con historial favorable a Mindee (${(mindeeWinRate * 100).toFixed(0)}% en ${history.length} facturas)`);
+          }
+        }
+      } catch (error) {
+        console.error('[Orchestrator] Failed to fetch supplier history:', error);
+      }
+    }
+    
+    const merged = intelligentMerge(openaiResult, mindeeResult, mergeNotes, supplierHistory);
     
     return {
       ocr_engine: 'merged',
@@ -263,19 +357,54 @@ export async function orchestrateOCR(
 function intelligentMerge(
   openaiResult: OpenAIExtractionResult,
   mindeeResult: MindeeExtractionResult,
-  mergeNotes: string[]
+  mergeNotes: string[],
+  supplierHistory: Array<{ ocr_engine: string; confidence_score: number }> | null = null
 ): { data: EnhancedInvoiceData; confidence: number } {
   
   console.log('[Merge] Starting intelligent merge...');
+  
+  // ⭐ Calcular peso de priorización basado en historial
+  const mindeeHistoryScore = supplierHistory 
+    ? supplierHistory.filter(h => h.ocr_engine === 'mindee' || h.ocr_engine === 'merged').length / supplierHistory.length
+    : 0.5; // Neutro si no hay historial
+  
+  const prioritizeMindee = mindeeHistoryScore > 0.6;
+  
+  if (prioritizeMindee) {
+    console.log(`[Merge] 🎯 Prioritizing Mindee based on supplier history (${(mindeeHistoryScore * 100).toFixed(0)}% success rate)`);
+  }
+  
   const merged: EnhancedInvoiceData = JSON.parse(JSON.stringify(openaiResult.data));
   
   // Estrategia: Completar campos nulos con datos de Mindee
   // y resolver conflictos priorizando mayor confidence por campo
   
-  // 1. Completar issuer.vat_id si está null
+  // 1. Completar issuer.vat_id si está null (con validación)
   if (!merged.issuer.vat_id && mindeeResult.data.issuer.vat_id) {
-    merged.issuer.vat_id = mindeeResult.data.issuer.vat_id;
-    mergeNotes.push('🔀 NIF emisor completado desde Mindee');
+    const mindeeVat = mindeeResult.data.issuer.vat_id;
+    
+    if (validateSpanishNIF(mindeeVat)) {
+      merged.issuer.vat_id = mindeeVat;
+      mergeNotes.push('🔀 NIF emisor validado y completado desde Mindee ✓');
+    } else {
+      mergeNotes.push('⚠️ NIF de Mindee inválido, descartado');
+      console.warn(`[Merge] Invalid NIF from Mindee: ${mindeeVat}`);
+    }
+  } else if (merged.issuer.vat_id && mindeeResult.data.issuer.vat_id && 
+             merged.issuer.vat_id !== mindeeResult.data.issuer.vat_id) {
+    // Conflicto: ambos tienen NIF diferentes
+    const openaiValid = validateSpanishNIF(merged.issuer.vat_id);
+    const mindeeValid = validateSpanishNIF(mindeeResult.data.issuer.vat_id);
+    
+    if (!openaiValid && mindeeValid) {
+      merged.issuer.vat_id = mindeeResult.data.issuer.vat_id;
+      mergeNotes.push('🔀 NIF corregido por Mindee (OpenAI inválido)');
+    } else if (openaiValid && !mindeeValid) {
+      mergeNotes.push('✅ NIF de OpenAI validado (Mindee inválido)');
+    } else if (prioritizeMindee && mindeeValid) {
+      merged.issuer.vat_id = mindeeResult.data.issuer.vat_id;
+      mergeNotes.push('🎯 NIF de Mindee priorizado por historial del proveedor');
+    }
   }
   
   // 2. Completar issuer.name si está vacío
@@ -296,7 +425,7 @@ function intelligentMerge(
     mergeNotes.push('🔀 Fecha emisión completada desde Mindee');
   }
   
-  // 5. Resolver conflicto de totales (priorizar el que cuadra mejor)
+  // 5. Resolver conflicto de totales (priorizar el que cuadra mejor + historial)
   if (Math.abs(merged.totals.total - mindeeResult.data.totals.total) > 0.01) {
     // Calcular qué total cuadra mejor con las líneas
     const openaiLinesTotal = openaiResult.data.lines.reduce((sum, l) => sum + l.amount, 0);
@@ -305,7 +434,13 @@ function intelligentMerge(
     const openaiDiff = Math.abs(openaiLinesTotal - openaiResult.data.totals.total);
     const mindeeDiff = Math.abs(mindeeLinesTotal - mindeeResult.data.totals.total);
     
-    if (mindeeDiff < openaiDiff) {
+    // ⭐ Considerar historial si los diffs son similares (±20%)
+    const diffsAreSimilar = Math.abs(openaiDiff - mindeeDiff) / Math.max(openaiDiff, mindeeDiff) < 0.2;
+    
+    if (prioritizeMindee && diffsAreSimilar && mindeeDiff < 5) {
+      merged.totals = mindeeResult.data.totals;
+      mergeNotes.push(`🎯 Totales de Mindee priorizados por historial (diff ${mindeeDiff.toFixed(2)}€ vs ${openaiDiff.toFixed(2)}€)`);
+    } else if (mindeeDiff < openaiDiff) {
       merged.totals = mindeeResult.data.totals;
       mergeNotes.push(`🔀 Totales de Mindee priorizados (mejor cuadre: diff ${mindeeDiff.toFixed(2)}€ vs ${openaiDiff.toFixed(2)}€)`);
     } else {
@@ -332,10 +467,16 @@ function intelligentMerge(
     mergeNotes.push('🔀 Desglose IVA 10% completado desde Mindee');
   }
   
-  // Calcular confidence final (promedio ponderado)
-  const finalConfidence = Math.round(
+  // Calcular confidence final (promedio ponderado con ajuste por historial)
+  let finalConfidence = Math.round(
     (openaiResult.confidence_score * 0.6) + (mindeeResult.confidence_score * 0.4)
   );
+  
+  // ⭐ Boost de confianza si el historial favorece al motor usado
+  if (prioritizeMindee && mindeeResult.confidence_score >= 70) {
+    finalConfidence = Math.min(95, finalConfidence + 5);
+    mergeNotes.push('🎯 Confianza ajustada +5% por historial favorable del proveedor');
+  }
   
   console.log(`[Merge] ✅ Merge completed: final confidence ${finalConfidence}%`);
   mergeNotes.push(`🔀 Fusión completada: confidence final ${finalConfidence}%`);

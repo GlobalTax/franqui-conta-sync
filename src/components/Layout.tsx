@@ -23,6 +23,7 @@ import {
   Store,
   Layers,
   FlaskConical,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -104,6 +105,10 @@ const Layout = () => {
     { icon: BarChart3, label: "Balance de Situación", path: "/reportes/balance" },
     { icon: BookOpen, label: "Libro Mayor", path: "/reportes/mayor" },
     { icon: FileSpreadsheet, label: "Libro Diario", path: "/reportes/diario" },
+  ];
+
+  const analyticsItems = [
+    { icon: Zap, label: "Métricas OCR", path: "/analytics/ocr" },
   ];
 
   return (
@@ -261,6 +266,26 @@ const Layout = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+
+          {/* Analytics Section */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Análisis
+            </h3>
+            <div className="space-y-0.5">
+              {analyticsItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
 
           {/* Admin Section */}

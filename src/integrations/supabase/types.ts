@@ -4388,6 +4388,23 @@ export type Database = {
           },
         ]
       }
+      mv_ocr_metrics: {
+        Row: {
+          avg_confidence: number | null
+          avg_cost_eur: number | null
+          avg_pages: number | null
+          avg_processing_time_ms: number | null
+          avg_tokens_in: number | null
+          avg_tokens_out: number | null
+          engine: string | null
+          total_cost_eur: number | null
+          total_invocations: number | null
+          total_pages: number | null
+          total_tokens_in: number | null
+          total_tokens_out: number | null
+        }
+        Relationships: []
+      }
       v_companies_reconstruction_report: {
         Row: {
           metric: string | null
@@ -4836,6 +4853,14 @@ export type Database = {
           total_horas: number
         }[]
       }
+      get_cost_trend_30d: {
+        Args: never
+        Returns: {
+          daily_cost: number
+          date: string
+          invoice_count: number
+        }[]
+      }
       get_daily_hours_evolution: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -5041,6 +5066,13 @@ export type Database = {
           movement_type: string
         }[]
       }
+      get_page_distribution: {
+        Args: never
+        Returns: {
+          count: number
+          page_range: string
+        }[]
+      }
       get_payment_terms_analysis: {
         Args: { p_centro_code: string; p_date_from: string; p_date_to: string }
         Returns: {
@@ -5173,6 +5205,7 @@ export type Database = {
         }[]
       }
       refresh_gl_ledger_month: { Args: never; Returns: undefined }
+      refresh_ocr_metrics: { Args: never; Returns: undefined }
       refresh_user_memberships: { Args: never; Returns: undefined }
       run_franchisee_reconstruction: { Args: never; Returns: Json }
       search_locations: {

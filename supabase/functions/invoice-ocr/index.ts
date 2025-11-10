@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { orchestrateOCR } from "./orchestrator.ts";
 import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
+import { createDocumentHash, createStructuralHash, extractQuickMetadata } from "../_shared/hash-utils.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
   .split(",")
@@ -132,9 +133,70 @@ serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const base64Content = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
+    // ⭐ CACHE SYSTEM: Calculate hashes and metadata
+    const documentHash = await createDocumentHash(base64Content);
+    const quickMeta = extractQuickMetadata(base64Content);
+
+    console.log(`[Cache] Document hash: ${documentHash.substring(0, 12)}...`);
+    console.log(`[Cache] File size: ${quickMeta.fileSize} bytes, Pages: ${quickMeta.pageCount}`);
+
+    // ⭐ CACHE SYSTEM: Attempt L1 cache lookup (exact hash)
+    const { data: cacheHit, error: cacheError } = await supabase
+      .rpc('search_ocr_cache', {
+        p_document_hash: documentHash,
+        p_structural_hash: null,
+        p_supplier_vat: null,
+        p_invoice_number: null,
+        p_invoice_date: null,
+        p_total_amount: null
+      });
+
+    if (!cacheError && cacheHit && cacheHit.length > 0) {
+      const cachedResult = cacheHit[0];
+      const processingTime = Date.now() - startTime;
+      
+      console.log(`[Cache] ✅ HIT ${cachedResult.cache_level} - Saved €${cachedResult.cost_saved_eur.toFixed(4)}`);
+      
+      // Return cached result immediately
+      return new Response(
+        JSON.stringify({
+          success: true,
+          ocr_engine: 'cached',
+          cache_level: cachedResult.cache_level,
+          merge_notes: [`Resultado recuperado de caché (${cachedResult.cache_level})`],
+          data: cachedResult.extracted_data,
+          normalized: cachedResult.extracted_data,
+          validation: { ok: true, errors: [], warnings: ['Datos recuperados de caché'] },
+          autofix_applied: [],
+          ap_mapping: cachedResult.ap_mapping || null,
+          entry_validation: null,
+          confidence: cachedResult.confidence_score / 100,
+          rawText: '',
+          processingTimeMs: processingTime,
+          ocr_metrics: {
+            pages: quickMeta.pageCount,
+            tokens_in: 0,
+            tokens_out: 0,
+            cost_estimate_eur: 0,
+            ms_openai: 0,
+            ms_mindee: 0,
+            processing_time_ms: processingTime,
+            cache_hit: true,
+            cache_level: cachedResult.cache_level,
+            cost_saved_eur: cachedResult.cost_saved_eur
+          }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
+
+    console.log('[Cache] ❌ MISS - Executing OCR...');
     console.log('Starting OCR orchestration...');
 
-    // ⭐ NUEVO: Usar Orchestrator en lugar de Google Vision directo
+    // Usar Orchestrator para OCR
     const orchestratorResult = await orchestrateOCR(
       base64Content,
       fileData.type || 'application/pdf',
@@ -143,6 +205,15 @@ serve(async (req) => {
 
     console.log(`[Main] OCR Engine used: ${orchestratorResult.ocr_engine}`);
     console.log(`[Main] Confidence: ${orchestratorResult.confidence_final}%`);
+
+    // ⭐ CACHE SYSTEM: Calculate structural hash after OCR extraction
+    const structuralHash = createStructuralHash(
+      orchestratorResult.final_invoice_json.issuer.vat_id,
+      orchestratorResult.final_invoice_json.invoice_number,
+      orchestratorResult.final_invoice_json.issue_date
+    );
+
+    console.log(`[Cache] Structural hash: ${structuralHash}`);
     
     // 2. Match supplier
     const matchedSupplier = await matchSupplier(supabase, {
@@ -266,6 +337,33 @@ serve(async (req) => {
       // No bloqueamos el flujo si falla el logging
     } else {
       console.log(`[Main] ✅ OCR logged - Engine: ${orchestratorResult.ocr_engine}, Cost: €${costBreakdown.cost_total_eur}, Time: ${processingTime}ms, Tokens: ${tokens.tokens_in}/${tokens.tokens_out}`);
+    }
+
+    // ⭐ CACHE SYSTEM: Save to cache for future use
+    try {
+      const { data: cacheId } = await supabase.rpc('insert_ocr_cache', {
+        p_document_hash: documentHash,
+        p_structural_hash: structuralHash,
+        p_supplier_vat: orchestratorResult.final_invoice_json.issuer.vat_id,
+        p_invoice_number: orchestratorResult.final_invoice_json.invoice_number,
+        p_invoice_date: orchestratorResult.final_invoice_json.issue_date,
+        p_total_amount: orchestratorResult.final_invoice_json.totals.total,
+        p_document_path: documentPath,
+        p_file_size: quickMeta.fileSize,
+        p_page_count: pages,
+        p_ocr_engine: orchestratorResult.ocr_engine,
+        p_extracted_data: normalizedResponse.normalized,
+        p_ap_mapping: apMapping,
+        p_confidence_score: orchestratorResult.confidence_final,
+        p_centro_code: centroCode,
+        p_original_cost: costBreakdown.cost_total_eur,
+        p_ttl_days: 30
+      });
+      
+      console.log(`[Cache] ✅ Saved to cache with ID: ${cacheId}`);
+    } catch (cacheInsertError) {
+      console.error('[Cache] ⚠️ Failed to save to cache:', cacheInsertError);
+      // Don't block flow if cache insertion fails
     }
 
     console.log(`OCR completed in ${processingTime}ms`);

@@ -52,6 +52,7 @@ const Notifications = lazy(() => import("@/pages/Notifications"));
 const StyleGuide = lazy(() => import("@/pages/examples/StyleGuide"));
 const APLearningDashboard = lazy(() => import("@/pages/settings/APLearningDashboard"));
 const OCRMetrics = lazy(() => import("@/pages/analytics/OCRMetrics"));
+const OCRCacheMetrics = lazy(() => import("@/pages/analytics/OCRCacheMetrics"));
 
 /**
  * React Query Configuration
@@ -158,7 +159,8 @@ const App = () => {
               <Route path="/mi-empresa/mis-datos" element={<CompanyConfiguration />} />
               <Route path="/notificaciones" element={<Notifications />} />
               <Route path="/configuracion/ap-learning" element={<APLearningDashboard />} />
-              <Route path="/analytics/ocr" element={<OCRMetrics />} />
+            <Route path="/analytics/ocr" element={<OCRMetrics />} />
+            <Route path="/analytics/ocr-cache" element={<OCRCacheMetrics />} />
               <Route path="/style-guide" element={<StyleGuide />} />
             </Route>
             <Route path="*" element={<NotFound />} />

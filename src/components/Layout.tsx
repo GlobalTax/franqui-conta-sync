@@ -24,6 +24,7 @@ import {
   Layers,
   FlaskConical,
   Zap,
+  Database,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -109,6 +110,7 @@ const Layout = () => {
 
   const analyticsItems = [
     { icon: Zap, label: "Métricas OCR", path: "/analytics/ocr" },
+    { icon: Database, label: "Caché OCR", path: "/analytics/ocr-cache" },
   ];
 
   return (

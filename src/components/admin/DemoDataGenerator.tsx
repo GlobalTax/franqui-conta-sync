@@ -39,7 +39,7 @@ export default function DemoDataGenerator() {
     setSteps([]);
 
     try {
-      // Paso 1: Crear Franchisee
+      // Paso 1: Crear o recuperar Franchisee existente
       updateStep("Franchisee", "loading");
       const franchiseeData = {
         name: "Grupo Demo McDonald's",
@@ -47,9 +47,23 @@ export default function DemoDataGenerator() {
         email: "demo@mcdonalds-group.es",
       };
       
-      const franchisee = await createFranchisee.mutateAsync(franchiseeData);
-      updateStep("Franchisee", "success", franchisee.name);
-      logger.info('DemoDataGenerator', '✅ Franchisee creado:', franchisee.id);
+      // Verificar si ya existe el franchisee demo
+      const { data: existingFranchisee } = await supabase
+        .from('franchisees')
+        .select('*')
+        .eq('email', 'demo@mcdonalds-group.es')
+        .maybeSingle();
+
+      let franchisee;
+      if (existingFranchisee) {
+        franchisee = existingFranchisee;
+        updateStep("Franchisee", "success", `${franchisee.name} (ya existía)`);
+        logger.info('DemoDataGenerator', '♻️ Franchisee existente reutilizado:', franchisee.id);
+      } else {
+        franchisee = await createFranchisee.mutateAsync(franchiseeData);
+        updateStep("Franchisee", "success", franchisee.name);
+        logger.info('DemoDataGenerator', '✅ Franchisee creado:', franchisee.id);
+      }
 
       // Paso 2: Crear Companies
       updateStep("Companies", "loading");

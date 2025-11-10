@@ -567,45 +567,74 @@ export default function InvoiceDetailEditor() {
               </CardContent>
             </Card>
 
-            {/* Botón OCR manual si no se ha procesado */}
+            {/* Botón OCR manual PROMINENTE si no se ha procesado */}
             {documentPath && !ocrProcessed && (
-              <Alert>
-                <Scan className="h-4 w-4" />
-                <AlertDescription className="flex items-center justify-between">
-                  <span>PDF cargado</span>
+              <Alert className="border-2 border-blue-600 bg-blue-50 shadow-lg">
+                <div className="flex flex-col items-center gap-3 p-4">
+                  <div className="flex items-center gap-2 text-blue-900 font-semibold">
+                    <Scan className="h-5 w-5" />
+                    <span>PDF listo para procesar</span>
+                  </div>
+                  
                   <Button
-                    variant="link"
-                    size="sm"
                     onClick={handleProcessOCR}
                     disabled={processOCR.isPending}
-                    className="px-2"
+                    size="lg"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
                   >
                     {processOCR.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Procesando...
+                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                        Procesando OCR...
                       </>
                     ) : (
                       <>
-                        <Scan className="mr-2 h-4 w-4" />
-                        Procesar con OCR
+                        <Scan className="mr-3 h-6 w-6" />
+                        🚀 Procesar con OCR
                       </>
                     )}
                   </Button>
-                </AlertDescription>
+                  
+                  <p className="text-xs text-blue-700 text-center">
+                    El OCR debería ejecutarse automáticamente. Si no ocurre, usa este botón.
+                  </p>
+                </div>
               </Alert>
             )}
 
             {/* Indicador OCR Engine */}
             {ocrProcessed && (
-              <OCREngineIndicator
-                ocrEngine={ocrEngine}
-                mergeNotes={mergeNotes}
-                confidence={ocrConfidence}
-                metrics={{
-                  pages: 1
-                }}
-              />
+              <>
+                <OCREngineIndicator
+                  ocrEngine={ocrEngine}
+                  mergeNotes={mergeNotes}
+                  confidence={ocrConfidence}
+                  metrics={{
+                    pages: 1
+                  }}
+                />
+                
+                {/* Botón RE-PROCESAR si ya fue procesado */}
+                <Button
+                  onClick={handleProcessOCR}
+                  disabled={processOCR.isPending}
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 border-blue-600 text-blue-700 hover:bg-blue-50"
+                >
+                  {processOCR.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Re-procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Scan className="mr-2 h-4 w-4" />
+                      Re-procesar OCR
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
 
@@ -743,38 +772,44 @@ export default function InvoiceDetailEditor() {
                 </CardContent>
               </Card>
 
-              {/* Botón OCR manual si no se ha procesado */}
+              {/* Botón OCR manual PROMINENTE si no se ha procesado */}
               {documentPath && !ocrProcessed && (
-                <Alert className="mt-4">
-                  <Scan className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>PDF cargado</span>
+                <Alert className="mt-4 border-2 border-blue-600 bg-blue-50 shadow-lg">
+                  <div className="flex flex-col items-center gap-3 p-4">
+                    <div className="flex items-center gap-2 text-blue-900 font-semibold">
+                      <Scan className="h-5 w-5" />
+                      <span>PDF listo para procesar</span>
+                    </div>
+                    
                     <Button
-                      variant="link"
-                      size="sm"
                       onClick={handleProcessOCR}
                       disabled={processOCR.isPending}
-                      className="px-2"
+                      size="lg"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
                     >
                       {processOCR.isPending ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Procesando...
+                          <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                          Procesando OCR...
                         </>
                       ) : (
                         <>
-                          <Scan className="mr-2 h-4 w-4" />
-                          Procesar con OCR
+                          <Scan className="mr-3 h-6 w-6" />
+                          🚀 Procesar con OCR
                         </>
                       )}
                     </Button>
-                  </AlertDescription>
+                    
+                    <p className="text-xs text-blue-700 text-center">
+                      El OCR debería ejecutarse automáticamente. Si no ocurre, usa este botón.
+                    </p>
+                  </div>
                 </Alert>
               )}
 
               {/* Indicador OCR Engine */}
               {ocrProcessed && (
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
                   <OCREngineIndicator
                     ocrEngine={ocrEngine}
                     mergeNotes={mergeNotes}
@@ -783,6 +818,27 @@ export default function InvoiceDetailEditor() {
                       pages: 1
                     }}
                   />
+                  
+                  {/* Botón RE-PROCESAR si ya fue procesado */}
+                  <Button
+                    onClick={handleProcessOCR}
+                    disabled={processOCR.isPending}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
+                  >
+                    {processOCR.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Re-procesando...
+                      </>
+                    ) : (
+                      <>
+                        <Scan className="mr-2 h-4 w-4" />
+                        Re-procesar OCR
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </TabsContent>

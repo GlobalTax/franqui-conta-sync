@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { InvoiceInboxTable } from '@/components/invoices/inbox/InvoiceInboxTable';
 import { InvoiceInboxSidebar } from '@/components/invoices/inbox/InvoiceInboxSidebar';
 import { InboxFiltersBar } from '@/components/invoices/inbox/InboxFiltersBar';
@@ -19,6 +19,7 @@ import { useInvoiceHotkeys } from '@/hooks/useInvoiceHotkeys';
 import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -53,7 +54,15 @@ const transformInvoice = (inv: InvoiceReceived) => ({
 
 export default function InvoicesInbox() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  
+  // Determinar tab activo basado en la ruta
+  const activeTab = useMemo(() => {
+    if (location.pathname.includes('/depura')) return 'depura';
+    if (location.pathname.includes('/papelera')) return 'papelera';
+    return 'recibidos';
+  }, [location.pathname]);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     status?: string;
@@ -227,8 +236,50 @@ export default function InvoicesInbox() {
     <div className="flex h-screen flex-col">
       {/* Header */}
       <div className="border-b bg-background px-6 py-4">
-        <h1 className="text-2xl font-heading font-bold">Inbox Facturas</h1>
+        <h1 className="text-2xl font-heading font-bold">Digitalización de Documentos</h1>
         <p className="text-sm text-muted-foreground mt-1">
+          Gestión de facturas y documentos OCR
+        </p>
+      </div>
+
+      {/* Tabs superiores */}
+      <Tabs value={activeTab} onValueChange={(value) => {
+        if (value === 'intro') navigate('/digitalizacion/inbox');
+        if (value === 'recibidos') navigate('/digitalizacion/inbox');
+        if (value === 'depura') navigate('/digitalizacion/depura');
+        if (value === 'papelera') navigate('/digitalizacion/papelera');
+      }} className="border-b">
+        <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent p-0 px-6">
+          <TabsTrigger 
+            value="intro" 
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            Introducción
+          </TabsTrigger>
+          <TabsTrigger 
+            value="recibidos"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            Doc. Recibidos
+          </TabsTrigger>
+          <TabsTrigger 
+            value="depura"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            OCR Depura
+          </TabsTrigger>
+          <TabsTrigger 
+            value="papelera"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            Papelera
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Subtítulo con conteo */}
+      <div className="bg-background px-6 py-3 border-b">
+        <p className="text-sm text-muted-foreground">
           {isLoading ? (
             <span className="flex items-center gap-2">
               <Loader2 className="h-3 w-3 animate-spin" />

@@ -25,6 +25,9 @@ import {
   FlaskConical,
   Zap,
   Database,
+  Inbox,
+  Search,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +100,12 @@ const Layout = () => {
     { icon: FileText, label: "Facturas Expedidas", path: "/iva/expedidas" },
     { icon: Receipt, label: "Facturas Recibidas", path: "/iva/recibidas" },
     { icon: FileSpreadsheet, label: "Modelo 303", path: "/iva/modelo-303" },
+  ];
+
+  const digitizationItems = [
+    { icon: Inbox, label: "Inbox OCR", path: "/digitalizacion/inbox" },
+    { icon: Search, label: "OCR Depura", path: "/digitalizacion/depura" },
+    { icon: Trash2, label: "Papelera", path: "/digitalizacion/papelera" },
   ];
 
   const reportItems = [
@@ -186,6 +195,26 @@ const Layout = () => {
             </h3>
             <div className="space-y-0.5">
               {navItems.slice(0, 5).map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          {/* Digitalización Section */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Digitalización
+            </h3>
+            <div className="space-y-0.5">
+              {digitizationItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

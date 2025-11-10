@@ -121,9 +121,13 @@ const App = () => {
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route element={session ? <Layout /> : <Navigate to="/login" />}>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/invoices/inbox" element={<InvoicesInbox />} />
-              <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/digitalizacion/inbox" element={<InvoicesInbox />} />
+            <Route path="/digitalizacion/depura" element={<InvoicesInbox />} />
+            <Route path="/digitalizacion/papelera" element={<InvoicesInbox />} />
+            {/* Mantener ruta legacy por compatibilidad */}
+            <Route path="/invoices/inbox" element={<InvoicesInbox />} />
+            <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<NewInvoiceWithOCR />} />
               <Route path="/facturas/emitidas" element={<InvoicesIssued />} />

@@ -44,6 +44,7 @@ import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
 const InvoiceReviewPDFSection = lazy(() => import("./review/InvoiceReviewPDFSection").then(m => ({ default: m.InvoiceReviewPDFSection })));
 const InvoiceReviewLinesSection = lazy(() => import("./review/InvoiceReviewLinesSection").then(m => ({ default: m.InvoiceReviewLinesSection })));
 const InvoiceReviewHistorySection = lazy(() => import("./review/InvoiceReviewHistorySection").then(m => ({ default: m.InvoiceReviewHistorySection })));
+const OCRLogViewer = lazy(() => import("./review/OCRLogViewer").then(m => ({ default: m.OCRLogViewer })));
 
 interface InvoiceReviewSheetProps {
   open: boolean;
@@ -260,6 +261,13 @@ export function InvoiceReviewSheet({
                   <Separator />
                 </>
               )}
+
+              {/* ✅ Logs de Procesamiento OCR - Lazy Load */}
+              <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                <OCRLogViewer invoiceId={invoice.id} />
+              </Suspense>
+
+              <Separator />
 
               {/* Acciones */}
               <section>

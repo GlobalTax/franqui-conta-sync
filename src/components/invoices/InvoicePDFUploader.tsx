@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface InvoicePDFUploaderProps {
-  invoiceId: string;
+  invoiceId?: string;
   invoiceType: "received" | "issued";
   centroCode: string;
   currentPath?: string | null;
@@ -56,16 +56,18 @@ export const InvoicePDFUploader = ({
 
       if (uploadError) throw uploadError;
 
-      // Update invoice with document path
-      const table = invoiceType === "received" ? "invoices_received" : "invoices_issued";
-      const column = invoiceType === "received" ? "document_path" : "pdf_path";
-      
-      const { error: updateError } = await supabase
-        .from(table)
-        .update({ [column]: path })
-        .eq("id", invoiceId);
+      // Update invoice with document path only if invoiceId exists
+      if (invoiceId) {
+        const table = invoiceType === "received" ? "invoices_received" : "invoices_issued";
+        const column = invoiceType === "received" ? "document_path" : "pdf_path";
+        
+        const { error: updateError } = await supabase
+          .from(table)
+          .update({ [column]: path })
+          .eq("id", invoiceId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      }
 
       toast.success("PDF subido correctamente");
       onUploadComplete?.(path);
@@ -130,16 +132,18 @@ export const InvoicePDFUploader = ({
 
       if (deleteError) throw deleteError;
 
-      // Update invoice to remove document path
-      const table = invoiceType === "received" ? "invoices_received" : "invoices_issued";
-      const column = invoiceType === "received" ? "document_path" : "pdf_path";
-      
-      const { error: updateError } = await supabase
-        .from(table)
-        .update({ [column]: null })
-        .eq("id", invoiceId);
+      // Update invoice to remove document path only if invoiceId exists
+      if (invoiceId) {
+        const table = invoiceType === "received" ? "invoices_received" : "invoices_issued";
+        const column = invoiceType === "received" ? "document_path" : "pdf_path";
+        
+        const { error: updateError } = await supabase
+          .from(table)
+          .update({ [column]: null })
+          .eq("id", invoiceId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      }
 
       toast.success("PDF eliminado correctamente");
       onUploadComplete?.(null as any);

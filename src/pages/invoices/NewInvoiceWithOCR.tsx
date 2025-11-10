@@ -210,7 +210,6 @@ export default function NewInvoiceWithOCR() {
             </h3>
             
             <InvoicePDFUploader
-              invoiceId="temp"
               invoiceType="received"
               centroCode={currentCentro?.codigo || ''}
               currentPath={documentPath}

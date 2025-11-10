@@ -65,7 +65,7 @@ export default function DemoDataGenerator() {
         logger.info('DemoDataGenerator', '✅ Franchisee creado:', franchisee.id);
       }
 
-      // Paso 2: Crear Companies
+      // Paso 2: Crear o recuperar Companies
       updateStep("Companies", "loading");
       const companiesData = [
         {
@@ -83,11 +83,31 @@ export default function DemoDataGenerator() {
       ];
 
       const companies = await Promise.all(
-        companiesData.map(data => createCompany.mutateAsync(data))
+        companiesData.map(async (companyData) => {
+          // Verificar si ya existe
+          const { data: existing } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('cif', companyData.cif)
+            .maybeSingle();
+          
+          if (existing) {
+            logger.info('DemoDataGenerator', '♻️ Company existente reutilizada:', existing.id, existing.cif);
+            return existing;
+          }
+          
+          // Crear nueva
+          const newCompany = await createCompany.mutateAsync(companyData);
+          logger.info('DemoDataGenerator', '✅ Company creada:', newCompany.id);
+          return newCompany;
+        })
       );
-      updateStep("Companies", "success", `${companies.length} sociedades creadas`);
+      
+      const newCount = companies.filter((c, idx) => c.cif === companiesData[idx].cif && !companies.some((comp, i) => i < idx && comp.id === c.id)).length;
+      const reusedCount = companies.length - newCount;
+      updateStep("Companies", "success", `${companies.length} sociedades (${reusedCount > 0 ? `${reusedCount} reutilizadas` : 'todas nuevas'})`);
 
-      // Paso 3: Crear Centres
+      // Paso 3: Crear o recuperar Centres
       updateStep("Centres", "loading");
       const centresData = [
         {
@@ -153,26 +173,61 @@ export default function DemoDataGenerator() {
       ];
 
       const centres = await Promise.all(
-        centresData.map(data => createCentre.mutateAsync(data))
+        centresData.map(async (centreData) => {
+          // Verificar si ya existe
+          const { data: existing } = await supabase
+            .from('centres')
+            .select('*')
+            .eq('codigo', centreData.codigo)
+            .maybeSingle();
+          
+          if (existing) {
+            logger.info('DemoDataGenerator', '♻️ Centre existente reutilizado:', existing.id, existing.codigo);
+            return existing;
+          }
+          
+          // Crear nuevo
+          const newCentre = await createCentre.mutateAsync(centreData);
+          logger.info('DemoDataGenerator', '✅ Centre creado:', newCentre.id);
+          return newCentre;
+        })
       );
-      updateStep("Centres", "success", `${centres.length} centros creados`);
+      
+      const newCentresCount = centres.filter((c, idx) => c.codigo === centresData[idx].codigo && !centres.some((cen, i) => i < idx && cen.id === c.id)).length;
+      const reusedCentresCount = centres.length - newCentresCount;
+      updateStep("Centres", "success", `${centres.length} centros (${reusedCentresCount > 0 ? `${reusedCentresCount} reutilizados` : 'todos nuevos'})`);
 
-      // Paso 4: Crear año fiscal para DEMO-001
+      // Paso 4: Crear o recuperar año fiscal para DEMO-001
       updateStep("Fiscal Year", "loading");
-      const { error: fyError } = await supabase
+      
+      // Verificar si ya existe el año fiscal
+      const { data: existingFY } = await supabase
         .from("fiscal_years")
-        .insert({
-          centro_code: "DEMO-001",
-          year: 2025,
-          start_date: "2025-01-01",
-          end_date: "2025-12-31",
-          is_closed: false
-        });
+        .select('*')
+        .eq('centro_code', 'DEMO-001')
+        .eq('year', 2025)
+        .maybeSingle();
 
-      if (fyError) throw fyError;
-      updateStep("Fiscal Year", "success", "Año fiscal 2025 creado");
+      if (!existingFY) {
+        const { error: fyError } = await supabase
+          .from("fiscal_years")
+          .insert({
+            centro_code: "DEMO-001",
+            year: 2025,
+            start_date: "2025-01-01",
+            end_date: "2025-12-31",
+            is_closed: false
+          });
 
-      // Paso 5: Crear suppliers
+        if (fyError) throw fyError;
+        updateStep("Fiscal Year", "success", "Año fiscal 2025 creado");
+        logger.info('DemoDataGenerator', '✅ Fiscal Year creado');
+      } else {
+        updateStep("Fiscal Year", "success", "Año fiscal 2025 (ya existía)");
+        logger.info('DemoDataGenerator', '♻️ Fiscal Year existente reutilizado');
+      }
+
+      // Paso 5: Crear o recuperar suppliers
       updateStep("Suppliers", "loading");
       const suppliersData = [
         { name: "Proveedores Demo SA", tax_id: "B11111111" },
@@ -180,12 +235,26 @@ export default function DemoDataGenerator() {
         { name: "Servicios Demo Group", tax_id: "B33333333" }
       ];
 
-      const { error: suppliersError } = await supabase
+      // Verificar cuáles suppliers ya existen
+      const { data: existingSuppliers } = await supabase
         .from("suppliers")
-        .insert(suppliersData);
+        .select('*')
+        .in('tax_id', ['B11111111', 'B22222222', 'B33333333']);
 
-      if (suppliersError) throw suppliersError;
-      updateStep("Suppliers", "success", `${suppliersData.length} proveedores creados`);
+      const existingTaxIds = new Set(existingSuppliers?.map(s => s.tax_id) || []);
+      const newSuppliers = suppliersData.filter(s => !existingTaxIds.has(s.tax_id));
+
+      if (newSuppliers.length > 0) {
+        const { error: suppliersError } = await supabase
+          .from("suppliers")
+          .insert(newSuppliers);
+
+        if (suppliersError) throw suppliersError;
+        logger.info('DemoDataGenerator', '✅ Suppliers creados:', newSuppliers.length);
+      }
+      
+      const reusedSuppliers = suppliersData.length - newSuppliers.length;
+      updateStep("Suppliers", "success", `${suppliersData.length} proveedores (${reusedSuppliers > 0 ? `${reusedSuppliers} existentes` : 'todos nuevos'})`);
 
       // Éxito total
       toast({

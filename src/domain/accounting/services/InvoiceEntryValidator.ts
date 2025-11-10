@@ -3,6 +3,10 @@
 // Validación de facturas antes de generar asientos contables
 // ============================================================================
 
+import { validateVATCoherence, validateVATCalculation } from '@/lib/vat-utils';
+import { validateSpanishVAT } from '@/lib/ocr-utils';
+import { supabase } from '@/integrations/supabase/client';
+
 export interface EnhancedInvoiceData {
   document_type: "invoice" | "credit_note" | "ticket";
   issuer: {
@@ -104,9 +108,9 @@ export class InvoiceEntryValidator {
   /**
    * Valida una factura normalizada y genera el preview del asiento
    */
-  static validate(
+  static async validate(
     input: InvoiceEntryValidationInput
-  ): InvoiceEntryValidationResult {
+  ): Promise<InvoiceEntryValidationResult> {
     
     const blockingIssues: string[] = [];
     const warnings: string[] = [];
@@ -119,9 +123,11 @@ export class InvoiceEntryValidator {
     if (!input.normalized_invoice.issuer.vat_id) {
       blockingIssues.push('NIF/CIF del emisor es obligatorio');
       confidenceScore -= 30;
-    } else if (!this.isValidSpanishVAT(input.normalized_invoice.issuer.vat_id)) {
-      warnings.push(`NIF/CIF del emisor tiene formato inválido: ${input.normalized_invoice.issuer.vat_id}`);
-      confidenceScore -= 10;
+    } else if (!validateSpanishVAT(input.normalized_invoice.issuer.vat_id)) {
+      blockingIssues.push(
+        `NIF/CIF del emisor inválido: ${input.normalized_invoice.issuer.vat_id}`
+      );
+      confidenceScore -= 25;
     }
     
     if (!input.normalized_invoice.invoice_number || 
@@ -142,59 +148,96 @@ export class InvoiceEntryValidator {
     }
     
     // ========================================================================
-    // 2. Validar cálculos fiscales (bases + IVA = total)
+    // 2. VALIDAR EJERCICIO FISCAL ABIERTO
+    // ========================================================================
+    
+    let fiscalYearOpen = true;
+    let fiscalYearInfo: any = null;
+    
+    try {
+      // Llamar RPC manualmente (sin tipado estricto porque es nueva función)
+      const { data: fyStatus, error } = await supabase
+        .rpc('check_fiscal_year_status' as any, {
+          p_date: input.normalized_invoice.issue_date,
+          p_centro_code: input.centro_code
+        });
+
+      if (error) {
+        warnings.push(`No se pudo validar ejercicio fiscal: ${error.message}`);
+      } else if (fyStatus) {
+        // Parsear JSON si viene como string
+        const statusData = typeof fyStatus === 'string' ? JSON.parse(fyStatus) : fyStatus;
+        fiscalYearInfo = statusData;
+        fiscalYearOpen = !statusData.is_closed;
+
+        if (statusData.is_closed) {
+          blockingIssues.push(
+            `PERIODO_CERRADO: ${statusData.message} (Ejercicio ${statusData.year})`
+          );
+          confidenceScore -= 30;
+        }
+
+        if (!statusData.exists) {
+          warnings.push(
+            `No existe ejercicio fiscal para ${statusData.year}. Crear ejercicio antes de contabilizar.`
+          );
+          confidenceScore -= 15;
+        }
+      }
+    } catch (err: any) {
+      warnings.push(`Error al validar ejercicio fiscal: ${err.message}`);
+    }
+    
+    // ========================================================================
+    // 3. Validar cálculos fiscales con validateVATCoherence
     // ========================================================================
     
     const totals = input.normalized_invoice.totals;
-    const calculatedTotal = 
+    
+    // Calcular subtotal y total IVA
+    const subtotal = 
       (totals.base_10 || 0) + 
-      (totals.vat_10 || 0) + 
       (totals.base_21 || 0) + 
+      totals.other_taxes
+        .filter(t => !t.type.toLowerCase().includes('irpf'))
+        .reduce((sum, t) => sum + t.base, 0);
+    
+    const taxTotal = 
+      (totals.vat_10 || 0) + 
       (totals.vat_21 || 0) + 
-      totals.other_taxes.reduce((sum, t) => sum + t.base + t.quota, 0);
+      totals.other_taxes
+        .filter(t => !t.type.toLowerCase().includes('irpf'))
+        .reduce((sum, t) => sum + t.quota, 0);
     
-    const diff = Math.abs(calculatedTotal - totals.total);
+    // Validar coherencia fiscal con validateVATCoherence
+    const vatCheck = validateVATCoherence(subtotal, taxTotal, totals.total);
     
-    if (diff > 0.01) {
-      blockingIssues.push(
-        `Los totales no cuadran: calculado ${calculatedTotal.toFixed(2)}€, ` +
-        `declarado ${totals.total.toFixed(2)}€ (diferencia: ${diff.toFixed(2)}€)`
-      );
-      confidenceScore -= 25;
-    } else if (diff > 0.001 && diff <= 0.01) {
-      warnings.push(`Pequeña diferencia de redondeo: ${diff.toFixed(3)}€`);
-      confidenceScore -= 2;
+    if (!vatCheck.valid) {
+      blockingIssues.push(`IVA_INCOHERENTE: ${vatCheck.reason}`);
+      confidenceScore -= 20;
     }
     
-    // Validar que los cálculos de IVA sean correctos
+    // Validar cálculos individuales de IVA con validateVATCalculation
     if (totals.base_21 !== null && totals.vat_21 !== null) {
-      const expectedVAT21 = Math.round(totals.base_21 * 0.21 * 100) / 100;
-      const vatDiff = Math.abs(expectedVAT21 - totals.vat_21);
+      const vat21Check = validateVATCalculation(totals.base_21, totals.vat_21, 0.21);
       
-      if (vatDiff > 0.02) {
-        warnings.push(
-          `IVA 21% calculado incorrectamente: esperado ${expectedVAT21.toFixed(2)}€, ` +
-          `actual ${totals.vat_21.toFixed(2)}€`
-        );
+      if (!vat21Check.valid) {
+        warnings.push(`IVA 21%: ${vat21Check.reason}`);
         confidenceScore -= 5;
       }
     }
     
     if (totals.base_10 !== null && totals.vat_10 !== null) {
-      const expectedVAT10 = Math.round(totals.base_10 * 0.10 * 100) / 100;
-      const vatDiff = Math.abs(expectedVAT10 - totals.vat_10);
+      const vat10Check = validateVATCalculation(totals.base_10, totals.vat_10, 0.10);
       
-      if (vatDiff > 0.02) {
-        warnings.push(
-          `IVA 10% calculado incorrectamente: esperado ${expectedVAT10.toFixed(2)}€, ` +
-          `actual ${totals.vat_10.toFixed(2)}€`
-        );
+      if (!vat10Check.valid) {
+        warnings.push(`IVA 10%: ${vat10Check.reason}`);
         confidenceScore -= 5;
       }
     }
     
     // ========================================================================
-    // 3. Validar sugerencias AP
+    // 4. Validar sugerencias AP
     // ========================================================================
     
     if (input.ap_mapping.invoice_level.confidence_score < 50) {
@@ -234,7 +277,7 @@ export class InvoiceEntryValidator {
     }
     
     // ========================================================================
-    // 4. Generar preview del asiento
+    // 5. Generar preview del asiento
     // ========================================================================
     
     const preview: EntryPreviewLine[] = [];
@@ -317,7 +360,7 @@ export class InvoiceEntryValidator {
     });
     
     // ========================================================================
-    // 5. Validar que el preview está cuadrado
+    // 6. Validar que el preview está cuadrado
     // ========================================================================
     
     const totalDebit = preview.reduce((sum, line) => sum + line.debit, 0);
@@ -335,7 +378,7 @@ export class InvoiceEntryValidator {
     }
     
     // ========================================================================
-    // 6. Calcular ready_to_post
+    // 7. Calcular ready_to_post
     // ========================================================================
     
     const readyToPost = 
@@ -344,7 +387,7 @@ export class InvoiceEntryValidator {
       confidenceScore >= 50;
     
     // ========================================================================
-    // 7. Retornar resultado
+    // 8. Retornar resultado
     // ========================================================================
     
     return {
@@ -355,26 +398,13 @@ export class InvoiceEntryValidator {
       post_preview: preview,
       validation_details: {
         invoice_data_valid: !blockingIssues.some(i => 
-          i.includes('obligatorio') || i.includes('formato')
+          i.includes('obligatorio') || i.includes('formato') || i.includes('inválido')
         ),
-        totals_match: diff <= 0.01,
+        totals_match: vatCheck.valid,
         ap_suggestions_valid: input.ap_mapping.invoice_level.confidence_score >= 50,
         preview_balanced: previewBalanced,
-        fiscal_year_open: true // Por ahora asumimos que sí, se valida en backend
+        fiscal_year_open: fiscalYearOpen
       }
     };
-  }
-  
-  /**
-   * Valida formato de NIF/CIF español (simplificado)
-   */
-  private static isValidSpanishVAT(vat: string): boolean {
-    if (!vat) return false;
-    
-    const cleanVAT = vat.toUpperCase().replace(/[\s\-\.]/g, '');
-    if (cleanVAT.length !== 9) return false;
-    
-    // Debe empezar con letra o número
-    return /^[A-Z0-9]/.test(cleanVAT);
   }
 }

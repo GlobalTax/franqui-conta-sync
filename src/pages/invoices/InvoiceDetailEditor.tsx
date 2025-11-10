@@ -173,6 +173,21 @@ export default function InvoiceDetailEditor() {
     }
   }, [invoice, isEditMode, form]);
 
+  // Re-ejecutar OCR si cambia el centro después de procesarlo con 'temp'
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'centro_code' && value.centro_code && value.centro_code !== 'temp' && documentPath && ocrProcessed) {
+        // Solo re-procesar si había un centro 'temp' o si no había centro al procesar
+        const shouldReprocess = !form.formState.defaultValues?.centro_code || form.formState.defaultValues.centro_code === 'temp';
+        if (shouldReprocess) {
+          toast.info("Actualizando OCR con el centro seleccionado...");
+          setTimeout(() => handleProcessOCR(), 500);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, documentPath, ocrProcessed]);
+
   // Validación de pre-contabilización
   const canPost = useMemo(() => {
     const values = form.watch();
@@ -200,10 +215,13 @@ export default function InvoiceDetailEditor() {
       return;
     }
     
-    const centroCode = form.getValues('centro_code');
+    // Usar centro actual o 'temp' si no hay seleccionado
+    let centroCode = form.getValues('centro_code');
     if (!centroCode) {
-      toast.error("Selecciona un centro primero");
-      return;
+      toast.info("Procesando OCR sin centro asignado. Selecciona un centro después.", {
+        duration: 4000
+      });
+      centroCode = 'temp';
     }
 
     try {
@@ -263,13 +281,10 @@ export default function InvoiceDetailEditor() {
     if (path) {
       toast.success("PDF subido correctamente");
       
-      // Auto-trigger OCR después de 500ms si tenemos centro
-      const centroCode = form.getValues('centro_code');
-      if (centroCode) {
-        setTimeout(() => {
-          handleProcessOCR();
-        }, 500);
-      }
+      // Auto-trigger OCR siempre (usará centro actual o 'temp')
+      setTimeout(() => {
+        handleProcessOCR();
+      }, 500);
     }
   };
 

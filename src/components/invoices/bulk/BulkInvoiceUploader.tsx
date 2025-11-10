@@ -81,7 +81,7 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
           className={cn(
             "border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer",
             "hover:border-primary hover:bg-primary/5",
-            isDragActive ? "border-primary bg-primary/10" : "border-muted",
+            isDragActive ? "border-primary bg-primary/10" : "border-primary/40",
             isProcessing && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -150,6 +150,33 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
               <div className="text-xs text-muted-foreground mt-1">Errores</div>
             </div>
           </div>
+
+          {/* OCR Statistics */}
+          {(stats.completed + stats.needsReview) > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="text-center">
+                <div className="text-lg font-bold text-primary">
+                  €{stats.totalCostEur.toFixed(4)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Coste estimado OCR</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-primary">
+                  {(stats.avgProcessingTimeMs / 1000).toFixed(1)}s
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Tiempo medio</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-primary">
+                  {stats.mindeeFallbackCount > 0 
+                    ? `${Math.round((stats.mindeeFallbackCount / (stats.completed + stats.needsReview)) * 100)}%`
+                    : '0%'
+                  }
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Fallback Mindee</div>
+              </div>
+            </div>
+          )}
 
           {/* Overall Progress */}
           {stats.total > 0 && (

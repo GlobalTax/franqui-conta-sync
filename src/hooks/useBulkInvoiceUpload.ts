@@ -11,6 +11,9 @@ export interface UploadFileItem {
   documentPath?: string;
   ocrStatus?: 'pending' | 'processing' | 'completed' | 'failed';
   ocrConfidence?: number;
+  ocrEngine?: string;
+  ocrCostEur?: number;
+  processingTimeMs?: number;
   error?: string;
   uploadedAt?: Date;
   processedAt?: Date;
@@ -36,7 +39,12 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
   const [files, setFiles] = useState<UploadFileItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Calculate stats
+  // Calculate stats with real OCR data
+  const completedFiles = files.filter(f => f.status === 'processed' || f.status === 'needs_review');
+  const totalCost = completedFiles.reduce((sum, f) => sum + (f.ocrCostEur || 0), 0);
+  const totalTime = completedFiles.reduce((sum, f) => sum + (f.processingTimeMs || 0), 0);
+  const mindeeFallbacks = completedFiles.filter(f => f.ocrEngine === 'mindee').length;
+  
   const stats: BulkUploadStats = {
     total: files.length,
     pending: files.filter(f => f.status === 'pending').length,
@@ -45,9 +53,9 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
     completed: files.filter(f => f.status === 'processed').length,
     needsReview: files.filter(f => f.status === 'needs_review').length,
     errors: files.filter(f => f.status === 'error').length,
-    totalCostEur: 0,
-    avgProcessingTimeMs: 0,
-    mindeeFallbackCount: 0,
+    totalCostEur: totalCost,
+    avgProcessingTimeMs: completedFiles.length > 0 ? Math.round(totalTime / completedFiles.length) : 0,
+    mindeeFallbackCount: mindeeFallbacks,
   };
 
   // Validate file
@@ -67,9 +75,21 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
 
   // Add files to queue
   const addFiles = useCallback((newFiles: File[]) => {
+    // Check total file limit
+    const remainingSlots = 50 - files.length;
+    if (remainingSlots <= 0) {
+      toast.error('Límite de 50 archivos alcanzado. Procese o elimine archivos antes de añadir más.');
+      return;
+    }
+    
+    const filesToAdd = newFiles.slice(0, remainingSlots);
+    if (newFiles.length > remainingSlots) {
+      toast.warning(`Solo se añadieron ${remainingSlots} archivos (límite: 50 total)`);
+    }
+    
     const validatedFiles: UploadFileItem[] = [];
     
-    for (const file of newFiles) {
+    for (const file of filesToAdd) {
       const validation = validateFile(file);
       
       if (!validation.valid) {
@@ -90,7 +110,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
     if (validatedFiles.length > 0) {
       toast.success(`${validatedFiles.length} archivo(s) añadido(s) a la cola`);
     }
-  }, []);
+  }, [files.length]);
 
   // Remove file from queue
   const removeFile = useCallback((fileId: string) => {
@@ -262,6 +282,9 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
               status: uiStatus,
               ocrStatus: 'completed',
               ocrConfidence: ocrResult.confidence,
+              ocrEngine: ocrResult.ocr_engine || 'openai',
+              ocrCostEur: ocrResult.costEstimateEur || 0,
+              processingTimeMs: ocrResult.processingTimeMs || 0,
               processedAt: new Date()
             } 
           : f

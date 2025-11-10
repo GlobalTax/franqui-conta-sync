@@ -14,6 +14,7 @@ import FranchiseesDataQuality from "./admin/FranchiseesDataQuality";
 import AuditLog from "./admin/AuditLog";
 import SystemSettings from "./admin/SystemSettings";
 import DemoDataGenerator from "@/components/admin/DemoDataGenerator";
+import TestingSuite from "@/components/testing/TestingSuite";
 
 const Admin = () => {
   return (
@@ -29,10 +30,10 @@ const Admin = () => {
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="demo">Demo</TabsTrigger>
+          <TabsTrigger value="testing">Testing</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="franchisees">Franchisees</TabsTrigger>
-          <TabsTrigger value="franchisees-dq">DQ Franchisees</TabsTrigger>
           <TabsTrigger value="companies">Sociedades</TabsTrigger>
           <TabsTrigger value="centres">Centros</TabsTrigger>
           <TabsTrigger value="orquest">Orquest</TabsTrigger>
@@ -48,6 +49,10 @@ const Admin = () => {
           <DemoDataGenerator />
         </TabsContent>
 
+        <TabsContent value="testing" className="mt-6">
+          <TestingSuite />
+        </TabsContent>
+
         <TabsContent value="users" className="mt-6">
           <UsersManagement />
         </TabsContent>
@@ -60,9 +65,6 @@ const Admin = () => {
           <FranchiseesManagement />
         </TabsContent>
 
-        <TabsContent value="franchisees-dq" className="mt-6">
-          <FranchiseesDataQuality />
-        </TabsContent>
 
         <TabsContent value="companies" className="mt-6">
           <CompaniesManagement />

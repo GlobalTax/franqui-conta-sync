@@ -69,6 +69,53 @@ export function InvoicePDFPreview({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Atajos de teclado para controles de zoom
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Solo activar si Ctrl (Windows/Linux) o Cmd (Mac) están presionados
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      // No interferir si el usuario está escribiendo en un input/textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Zoom In: Ctrl/Cmd + Plus o Ctrl/Cmd + Equal
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        if (scale < 3.0) {
+          handleZoomIn();
+        }
+      }
+      // Zoom Out: Ctrl/Cmd + Minus
+      else if (e.key === '-') {
+        e.preventDefault();
+        if (scale > 0.5) {
+          handleZoomOut();
+        }
+      }
+      // Reset: Ctrl/Cmd + 0
+      else if (e.key === '0') {
+        e.preventDefault();
+        handleReset();
+      }
+    };
+
+    // Solo agregar listener si el PDF está cargado
+    if (pdfUrl) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [pdfUrl, scale]);
+
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3.0));
   };
@@ -155,7 +202,7 @@ export function InvoicePDFPreview({
               size="sm"
               onClick={handleZoomOut}
               disabled={scale <= 0.5}
-              title="Alejar (25%)"
+              title="Alejar (Ctrl/Cmd + -)"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -164,7 +211,7 @@ export function InvoicePDFPreview({
               variant="outline"
               size="sm"
               onClick={handleReset}
-              title="Restablecer (100%)"
+              title="Restablecer (Ctrl/Cmd + 0)"
             >
               <RotateCw className="h-4 w-4" />
             </Button>
@@ -174,7 +221,7 @@ export function InvoicePDFPreview({
               size="sm"
               onClick={handleZoomIn}
               disabled={scale >= 3.0}
-              title="Acercar (25%)"
+              title="Acercar (Ctrl/Cmd + +)"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>

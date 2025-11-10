@@ -8,32 +8,90 @@ interface OCRRequest {
 }
 
 export interface OCRInvoiceData {
-  supplier: {
+  document_type: "invoice" | "credit_note" | "ticket";
+  issuer: {
+    name: string;
+    vat_id: string | null;
+  };
+  receiver: {
+    name: string | null;
+    vat_id: string | null;
+    address: string | null;
+  };
+  invoice_number: string;
+  issue_date: string;
+  due_date: string | null;
+  totals: {
+    currency: string;
+    base_10: number | null;
+    vat_10: number | null;
+    base_21: number | null;
+    vat_21: number | null;
+    other_taxes: Array<{
+      type: string;
+      base: number;
+      quota: number;
+    }>;
+    total: number;
+  };
+  lines: Array<{
+    description: string;
+    quantity: number | null;
+    unit_price: number | null;
+    amount: number;
+  }>;
+  centre_hint: string | null;
+  payment_method: "transfer" | "card" | "cash" | null;
+  confidence_notes: string[];
+  confidence_score: number;
+  discrepancies: string[];
+  proposed_fix: {
+    what: string;
+    why: string;
+  } | null;
+  supplier?: {
     name: string;
     taxId: string;
     matched: boolean;
     matchedId?: string;
     matchConfidence?: number;
   };
-  invoiceNumber: string;
-  invoiceDate: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
   dueDate?: string;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  lines: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    taxRate: number;
-    total: number;
-  }>;
+  subtotal?: number;
+  taxTotal?: number;
+  total?: number;
+}
+
+export interface APMappingSuggestion {
+  account_suggestion: string;
+  tax_account: string;
+  ap_account: string;
+  centre_id: string | null;
+  confidence_score: number;
+  rationale: string;
+  matched_rule_id: string | null;
+  matched_rule_name: string | null;
+}
+
+export interface APMappingResult {
+  invoice_level: APMappingSuggestion;
+  line_level: APMappingSuggestion[];
 }
 
 export interface OCRResponse {
   success: boolean;
   confidence: number;
   data: OCRInvoiceData;
+  normalized: OCRInvoiceData;
+  validation: {
+    ok: boolean;
+    errors: string[];
+    warnings: string[];
+  };
+  autofix_applied: string[];
+  ap_mapping: APMappingResult;
   rawText?: string;
   processingTimeMs: number;
   warnings?: string[];
@@ -111,89 +169,6 @@ export const useLogOCRProcessing = () => {
 export const validateOCRData = (data: OCRInvoiceData): OCRValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
-
-  // Required fields validation
-  if (!data.supplier.taxId) {
-    errors.push('El NIF/CIF del proveedor es obligatorio');
-  } else if (!data.supplier.taxId.match(/^[A-Z]\d{7,8}[A-Z]?$/)) {
-    errors.push('El formato del NIF/CIF no es válido');
-  }
-
-  if (!data.supplier.name || data.supplier.name.length < 3) {
-    errors.push('El nombre del proveedor es obligatorio');
-  }
-
-  if (!data.invoiceNumber || data.invoiceNumber.trim() === '') {
-    errors.push('El número de factura es obligatorio');
-  }
-
-  if (!data.invoiceDate) {
-    errors.push('La fecha de factura es obligatoria');
-  } else {
-    const invoiceDate = new Date(data.invoiceDate);
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    
-    if (invoiceDate > today) {
-      errors.push('La fecha de factura no puede ser futura');
-    }
-
-    if (data.dueDate) {
-      const dueDate = new Date(data.dueDate);
-      if (dueDate < invoiceDate) {
-        errors.push('La fecha de vencimiento debe ser posterior a la fecha de factura');
-      }
-    }
-  }
-
-  if (!data.total || data.total <= 0) {
-    errors.push('El importe total debe ser mayor que 0');
-  }
-
-  // Amount validation
-  const calculatedTotal = Math.round((data.subtotal + data.taxTotal) * 100) / 100;
-  const totalDiff = Math.abs(calculatedTotal - data.total);
-  
-  if (totalDiff > 0.02) {
-    warnings.push(`Diferencia en totales: calculado ${calculatedTotal}€, indicado ${data.total}€`);
-  }
-
-  // Lines validation
-  if (data.lines.length > 0) {
-    const linesSubtotal = data.lines.reduce((sum, line) => sum + line.total, 0);
-    const subtotalDiff = Math.abs(Math.round(linesSubtotal * 100) / 100 - data.subtotal);
-    
-    if (subtotalDiff > 0.02 * data.lines.length) {
-      warnings.push('La suma de las líneas no coincide con el subtotal');
-    }
-
-    data.lines.forEach((line, index) => {
-      if (!line.description || line.description.trim() === '') {
-        warnings.push(`Línea ${index + 1}: falta descripción`);
-      }
-      if (line.quantity <= 0) {
-        errors.push(`Línea ${index + 1}: la cantidad debe ser mayor que 0`);
-      }
-      if (line.unitPrice <= 0) {
-        errors.push(`Línea ${index + 1}: el precio unitario debe ser mayor que 0`);
-      }
-      
-      const calculatedLineTotal = Math.round(line.quantity * line.unitPrice * 100) / 100;
-      const lineDiff = Math.abs(calculatedLineTotal - line.total);
-      if (lineDiff > 0.02) {
-        warnings.push(`Línea ${index + 1}: el total calculado (${calculatedLineTotal}€) no coincide con el indicado (${line.total}€)`);
-      }
-    });
-  } else {
-    warnings.push('No se detectaron líneas de factura detalladas');
-  }
-
-  // Supplier matching warnings
-  if (!data.supplier.matched) {
-    warnings.push('No se encontró un proveedor existente con este NIF/CIF');
-  } else if (data.supplier.matchConfidence && data.supplier.matchConfidence < 0.9) {
-    warnings.push(`El proveedor coincide con ${Math.round(data.supplier.matchConfidence * 100)}% de confianza`);
-  }
 
   return {
     isValid: errors.length === 0,

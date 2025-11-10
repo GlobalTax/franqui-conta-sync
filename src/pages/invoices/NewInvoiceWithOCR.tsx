@@ -19,8 +19,12 @@ import {
   validateOCRData,
   getConfidenceLevel,
   getFieldConfidenceColor,
-  type OCRInvoiceData 
+  type OCRInvoiceData,
+  type OCRResponse,
+  type APMappingResult
 } from "@/hooks/useInvoiceOCR";
+import { APMappingSuggestions } from "@/components/invoices/APMappingSuggestions";
+import { OCRDiscrepanciesAlert } from "@/components/invoices/OCRDiscrepanciesAlert";
 import { useCreateInvoiceReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Loader2, AlertCircle, CheckCircle, FileText, Scan, ChevronDown, ChevronUp } from "lucide-react";
@@ -38,7 +42,8 @@ export default function NewInvoiceWithOCR() {
   const [ocrData, setOcrData] = useState<OCRInvoiceData | null>(null);
   const [ocrConfidence, setOcrConfidence] = useState<number>(0);
   const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
-  const [rawOCRResponse, setRawOCRResponse] = useState<any>(null);
+  const [rawOCRResponse, setRawOCRResponse] = useState<OCRResponse | null>(null);
+  const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
   
   // Estado para controlar si el preview está expandido
   const [isPreviewOpen, setIsPreviewOpen] = useState(() => {
@@ -77,25 +82,29 @@ export default function NewInvoiceWithOCR() {
       });
 
       setRawOCRResponse(result);
-      setOcrData(result.data);
+      setOcrData(result.normalized || result.data);
       setOcrConfidence(result.confidence);
       setOcrWarnings(result.warnings || []);
+      setApMapping(result.ap_mapping);
 
       // Pre-fill form
-      if (result.data.supplier.matchedId) {
-        setSupplierId(result.data.supplier.matchedId);
+      const normalizedData = result.normalized || result.data;
+      if (normalizedData.supplier?.matchedId) {
+        setSupplierId(normalizedData.supplier.matchedId);
       }
-      setInvoiceNumber(result.data.invoiceNumber);
-      setInvoiceDate(result.data.invoiceDate);
-      setDueDate(result.data.dueDate || "");
-      setLines(result.data.lines.map((line, index) => ({
+      setInvoiceNumber(normalizedData.invoice_number || normalizedData.invoiceNumber || '');
+      setInvoiceDate(normalizedData.issue_date || normalizedData.invoiceDate || '');
+      setDueDate(normalizedData.due_date || normalizedData.dueDate || "");
+      
+      // Pre-fill lines with AP mapping suggestions
+      setLines(normalizedData.lines.map((line: any, index: number) => ({
         id: `temp-${index}`,
         description: line.description,
-        quantity: line.quantity,
-        unit_price: line.unitPrice,
+        quantity: line.quantity || 1,
+        unit_price: line.unit_price || line.unitPrice || line.amount,
         discount_percentage: 0,
-        tax_rate: line.taxRate,
-        account_code: ''
+        tax_rate: line.taxRate || 21,
+        account_code: result.ap_mapping?.line_level?.[index]?.account_suggestion || ''
       })));
 
       setStatus('review');
@@ -115,22 +124,9 @@ export default function NewInvoiceWithOCR() {
   const handleSave = async () => {
     if (!currentCentro || !documentPath) return;
 
-    // Validate
-    const validation = ocrData ? validateOCRData({
-      ...ocrData,
-      supplier: {
-        ...ocrData.supplier,
-        matchedId: supplierId
-      },
-      invoiceNumber,
-      invoiceDate,
-      dueDate: dueDate || undefined,
-      lines
-    }) : { isValid: false, errors: ['No hay datos de OCR'], warnings: [] };
-
-    if (!validation.isValid) {
-      toast.error("Hay errores en el formulario");
-      validation.errors.forEach(err => toast.error(err));
+    // Basic validation
+    if (!supplierId || !invoiceNumber || !invoiceDate) {
+      toast.error("Faltan campos obligatorios");
       return;
     }
 
@@ -193,6 +189,28 @@ export default function NewInvoiceWithOCR() {
       toast.error(`Error al guardar: ${error.message}`);
       setStatus('review');
     }
+  };
+
+  const handleAcceptAllSuggestions = () => {
+    if (!apMapping) return;
+    
+    setLines(prevLines => prevLines.map((line, index) => ({
+      ...line,
+      account_code: apMapping.line_level[index]?.account_suggestion || apMapping.invoice_level.account_suggestion
+    })));
+    
+    toast.success("Sugerencias aplicadas a todas las líneas");
+  };
+
+  const handleAcceptInvoiceSuggestion = () => {
+    if (!apMapping) return;
+    
+    setLines(prevLines => prevLines.map(line => ({
+      ...line,
+      account_code: apMapping.invoice_level.account_suggestion
+    })));
+    
+    toast.success("Sugerencia de factura aplicada");
   };
 
   const confidenceInfo = getConfidenceLevel(ocrConfidence);
@@ -363,6 +381,32 @@ export default function NewInvoiceWithOCR() {
 
         {/* Right: Form */}
         <div className="space-y-4">
+          {/* AP Mapping Suggestions */}
+          {status === 'review' && apMapping && (
+            <APMappingSuggestions
+              invoiceSuggestion={apMapping.invoice_level}
+              lineSuggestions={apMapping.line_level}
+              onAcceptAll={handleAcceptAllSuggestions}
+              onAcceptInvoice={handleAcceptInvoiceSuggestion}
+            />
+          )}
+
+          {/* OCR Discrepancies Alert */}
+          {status === 'review' && rawOCRResponse && (
+            <OCRDiscrepanciesAlert
+              discrepancies={ocrData?.discrepancies || []}
+              proposedFix={ocrData?.proposed_fix || null}
+              autofixApplied={rawOCRResponse.autofix_applied || []}
+              validation={rawOCRResponse.validation || { ok: true, errors: [], warnings: [] }}
+              onApplyFix={() => {
+                if (ocrData?.proposed_fix) {
+                  toast.success(`Corrección aplicada: ${ocrData.proposed_fix.what}`);
+                  handleProcessOCR();
+                }
+              }}
+            />
+          )}
+
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Datos de la Factura</h3>
             

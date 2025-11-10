@@ -122,6 +122,16 @@ export function InvoicePDFPreview({
             goToNextPage();
           }
         }
+        // Primera Página: Home
+        else if (e.key === 'Home') {
+          e.preventDefault();
+          setPageNumber(1);
+        }
+        // Última Página: End
+        else if (e.key === 'End') {
+          e.preventDefault();
+          setPageNumber(numPages);
+        }
       }
     };
 

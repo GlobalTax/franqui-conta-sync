@@ -50,7 +50,19 @@ export function InvoiceInboxSidebar({
         .select(`
           *,
           supplier:suppliers(name, tax_id, email),
-          lines:invoices_received_lines(*)
+          lines:invoices_received_lines(*),
+          ocr_processing_log(
+            engine,
+            ms_openai,
+            ms_mindee,
+            pages,
+            tokens_in,
+            tokens_out,
+            cost_estimate_eur,
+            processing_time_ms,
+            confidence,
+            extracted_data
+          )
         `)
         .eq('id', invoiceId)
         .single();
@@ -166,9 +178,89 @@ export function InvoiceInboxSidebar({
                   </div>
                 )}
 
-                <Separator />
+                {/* Métricas OCR detalladas */}
+                {invoice && (invoice.ocr_processing_log as any)?.[0] && (() => {
+                  const ocrLog = (invoice.ocr_processing_log as any)[0];
+                  return (
+                    <div className="px-6 py-4 bg-muted/30 border-y space-y-3">
+                      {/* Motor OCR */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Motor OCR</span>
+                        <OCREngineBadge 
+                          engine={ocrLog.engine}
+                          confidence={ocrLog.confidence || undefined}
+                          processingTime={ocrLog.processing_time_ms || undefined}
+                        />
+                      </div>
 
-                {/* PDF Preview */}
+                      {/* Tiempos de procesamiento */}
+                      {(ocrLog.ms_openai || ocrLog.ms_mindee) && (
+                        <div className="text-xs space-y-1 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2">
+                          <div className="flex items-center justify-between">
+                            <span>⏱️ OpenAI:</span>
+                            <span className="font-mono">{ocrLog.ms_openai || 0}ms</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>⏱️ Mindee:</span>
+                            <span className="font-mono">{ocrLog.ms_mindee || 0}ms</span>
+                          </div>
+                          <div className="flex items-center justify-between font-semibold">
+                            <span>Total:</span>
+                            <span className="font-mono">
+                              {(ocrLog.ms_openai || 0) + (ocrLog.ms_mindee || 0)}ms
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Páginas y Tokens */}
+                      {(ocrLog.pages || ocrLog.tokens_in) && (
+                        <div className="text-xs space-y-1 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-md p-2">
+                          {ocrLog.pages && (
+                            <div className="flex items-center justify-between">
+                              <span>📄 Páginas:</span>
+                              <span className="font-mono">{ocrLog.pages}</span>
+                            </div>
+                          )}
+                          {ocrLog.tokens_in && (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span>📥 Tokens entrada:</span>
+                                <span className="font-mono">{ocrLog.tokens_in.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span>📤 Tokens salida:</span>
+                                <span className="font-mono">{ocrLog.tokens_out?.toLocaleString() || 0}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Coste Estimado */}
+                      {ocrLog.cost_estimate_eur && (
+                        <div className="flex items-center justify-between text-sm bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-2">
+                          <span className="font-medium">💰 Coste OCR:</span>
+                          <span className="font-mono font-semibold">
+                            €{ocrLog.cost_estimate_eur.toFixed(4)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Alertas de Confidence */}
+                      {ocrLog.extracted_data?.confidence_notes && ocrLog.extracted_data.confidence_notes.length > 0 && (
+                        <OCRConfidenceAlert
+                          notes={ocrLog.extracted_data.confidence_notes}
+                          mergeNotes={ocrLog.extracted_data.merge_notes || []}
+                          engine={ocrLog.engine || 'manual_review'}
+                          confidence={ocrLog.confidence || 0}
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <Separator />
                 {invoice.document_path && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold">Documento PDF</h3>

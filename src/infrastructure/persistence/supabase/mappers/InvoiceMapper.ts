@@ -16,6 +16,9 @@ export class InvoiceMapper {
    * Convierte factura recibida de DB a dominio
    */
   static receivedToDomain(dbInvoice: any): InvoiceReceived {
+    // Extraer datos de OCR del JOIN (si existe)
+    const ocrLog = dbInvoice.ocr_processing_log?.[0] || null;
+    
     return {
       id: dbInvoice.id,
       supplierId: dbInvoice.supplier_id,
@@ -31,6 +34,18 @@ export class InvoiceMapper {
       entryId: dbInvoice.entry_id,
       paymentTransactionId: dbInvoice.payment_transaction_id,
       ocrConfidence: dbInvoice.ocr_confidence,
+      // Campos OCR desde ocr_processing_log
+      ocrEngine: ocrLog?.engine || null,
+      ocrMsOpenai: ocrLog?.ms_openai || null,
+      ocrMsMindee: ocrLog?.ms_mindee || null,
+      ocrPages: ocrLog?.pages || null,
+      ocrTokensIn: ocrLog?.tokens_in || null,
+      ocrTokensOut: ocrLog?.tokens_out || null,
+      ocrCostEstimateEur: ocrLog?.cost_estimate_eur || null,
+      ocrProcessingTimeMs: ocrLog?.processing_time_ms || null,
+      ocrConfidenceNotes: ocrLog?.extracted_data?.confidence_notes || null,
+      ocrMergeNotes: ocrLog?.extracted_data?.merge_notes || null,
+      ocrExtractedData: ocrLog?.extracted_data || null,
       notes: dbInvoice.notes,
       approvalStatus: dbInvoice.approval_status,
       requiresManagerApproval: dbInvoice.requires_manager_approval,

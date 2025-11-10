@@ -79,13 +79,25 @@ export class InvoiceQueries {
     // Obtener total de registros
     const { count } = await baseQuery;
 
-    // Query paginada con joins
+    // Query paginada con joins (incluye ocr_processing_log)
     let query = supabase
       .from("invoices_received")
       .select(`
         *,
         supplier:suppliers(id, name, tax_id),
-        approvals:invoice_approvals(*)
+        approvals:invoice_approvals(*),
+        ocr_processing_log(
+          engine,
+          ms_openai,
+          ms_mindee,
+          pages,
+          tokens_in,
+          tokens_out,
+          cost_estimate_eur,
+          processing_time_ms,
+          confidence,
+          extracted_data
+        )
       `)
       .order("invoice_date", { ascending: false })
       .range(start, end);

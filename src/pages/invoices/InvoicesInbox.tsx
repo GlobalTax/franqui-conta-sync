@@ -30,9 +30,18 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   accounting_entry_id: inv.entry_id,
   iva_percentage: inv.tax_total && inv.subtotal ? ((inv.tax_total / inv.subtotal) * 100) : undefined,
   document_type: 'invoice' as const,
-  ocr_engine: inv.ocr_confidence ? 'openai' as const : null,
+  // Campos OCR reales
+  ocr_engine: inv.ocr_engine,
   ocr_confidence: inv.ocr_confidence,
-  processing_time_ms: undefined,
+  processing_time_ms: inv.ocr_processing_time_ms,
+  ocr_ms_openai: inv.ocr_ms_openai,
+  ocr_ms_mindee: inv.ocr_ms_mindee,
+  ocr_pages: inv.ocr_pages,
+  ocr_tokens_in: inv.ocr_tokens_in,
+  ocr_tokens_out: inv.ocr_tokens_out,
+  ocr_cost_estimate_eur: inv.ocr_cost_estimate_eur,
+  ocr_confidence_notes: inv.ocr_confidence_notes,
+  ocr_merge_notes: inv.ocr_merge_notes,
 });
 
 export default function InvoicesInbox() {

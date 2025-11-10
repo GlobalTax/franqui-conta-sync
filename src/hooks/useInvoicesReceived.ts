@@ -21,6 +21,18 @@ export interface InvoiceReceived {
   entry_id: string | null;
   payment_transaction_id: string | null;
   ocr_confidence: number | null;
+  // Campos OCR detallados
+  ocr_engine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  ocr_ms_openai: number | null;
+  ocr_ms_mindee: number | null;
+  ocr_pages: number | null;
+  ocr_tokens_in: number | null;
+  ocr_tokens_out: number | null;
+  ocr_cost_estimate_eur: number | null;
+  ocr_processing_time_ms: number | null;
+  ocr_confidence_notes: string[] | null;
+  ocr_merge_notes: string[] | null;
+  ocr_extracted_data: any | null;
   notes: string | null;
   approval_status: string;
   requires_manager_approval: boolean;
@@ -76,6 +88,7 @@ export const useInvoicesReceived = (filters?: {
   date_from?: string;
   date_to?: string;
   searchTerm?: string;
+  ocr_engine?: string;
   page?: number;
   limit?: number;
 }) => {
@@ -116,6 +129,18 @@ export const useInvoicesReceived = (filters?: {
         entry_id: inv.entryId,
         payment_transaction_id: inv.paymentTransactionId,
         ocr_confidence: inv.ocrConfidence,
+        // Campos OCR
+        ocr_engine: inv.ocrEngine,
+        ocr_ms_openai: inv.ocrMsOpenai,
+        ocr_ms_mindee: inv.ocrMsMindee,
+        ocr_pages: inv.ocrPages,
+        ocr_tokens_in: inv.ocrTokensIn,
+        ocr_tokens_out: inv.ocrTokensOut,
+        ocr_cost_estimate_eur: inv.ocrCostEstimateEur,
+        ocr_processing_time_ms: inv.ocrProcessingTimeMs,
+        ocr_confidence_notes: inv.ocrConfidenceNotes,
+        ocr_merge_notes: inv.ocrMergeNotes,
+        ocr_extracted_data: inv.ocrExtractedData,
         notes: inv.notes,
         approval_status: inv.approvalStatus,
         requires_manager_approval: inv.requiresManagerApproval,
@@ -142,21 +167,31 @@ export const useInvoicesReceived = (filters?: {
         })),
       })) as InvoiceReceived[];
 
-      // Filtrado client-side adicional (supplier.name, supplier.tax_id)
+      // Filtrado client-side adicional (supplier.name, supplier.tax_id, ocr_engine)
+      let filteredInvoices = mappedInvoices;
+
       if (filters?.searchTerm) {
         const q = filters.searchTerm.toLowerCase().trim();
-        const filtered = mappedInvoices.filter(inv => {
+        filteredInvoices = filteredInvoices.filter(inv => {
           const matchesNumber = inv.invoice_number?.toLowerCase().includes(q);
           const matchesSupplier = inv.supplier?.name?.toLowerCase().includes(q);
           const matchesTaxId = inv.supplier?.tax_id?.toLowerCase().includes(q);
           return matchesNumber || matchesSupplier || matchesTaxId;
         });
-        
+      }
+
+      // Filtrar por motor OCR
+      if (filters?.ocr_engine && filters.ocr_engine !== 'all') {
+        filteredInvoices = filteredInvoices.filter(inv => inv.ocr_engine === filters.ocr_engine);
+      }
+
+      // Si hay filtros client-side activos, devolver datos filtrados
+      if (filters?.searchTerm || (filters?.ocr_engine && filters.ocr_engine !== 'all')) {
         return {
-          data: filtered,
-          total: filtered.length,
+          data: filteredInvoices,
+          total: filteredInvoices.length,
           page: result.page,
-          pageCount: Math.ceil(filtered.length / queryFilters.limit),
+          pageCount: Math.ceil(filteredInvoices.length / queryFilters.limit),
         };
       }
 

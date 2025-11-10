@@ -25,9 +25,16 @@ export default function CompactOrgSelector() {
     reset,
   } = useGlobalFilters();
 
-  const { data: franchisees } = useFranchisees();
+  const { data: franchisees, isLoading: loadingFranchisees } = useFranchisees();
   const { data: companies } = useCompanies(selectedFranchiseeId || undefined);
   const { data: centres } = useCentres(selectedFranchiseeId || undefined);
+
+  // Debug logging
+  console.log('🔍 CompactOrgSelector:', {
+    franchisees: franchisees?.length,
+    selectedFranchiseeId,
+    loadingFranchisees,
+  });
 
   const filteredCentres = selectedCompanyId
     ? centres?.filter(c => c.company_id === selectedCompanyId)
@@ -68,7 +75,7 @@ export default function CompactOrgSelector() {
           <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-4" align="start">
+      <PopoverContent className="w-[400px] p-4 bg-card z-50" align="start">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-medium text-sm">Filtros de Organización</h4>
@@ -88,22 +95,31 @@ export default function CompactOrgSelector() {
           {/* Franchisee */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Franquiciado</Label>
-            <Select
-              value={selectedFranchiseeId || ""}
-              onValueChange={(value) => setFranchiseeId(value === "all" ? null : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar franquiciado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los franquiciados</SelectItem>
-                {franchisees?.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {loadingFranchisees ? (
+              <div className="text-sm text-muted-foreground p-2">Cargando...</div>
+            ) : !franchisees || franchisees.length === 0 ? (
+              <div className="text-sm text-destructive p-2">No hay franquiciados disponibles</div>
+            ) : (
+              <Select
+                value={selectedFranchiseeId || ""}
+                onValueChange={(value) => {
+                  console.log('Franchisee changed:', value);
+                  setFranchiseeId(value === "all" ? null : value);
+                }}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Seleccionar franquiciado" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">Todos los franquiciados</SelectItem>
+                  {franchisees.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Company */}
@@ -114,10 +130,10 @@ export default function CompactOrgSelector() {
               onValueChange={(value) => setCompanyId(value === "all" ? null : value)}
               disabled={!selectedFranchiseeId}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Todas las sociedades" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-50">
                 <SelectItem value="all">Todas las sociedades</SelectItem>
                 {companies?.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
@@ -136,10 +152,10 @@ export default function CompactOrgSelector() {
               onValueChange={(value) => setCentreCode(value === "all" ? null : value)}
               disabled={!selectedFranchiseeId}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Todos los centros" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-50">
                 <SelectItem value="all">Todos los centros</SelectItem>
                 {filteredCentres?.map((c) => (
                   <SelectItem key={c.id} value={c.codigo}>

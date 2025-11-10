@@ -15,6 +15,7 @@ interface InboxFiltersBarProps {
     date_from?: string;
     date_to?: string;
     searchTerm?: string;
+    ocr_engine?: string;
   };
   onChange: (filters: any) => void;
   activeCount: number;
@@ -53,6 +54,24 @@ export function InboxFiltersBar({ filters, onChange, activeCount }: InboxFilters
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="processing">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                Procesando
+              </span>
+            </SelectItem>
+            <SelectItem value="needs_review">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-400" />
+                Requiere Revisión
+              </span>
+            </SelectItem>
+            <SelectItem value="processed_ok">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400" />
+                Procesado
+              </span>
+            </SelectItem>
             <SelectItem value="draft">
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-gray-400" />
@@ -87,6 +106,43 @@ export function InboxFiltersBar({ filters, onChange, activeCount }: InboxFilters
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-400" />
                 Rechazado
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Motor OCR */}
+        <Select
+          value={filters.ocr_engine || 'all'}
+          onValueChange={(value) => onChange({ ...filters, ocr_engine: value === 'all' ? undefined : value })}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Motor OCR" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los motores</SelectItem>
+            <SelectItem value="openai">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+                OpenAI Vision
+              </span>
+            </SelectItem>
+            <SelectItem value="mindee">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                Mindee
+              </span>
+            </SelectItem>
+            <SelectItem value="merged">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                Fusionado
+              </span>
+            </SelectItem>
+            <SelectItem value="manual_review">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gray-400" />
+                Manual
               </span>
             </SelectItem>
           </SelectContent>

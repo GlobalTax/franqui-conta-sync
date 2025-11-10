@@ -29,6 +29,10 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   centro_code: inv.centro_code,
   accounting_entry_id: inv.entry_id,
   iva_percentage: inv.tax_total && inv.subtotal ? ((inv.tax_total / inv.subtotal) * 100) : undefined,
+  document_type: 'invoice' as const,
+  ocr_engine: inv.ocr_confidence ? 'openai' as const : null,
+  ocr_confidence: inv.ocr_confidence,
+  processing_time_ms: undefined,
 });
 
 export default function InvoicesInbox() {
@@ -41,6 +45,7 @@ export default function InvoicesInbox() {
     date_from?: string;
     date_to?: string;
     searchTerm?: string;
+    ocr_engine?: string;
   }>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);

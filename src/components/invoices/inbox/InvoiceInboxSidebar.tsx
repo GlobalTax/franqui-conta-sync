@@ -18,6 +18,8 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { CentreSelector } from '@/components/accounting/CentreSelector';
 import { toast } from 'sonner';
+import { OCREngineBadge } from './OCREngineBadge';
+import { OCRConfidenceAlert } from './OCRConfidenceAlert';
 
 interface InvoiceInboxSidebarProps {
   invoiceId: string | null;
@@ -104,6 +106,17 @@ export function InvoiceInboxSidebar({
                 />
               </div>
             </SheetHeader>
+
+            {/* OCR Metrics & Alerts */}
+            {invoice.ocr_confidence && (
+              <div className="px-6 py-4 bg-muted/30 border-y">
+                <OCRConfidenceAlert
+                  notes={[]}
+                  engine="openai"
+                  confidence={invoice.ocr_confidence}
+                />
+              </div>
+            )}
 
             {/* Content */}
             <ScrollArea className="flex-1">

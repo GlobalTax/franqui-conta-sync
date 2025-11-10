@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { format } from 'date-fns';
-import { CheckCircle, XCircle, Eye, ChevronDown } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -19,6 +18,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OCREngineBadge } from './OCREngineBadge';
+import { DocumentTypeBadge } from './DocumentTypeBadge';
 
 interface Invoice {
   id: string;
@@ -32,6 +33,10 @@ interface Invoice {
   centro_code?: string;
   accounting_entry_id?: string;
   iva_percentage?: number;
+  document_type?: 'invoice' | 'receipt' | 'delivery_note' | 'credit_note';
+  ocr_engine?: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  ocr_confidence?: number;
+  processing_time_ms?: number;
 }
 
 interface InvoiceInboxTableProps {
@@ -97,12 +102,13 @@ export function InvoiceInboxTable({
                 </TooltipContent>
               </Tooltip>
             </TableHead>
+            <TableHead className="w-[100px]">Tipo</TableHead>
             <TableHead>Proveedor</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead className="text-right">Importe</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Centro</TableHead>
-            <TableHead>IVA</TableHead>
+            <TableHead className="w-[120px]">Motor OCR</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -121,6 +127,9 @@ export function InvoiceInboxTable({
                   }
                   aria-label={`Seleccionar factura de ${invoice.supplier_name}`}
                 />
+              </TableCell>
+              <TableCell>
+                <DocumentTypeBadge type={invoice.document_type || 'invoice'} />
               </TableCell>
               <TableCell>
                 <Tooltip>
@@ -163,9 +172,11 @@ export function InvoiceInboxTable({
                 </span>
               </TableCell>
               <TableCell>
-                <span className="text-sm">
-                  {invoice.iva_percentage ? `${invoice.iva_percentage}%` : '-'}
-                </span>
+                <OCREngineBadge
+                  engine={invoice.ocr_engine}
+                  confidence={invoice.ocr_confidence}
+                  processingTime={invoice.processing_time_ms}
+                />
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InvoicePDFUploader } from "@/components/invoices/InvoicePDFUploader";
+import { InvoicePDFPreview } from "@/components/invoices/InvoicePDFPreview";
 import { InvoiceLineItemsTable } from "@/components/invoices/InvoiceLineItemsTable";
 import { SupplierSelector } from "@/components/invoices/SupplierSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -238,6 +239,37 @@ export default function NewInvoiceWithOCR() {
               </div>
             )}
           </Card>
+
+          {/* PDF Preview */}
+          {documentPath && (
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Vista Previa
+                </h3>
+                
+                {status === 'processing' && (
+                  <Badge variant="secondary" className="animate-pulse">
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Procesando...
+                  </Badge>
+                )}
+                
+                {status === 'review' && (
+                  <Badge className="bg-success text-white border-success">
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    Procesado
+                  </Badge>
+                )}
+              </div>
+              
+              <InvoicePDFPreview 
+                documentPath={documentPath}
+                className="h-[600px] rounded-lg overflow-hidden border border-border"
+              />
+            </Card>
+          )}
 
           {status === 'processing' && (
             <Card className="p-6">

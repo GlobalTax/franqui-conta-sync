@@ -18,7 +18,7 @@ import { InvoiceReviewSheet } from "@/components/invoices/InvoiceReviewSheet";
 import { ApprovalStatusBadge } from "@/components/invoices/ApprovalStatusBadge";
 import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Search, Plus, Building2, Eye } from "lucide-react";
+import { Search, Plus, Building2, Eye, FileStack } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
@@ -107,10 +107,16 @@ export default function InvoicesReceivedOCR() {
         title="Facturas Recibidas con OCR"
         subtitle="Revisa y aprueba facturas procesadas automáticamente"
         actions={
-          <Button onClick={() => navigate("/invoices/new-received")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva con OCR
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/invoices/bulk-upload")} variant="outline">
+              <FileStack className="w-4 h-4 mr-2" />
+              Carga masiva
+            </Button>
+            <Button onClick={() => navigate("/invoices/new-received")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva con OCR
+            </Button>
+          </div>
         }
       />
 

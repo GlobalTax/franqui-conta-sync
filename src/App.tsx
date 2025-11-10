@@ -33,6 +33,7 @@ const NewAccountingEntry = lazy(() => import("@/pages/accounting/NewAccountingEn
 const CompanyConfiguration = lazy(() => import("@/pages/admin/CompanyConfiguration"));
 const NewInvoiceReceived = lazy(() => import("@/pages/invoices/NewInvoiceReceived"));
 const InvoicesReceivedOCR = lazy(() => import("@/pages/invoices/InvoicesReceivedOCR"));
+const BulkInvoiceUpload = lazy(() => import("@/pages/invoices/BulkInvoiceUpload"));
 const InvoicesIssued = lazy(() => import("@/pages/invoices/InvoicesIssued"));
 const NewInvoiceIssued = lazy(() => import("@/pages/invoices/NewInvoiceIssued"));
 const InvoiceDetail = lazy(() => import("@/pages/invoices/InvoiceDetail"));
@@ -129,6 +130,7 @@ const App = () => {
             <Route path="/invoices/inbox" element={<InvoicesInbox />} />
             <Route path="/invoices/new-received" element={<InvoiceDetailEditor />} />
             <Route path="/invoices/received/:id/edit" element={<InvoiceDetailEditor />} />
+            <Route path="/invoices/bulk-upload" element={<BulkInvoiceUpload />} />
             <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<Navigate to="/invoices/new-received" replace />} />

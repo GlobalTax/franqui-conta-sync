@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { orchestrateOCR } from "./orchestrator.ts";
+import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
   .split(",")
@@ -168,13 +169,55 @@ serve(async (req) => {
 
     const processingTime = Date.now() - startTime;
 
+    // ============================================================================
+    // ⭐ OCR LOGGER - Tracking de costes, tiempos y tokens
+    // ============================================================================
+    
+    const pages = extractPageCount(base64Content, fileData.type || 'application/pdf');
+    const tokens = extractTokensFromOpenAI(orchestratorResult.raw_responses.openai?.raw_response);
+
+    const costBreakdown = calculateOCRCost({
+      engine: orchestratorResult.ocr_engine as 'openai' | 'mindee' | 'merged',
+      pages,
+      tokens_in: tokens.tokens_in,
+      tokens_out: tokens.tokens_out
+    });
+
+    // Insertar log en BD
+    const ocrLogData = {
+      document_path: documentPath,
+      ocr_provider: 'multi-engine', // Legacy field
+      engine: orchestratorResult.ocr_engine,
+      ms_openai: orchestratorResult.timing.ms_openai,
+      ms_mindee: orchestratorResult.timing.ms_mindee,
+      pages,
+      tokens_in: tokens.tokens_in,
+      tokens_out: tokens.tokens_out,
+      cost_estimate_eur: costBreakdown.cost_total_eur,
+      raw_response: orchestratorResult.raw_responses,
+      extracted_data: orchestratorResult.final_invoice_json,
+      confidence: orchestratorResult.confidence_final / 100,
+      processing_time_ms: processingTime
+    };
+
+    const { error: logError } = await supabase
+      .from('ocr_processing_log')
+      .insert(ocrLogData);
+
+    if (logError) {
+      console.error('[Main] ❌ Failed to insert OCR log:', logError);
+      // No bloqueamos el flujo si falla el logging
+    } else {
+      console.log(`[Main] ✅ OCR logged - Engine: ${orchestratorResult.ocr_engine}, Cost: €${costBreakdown.cost_total_eur}, Time: ${processingTime}ms`);
+    }
+
     console.log(`OCR completed in ${processingTime}ms`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        ocr_engine: orchestratorResult.ocr_engine, // ⭐ Nuevo
-        merge_notes: orchestratorResult.merge_notes, // ⭐ Nuevo
+        ocr_engine: orchestratorResult.ocr_engine,
+        merge_notes: orchestratorResult.merge_notes,
         data: normalizedResponse.normalized,
         normalized: normalizedResponse.normalized,
         validation: normalizedResponse.validation,
@@ -183,7 +226,16 @@ serve(async (req) => {
         entry_validation: entryValidation,
         confidence: orchestratorResult.confidence_final / 100,
         rawText: '',
-        processingTimeMs: processingTime
+        processingTimeMs: processingTime,
+        ocr_metrics: {
+          pages,
+          tokens_in: tokens.tokens_in,
+          tokens_out: tokens.tokens_out,
+          cost_estimate_eur: costBreakdown.cost_total_eur,
+          ms_openai: orchestratorResult.timing.ms_openai,
+          ms_mindee: orchestratorResult.timing.ms_mindee,
+          processing_time_ms: processingTime
+        }
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

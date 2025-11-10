@@ -58,6 +58,10 @@ export interface OrchestratorResult {
     openai?: OpenAIExtractionResult;
     mindee?: MindeeExtractionResult;
   };
+  timing: {
+    ms_openai: number;
+    ms_mindee: number;
+  };
 }
 
 const CONFIDENCE_THRESHOLD = 70;
@@ -107,6 +111,10 @@ export async function orchestrateOCR(
   
   const mergeNotes: string[] = [];
   const rawResponses: any = {};
+  
+  // ⭐ Tracking de tiempos por motor
+  let ms_openai = 0;
+  let ms_mindee = 0;
 
   console.log('[Orchestrator] Starting OCR orchestration...');
 
@@ -118,9 +126,12 @@ export async function orchestrateOCR(
   
   let openaiResult: OpenAIExtractionResult | null = null;
   try {
+    const startOpenAI = Date.now();
     openaiResult = await extractWithOpenAI(base64Content, mimeType);
+    ms_openai = Date.now() - startOpenAI;
+    
     rawResponses.openai = openaiResult;
-    console.log(`[Orchestrator] OpenAI confidence: ${openaiResult.confidence_score}%`);
+    console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
   } catch (error) {
     console.error('[Orchestrator] OpenAI Vision failed:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -149,7 +160,8 @@ export async function orchestrateOCR(
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
       merge_notes: mergeNotes,
-      raw_responses: rawResponses
+      raw_responses: rawResponses,
+      timing: { ms_openai, ms_mindee }
     };
   }
 
@@ -166,9 +178,12 @@ export async function orchestrateOCR(
 
   let mindeeResult: MindeeExtractionResult | null = null;
   try {
+    const startMindee = Date.now();
     mindeeResult = await extractWithMindee(base64Content);
+    ms_mindee = Date.now() - startMindee;
+    
     rawResponses.mindee = mindeeResult;
-    console.log(`[Orchestrator] Mindee confidence: ${mindeeResult.confidence_score}%`);
+    console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
   } catch (error) {
     console.error('[Orchestrator] Mindee failed:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -189,7 +204,8 @@ export async function orchestrateOCR(
       final_invoice_json: merged.data,
       confidence_final: merged.confidence,
       merge_notes: mergeNotes,
-      raw_responses: rawResponses
+      raw_responses: rawResponses,
+      timing: { ms_openai, ms_mindee }
     };
   }
 
@@ -205,7 +221,8 @@ export async function orchestrateOCR(
       final_invoice_json: mindeeResult.data,
       confidence_final: mindeeResult.confidence_score,
       merge_notes: mergeNotes,
-      raw_responses: rawResponses
+      raw_responses: rawResponses,
+      timing: { ms_openai, ms_mindee }
     };
   }
 
@@ -217,7 +234,8 @@ export async function orchestrateOCR(
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
       merge_notes: mergeNotes,
-      raw_responses: rawResponses
+      raw_responses: rawResponses,
+      timing: { ms_openai, ms_mindee }
     };
   }
 
@@ -233,7 +251,8 @@ export async function orchestrateOCR(
     final_invoice_json: openaiResult?.data || mindeeResult?.data || createEmptyInvoiceData(),
     confidence_final: 0,
     merge_notes: mergeNotes,
-    raw_responses: rawResponses
+    raw_responses: rawResponses,
+    timing: { ms_openai, ms_mindee }
   };
 }
 

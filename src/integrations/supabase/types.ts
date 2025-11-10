@@ -2702,41 +2702,62 @@ export type Database = {
       ocr_processing_log: {
         Row: {
           confidence: number | null
+          cost_estimate_eur: number | null
           created_at: string
           created_by: string | null
           document_path: string
+          engine: string | null
           extracted_data: Json | null
           id: string
           invoice_id: string | null
+          ms_mindee: number | null
+          ms_openai: number | null
           ocr_provider: string
+          pages: number | null
           processing_time_ms: number | null
           raw_response: Json | null
+          tokens_in: number | null
+          tokens_out: number | null
           user_corrections: Json | null
         }
         Insert: {
           confidence?: number | null
+          cost_estimate_eur?: number | null
           created_at?: string
           created_by?: string | null
           document_path: string
+          engine?: string | null
           extracted_data?: Json | null
           id?: string
           invoice_id?: string | null
+          ms_mindee?: number | null
+          ms_openai?: number | null
           ocr_provider?: string
+          pages?: number | null
           processing_time_ms?: number | null
           raw_response?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
           user_corrections?: Json | null
         }
         Update: {
           confidence?: number | null
+          cost_estimate_eur?: number | null
           created_at?: string
           created_by?: string | null
           document_path?: string
+          engine?: string | null
           extracted_data?: Json | null
           id?: string
           invoice_id?: string | null
+          ms_mindee?: number | null
+          ms_openai?: number | null
           ocr_provider?: string
+          pages?: number | null
           processing_time_ms?: number | null
           raw_response?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
           user_corrections?: Json | null
         }
         Relationships: [

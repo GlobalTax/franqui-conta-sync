@@ -272,6 +272,7 @@ const Layout = () => {
               <div className="space-y-0.5">
                 <NavLink
                   to="/admin"
+                  end
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group relative"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >

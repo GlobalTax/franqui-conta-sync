@@ -204,6 +204,7 @@ const Layout = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  end
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >
@@ -229,6 +230,7 @@ const Layout = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  end
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group ${
                     item.highlight ? 'bg-primary/5 border border-primary/20' : ''
                   }`}
@@ -253,6 +255,7 @@ const Layout = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  end
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >
@@ -325,6 +328,7 @@ const Layout = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  end
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >
@@ -356,6 +360,7 @@ const Layout = () => {
                 </NavLink>
                 <NavLink
                   to="/admin/pl-rules"
+                  end
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >
@@ -364,6 +369,7 @@ const Layout = () => {
                 </NavLink>
                 <NavLink
                   to="/admin/demo-data"
+                  end
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >

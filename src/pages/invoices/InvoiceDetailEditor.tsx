@@ -47,7 +47,7 @@ import { validateAccountingBalance } from '@/lib/invoice-calculator';
 import { StripperBadge } from '@/components/invoices/StripperBadge';
 import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
 import { toast } from 'sonner';
-import { Scan, Loader2, FileText, Sparkles } from 'lucide-react';
+import { Scan, Loader2, FileText, Sparkles, Zap } from 'lucide-react';
 
 // Schema de validación
 const invoiceFormSchema = z.object({
@@ -576,37 +576,53 @@ export default function InvoiceDetailEditor() {
 
             {/* Botón OCR manual PROMINENTE si no se ha procesado */}
             {documentPath && !ocrProcessed && (
-              <Alert className="border-2 border-blue-600 bg-blue-50 shadow-lg">
-                <div className="flex flex-col items-center gap-3 p-4">
-                  <div className="flex items-center gap-2 text-blue-900 font-semibold">
-                    <Scan className="h-5 w-5" />
-                    <span>PDF listo para procesar</span>
+              <Card className="border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg animate-pulse">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="p-3 rounded-full bg-primary/20 animate-bounce">
+                      <Sparkles className="h-8 w-8 text-primary" />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
+                        <Zap className="h-5 w-5 text-primary" />
+                        PDF Listo para Digitalizar
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Extrae automáticamente todos los datos de la factura
+                      </p>
+                    </div>
+                    
+                    <Button
+                      onClick={handleProcessOCR}
+                      disabled={processOCR.isPending}
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                      {processOCR.isPending ? (
+                        <>
+                          <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                          Procesando con IA...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-3 h-6 w-6 animate-pulse" />
+                          🚀 Digitalizar con OCR
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
+                      <Sparkles className="h-4 w-4 flex-shrink-0 text-primary mt-0.5" />
+                      <p>
+                        <strong>Auto-procesamiento:</strong> El OCR se ejecuta automáticamente al subir un PDF. 
+                        Si no ocurre, usa este botón.
+                      </p>
+                    </div>
                   </div>
-                  
-                  <Button
-                    onClick={handleProcessOCR}
-                    disabled={processOCR.isPending}
-                    size="lg"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
-                  >
-                    {processOCR.isPending ? (
-                      <>
-                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                        Procesando OCR...
-                      </>
-                    ) : (
-                      <>
-                        <Scan className="mr-3 h-6 w-6" />
-                        🚀 Procesar con OCR
-                      </>
-                    )}
-                  </Button>
-                  
-                  <p className="text-xs text-blue-700 text-center">
-                    El OCR debería ejecutarse automáticamente. Si no ocurre, usa este botón.
-                  </p>
-                </div>
-              </Alert>
+                </CardContent>
+              </Card>
             )}
 
             {/* Indicador OCR Engine */}

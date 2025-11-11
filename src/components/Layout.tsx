@@ -28,7 +28,10 @@ import {
   Inbox,
   Search,
   Trash2,
+  Sparkles,
+  Upload,
 } from "lucide-react";
+import { OCRFloatingButton } from "@/components/layout/OCRFloatingButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -104,6 +107,8 @@ const Layout = () => {
   ];
 
   const digitizationItems = [
+    { icon: Sparkles, label: "Nueva Factura OCR", path: "/invoices/new-received", highlight: true },
+    { icon: Upload, label: "Carga Masiva", path: "/invoices/bulk-upload", highlight: true },
     { icon: Inbox, label: "Inbox OCR", path: "/digitalizacion/inbox" },
     { icon: Search, label: "OCR Depura", path: "/digitalizacion/depura" },
     { icon: Trash2, label: "Papelera", path: "/digitalizacion/papelera" },
@@ -211,19 +216,29 @@ const Layout = () => {
 
           {/* Digitalización Section */}
           <div>
-            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
-              Digitalización
-            </h3>
+            <div className="flex items-center justify-between mb-2 px-2">
+              <h3 className="text-xs font-medium text-muted-foreground">
+                Digitalización OCR
+              </h3>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                AI
+              </Badge>
+            </div>
             <div className="space-y-0.5">
               {digitizationItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group ${
+                    item.highlight ? 'bg-primary/5 border border-primary/20' : ''
+                  }`}
                   activeClassName="bg-primary/10 text-primary font-medium"
                 >
-                  <item.icon className="h-4 w-4" strokeWidth={2} />
-                  <span className="text-sm">{item.label}</span>
+                  <item.icon className={`h-4 w-4 ${item.highlight ? 'text-primary' : ''}`} strokeWidth={2} />
+                  <span className={`text-sm ${item.highlight ? 'font-medium' : ''}`}>{item.label}</span>
+                  {item.highlight && (
+                    <Sparkles className="h-3 w-3 ml-auto text-primary animate-pulse" />
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -389,6 +404,9 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Action Button */}
+      <OCRFloatingButton />
     </div>
   );
 };

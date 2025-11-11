@@ -7,6 +7,7 @@ import { SalesByChannelChart } from "@/components/dashboard/SalesByChannelChart"
 import { TreasuryCard } from "@/components/dashboard/TreasuryCard";
 import { IncidentsCard } from "@/components/dashboard/IncidentsCard";
 import { IVASummaryChart } from "@/components/dashboard/IVASummaryChart";
+import { OCRQuickAccessCard } from "@/components/invoices/OCRQuickAccessCard";
 
 const Dashboard = () => {
   const { selectedView } = useView();
@@ -58,6 +59,9 @@ const Dashboard = () => {
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Acceso Rápido OCR */}
+        <OCRQuickAccessCard />
+
         {/* KPIs Principales */}
         <div className="grid gap-6 md:grid-cols-3">
           <KPICard 

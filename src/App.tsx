@@ -54,6 +54,7 @@ const StyleGuide = lazy(() => import("@/pages/examples/StyleGuide"));
 const APLearningDashboard = lazy(() => import("@/pages/settings/APLearningDashboard"));
 const OCRMetrics = lazy(() => import("@/pages/analytics/OCRMetrics"));
 const OCRCacheMetrics = lazy(() => import("@/pages/analytics/OCRCacheMetrics"));
+const SaltEdgeConnections = lazy(() => import("@/pages/treasury/SaltEdgeConnections"));
 
 /**
  * React Query Configuration
@@ -141,6 +142,7 @@ const App = () => {
               <Route path="/banks" element={<Banks />} />
               <Route path="/reconciliation" element={<Reconciliation />} />
               <Route path="/treasury/reconciliation" element={<BankReconciliation />} />
+              <Route path="/treasury/salt-edge-connections" element={<SaltEdgeConnections />} />
               <Route path="/journal" element={<JournalEntries />} />
               <Route path="/accounts" element={<ChartOfAccounts />} />
               <Route path="/pnl" element={<ProfitAndLoss />} />

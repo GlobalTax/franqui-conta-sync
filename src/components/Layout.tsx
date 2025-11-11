@@ -90,6 +90,7 @@ const Layout = () => {
     { icon: Building2, label: "Proveedores", path: "/proveedores" },
     { icon: CreditCard, label: "Bancos", path: "/banks" },
     { icon: GitCompare, label: "Conciliación", path: "/treasury/reconciliation" },
+    { icon: Landmark, label: "Conexiones Bancarias", path: "/treasury/salt-edge-connections" },
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },

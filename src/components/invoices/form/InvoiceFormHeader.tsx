@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCentres } from '@/hooks/useCentres';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
+import { useOrganization } from '@/hooks/useOrganization';
 
 interface InvoiceFormHeaderProps {
   control: Control<any>;
@@ -41,6 +42,10 @@ export function InvoiceFormHeader({
   processingTimeMs
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
+  const { currentMembership } = useOrganization();
+
+  // Determinar si el usuario tiene un centro fijo (no admin y tiene restaurante asignado)
+  const hasFixedCentre = currentMembership?.restaurant && currentMembership.role !== 'admin';
 
   return (
     <div className="space-y-4">
@@ -166,38 +171,51 @@ export function InvoiceFormHeader({
 </div>
 
           {/* Centro */}
-          <FormField
-            control={control}
-            name="centro_code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="uppercase text-xs font-bold text-primary">
-                  Centro / Actividad *
-                </FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar centro" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {centresLoading ? (
-                      <SelectItem value="loading" disabled>Cargando...</SelectItem>
-                    ) : centres.length === 0 ? (
-                      <SelectItem value="empty" disabled>No hay centros disponibles</SelectItem>
-                    ) : (
-                      centres.map((centre) => (
-                        <SelectItem key={centre.codigo} value={centre.codigo}>
-                          {centre.codigo} - {centre.nombre}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {hasFixedCentre ? (
+            <div className="space-y-2">
+              <FormLabel className="uppercase text-xs font-bold text-primary">
+                Centro / Actividad *
+              </FormLabel>
+              <div className="flex items-center gap-2 h-9 px-3 py-2 bg-muted rounded-md border border-border">
+                <span className="text-sm text-foreground">
+                  {currentMembership.restaurant.codigo} - {currentMembership.restaurant.nombre}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <FormField
+              control={control}
+              name="centro_code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="uppercase text-xs font-bold text-primary">
+                    Centro / Actividad *
+                  </FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar centro" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {centresLoading ? (
+                        <SelectItem value="loading" disabled>Cargando...</SelectItem>
+                      ) : centres.length === 0 ? (
+                        <SelectItem value="empty" disabled>No hay centros disponibles</SelectItem>
+                      ) : (
+                        centres.map((centre) => (
+                          <SelectItem key={centre.codigo} value={centre.codigo}>
+                            {centre.codigo} - {centre.nombre}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ import { NormalizationChangesAlert } from '@/components/invoices/NormalizationCh
 import { EntryPreview } from '@/components/invoices/EntryPreview';
 import { useInvoicesReceived, useCreateInvoiceReceived, useUpdateInvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
+import { useOrganization } from '@/hooks/useOrganization';
 import { 
   useProcessInvoiceOCR, 
   useLogOCRProcessing,
@@ -127,6 +128,7 @@ export default function InvoiceDetailEditor() {
   const createInvoice = useCreateInvoiceReceived();
   const updateInvoice = useUpdateInvoiceReceived();
   const invoiceActions = useInvoiceActions();
+  const { currentMembership } = useOrganization();
 
   // Encontrar la factura si estamos en modo edición
   const invoice = useMemo(() => {
@@ -140,7 +142,7 @@ export default function InvoiceDetailEditor() {
     defaultValues: {
       invoice_type: 'received',
       currency: 'EUR',
-      centro_code: '',
+      centro_code: currentMembership?.restaurant?.codigo || '',
       supplier_id: '',
       invoice_number: '',
       invoice_date: new Date().toISOString().split('T')[0],
@@ -168,6 +170,16 @@ export default function InvoiceDetailEditor() {
   useEffect(() => {
     localStorage.setItem('preferred_ocr_engine', selectedEngine);
   }, [selectedEngine]);
+
+  // Auto-seleccionar centro cuando el usuario tiene un restaurante asignado
+  useEffect(() => {
+    if (!isEditMode && currentMembership?.restaurant?.codigo) {
+      const currentCentro = form.getValues('centro_code');
+      if (!currentCentro || currentCentro === '') {
+        form.setValue('centro_code', currentMembership.restaurant.codigo);
+      }
+    }
+  }, [currentMembership, isEditMode, form]);
 
   // Cargar datos de la factura en modo edición
   useEffect(() => {

@@ -97,7 +97,7 @@ export async function extractWithMindee(
   
   const formData = new FormData();
   formData.append('file', blob, 'invoice.pdf');
-  formData.append('model_id', 'mindee/invoices'); // Modelo de facturas de Mindee
+  formData.append('model_id', 'urn:mindee:invoices'); // V2: URN format para modelo predefinido
   formData.append('polygon', 'true');
   formData.append('confidence', 'true');
 

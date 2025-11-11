@@ -241,10 +241,15 @@ serve(async (req) => {
         const arrayBuffer = await fileData.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         
-        // Call Mindee with webhook and no waiting
+        // ✨ Call Mindee with webhook and advanced parameters
         const mindeeResult = await extractWithMindee(bytes, {
           webhook_url: webhookUrl,
-          wait_for_result: false
+          wait_for_result: false,
+          // Advanced inference parameters
+          rag: true,              // Boost accuracy with RAG
+          confidence: true,       // Enhanced confidence scores
+          raw_text: true,         // Extract full text for better line items
+          polygon: false          // Disabled by default (not used yet)
         });
         
         // mindeeResult should contain { job_id: string }

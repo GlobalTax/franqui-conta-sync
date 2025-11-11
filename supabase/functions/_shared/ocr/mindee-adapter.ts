@@ -75,26 +75,54 @@ export function adaptMindeeV4ToStandard(
     amount: item.total_amount?.value ?? 0
   }));
 
-  // Calcular confidence global usando valores destructurados
+  // ✅ MEJORA: Use API-provided confidence scores
   const confidenceByField: Record<string, number> = {
-    'issuer.vat_id': confSupplierVAT * 100,
-    'issuer.name': confSupplierName * 100,
-    'invoice_number': confInvoiceNumber * 100,
-    'issue_date': confInvoiceDate * 100,
-    'totals.total': confTotalAmount * 100
+    'issuer.vat_id': (confSupplierVAT ?? 0) * 100,
+    'issuer.name': (confSupplierName ?? 0) * 100,
+    'invoice_number': (confInvoiceNumber ?? 0) * 100,
+    'issue_date': (confInvoiceDate ?? 0) * 100,
+    'totals.total': (confTotalAmount ?? 0) * 100
   };
 
-  const criticalFields = [
-    confSupplierVAT,
-    confInvoiceNumber,
-    confInvoiceDate,
-    confTotalAmount
-  ];
+  // ✅ MEJORA: Usar document-level confidence si está disponible (con RAG/confidence params)
+  const documentConfidence = prediction.confidence?.value ?? null;
 
-  const avgConfidence = criticalFields.reduce((sum, c) => sum + c, 0) / criticalFields.length;
-  const confidenceScore = Math.round(avgConfidence * 100);
+  let confidenceScore: number;
+  if (documentConfidence !== null) {
+    // API proporcionó confidence global (más preciso)
+    confidenceScore = Math.round(documentConfidence * 100);
+    console.log(`[Mindee Adapter] Using API document confidence: ${confidenceScore}%`);
+  } else {
+    // Fallback: calcular promedio de campos críticos
+    const criticalFields = [
+      confSupplierVAT ?? 0,
+      confInvoiceNumber ?? 0,
+      confInvoiceDate ?? 0,
+      confTotalAmount ?? 0
+    ].filter(c => c > 0); // Ignorar campos sin confidence
+    
+    const avgConfidence = criticalFields.length > 0 
+      ? criticalFields.reduce((sum, c) => sum + c, 0) / criticalFields.length 
+      : 0;
+    confidenceScore = Math.round(avgConfidence * 100);
+    console.log(`[Mindee Adapter] Calculated confidence: ${confidenceScore}%`);
+  }
 
-  console.log(`[Mindee Adapter] Confidence: ${confidenceScore}%`);
+  // ✅ NUEVO: Extraer raw_text si está disponible
+  const rawText = prediction.raw_text || mindeeResponse.document?.inference?.raw_text || null;
+  if (rawText) {
+    console.log(`[Mindee Adapter] Raw text extracted: ${rawText.length} chars`);
+  }
+
+  // ✅ NUEVO: Extraer polygons si están disponibles (para UI futura)
+  const hasPolygons = !!(
+    prediction.supplier_name?.polygon ||
+    prediction.invoice_number?.polygon ||
+    prediction.invoice_date?.polygon
+  );
+  if (hasPolygons) {
+    console.log(`[Mindee Adapter] Polygons available for bounding boxes`);
+  }
 
   // Construir resultado final
   const data: EnhancedInvoiceData = {
@@ -133,6 +161,9 @@ export function adaptMindeeV4ToStandard(
     data,
     confidence_score: confidenceScore,
     confidence_by_field: confidenceByField,
-    raw_response: mindeeResponse
+    raw_response: mindeeResponse,
+    // ✨ NUEVO: Campos adicionales para advanced features
+    raw_text: rawText,
+    has_polygons: hasPolygons
   };
 }

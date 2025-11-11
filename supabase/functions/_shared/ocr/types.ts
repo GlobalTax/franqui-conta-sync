@@ -87,6 +87,9 @@ export interface MindeeExtractionResult {
     duration_ms: number;
     api_latency: number;
   };
+  // ✨ Advanced Mindee V4 features
+  raw_text?: string | null;
+  has_polygons?: boolean;
 }
 
 export interface OrchestratorResult {

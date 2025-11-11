@@ -36,6 +36,12 @@ const POLL_INTERVAL_MS = 3_000; // 3s between polls
 export interface MindeeOptions {
   webhook_url?: string;
   wait_for_result?: boolean; // If false and job enqueued, returns { job_id }
+  
+  // ✨ Advanced inference parameters (Mindee V4)
+  rag?: boolean;              // Boost accuracy with Retrieval-Augmented Generation
+  raw_text?: boolean;         // Extract full text content as strings
+  polygon?: boolean;          // Calculate bounding box polygons for all fields
+  confidence?: boolean;       // Enhanced confidence scores (default: true)
 }
 
 // When wait_for_result is explicitly false, may return job_id
@@ -106,17 +112,38 @@ export async function extractWithMindee(
     console.log('[Mindee V4] Webhook URL added to request');
   }
 
-  // ✅ API V4 endpoint (sync prediction)
-  const apiUrl = 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict';
+  // ✅ Build API URL with query parameters
+  const baseUrl = 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict';
+  const apiUrl = new URL(baseUrl);
+
+  // ✨ Add advanced inference parameters
+  if (options?.rag) {
+    apiUrl.searchParams.set('rag', 'true');
+    console.log('[Mindee V4] RAG enabled for enhanced accuracy');
+  }
+  if (options?.raw_text) {
+    apiUrl.searchParams.set('raw_text', 'true');
+    console.log('[Mindee V4] Raw text extraction enabled');
+  }
+  if (options?.polygon) {
+    apiUrl.searchParams.set('polygon', 'true');
+    console.log('[Mindee V4] Polygon bounding boxes enabled');
+  }
+  // Confidence is true by default in Mindee V4, but can be disabled
+  if (options?.confidence === false) {
+    apiUrl.searchParams.set('confidence', 'false');
+  } else {
+    apiUrl.searchParams.set('confidence', 'true');
+  }
   
-  console.log('[Mindee V4] Calling API:', apiUrl);
+  console.log('[Mindee V4] Calling API:', apiUrl.toString());
   
   // ✅ FASE 2: Timeout with AbortController
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), MINDEE_TIMEOUT_MS);
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(apiUrl.toString(), {
       method: 'POST',
       headers: {
         'Authorization': `Token ${sanitizedKey}`

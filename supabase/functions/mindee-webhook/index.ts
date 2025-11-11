@@ -204,6 +204,10 @@ serve(async (req) => {
     const ocrData = adapted.data;
     const confidence = adapted.confidence_score;
     
+    // ✨ NUEVO: Extract advanced fields
+    const rawText = (adapted as any).raw_text || null;
+    const hasPolygons = (adapted as any).has_polygons || false;
+    
     // 9. Determine status based on confidence
     let finalStatus = 'needs_review';
     if (confidence >= 85) {
@@ -231,7 +235,14 @@ serve(async (req) => {
         tax_total: (ocrData.totals.vat_10 || 0) + (ocrData.totals.vat_21 || 0),
         total: ocrData.totals.total || 0,
         currency: ocrData.totals.currency,
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        // ✨ NUEVO: Guardar advanced features en metadata
+        metadata: {
+          raw_text_chars: rawText ? rawText.length : 0,
+          has_polygons: hasPolygons,
+          rag_enabled: true,
+          ocr_version: 'mindee_v4_advanced'
+        }
       })
       .eq('id', invoice.id);
     

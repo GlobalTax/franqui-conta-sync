@@ -115,6 +115,8 @@ serve(async (req) => {
       throw new Error('documentPath and centroCode are required');
     }
 
+    console.log('[Init] 🔧 invoice-ocr v2.0 - Mindee optimizado con Blob directo');
+    console.log('[Init] ✅ MINDEE_API_KEY configured:', !!Deno.env.get('MINDEE_API_KEY'));
     console.log(`Processing OCR for document: ${documentPath} with engine: ${engine}`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

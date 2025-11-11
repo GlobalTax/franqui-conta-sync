@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router-dom";
 
 interface InvoicesTabsProps {
   children: {
@@ -11,8 +12,15 @@ interface InvoicesTabsProps {
 }
 
 export const InvoicesTabs = ({ children }: InvoicesTabsProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'recibidas';
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
+
   return (
-    <Tabs defaultValue="recibidas" className="w-full">
+    <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
       <div className="bg-background border-b">
         <TabsList className="border-b w-full justify-start rounded-none bg-transparent p-0 h-10 px-6">
           <TabsTrigger 

@@ -771,21 +771,19 @@ export default function InvoiceDetailEditor() {
             <FormProvider {...form}>
               <form onSubmit={(e) => e.preventDefault()}>
                 <div className="space-y-6">
-                  <InvoiceFormHeader
-                    control={form.control}
-                    isEditMode={isEditMode}
-                    ocrEngine={ocrEngine}
-                    ocrConfidence={ocrConfidence}
-                    onProcessOCR={() => handleProcessOCR()}
-                    isProcessing={processOCR.isPending}
-                    hasDocument={!!documentPath}
-                    onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    selectedEngine={selectedEngine}
-                    onEngineChange={setSelectedEngine}
-                    onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
-                    orchestratorLogs={orchestratorLogs}
-                    processingTimeMs={processingTimeMs}
-                  />
+                <InvoiceFormHeader
+                  control={form.control}
+                  isEditMode={isEditMode}
+                  ocrEngine={ocrEngine}
+                  ocrConfidence={ocrConfidence}
+                  onProcessOCR={() => handleProcessOCR()}
+                  isProcessing={processOCR.isPending}
+                  hasDocument={!!documentPath}
+                  onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
+                  orchestratorLogs={orchestratorLogs}
+                  processingTimeMs={processingTimeMs}
+                />
 
                   {/* Badge Stripper + Ver cambios */}
                   {stripperState.isNormalized && stripperState.appliedAt && (

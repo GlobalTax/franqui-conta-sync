@@ -249,12 +249,12 @@ export default function InvoicesInbox() {
     setReprocessDialogOpen(true);
   };
 
-  const handleReprocessConfirm = async (engine: 'openai' | 'mindee') => {
+  const handleReprocessConfirm = async () => {
     if (!invoiceToReprocess) return;
     
     await invoiceActions.reprocessOCR({
       invoiceId: invoiceToReprocess,
-      engine
+      engine: 'mindee'
     });
     
     setReprocessDialogOpen(false);

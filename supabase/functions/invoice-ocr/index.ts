@@ -108,13 +108,13 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { documentPath, centroCode } = await req.json();
+    const { documentPath, centroCode, engine = 'openai' } = await req.json();
     
     if (!documentPath || !centroCode) {
       throw new Error('documentPath and centroCode are required');
     }
 
-    console.log(`Processing OCR for document: ${documentPath}`);
+    console.log(`Processing OCR for document: ${documentPath} with engine: ${engine}`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -196,11 +196,12 @@ serve(async (req) => {
     console.log('[Cache] ❌ MISS - Executing OCR...');
     console.log('Starting OCR orchestration...');
 
-    // Usar Orchestrator para OCR
+    // Usar Orchestrator para OCR con motor seleccionado
     const orchestratorResult = await orchestrateOCR(
       base64Content,
       fileData.type || 'application/pdf',
-      centroCode
+      centroCode,
+      engine as 'openai' | 'mindee' | 'merged'
     );
 
     console.log(`[Main] OCR Engine used: ${orchestratorResult.ocr_engine}`);

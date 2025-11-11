@@ -174,7 +174,8 @@ function createEmptyInvoiceData(): EnhancedInvoiceData {
 export async function orchestrateOCR(
   base64Content: string,
   mimeType: string,
-  centroCode: string
+  centroCode: string,
+  preferredEngine: 'openai' | 'mindee' | 'merged' = 'openai'
 ): Promise<OrchestratorResult> {
   
   const mergeNotes: string[] = [];
@@ -184,26 +185,68 @@ export async function orchestrateOCR(
   let ms_openai = 0;
   let ms_mindee = 0;
 
-  console.log('[Orchestrator] Starting OCR orchestration...');
+  console.log(`[Orchestrator] Starting OCR orchestration with preferred engine: ${preferredEngine}...`);
 
   // ========================================================================
-  // PASO 1: Intentar con OpenAI Vision (motor primario)
+  // PASO 1: Ejecutar motores según preferencia del usuario
   // ========================================================================
   
-  console.log('[Orchestrator] Attempting OpenAI Vision (primary engine)...');
-  
   let openaiResult: OpenAIExtractionResult | null = null;
-  try {
-    const startOpenAI = Date.now();
-    openaiResult = await extractWithOpenAI(base64Content, mimeType);
-    ms_openai = Date.now() - startOpenAI;
+  let mindeeResult: MindeeExtractionResult | null = null;
+
+  // Si el usuario prefiere Mindee explícitamente, usamos solo Mindee
+  if (preferredEngine === 'mindee') {
+    console.log('[Orchestrator] Using Mindee as preferred engine...');
     
-    rawResponses.openai = openaiResult;
-    console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
-  } catch (error) {
-    console.error('[Orchestrator] OpenAI Vision failed:', error);
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
+    try {
+      const startMindee = Date.now();
+      mindeeResult = await extractWithMindee(base64Content);
+      ms_mindee = Date.now() - startMindee;
+      
+      rawResponses.mindee = mindeeResult;
+      console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
+      
+      // Si Mindee tuvo éxito y es el preferido, devolvemos directamente
+      const status: InvoiceStatus = mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
+        ? 'processed_ok'
+        : 'needs_review';
+        
+      console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
+      mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
+      mergeNotes.push(`📊 Estado final: ${status}`);
+      
+      return {
+        ocr_engine: 'mindee',
+        final_invoice_json: mindeeResult.data,
+        confidence_final: mindeeResult.confidence_score,
+        status,
+        merge_notes: mergeNotes,
+        raw_responses: rawResponses,
+        timing: { ms_openai, ms_mindee }
+      };
+    } catch (error) {
+      console.error('[Orchestrator] Mindee failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      mergeNotes.push(`⚠️ Mindee falló: ${errorMsg}`);
+    }
+  }
+
+  // Si el usuario prefiere OpenAI o merged, intentamos OpenAI
+  if (preferredEngine === 'openai' || preferredEngine === 'merged') {
+    console.log('[Orchestrator] Attempting OpenAI Vision...');
+    
+    try {
+      const startOpenAI = Date.now();
+      openaiResult = await extractWithOpenAI(base64Content, mimeType);
+      ms_openai = Date.now() - startOpenAI;
+      
+      rawResponses.openai = openaiResult;
+      console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
+    } catch (error) {
+      console.error('[Orchestrator] OpenAI Vision failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
+    }
   }
 
   // ========================================================================
@@ -257,25 +300,27 @@ export async function orchestrateOCR(
   // PASO 3: Fallback a Mindee
   // ========================================================================
   
-  console.log('[Orchestrator] OpenAI insufficient, trying Mindee (fallback)...');
+  console.log('[Orchestrator] OpenAI insufficient or not preferred, trying Mindee (fallback)...');
   mergeNotes.push(
     openaiResult 
       ? `⚠️ OpenAI confianza baja (${openaiResult.confidence_score}%) o campos críticos faltantes`
       : '⚠️ OpenAI no disponible'
   );
 
-  let mindeeResult: MindeeExtractionResult | null = null;
-  try {
-    const startMindee = Date.now();
-    mindeeResult = await extractWithMindee(base64Content);
-    ms_mindee = Date.now() - startMindee;
-    
-    rawResponses.mindee = mindeeResult;
-    console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
-  } catch (error) {
-    console.error('[Orchestrator] Mindee failed:', error);
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    mergeNotes.push(`⚠️ Mindee también falló: ${errorMsg}`);
+  // Solo ejecutar Mindee si aún no se ha ejecutado (por preferredEngine)
+  if (!mindeeResult) {
+    try {
+      const startMindee = Date.now();
+      mindeeResult = await extractWithMindee(base64Content);
+      ms_mindee = Date.now() - startMindee;
+      
+      rawResponses.mindee = mindeeResult;
+      console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
+    } catch (error) {
+      console.error('[Orchestrator] Mindee failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      mergeNotes.push(`⚠️ Mindee también falló: ${errorMsg}`);
+    }
   }
 
   // ========================================================================

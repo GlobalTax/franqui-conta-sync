@@ -5,6 +5,7 @@ import { toast } from "sonner";
 interface OCRRequest {
   documentPath: string;
   centroCode: string;
+  engine?: 'openai' | 'mindee';
 }
 
 export interface OCRInvoiceData {
@@ -135,9 +136,9 @@ export interface OCRValidationResult {
 
 export const useProcessInvoiceOCR = () => {
   return useMutation({
-    mutationFn: async ({ documentPath, centroCode }: OCRRequest): Promise<OCRResponse> => {
+    mutationFn: async ({ documentPath, centroCode, engine = 'openai' }: OCRRequest): Promise<OCRResponse> => {
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-        body: { documentPath, centroCode }
+        body: { documentPath, centroCode, engine }
       });
 
       if (error) {

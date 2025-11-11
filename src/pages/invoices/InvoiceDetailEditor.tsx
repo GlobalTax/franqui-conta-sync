@@ -113,6 +113,7 @@ export default function InvoiceDetailEditor() {
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
+  const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('openai');
 
   // OCR Hooks
   const processOCR = useProcessInvoiceOCR();
@@ -153,6 +154,18 @@ export default function InvoiceDetailEditor() {
 
   // Stripper Hook (después de form)
   const { stripperState, applyStripper, getFieldChange } = useInvoiceStripper(form);
+
+  // Persistir preferencia de motor OCR en localStorage
+  useEffect(() => {
+    const savedEngine = localStorage.getItem('preferred_ocr_engine') as 'openai' | 'mindee' | null;
+    if (savedEngine) {
+      setSelectedEngine(savedEngine);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('preferred_ocr_engine', selectedEngine);
+  }, [selectedEngine]);
 
   // Cargar datos de la factura en modo edición
   useEffect(() => {
@@ -216,11 +229,14 @@ export default function InvoiceDetailEditor() {
   }, [form.watch()]);
 
   // Handler de procesamiento OCR
-  // Handler de procesamiento OCR (acepta path/centro opcionales para evitar carreras)
-  const handleProcessOCR = async (opts?: { path?: string; centro?: string }) => {
+  // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
+  const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' | 'mindee' }) => {
     const effectivePath = opts?.path ?? documentPath;
+    const engine = opts?.engine ?? selectedEngine;
+    
     console.log('[OCR] Iniciando procesamiento OCR...');
     console.log('[OCR] documentPath (effective):', effectivePath);
+    console.log('[OCR] motor seleccionado:', engine);
     
     if (!effectivePath) {
       console.error('[OCR] No hay documentPath');
@@ -240,12 +256,13 @@ export default function InvoiceDetailEditor() {
       centroCode = 'temp';
     }
 
-    console.log('[OCR] Invocando edge function con:', { documentPath: effectivePath, centroCode });
+    console.log('[OCR] Invocando edge function con:', { documentPath: effectivePath, centroCode, engine });
 
     try {
       const result = await processOCR.mutateAsync({
         documentPath: effectivePath,
-        centroCode
+        centroCode,
+        engine
       });
       
       console.log('[OCR] Resultado recibido:', result);
@@ -308,10 +325,21 @@ export default function InvoiceDetailEditor() {
       toast.success("PDF subido correctamente");
       console.log('[Upload] Programando auto-trigger OCR en 300ms con path');
       setTimeout(() => {
-        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path');
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp' });
+        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path y motor', selectedEngine);
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: selectedEngine });
       }, 300);
     }
+  };
+
+  // Handler para reintentar con motor diferente
+  const handleRetryWithDifferentEngine = () => {
+    const newEngine = ocrEngine === 'openai' ? 'mindee' : 'openai';
+    console.log('[OCR] Reintentando con motor:', newEngine);
+    setSelectedEngine(newEngine);
+    toast.info(`Reprocesando con ${newEngine === 'openai' ? 'OpenAI Vision' : 'Mindee'}...`);
+    setTimeout(() => {
+      handleProcessOCR({ engine: newEngine });
+    }, 300);
   };
 
   // Handler para aceptar todas las sugerencias AP
@@ -675,6 +703,9 @@ export default function InvoiceDetailEditor() {
                     isProcessing={processOCR.isPending}
                     hasDocument={!!documentPath}
                     onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    selectedEngine={selectedEngine}
+                    onEngineChange={setSelectedEngine}
+                    onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
                   />
 
                   {/* Badge Stripper + Ver cambios */}

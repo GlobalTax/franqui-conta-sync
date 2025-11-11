@@ -18,7 +18,37 @@ accounting/
 
 ## 🎯 Uso
 
-### Mapeo de Cuentas AP
+### Mapeo de Cuentas AP + Validación de Posting
+
+```typescript
+import { mapAP, validatePosting } from '@/lib/accounting';
+
+const invoice = {
+  issuer: { name: 'MAKRO S.A.' },
+  lines: [{ description: 'Aceite oliva' }],
+  centre_id: 'M001',
+  totals: {
+    base_21: 100,
+    vat_21: 21,
+    total: 121
+  }
+};
+
+// Paso 1: Mapear cuentas
+const mapping = mapAP(invoice);
+
+// Paso 2: Validar asiento
+const validation = validatePosting(invoice, mapping);
+
+if (validation.ready_to_post) {
+  console.log('✅ Listo para posting');
+  console.log(validation.post_preview);
+} else {
+  console.log('❌ Issues:', validation.blocking_issues);
+}
+```
+
+### Solo Mapeo de Cuentas AP
 
 ```typescript
 import { mapAP } from '@/lib/accounting';

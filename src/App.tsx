@@ -124,7 +124,7 @@ const App = () => {
             <Route element={session ? <Layout /> : <Navigate to="/login" />}>
               <Route path="/" element={<Dashboard />} />
             <Route path="/invoices" element={<Invoices />} />
-            <Route path="/invoices/received" element={<Navigate to="/invoices?tab=recibidas" replace />} />
+            <Route path="/invoices/received" element={<Navigate to="/invoices/inbox" replace />} />
             <Route path="/invoices/issued" element={<Navigate to="/invoices?tab=emitidas" replace />} />
             <Route path="/digitalizacion/inbox" element={<InvoicesInbox />} />
             <Route path="/digitalizacion/depura" element={<InvoicesInbox />} />

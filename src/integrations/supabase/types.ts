@@ -3480,6 +3480,257 @@ export type Database = {
         }
         Relationships: []
       }
+      ponto_account_balances: {
+        Row: {
+          account_id: string
+          available: number | null
+          balance_date: string
+          created_at: string
+          current_balance: number | null
+          id: string
+          raw_json: Json | null
+        }
+        Insert: {
+          account_id: string
+          available?: number | null
+          balance_date: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          raw_json?: Json | null
+        }
+        Update: {
+          account_id?: string
+          available?: number | null
+          balance_date?: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          raw_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_account_balances_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ponto_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ponto_accounts: {
+        Row: {
+          account_type: string | null
+          connection_id: string
+          created_at: string
+          currency: string | null
+          holder: string | null
+          iban: string | null
+          id: string
+          name: string | null
+          raw_json: Json | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string | null
+          connection_id: string
+          created_at?: string
+          currency?: string | null
+          holder?: string | null
+          iban?: string | null
+          id: string
+          name?: string | null
+          raw_json?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string | null
+          connection_id?: string
+          created_at?: string
+          currency?: string | null
+          holder?: string | null
+          iban?: string | null
+          id?: string
+          name?: string | null
+          raw_json?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ponto_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ponto_connections: {
+        Row: {
+          access_token_enc: string
+          centro_code: string
+          consent_reference: string | null
+          created_at: string
+          id: string
+          institution_id: string
+          institution_name: string | null
+          refresh_token_enc: string | null
+          scope: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token_enc: string
+          centro_code: string
+          consent_reference?: string | null
+          created_at?: string
+          id?: string
+          institution_id: string
+          institution_name?: string | null
+          refresh_token_enc?: string | null
+          scope?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token_enc?: string
+          centro_code?: string
+          consent_reference?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string
+          institution_name?: string | null
+          refresh_token_enc?: string | null
+          scope?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_connections_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "ponto_connections_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      ponto_sync_log: {
+        Row: {
+          accounts_synced: number | null
+          completed_at: string | null
+          connection_id: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          started_at: string
+          status: string
+          sync_type: string
+          transactions_synced: number | null
+        }
+        Insert: {
+          accounts_synced?: number | null
+          completed_at?: string | null
+          connection_id: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          started_at?: string
+          status: string
+          sync_type: string
+          transactions_synced?: number | null
+        }
+        Update: {
+          accounts_synced?: number | null
+          completed_at?: string | null
+          connection_id?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          sync_type?: string
+          transactions_synced?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_sync_log_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ponto_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ponto_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          booking_date: string | null
+          category: string | null
+          counterparty: string | null
+          created_at: string
+          currency: string | null
+          hash_dedup: string | null
+          id: string
+          raw_json: Json | null
+          remittance_info: string | null
+          value_date: string | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          booking_date?: string | null
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          currency?: string | null
+          hash_dedup?: string | null
+          id: string
+          raw_json?: Json | null
+          remittance_info?: string | null
+          value_date?: string | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          booking_date?: string | null
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          currency?: string | null
+          hash_dedup?: string | null
+          id?: string
+          raw_json?: Json | null
+          remittance_info?: string | null
+          value_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ponto_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           apellidos: string | null

@@ -2888,6 +2888,44 @@ export type Database = {
           },
         ]
       }
+      ocr_logs: {
+        Row: {
+          created_at: string
+          engine: string | null
+          event: string
+          id: string
+          invoice_id: string | null
+          message: string
+          meta: Json | null
+        }
+        Insert: {
+          created_at?: string
+          engine?: string | null
+          event: string
+          id?: string
+          invoice_id?: string | null
+          message: string
+          meta?: Json | null
+        }
+        Update: {
+          created_at?: string
+          engine?: string | null
+          event?: string
+          id?: string
+          invoice_id?: string | null
+          message?: string
+          meta?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocr_processing_log: {
         Row: {
           confidence: number | null
@@ -2958,6 +2996,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ocr_runs: {
+        Row: {
+          cost_estimate_eur: number | null
+          created_at: string
+          duration_ms: number | null
+          engine: string
+          id: string
+          invoice_id: string
+          pages: number | null
+          payload: Json | null
+          tokens_in: number | null
+          tokens_out: number | null
+        }
+        Insert: {
+          cost_estimate_eur?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          engine: string
+          id?: string
+          invoice_id: string
+          pages?: number | null
+          payload?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Update: {
+          cost_estimate_eur?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          engine?: string
+          id?: string
+          invoice_id?: string
+          pages?: number | null
+          payload?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_runs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocr_webhook_deliveries: {
+        Row: {
+          body: Json | null
+          headers: Json | null
+          job_id: string
+          received_at: string
+          signature_valid: boolean | null
+          status: string
+        }
+        Insert: {
+          body?: Json | null
+          headers?: Json | null
+          job_id: string
+          received_at?: string
+          signature_valid?: boolean | null
+          status?: string
+        }
+        Update: {
+          body?: Json | null
+          headers?: Json | null
+          job_id?: string
+          received_at?: string
+          signature_valid?: boolean | null
+          status?: string
+        }
+        Relationships: []
       }
       organization_settings: {
         Row: {
@@ -4852,6 +4964,20 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ocr_metrics: {
+        Row: {
+          avg_confidence: number | null
+          avg_duration_ms: number | null
+          centro_code: string | null
+          error_count: number | null
+          invoice_status: string | null
+          pending_count: number | null
+          total_cost_eur: number | null
+          total_invoices: number | null
+          total_runs: number | null
+        }
+        Relationships: []
+      }
       v_pl_rubric_month: {
         Row: {
           amount: number | null
@@ -5633,6 +5759,16 @@ export type Database = {
       increment_cache_search_count: {
         Args: { p_cif: string }
         Returns: undefined
+      }
+      log_ocr_event: {
+        Args: {
+          p_engine: string
+          p_event: string
+          p_invoice_id: string
+          p_message: string
+          p_meta?: Json
+        }
+        Returns: string
       }
       post_diario_import: { Args: { p_import_run_id: string }; Returns: Json }
       post_iva_emitidas_import: {

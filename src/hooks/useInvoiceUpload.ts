@@ -129,24 +129,65 @@ export const useInvoiceUpload = () => {
 
       setProgress(80);
 
-      // 6. Trigger OCR processing usando el edge function existente
-      // El edge function espera: { documentPath, centroCode, engine? }
-      supabase.functions
-        .invoke('invoice-ocr', {
-          body: { 
-            documentPath: filePath,
-            centroCode
+      // 6. Trigger OCR processing using webhook mode (async)
+      // El edge function espera: { invoice_id, useWebhook: true }
+      const ocrResponse = await supabase.functions.invoke('invoice-ocr', {
+        body: { 
+          invoice_id: invoice.id,
+          useWebhook: true,
+          engine: 'mindee'
+        }
+      });
+
+      if (ocrResponse.error) {
+        console.error('Error al iniciar OCR:', ocrResponse.error);
+        toast.error('Factura guardada pero OCR falló. Reintente manualmente.');
+      } else if (ocrResponse.data?.status === 'processing') {
+        // Webhook mode: Poll for completion
+        const jobId = ocrResponse.data.job_id;
+        console.log('OCR job enqueued (async)', { jobId, invoiceId: invoice.id });
+        
+        toast.success('Factura subida. Procesando OCR en segundo plano...');
+        
+        // Poll invoice status every 2 seconds
+        const pollInterval = setInterval(async () => {
+          const { data: updatedInvoice, error: pollError } = await supabase
+            .from('invoices_received')
+            .select('status, ocr_engine')
+            .eq('id', invoice.id)
+            .single();
+          
+          if (pollError) {
+            console.error('Poll error:', pollError);
+            clearInterval(pollInterval);
+            return;
           }
-        })
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('Error al iniciar OCR:', error);
-            toast.error('Factura guardada pero OCR falló. Reintente manualmente.');
-          } else if (data?.success) {
-            console.log('OCR completed:', data);
-            toast.success(`OCR completado: ${data.ocr_engine} (${Math.round(data.confidence * 100)}% confianza)`);
+          
+          if (updatedInvoice?.status !== 'processing' && updatedInvoice?.status !== 'pending') {
+            clearInterval(pollInterval);
+            
+            if (updatedInvoice.status === 'processed_ok' || updatedInvoice.status === 'approved') {
+              toast.success(`✅ OCR completado: ${updatedInvoice.ocr_engine || 'mindee'}`);
+            } else if (updatedInvoice.status === 'needs_review') {
+              toast.warning('OCR completado pero requiere revisión manual');
+            } else {
+              toast.error('OCR falló. Revise la factura manualmente.');
+            }
           }
-        });
+        }, 2000);
+        
+        // Stop polling after 60 seconds (fallback)
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          console.log('Polling timeout reached');
+        }, 60000);
+      } else if (ocrResponse.data?.success) {
+        // Synchronous mode (fallback)
+        console.log('OCR completed (sync):', ocrResponse.data);
+        toast.success(
+          `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
+        );
+      }
 
       setProgress(100);
       setIsUploading(false);

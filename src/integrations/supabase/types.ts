@@ -2647,6 +2647,7 @@ export type Database = {
           id: string
           invoice_date: string
           invoice_number: string
+          job_id: string | null
           notes: string | null
           ocr_confidence: number | null
           ocr_confidence_notes: string[] | null
@@ -2693,6 +2694,7 @@ export type Database = {
           id?: string
           invoice_date: string
           invoice_number: string
+          job_id?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
@@ -2739,6 +2741,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number?: string
+          job_id?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null

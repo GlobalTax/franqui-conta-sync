@@ -82,8 +82,8 @@ serve(async (req) => {
     const rawBody = await req.text();
     console.log('[INIT] Raw body received (first 200 chars):', rawBody.substring(0, 200));
     
-    const body = JSON.parse(rawBody);
-    console.log('[INIT] Parsed body:', body);
+  const body = await req.json();
+  const { invoice_id, documentPath, centroCode, engine = 'openai', useWebhook = false } = body;
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -92,8 +92,6 @@ serve(async (req) => {
     // ============================================================================
     // MODE DETECTION: invoice_id (NEW) vs documentPath (EXISTING)
     // ============================================================================
-    
-    const { invoice_id, documentPath, centroCode, engine = 'openai' } = body;
     
     let actualDocumentPath: string;
     let actualCentroCode: string;
@@ -228,6 +226,72 @@ serve(async (req) => {
 
     console.log('[Cache] ❌ MISS - Executing OCR...');
     console.log('Starting OCR orchestration...');
+
+    // ============================================================================
+    // WEBHOOK MODE: Enqueue async job with Mindee and return immediately
+    // ============================================================================
+    if (useWebhook && engine === 'mindee' && invoiceId) {
+      console.log('[WEBHOOK] Mode enabled - Enqueueing async Mindee job');
+      
+      try {
+        const { extractWithMindee } = await import('../_shared/ocr/mindee-client.ts');
+        const webhookUrl = `${supabaseUrl}/functions/v1/mindee-webhook`;
+        
+        // Convert to Uint8Array for Mindee
+        const arrayBuffer = await fileData.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        // Call Mindee with webhook and no waiting
+        const mindeeResult = await extractWithMindee(bytes, {
+          webhook_url: webhookUrl,
+          wait_for_result: false
+        });
+        
+        // mindeeResult should contain { job_id: string }
+        const jobId = (mindeeResult as any).job_id;
+        
+        if (!jobId) {
+          console.warn('[WEBHOOK] No job_id returned, falling back to sync mode');
+        } else {
+          console.log('[WEBHOOK] Job enqueued successfully:', jobId);
+          
+          // Update invoice with job_id and processing status
+          await supabase
+            .from('invoices_received')
+            .update({
+              job_id: jobId,
+              status: 'processing',
+              ocr_engine: 'mindee'
+            })
+            .eq('id', invoiceId);
+          
+          const processingTime = Date.now() - startTime;
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              invoice_id: invoiceId,
+              job_id: jobId,
+              status: 'processing',
+              message: 'OCR job enqueued, webhook will update when complete',
+              estimated_time_s: 15,
+              processing_time_ms: processingTime
+            }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      } catch (webhookError: any) {
+        console.error('[WEBHOOK] Failed to enqueue job, falling back to sync:', webhookError);
+        // Continue to synchronous processing below
+      }
+    }
+
+    // ============================================================================
+    // SYNC MODE: Process OCR synchronously (existing flow)
+    // ============================================================================
 
     // Usar Orchestrator para OCR con motor seleccionado
     // ✅ FASE 1: Pasar Blob original para evitar conversión innecesaria

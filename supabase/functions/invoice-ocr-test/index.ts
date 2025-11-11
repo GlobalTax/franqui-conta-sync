@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildInvoicePath, ensurePdfPath, parseInvoicePath, hashFilePath } from "../_shared/storage-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +35,39 @@ serve(async (req) => {
     console.log('- OPENAI_API_KEY:', !!Deno.env.get('OPENAI_API_KEY'));
     console.log('- MINDEE_API_KEY:', !!Deno.env.get('MINDEE_API_KEY'));
     
+    // Test Storage Utilities
+    console.log('Testing storage utilities...');
+    const testPath = buildInvoicePath({
+      invoiceType: 'received',
+      centroCode: '1252',
+      originalName: 'factura_test.pdf',
+      date: new Date('2025-01-15')
+    });
+    console.log('Generated path:', testPath);
+    
+    const parsedMetadata = parseInvoicePath(testPath);
+    console.log('Parsed metadata:', JSON.stringify(parsedMetadata, null, 2));
+    
+    const pathHash = await hashFilePath(testPath);
+    console.log('Path hash (SHA-256):', pathHash);
+    
+    // Test validation
+    let pdfValidation = { success: false, error: null };
+    try {
+      ensurePdfPath(testPath);
+      pdfValidation.success = true;
+    } catch (e: any) {
+      pdfValidation.error = e.message;
+    }
+    
+    let invalidFileTest = { success: false, error: null };
+    try {
+      ensurePdfPath('invalid.jpg');
+    } catch (e: any) {
+      invalidFileTest.success = true; // Expected to fail
+      invalidFileTest.error = e.message;
+    }
+    
     const response = {
       success: true,
       message: '🎉 Test OK - Edge function funcionando correctamente',
@@ -44,6 +78,32 @@ serve(async (req) => {
         service_role_key: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
         openai_key: !!Deno.env.get('OPENAI_API_KEY'),
         mindee_key: !!Deno.env.get('MINDEE_API_KEY')
+      },
+      storage_utils_tests: {
+        buildInvoicePath: {
+          input: {
+            invoiceType: 'received',
+            centroCode: '1252',
+            originalName: 'factura_test.pdf',
+            date: '2025-01-15'
+          },
+          output: testPath,
+          format_valid: /^received\/1252\/2025\/01\/[a-f0-9-]{36}_factura_test\.pdf$/.test(testPath)
+        },
+        parseInvoicePath: {
+          input: testPath,
+          output: parsedMetadata,
+          metadata_valid: parsedMetadata?.centroCode === '1252' && parsedMetadata?.year === 2025
+        },
+        hashFilePath: {
+          input: testPath,
+          output: pathHash,
+          hash_valid: pathHash.length === 64 && /^[a-f0-9]+$/.test(pathHash)
+        },
+        ensurePdfPath: {
+          valid_pdf: pdfValidation,
+          invalid_file: invalidFileTest
+        }
       }
     };
     

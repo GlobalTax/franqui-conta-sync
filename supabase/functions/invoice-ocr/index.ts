@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { orchestrateOCR } from "./orchestrator.ts";
 import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
 import { createDocumentHash, createStructuralHash, extractQuickMetadata } from "../_shared/hash-utils.ts";
+import { validateAndNormalizePath, parseInvoicePath } from "../_shared/storage-utils.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
   .split(",")
@@ -131,6 +132,12 @@ serve(async (req) => {
     if (!documentPath || !centroCode) {
       throw new Error('documentPath and centroCode are required');
     }
+
+    // Validar y extraer metadata del path
+    console.log('[STORAGE] Validating document path...');
+    const { validPath, metadata } = validateAndNormalizePath(documentPath);
+    console.log('[STORAGE] Path validated:', validPath);
+    console.log('[STORAGE] Path metadata:', JSON.stringify(metadata, null, 2));
 
     console.log('[Init] 🔧 invoice-ocr v2.0 - Mindee optimizado con Blob directo');
     console.log('[Init] ✅ MINDEE_API_KEY configured:', !!Deno.env.get('MINDEE_API_KEY'));

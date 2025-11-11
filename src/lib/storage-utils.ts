@@ -17,8 +17,8 @@
  */
 export function buildInvoicePath(params: {
   invoiceType: 'received' | 'issued';
-  centroCode: string;
-  companyId?: string;  // Opcional para futura migración
+  centroCode?: string;     // Opcional - prioridad #1
+  companyId?: string;      // Opcional - prioridad #2
   originalName?: string;
   invoiceId?: string;
   date?: Date;
@@ -37,8 +37,8 @@ export function buildInvoicePath(params: {
     ? `invoice_${params.invoiceId}`
     : 'document';
   
-  // Usar centroCode por compatibilidad (o companyId si se migra)
-  const identifier = params.companyId || params.centroCode;
+  // Prioridad: centroCode > companyId > 'unassigned'
+  const identifier = params.centroCode || params.companyId || 'unassigned';
   
   return `${params.invoiceType}/${identifier}/${yyyy}/${mm}/${uid}_${baseName}.pdf`;
 }

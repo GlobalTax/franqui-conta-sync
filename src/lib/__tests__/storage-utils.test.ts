@@ -233,10 +233,49 @@ describe('storage-utils', () => {
 
         expect(result).toMatch(/^issued\//);
       });
-    });
   });
 
-  describe('ensurePdfPath', () => {
+  describe('fallback logic for centroCode/companyId', () => {
+    it('should prioritize centroCode when both provided', () => {
+      const path = buildInvoicePath({
+        invoiceType: 'received',
+        centroCode: '1252',
+        companyId: 'abc-123',
+        originalName: 'test.pdf'
+      });
+      expect(path).toMatch(/^received\/1252\/\d{4}\/\d{2}\//);
+    });
+
+    it('should fallback to companyId when no centroCode', () => {
+      const path = buildInvoicePath({
+        invoiceType: 'received',
+        companyId: 'abc-123',
+        originalName: 'test.pdf'
+      });
+      expect(path).toMatch(/^received\/abc-123\/\d{4}\/\d{2}\//);
+    });
+
+    it('should use "unassigned" when neither provided', () => {
+      const path = buildInvoicePath({
+        invoiceType: 'received',
+        originalName: 'test.pdf'
+      });
+      expect(path).toMatch(/^received\/unassigned\/\d{4}\/\d{2}\//);
+    });
+
+    it('should handle empty strings correctly', () => {
+      const path = buildInvoicePath({
+        invoiceType: 'received',
+        centroCode: '',
+        companyId: '',
+        originalName: 'test.pdf'
+      });
+      expect(path).toMatch(/^received\/unassigned\/\d{4}\/\d{2}\//);
+    });
+  });
+});
+
+describe('ensurePdfPath', () => {
     describe('paths válidos', () => {
       it('acepta path con extensión .pdf', () => {
         const path = 'received/1252/2025/01/test.pdf';

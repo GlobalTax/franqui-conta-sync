@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { buildInvoicePath } from '@/lib/storage-utils';
 
 export interface UploadFileItem {
   id: string;
@@ -164,9 +165,13 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         return;
       }
 
-      // Upload to storage: invoices/raw/ según especificaciones
-      const fileName = `${fileHash.substring(0, 12)}_${Date.now()}.pdf`;
-      const path = `invoices/raw/${centroCode}/${fileName}`;
+      // Upload to storage using standardized path structure
+      const path = buildInvoicePath({
+        invoiceType: 'received',
+        centroCode: centroCode,
+        originalName: fileItem.file.name,
+        date: new Date()
+      });
 
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id ? { ...f, progress: 30 } : f

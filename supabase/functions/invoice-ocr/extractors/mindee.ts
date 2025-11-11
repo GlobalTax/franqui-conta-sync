@@ -54,7 +54,7 @@ export interface MindeeExtractionResult {
 }
 
 export async function extractWithMindee(
-  base64Content: string
+  input: Blob | string // ✅ FASE 1: Aceptar Blob o base64
 ): Promise<MindeeExtractionResult> {
   
   const MINDEE_API_KEY = Deno.env.get('MINDEE_API_KEY');
@@ -64,38 +64,147 @@ export async function extractWithMindee(
 
   console.log('[Mindee] Starting extraction...');
 
-  // Convertir base64 a Blob
-  const binaryString = atob(base64Content);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  // ✅ FASE 1: Manejar ambos formatos (Blob directo o base64)
+  let blob: Blob;
+  let pageCount = 1; // Default
+  
+  if (input instanceof Blob) {
+    console.log('[Mindee] Using direct Blob input (no conversion needed)');
+    blob = input;
+    
+    // Estimar páginas basándose en tamaño del archivo (aproximado)
+    // 1 página PDF ~ 50-200KB, usamos 100KB como promedio
+    pageCount = Math.max(1, Math.round(blob.size / 102400));
+  } else {
+    console.log('[Mindee] Converting base64 to Blob (safe method with Deno stdlib)');
+    // ✅ FASE 1: Usar decode de Deno stdlib (NO atob manual) para evitar stack overflow
+    const { decode: b64decode } = await import("https://deno.land/std@0.168.0/encoding/base64.ts");
+    
+    try {
+      const bytes = b64decode(input);
+      // Crear Blob desde Uint8Array (slice crea una copia compatible)
+      blob = new Blob([bytes.slice()], { type: 'application/pdf' });
+      pageCount = Math.max(1, Math.round(blob.size / 102400));
+      console.log(`[Mindee] ✅ Base64 decoded successfully - ${blob.size} bytes, ~${pageCount} pages`);
+    } catch (decodeError: any) {
+      console.error('[Mindee] ❌ Base64 decode failed:', decodeError);
+      throw new Error(`Base64 decode failed: ${decodeError.message}`);
+    }
   }
-  const blob = new Blob([bytes], { type: 'application/pdf' });
 
   const formData = new FormData();
   formData.append('document', blob, 'invoice.pdf');
 
-  const response = await fetch(
-    'https://api.mindee.net/v1/products/mindee/invoices/v4/predict',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${MINDEE_API_KEY}`
-      },
-      body: formData
-    }
-  );
+  // ✅ FASE 2: Usar modo asíncrono para PDFs grandes (>10 páginas)
+  const useAsync = pageCount > 10;
+  const endpoint = useAsync
+    ? 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict_async'
+    : 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict';
+  
+  if (useAsync) {
+    console.log(`[Mindee] Using ASYNC mode for large PDF (~${pageCount} pages)`);
+  }
 
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Token ${MINDEE_API_KEY}`
+    },
+    body: formData
+  });
+
+  // ✅ FASE 2: Manejo robusto de errores según docs de Mindee
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[Mindee] API error:', response.status, errorText);
-    throw new Error(`Mindee API error: ${response.status}`);
+    let errorData: any = {};
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { message: errorText };
+    }
+    
+    console.error('[Mindee] API error:', response.status, errorData);
+    
+    // Errores específicos según documentación Mindee
+    if (response.status === 401) {
+      throw new Error('Mindee API key inválida o expirada. Verifica MINDEE_API_KEY.');
+    } else if (response.status === 429) {
+      throw new Error('Límite de tasa de Mindee alcanzado. Intenta de nuevo en unos minutos.');
+    } else if (response.status === 413) {
+      throw new Error('PDF demasiado grande para Mindee (máximo 25MB por archivo).');
+    } else if (response.status === 400) {
+      const msg = errorData.api_request?.error || errorData.message || 'Formato de documento inválido';
+      throw new Error(`Error de validación Mindee: ${msg}`);
+    } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+      throw new Error('Servicio Mindee temporalmente no disponible. Intenta más tarde.');
+    } else {
+      const msg = errorData.api_request?.error || errorData.message || `HTTP ${response.status}`;
+      throw new Error(`Error Mindee API: ${msg}`);
+    }
+  }
+  
+  // ✅ FASE 2: Manejar respuesta asíncrona si es necesario
+  if (useAsync) {
+    const jobResponse = await response.json();
+    const jobId = jobResponse.job?.id;
+    
+    if (!jobId) {
+      throw new Error('Mindee async job ID not received');
+    }
+    
+    console.log(`[Mindee] Async job created: ${jobId}, polling for results...`);
+    
+    // Polling con timeout de 60 segundos
+    const maxAttempts = 30; // 30 intentos x 2s = 60s max
+    let attempt = 0;
+    
+    while (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2s entre intentos
+      
+      const statusResponse = await fetch(
+        `https://api.mindee.net/v1/products/mindee/invoices/v4/documents/${jobId}`,
+        {
+          headers: { 'Authorization': `Token ${MINDEE_API_KEY}` }
+        }
+      );
+      
+      if (!statusResponse.ok) {
+        console.warn(`[Mindee] Polling attempt ${attempt + 1} failed`);
+        attempt++;
+        continue;
+      }
+      
+      const statusData = await statusResponse.json();
+      const status = statusData.job?.status;
+      
+      console.log(`[Mindee] Async job status: ${status} (attempt ${attempt + 1}/${maxAttempts})`);
+      
+      if (status === 'completed') {
+        console.log('[Mindee] ✅ Async extraction completed');
+        // Continuar con el procesamiento normal
+        const mindeeResult = statusData;
+        return processMindeeResponse(mindeeResult);
+      } else if (status === 'failed') {
+        throw new Error('Mindee async processing failed');
+      }
+      
+      attempt++;
+    }
+    
+    throw new Error('Mindee async processing timeout (60s exceeded)');
   }
 
   const mindeeResult = await response.json();
-  const prediction = mindeeResult.document.inference.prediction;
+  console.log('[Mindee] ✅ Extraction completed (sync mode)');
+  
+  return processMindeeResponse(mindeeResult);
+}
 
-  console.log('[Mindee] Extraction completed');
+// ============================================================================
+// PROCESAMIENTO DE RESPUESTA MINDEE (Extraído para reutilización)
+// ============================================================================
+function processMindeeResponse(mindeeResult: any): MindeeExtractionResult {
+  const prediction = mindeeResult.document.inference.prediction;
 
   // Mapear respuesta de Mindee a nuestro formato EnhancedInvoiceData
   const data: EnhancedInvoiceData = {

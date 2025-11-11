@@ -207,8 +207,10 @@ serve(async (req) => {
     console.log('Starting OCR orchestration...');
 
     // Usar Orchestrator para OCR con motor seleccionado
+    // ✅ FASE 1: Pasar Blob original para evitar conversión innecesaria
     const orchestratorResult = await orchestrateOCR(
       base64Content,
+      fileData, // ✅ Pasar Blob original para Mindee
       fileData.type || 'application/pdf',
       centroCode,
       engine as 'openai' | 'mindee' | 'merged'

@@ -190,6 +190,7 @@ function createEmptyInvoiceData(): EnhancedInvoiceData {
 
 export async function orchestrateOCR(
   base64Content: string,
+  fileBlob: Blob | null, // ✅ FASE 1: Aceptar Blob para Mindee
   mimeType: string,
   centroCode: string,
   preferredEngine: 'openai' | 'mindee' | 'merged' = 'openai'
@@ -249,7 +250,8 @@ export async function orchestrateOCR(
     try {
       markStart('mindee_extraction');
       const startMindee = Date.now();
-      mindeeResult = await extractWithMindee(base64Content);
+      // ✅ FASE 1: Usar Blob si está disponible, fallback a base64
+      mindeeResult = await extractWithMindee(fileBlob || base64Content);
       ms_mindee = Date.now() - startMindee;
       markEnd('mindee_extraction');
       
@@ -399,7 +401,8 @@ export async function orchestrateOCR(
     try {
       markStart('mindee_extraction');
       const startMindee = Date.now();
-      mindeeResult = await extractWithMindee(base64Content);
+      // ✅ FASE 1: Usar Blob si está disponible, fallback a base64
+      mindeeResult = await extractWithMindee(fileBlob || base64Content);
       ms_mindee = Date.now() - startMindee;
       markEnd('mindee_extraction');
       

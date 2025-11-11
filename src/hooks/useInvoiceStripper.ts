@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { stripAndNormalize, type NormalizationChange } from '@/lib/fiscal-normalizer';
+import { normalizeFull, type NormalizationChange } from '@/lib/fiscal';
 import { toast } from 'sonner';
 
 export interface StripperState {
@@ -45,7 +45,7 @@ export const useInvoiceStripper = (form: UseFormReturn<any>) => {
       line_items: []
     };
 
-    const { normalized, changes, warnings } = stripAndNormalize(dataToNormalize);
+    const { normalized, changes, warnings } = normalizeFull(dataToNormalize);
 
     // Aplicar valores normalizados al formulario
     if (normalized.supplier_tax_id) {

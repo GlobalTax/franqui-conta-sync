@@ -9,7 +9,7 @@ import { orchestrateOCR } from "../_shared/ocr/orchestrator.ts";
 import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
 import { createDocumentHash, createStructuralHash, extractQuickMetadata } from "../_shared/hash-utils.ts";
 import { validateAndNormalizePath, parseInvoicePath } from "../_shared/storage-utils.ts";
-import { fiscalNormalizerES } from "../_shared/fiscal/normalize-es.ts";
+import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import { apMapperEngine, matchSupplier } from "../_shared/ap/mapping-engine.ts";
 import { validateInvoiceEntry } from "../_shared/gl/validator.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
@@ -327,8 +327,8 @@ serve(async (req) => {
       taxId: orchestratorResult.final_invoice_json.issuer.vat_id
     }, actualCentroCode);
 
-    // 3. Fiscal Normalizer ES
-    const normalizedResponse = fiscalNormalizerES(orchestratorResult.final_invoice_json, '', COMPANY_VAT_IDS);
+    // 3. Fiscal Normalizer ES (usando nueva arquitectura modular)
+    const normalizedResponse = normalizeBackend(orchestratorResult.final_invoice_json, '', COMPANY_VAT_IDS);
     
     // 4. AP Mapping Engine
     const apMapping = await apMapperEngine(

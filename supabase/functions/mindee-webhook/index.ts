@@ -22,7 +22,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 import { adaptMindeeV4ToStandard } from '../_shared/ocr/mindee-adapter.ts';
-import { fiscalNormalizerES } from '../_shared/fiscal/normalize-es.ts';
+import { normalizeBackend } from '../_shared/fiscal/normalize-backend.ts';
 import { apMapperEngine, matchSupplier } from '../_shared/ap/mapping-engine.ts';
 import { validateInvoiceEntry } from '../_shared/gl/validator.ts';
 
@@ -264,8 +264,8 @@ serve(async (req) => {
           taxId: ocrData.issuer.vat_id
         }, invoice.centro_code);
         
-        // Normalize fiscal data (ES)
-        const normalizedResponse = fiscalNormalizerES(ocrData, '', COMPANY_VAT_IDS);
+        // Normalize fiscal data (ES) - usando nueva arquitectura modular
+        const normalizedResponse = normalizeBackend(ocrData, '', COMPANY_VAT_IDS);
         
         // Generate AP mapping suggestions
         const apMapping = await apMapperEngine(

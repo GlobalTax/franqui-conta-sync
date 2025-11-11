@@ -9,7 +9,9 @@ import { InvoiceLineItemsTable, type InvoiceLine } from '@/components/invoices/I
 import { useCreateInvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { normalizeLite } from '@/lib/fiscal';
+import { toast } from 'sonner';
 
 export default function NewInvoiceReceived() {
   const navigate = useNavigate();
@@ -22,6 +24,47 @@ export default function NewInvoiceReceived() {
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<InvoiceLine[]>([]);
+
+  const handleQuickValidate = () => {
+    const subtotalCalc = lines.reduce((sum, line) => {
+      const lineTotal = line.quantity * line.unit_price;
+      const discount = (lineTotal * line.discount_percentage) / 100;
+      return sum + (lineTotal - discount);
+    }, 0);
+
+    const taxCalc = lines.reduce((sum, line) => {
+      const lineTotal = line.quantity * line.unit_price;
+      const discount = (lineTotal * line.discount_percentage) / 100;
+      const subtotalAfterDiscount = lineTotal - discount;
+      return sum + (subtotalAfterDiscount * line.tax_rate) / 100;
+    }, 0);
+
+    const data = {
+      issuer: { vat_id: supplierId },
+      invoice_number: invoiceNumber,
+      issue_date: invoiceDate,
+      due_date: dueDate,
+      totals: {
+        total: subtotalCalc + taxCalc
+      }
+    };
+    
+    const { validation } = normalizeLite(data);
+    
+    if (validation.ok) {
+      toast.success('Validación correcta', {
+        description: validation.warnings.length > 0 
+          ? `${validation.warnings.length} advertencia${validation.warnings.length !== 1 ? 's' : ''}` 
+          : 'Sin errores detectados',
+        icon: <CheckCircle2 className="h-4 w-4" />
+      });
+    } else {
+      toast.error('Errores de validación', {
+        description: validation.errors.join(' • '),
+        icon: <AlertTriangle className="h-4 w-4" />
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,12 +145,33 @@ export default function NewInvoiceReceived() {
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Notas</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label>Notas</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Validación Rápida</span>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleQuickValidate}
+                  disabled={!supplierId || !invoiceNumber || lines.length === 0}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Validar Datos
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Valida NIF/CIF, totales y coherencia de datos antes de guardar
+            </CardContent>
+          </Card>
 
         <Card>
           <CardHeader>

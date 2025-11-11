@@ -2,7 +2,7 @@
 // POST INVOICE - Posting de facturas al diario contable (Edge Function)
 // ============================================================================
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 import type { JournalLine } from './core/validators.ts';
 import {
   validatePostingCommand,

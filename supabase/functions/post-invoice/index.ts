@@ -27,12 +27,14 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error) {
-    console.error('[post-invoice] Error:', error);
+  } catch (err) {
+    console.error('[post-invoice] Error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    const details = err instanceof Error ? (err.stack || String(err)) : JSON.stringify(err);
     return new Response(
       JSON.stringify({
-        error: error.message,
-        details: error.toString(),
+        error: message,
+        details,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

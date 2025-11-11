@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { orchestrateOCR } from "./orchestrator.ts";
 import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
@@ -129,9 +130,18 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError.message}`);
     }
 
-    // Convert to base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64Content = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Convert to base64 (safe method for large files)
+    let base64Content: string;
+    try {
+      const conversionStart = Date.now();
+      const arrayBuffer = await fileData.arrayBuffer();
+      base64Content = b64encode(arrayBuffer);
+      const conversionTime = Date.now() - conversionStart;
+      console.log(`[Base64] ✅ Conversion OK - ${arrayBuffer.byteLength} bytes in ${conversionTime}ms`);
+    } catch (conversionError: any) {
+      console.error('[Base64] ❌ Conversion failed:', conversionError);
+      throw new Error(`Base64 conversion failed: ${conversionError.message}`);
+    }
 
     // ⭐ CACHE SYSTEM: Calculate hashes and metadata
     const documentHash = await createDocumentHash(base64Content);

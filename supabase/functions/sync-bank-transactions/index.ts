@@ -75,7 +75,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error syncing transactions:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -184,13 +184,13 @@ async function syncConnection(supabase: any, connection: any) {
       .from('salt_edge_sync_log')
       .update({
         status: 'error',
-        error_message: error.message,
+        error_message: error instanceof Error ? error.message : 'Unknown error',
         completed_at: new Date().toISOString(),
         duration_ms: Date.now() - startTime,
       })
       .eq('connection_id', connection.id);
 
-    return { accountsSynced, transactionsSynced, error: error.message };
+    return { accountsSynced, transactionsSynced, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 

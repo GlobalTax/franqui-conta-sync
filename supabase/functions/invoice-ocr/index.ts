@@ -85,33 +85,69 @@ serve(async (req) => {
     const body = JSON.parse(rawBody);
     console.log('[INIT] Parsed body:', body);
     
-    const { documentPath, centroCode, engine = 'openai' } = body;
-    console.log('[INIT] documentPath:', documentPath);
-    console.log('[INIT] centroCode:', centroCode);
-    console.log('[INIT] engine:', engine);
-    
-    if (!documentPath || !centroCode) {
-      throw new Error('documentPath and centroCode are required');
-    }
-
-    // Validar y extraer metadata del path
-    console.log('[STORAGE] Validating document path...');
-    const { validPath, metadata } = validateAndNormalizePath(documentPath);
-    console.log('[STORAGE] Path validated:', validPath);
-    console.log('[STORAGE] Path metadata:', JSON.stringify(metadata, null, 2));
-
-    console.log('[Init] 🔧 invoice-ocr v2.0 - Mindee optimizado con Blob directo');
-    console.log('[Init] ✅ MINDEE_API_KEY configured:', !!Deno.env.get('MINDEE_API_KEY'));
-    console.log(`Processing OCR for document: ${documentPath} with engine: ${engine}`);
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // ============================================================================
+    // MODE DETECTION: invoice_id (NEW) vs documentPath (EXISTING)
+    // ============================================================================
+    
+    const { invoice_id, documentPath, centroCode, engine = 'openai' } = body;
+    
+    let actualDocumentPath: string;
+    let actualCentroCode: string;
+    let invoiceId: string | null = null;
+    
+    // MODE B: invoice_id provided (new simplified mode)
+    if (invoice_id) {
+      console.log('[MODE] Invoice ID mode detected:', invoice_id);
+      invoiceId = invoice_id;
+      
+      // Load invoice from DB
+      const { data: invoice, error: loadError } = await supabase
+        .from('invoices_received')
+        .select('id, file_path, centro_code')
+        .eq('id', invoice_id)
+        .single();
+      
+      if (loadError || !invoice) {
+        throw new Error(`Invoice not found: ${invoice_id}`);
+      }
+      
+      actualDocumentPath = invoice.file_path;
+      actualCentroCode = invoice.centro_code;
+      
+      console.log('[MODE] Loaded invoice:', { path: actualDocumentPath, centro: actualCentroCode });
+    }
+    // MODE A: documentPath + centroCode (existing mode)
+    else if (documentPath && centroCode) {
+      console.log('[MODE] Document path mode detected');
+      actualDocumentPath = documentPath;
+      actualCentroCode = centroCode;
+    }
+    else {
+      throw new Error('Either invoice_id OR (documentPath + centroCode) are required');
+    }
+    
+    console.log('[INIT] Processing:', actualDocumentPath);
+    console.log('[INIT] Centro:', actualCentroCode);
+    console.log('[INIT] Engine:', engine);
+
+    // Validar y extraer metadata del path
+    console.log('[STORAGE] Validating document path...');
+    const { validPath, metadata } = validateAndNormalizePath(actualDocumentPath);
+    console.log('[STORAGE] Path validated:', validPath);
+    console.log('[STORAGE] Path metadata:', JSON.stringify(metadata, null, 2));
+
+    console.log('[Init] 🔧 invoice-ocr v2.0 - Hybrid mode (invoice_id + documentPath)');
+    console.log('[Init] ✅ MINDEE_API_KEY configured:', !!Deno.env.get('MINDEE_API_KEY'));
+    console.log(`Processing OCR for document: ${actualDocumentPath} with engine: ${engine}`);
 
     // Download PDF
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('invoice-documents')
-      .download(documentPath);
+      .download(actualDocumentPath);
 
     if (downloadError) {
       throw new Error(`Failed to download file: ${downloadError.message}`);
@@ -199,7 +235,7 @@ serve(async (req) => {
       base64Content,
       fileData, // ✅ Pasar Blob original para Mindee
       fileData.type || 'application/pdf',
-      centroCode,
+      actualCentroCode,
       engine as 'openai' | 'mindee' | 'merged'
     );
 
@@ -220,7 +256,7 @@ serve(async (req) => {
     const matchedSupplier = await matchSupplier(supabase, {
       name: orchestratorResult.final_invoice_json.issuer.name,
       taxId: orchestratorResult.final_invoice_json.issuer.vat_id
-    }, centroCode);
+    }, actualCentroCode);
 
     // 3. Fiscal Normalizer ES
     const normalizedResponse = fiscalNormalizerES(orchestratorResult.final_invoice_json, '', COMPANY_VAT_IDS);
@@ -236,7 +272,7 @@ serve(async (req) => {
     const entryValidation = validateInvoiceEntry({
       normalized_invoice: normalizedResponse.normalized,
       ap_mapping: apMapping,
-      centro_code: centroCode
+      centro_code: actualCentroCode
     });
 
     const processingTime = Date.now() - startTime;
@@ -310,7 +346,7 @@ serve(async (req) => {
 
     // Insertar log en BD con métricas completas + pipeline stages
     const ocrLogData = {
-      document_path: documentPath,
+      document_path: actualDocumentPath,
       ocr_provider: 'multi-engine', // Legacy field
       engine: orchestratorResult.ocr_engine,
       tokens_in: tokens.tokens_in,
@@ -338,6 +374,123 @@ serve(async (req) => {
     } else {
       console.log(`[Main] ✅ OCR logged - Engine: ${orchestratorResult.ocr_engine}, Cost: €${costBreakdown.cost_total_eur}, Time: ${processingTime}ms, Tokens: ${tokens.tokens_in}/${tokens.tokens_out}`);
     }
+    
+    // ============================================================================
+    // MODE B: Update invoices_received if invoice_id provided
+    // ============================================================================
+    
+    if (invoiceId) {
+      console.log('[MODE-B] Updating invoice in DB:', invoiceId);
+      
+      // Determine final status based on confidence and validation
+      let finalStatus: 'pending' | 'processed_ok' | 'needs_review' | 'needs_manual_review' | 'approved' | 'rejected' | 'paid' = 'needs_review';
+      
+      if (orchestratorResult.ocr_engine === 'manual_review') {
+        finalStatus = 'needs_manual_review';
+      } else if (orchestratorResult.status === 'processed_ok' && 
+                 entryValidation.blocking_issues.length === 0 &&
+                 normalizedResponse.validation.errors.length === 0) {
+        finalStatus = 'processed_ok';
+      } else if (orchestratorResult.confidence_final >= 70) {
+        finalStatus = 'needs_review';
+      } else {
+        finalStatus = 'needs_manual_review';
+      }
+      
+      // Calculate SHA-256 hash if not already present
+      const encoder = new TextEncoder();
+      const data = encoder.encode(base64Content);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const documentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Update invoice with comprehensive results
+      const { error: updateError } = await supabase
+        .from('invoices_received')
+        .update({
+          ocr_engine: orchestratorResult.ocr_engine,
+          ocr_payload: orchestratorResult,
+          ocr_extracted_data: normalizedResponse.normalized,
+          confidence_score: orchestratorResult.confidence_final,
+          status: finalStatus,
+          
+          // Extract key fields for quick access
+          supplier_vat_id: normalizedResponse.normalized.issuer.vat_id,
+          supplier_name: normalizedResponse.normalized.issuer.name,
+          invoice_number: normalizedResponse.normalized.invoice_number,
+          invoice_date: normalizedResponse.normalized.issue_date,
+          due_date: normalizedResponse.normalized.due_date,
+          subtotal: normalizedResponse.normalized.totals.base_21 || normalizedResponse.normalized.totals.base_10 || 0,
+          tax_total: (normalizedResponse.normalized.totals.vat_21 || 0) + (normalizedResponse.normalized.totals.vat_10 || 0),
+          total_amount: normalizedResponse.normalized.totals.total,
+          currency: normalizedResponse.normalized.totals.currency,
+          
+          // Metrics
+          ocr_ms_openai: orchestratorResult.timing.ms_openai,
+          ocr_ms_mindee: orchestratorResult.timing.ms_mindee,
+          ocr_cost_estimate_eur: costBreakdown.cost_total_eur,
+          document_hash: documentHash,
+          
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', invoiceId);
+      
+      if (updateError) {
+        console.error('[MODE-B] ❌ Failed to update invoice:', updateError);
+      } else {
+        console.log(`[MODE-B] ✅ Invoice updated - Status: ${finalStatus}, Confidence: ${orchestratorResult.confidence_final}%`);
+      }
+      
+      // ============================================================================
+      // AUTOMATIC WORKFLOW: If processed_ok, create GL entry draft
+      // ============================================================================
+      
+      if (finalStatus === 'processed_ok' && entryValidation.ready_to_post) {
+        console.log('[WORKFLOW] Starting automatic GL entry draft creation...');
+        
+        try {
+          // Create draft journal entry (not posted)
+          const entryLines = entryValidation.post_preview.map((line, idx: number) => ({
+            account_code: line.account,
+            movement_type: line.debit > 0 ? 'debit' : 'credit',
+            amount: line.debit > 0 ? line.debit : line.credit,
+            description: line.description,
+            line_number: idx + 1
+          }));
+          
+          // Calculate entry date and description
+          const entryDate = normalizedResponse.normalized.issue_date;
+          const description = `Factura ${normalizedResponse.normalized.invoice_number} - ${normalizedResponse.normalized.issuer.name}`;
+          
+          console.log('[WORKFLOW] Creating draft entry with', entryLines.length, 'lines');
+          
+          // Note: Actual posting would require a separate RPC or stored procedure
+          // For now, we just log that the entry is ready
+          console.log('[WORKFLOW] ✅ Entry validated and ready for posting');
+          console.log('[WORKFLOW] Entry preview:', JSON.stringify(entryLines, null, 2));
+          
+          // Update invoice to mark it as ready for posting
+          await supabase
+            .from('invoices_received')
+            .update({
+              status: 'approved', // Promoted to approved since GL entry is ready
+              gl_entry_preview: entryLines,
+              gl_entry_date: entryDate,
+              gl_entry_description: description
+            })
+            .eq('id', invoiceId);
+          
+          console.log('[WORKFLOW] ✅ Invoice promoted to APPROVED with GL entry preview');
+          
+        } catch (workflowError: any) {
+          console.error('[WORKFLOW] ❌ Automatic workflow failed:', workflowError);
+          // Don't fail the whole OCR process if workflow fails
+        }
+      } else if (finalStatus === 'processed_ok') {
+        console.log('[WORKFLOW] ⚠️ Skipping automatic workflow - validation issues present');
+        console.log('[WORKFLOW] Blocking issues:', entryValidation.blocking_issues);
+      }
+    }
 
     // ⭐ CACHE SYSTEM: Save to cache for future use
     try {
@@ -348,14 +501,14 @@ serve(async (req) => {
         p_invoice_number: orchestratorResult.final_invoice_json.invoice_number,
         p_invoice_date: orchestratorResult.final_invoice_json.issue_date,
         p_total_amount: orchestratorResult.final_invoice_json.totals.total,
-        p_document_path: documentPath,
+        p_document_path: actualDocumentPath,
         p_file_size: quickMeta.fileSize,
         p_page_count: pages,
         p_ocr_engine: orchestratorResult.ocr_engine,
         p_extracted_data: normalizedResponse.normalized,
         p_ap_mapping: apMapping,
         p_confidence_score: orchestratorResult.confidence_final,
-        p_centro_code: centroCode,
+        p_centro_code: actualCentroCode,
         p_original_cost: costBreakdown.cost_total_eur,
         p_ttl_days: 30
       });
@@ -371,6 +524,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        invoice_id: invoiceId, // ⭐ NUEVO: Return invoice_id if provided
         ocr_engine: orchestratorResult.ocr_engine,
         status: orchestratorResult.status, // ⭐ Estado final del documento
         merge_notes: orchestratorResult.merge_notes,

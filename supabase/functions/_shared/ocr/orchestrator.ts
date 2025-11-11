@@ -54,6 +54,54 @@ function createEmptyInvoiceData(): EnhancedInvoiceData {
   };
 }
 
+// ============================================================================
+// WRAPPER API - Simplified runOcr for external use
+// ============================================================================
+
+export async function runOcr(
+  bytes: Uint8Array, 
+  centroCode: string,
+  preferredEngine?: 'openai' | 'mindee'
+): Promise<{
+  engine: 'openai' | 'mindee' | 'merged' | 'manual_review';
+  json: EnhancedInvoiceData | null;
+  confidence: number;
+  notes: string[];
+  metrics?: {
+    ms_openai?: number;
+    ms_mindee?: number;
+    cost_estimate_eur?: number;
+  };
+}> {
+  // Convert bytes to base64 for orchestrateOCR
+  const base64 = btoa(String.fromCharCode(...bytes));
+  const mimeType = 'application/pdf'; // Assume PDF by default
+  
+  const result = await orchestrateOCR(
+    base64, 
+    null, // No blob for this simplified API
+    mimeType, 
+    centroCode,
+    preferredEngine || 'openai'
+  );
+  
+  return {
+    engine: result.ocr_engine,
+    json: result.final_invoice_json,
+    confidence: result.confidence_final,
+    notes: result.merge_notes || [],
+    metrics: {
+      ms_openai: result.timing.ms_openai,
+      ms_mindee: result.timing.ms_mindee,
+      cost_estimate_eur: 0 // TODO: Extract from result
+    }
+  };
+}
+
+// ============================================================================
+// MAIN ORCHESTRATOR
+// ============================================================================
+
 export async function orchestrateOCR(
   base64Content: string,
   fileBlob: Blob | null,

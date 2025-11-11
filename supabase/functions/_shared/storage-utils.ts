@@ -132,3 +132,48 @@ export function validateAndNormalizePath(path: string): {
   
   return { validPath, metadata };
 }
+
+/**
+ * Genera una ruta estructurada para almacenar PDFs de facturas en Supabase Storage
+ * Formato compatible con invoice-documents bucket
+ * 
+ * @example
+ * buildOcrPath({
+ *   type: 'received',
+ *   centroCode: '796',
+ *   originalName: 'factura_proveedor.pdf'
+ * })
+ * // => "received/796/2025/01/a1b2c3d4-uuid.pdf"
+ */
+export function buildOcrPath(params: {
+  type: 'received' | 'issued' | 'temp';
+  centroCode?: string;
+  companyId?: string;
+  userId?: string;
+  originalName: string;
+  date?: Date;
+}): string {
+  const uuid = crypto.randomUUID();
+  const ext = getExtension(params.originalName) || 'pdf';
+  const now = params.date || new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  
+  // Temporal uploads (before classification)
+  if (params.type === 'temp') {
+    const userId = params.userId || 'anonymous';
+    return `temp/${userId}/${uuid}.${ext}`;
+  }
+  
+  // Received/Issued invoices
+  const centro = params.centroCode || params.companyId || 'unassigned';
+  return `${params.type}/${centro}/${year}/${month}/${uuid}.${ext}`;
+}
+
+/**
+ * Extrae la extensión de un nombre de archivo
+ */
+function getExtension(filename: string): string | null {
+  const match = filename.match(/\.([^.]+)$/);
+  return match ? match[1] : null;
+}

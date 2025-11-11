@@ -196,6 +196,7 @@ export const useLogOCRProcessing = () => {
       msOpenai?: number;
       msMindee?: number;
       userCorrections?: any;
+      orchestratorLogs?: any[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -206,7 +207,10 @@ export const useLogOCRProcessing = () => {
           document_path: logData.documentPath,
           ocr_provider: logData.ocrProvider,
           engine: logData.engine,
-          raw_response: logData.rawResponse,
+          raw_response: {
+            ...logData.rawResponse,
+            orchestrator_logs: logData.orchestratorLogs
+          },
           extracted_data: logData.extractedData,
           confidence: logData.confidence,
           confidence_score: logData.confidenceScore,

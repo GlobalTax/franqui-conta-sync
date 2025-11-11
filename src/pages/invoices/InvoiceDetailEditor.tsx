@@ -114,6 +114,8 @@ export default function InvoiceDetailEditor() {
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('openai');
+  const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
+  const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
 
   // OCR Hooks
   const processOCR = useProcessInvoiceOCR();
@@ -312,7 +314,12 @@ export default function InvoiceDetailEditor() {
       
       // ⭐ NUEVO: Mostrar timeline visual
       if (result.orchestrator_logs) {
+        setOrchestratorLogs(result.orchestrator_logs);
         logOCRTimeline(result.orchestrator_logs);
+      }
+      
+      if (result.processingTimeMs) {
+        setProcessingTimeMs(result.processingTimeMs);
       }
       
       // ⭐ NUEVO: Resumen de métricas
@@ -466,7 +473,8 @@ export default function InvoiceDetailEditor() {
             extractedData: ocrData,
             confidence: ocrConfidence,
             processingTimeMs: rawOCRResponse.processingTimeMs || 0,
-            userCorrections: {}
+            userCorrections: {},
+            orchestratorLogs: orchestratorLogs
           });
         }
 
@@ -534,7 +542,8 @@ export default function InvoiceDetailEditor() {
             extractedData: ocrData,
             confidence: ocrConfidence,
             processingTimeMs: rawOCRResponse.processingTimeMs || 0,
-            userCorrections: {}
+            userCorrections: {},
+            orchestratorLogs: orchestratorLogs
           });
         }
 
@@ -774,6 +783,8 @@ export default function InvoiceDetailEditor() {
                     selectedEngine={selectedEngine}
                     onEngineChange={setSelectedEngine}
                     onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
+                    orchestratorLogs={orchestratorLogs}
+                    processingTimeMs={processingTimeMs}
                   />
 
                   {/* Badge Stripper + Ver cambios */}

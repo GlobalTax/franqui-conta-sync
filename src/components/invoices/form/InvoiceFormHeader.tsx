@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCentres } from '@/hooks/useCentres';
+import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 
 interface InvoiceFormHeaderProps {
   control: Control<any>;
@@ -27,6 +28,8 @@ interface InvoiceFormHeaderProps {
   selectedEngine?: 'openai' | 'mindee';
   onEngineChange?: (engine: 'openai' | 'mindee') => void;
   onRetryWithDifferentEngine?: () => void;
+  orchestratorLogs?: any[];
+  processingTimeMs?: number;
 }
 
 export function InvoiceFormHeader({ 
@@ -40,7 +43,9 @@ export function InvoiceFormHeader({
   onGoToUpload,
   selectedEngine,
   onEngineChange,
-  onRetryWithDifferentEngine
+  onRetryWithDifferentEngine,
+  orchestratorLogs,
+  processingTimeMs
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
 
@@ -179,6 +184,18 @@ export function InvoiceFormHeader({
     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
       <Loader2 className="h-3 w-3 animate-spin" />
       Procesando con {selectedEngine === 'openai' ? 'OpenAI Vision' : 'Mindee'}...
+    </div>
+  )}
+
+  {/* Debug Badge con orchestrator logs */}
+  {ocrEngine && orchestratorLogs && orchestratorLogs.length > 0 && (
+    <div className="mt-2">
+      <OCRDebugBadge
+        logs={orchestratorLogs}
+        engine={ocrEngine}
+        confidence={ocrConfidence}
+        processingTimeMs={processingTimeMs}
+      />
     </div>
   )}
 

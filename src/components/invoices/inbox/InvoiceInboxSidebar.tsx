@@ -20,6 +20,7 @@ import { CentreSelector } from '@/components/accounting/CentreSelector';
 import { toast } from 'sonner';
 import { OCREngineBadge } from './OCREngineBadge';
 import { OCRConfidenceAlert } from './OCRConfidenceAlert';
+import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 
 interface InvoiceInboxSidebarProps {
   invoiceId: string | null;
@@ -61,7 +62,8 @@ export function InvoiceInboxSidebar({
             cost_estimate_eur,
             processing_time_ms,
             confidence,
-            extracted_data
+            extracted_data,
+            raw_response
           )
         `)
         .eq('id', invoiceId)
@@ -256,6 +258,24 @@ export function InvoiceInboxSidebar({
                           confidence={ocrLog.confidence || 0}
                         />
                       )}
+
+                      {/* Debug Badge con orchestrator logs */}
+                      {(() => {
+                        const orchestratorLogs = ocrLog.raw_response?.orchestrator_logs || [];
+                        if (orchestratorLogs.length > 0) {
+                          return (
+                            <div className="pt-2">
+                              <OCRDebugBadge
+                                logs={orchestratorLogs}
+                                engine={ocrLog.engine}
+                                confidence={ocrLog.confidence || undefined}
+                                processingTimeMs={ocrLog.processing_time_ms || undefined}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   );
                 })()}

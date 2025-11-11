@@ -3,7 +3,6 @@
 // Usa core library compartida con frontend
 // ============================================================================
 
-// @ts-ignore - Deno import maps
 import {
   validateSpanishVAT,
   validateTotals,
@@ -11,7 +10,7 @@ import {
   autofixVATRounding,
   normalizeCreditNoteAmounts,
   FISCAL_RULES
-} from '../../../../src/lib/fiscal/core/index.ts';
+} from './core/index.ts';
 
 import type { EnhancedInvoiceData } from '../ocr/types.ts';
 

@@ -10,6 +10,7 @@ export interface JournalLine {
   debit: number;
   credit: number;
   centre_id?: string | null;
+  description?: string;
 }
 
 /**

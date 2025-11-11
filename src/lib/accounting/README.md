@@ -86,6 +86,29 @@ console.log(result);
 3. **Fallback** (genérico)
    - Cualquier otro → 6200000
 
+### Posting de Factura al Diario
+
+```typescript
+import { postInvoiceEntry } from '@/lib/accounting';
+
+const result = await postInvoiceEntry({
+  invoiceId: 'inv-uuid',
+  invoiceType: 'received',
+  entryDate: '2025-01-15',
+  description: 'Factura MAKRO',
+  centreCode: 'C001',
+  fiscalYearId: 'fy-2025',
+  preview: [
+    { account: '6000000', debit: 100, credit: 0 },
+    { account: '4720000', debit: 21, credit: 0 },
+    { account: '4100000', debit: 0, credit: 121 },
+  ],
+  userId: 'user-uuid',
+});
+
+console.log(`✅ Asiento #${result.entry_number} creado`);
+```
+
 ## 📐 Plan General Contable
 
 ### Grupo 6 - Compras y Gastos

@@ -54,199 +54,241 @@ export interface MindeeExtractionResult {
 }
 
 export async function extractWithMindee(
-  input: Blob | string // ✅ FASE 1: Aceptar Blob o base64
+  input: Blob | string
 ): Promise<MindeeExtractionResult> {
   
-  // ⭐ Sanitizar MINDEE_API_KEY
+  // ⭐ V2: Sanitizar y validar MINDEE_API_KEY
   const rawKey = Deno.env.get('MINDEE_API_KEY');
   if (!rawKey) {
     throw new Error('MINDEE_API_KEY not configured');
   }
 
   // Normalizar: eliminar comillas, espacios y prefijos Bearer/Token
-  const token = rawKey.trim()
+  const apiKey = rawKey.trim()
     .replace(/^['"]|['"]$/g, '')
     .replace(/^\s*(Token|Bearer)\s+/i, '');
 
-  console.log('[Init] 🔑 MINDEE key fingerprint:', `${token.slice(0,4)}…${token.slice(-4)} (len:${token.length})`);
-  console.log('[Mindee] Starting extraction...');
+  console.log('[Mindee V2] 🔑 API key fingerprint:', `${apiKey.slice(0,4)}…${apiKey.slice(-4)} (len:${apiKey.length})`);
+  console.log('[Mindee V2] Starting extraction with asynchronous API...');
 
-  // ✅ FASE 1: Manejar ambos formatos (Blob directo o base64)
+  // ✅ Manejar ambos formatos (Blob directo o base64)
   let blob: Blob;
-  let pageCount = 1; // Default
   
   if (input instanceof Blob) {
-    console.log('[Mindee] Using direct Blob input (no conversion needed)');
+    console.log('[Mindee V2] Using direct Blob input');
     blob = input;
-    
-    // Estimar páginas basándose en tamaño del archivo (aproximado)
-    // 1 página PDF ~ 50-200KB, usamos 100KB como promedio
-    pageCount = Math.max(1, Math.round(blob.size / 102400));
   } else {
-    console.log('[Mindee] Converting base64 to Blob (safe method with Deno stdlib)');
-    // ✅ FASE 1: Usar decode de Deno stdlib (NO atob manual) para evitar stack overflow
+    console.log('[Mindee V2] Converting base64 to Blob');
     const { decode: b64decode } = await import("https://deno.land/std@0.168.0/encoding/base64.ts");
     
     try {
       const bytes = b64decode(input);
-      // Crear Blob desde Uint8Array (slice crea una copia compatible)
       blob = new Blob([bytes.slice()], { type: 'application/pdf' });
-      pageCount = Math.max(1, Math.round(blob.size / 102400));
-      console.log(`[Mindee] ✅ Base64 decoded successfully - ${blob.size} bytes, ~${pageCount} pages`);
+      console.log(`[Mindee V2] ✅ Base64 decoded - ${blob.size} bytes`);
     } catch (decodeError: any) {
-      console.error('[Mindee] ❌ Base64 decode failed:', decodeError);
+      console.error('[Mindee V2] ❌ Base64 decode failed:', decodeError);
       throw new Error(`Base64 decode failed: ${decodeError.message}`);
     }
   }
 
-  const formData = new FormData();
-  formData.append('document', blob, 'invoice.pdf');
-
-  // ✅ FASE 2: Usar modo asíncrono para PDFs grandes (>10 páginas)
-  const useAsync = pageCount > 10;
-  const endpoint = useAsync
-    ? 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict_async'
-    : 'https://api.mindee.net/v1/products/mindee/invoices/v4/predict';
+  // ============================================================================
+  // STEP 1: ENQUEUE (V2 API - siempre asíncrono)
+  // ============================================================================
   
-  if (useAsync) {
-    console.log(`[Mindee] Using ASYNC mode for large PDF (~${pageCount} pages)`);
-  }
+  const formData = new FormData();
+  formData.append('file', blob, 'invoice.pdf');
+  formData.append('model_id', 'mindee/invoices'); // Modelo de facturas de Mindee
+  formData.append('polygon', 'true');
+  formData.append('confidence', 'true');
 
-  const response = await fetch(endpoint, {
+  console.log('[Mindee V2] → POST /v2/inferences/enqueue');
+  
+  const enqueueResponse = await fetch('https://api-v2.mindee.net/v2/inferences/enqueue', {
     method: 'POST',
     headers: {
-      'Authorization': `Token ${token}`
+      'Authorization': apiKey // V2: sin prefijo "Token"
     },
     body: formData
   });
 
-  // ✅ FASE 2: Manejo robusto de errores según docs de Mindee
-  if (!response.ok) {
-    const errorText = await response.text();
+  // ✅ Manejo robusto de errores
+  if (!enqueueResponse.ok) {
+    const errorText = await enqueueResponse.text();
     let errorData: any = {};
     try {
       errorData = JSON.parse(errorText);
     } catch {
-      errorData = { message: errorText };
+      errorData = { detail: errorText };
     }
     
-    console.error('[Mindee] API error:', response.status, errorData);
+    console.error('[Mindee V2] API error:', enqueueResponse.status, errorData);
     
-    // Errores específicos según documentación Mindee
-    if (response.status === 401) {
-      throw new Error('Mindee API key inválida o expirada. Verifica MINDEE_API_KEY.');
-    } else if (response.status === 429) {
+    if (enqueueResponse.status === 401) {
+      throw new Error('Mindee API key inválida (V2). Verifica MINDEE_API_KEY.');
+    } else if (enqueueResponse.status === 429) {
       throw new Error('Límite de tasa de Mindee alcanzado. Intenta de nuevo en unos minutos.');
-    } else if (response.status === 413) {
-      throw new Error('PDF demasiado grande para Mindee (máximo 25MB por archivo).');
-    } else if (response.status === 400) {
-      const msg = errorData.api_request?.error || errorData.message || 'Formato de documento inválido';
-      throw new Error(`Error de validación Mindee: ${msg}`);
-    } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+    } else if (enqueueResponse.status === 413) {
+      throw new Error('PDF demasiado grande para Mindee (máximo por archivo).');
+    } else if (enqueueResponse.status === 422) {
+      const errors = errorData.error?.errors || [];
+      const details = errors.map((e: any) => `${e.pointer}: ${e.detail}`).join('; ');
+      throw new Error(`Error de validación Mindee V2: ${details || errorData.error?.detail || 'Unknown'}`);
+    } else if (enqueueResponse.status >= 500) {
       throw new Error('Servicio Mindee temporalmente no disponible. Intenta más tarde.');
     } else {
-      const msg = errorData.api_request?.error || errorData.message || `HTTP ${response.status}`;
-      throw new Error(`Error Mindee API: ${msg}`);
+      const msg = errorData.error?.detail || errorData.detail || `HTTP ${enqueueResponse.status}`;
+      throw new Error(`Error Mindee API V2: ${msg}`);
     }
   }
   
-  // ✅ FASE 2: Manejar respuesta asíncrona si es necesario
-  if (useAsync) {
-    const jobResponse = await response.json();
-    const jobId = jobResponse.job?.id;
+  const enqueueData = await enqueueResponse.json();
+  const jobId = enqueueData.job?.id;
+  const pollingUrl = enqueueData.job?.polling_url;
+  
+  if (!jobId) {
+    console.error('[Mindee V2] Invalid enqueue response:', enqueueData);
+    throw new Error('Mindee V2: job ID not received');
+  }
+  
+  console.log(`[Mindee V2] ✅ Job enqueued: ${jobId}`);
+  console.log(`[Mindee V2] Polling URL: ${pollingUrl}`);
+
+  // ============================================================================
+  // STEP 2: POLLING (/v2/jobs/{job_id})
+  // ============================================================================
+  
+  console.log('[Mindee V2] → Starting polling for job completion...');
+  
+  const maxAttempts = 60; // 60 intentos x 2s = 120s max (v2 permite más tiempo)
+  let attempt = 0;
+  
+  while (attempt < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2s entre intentos
+    attempt++;
     
-    if (!jobId) {
-      throw new Error('Mindee async job ID not received');
+    console.log(`[Mindee V2] → GET /v2/jobs/${jobId} (attempt ${attempt}/${maxAttempts})`);
+    
+    const jobStatusResponse = await fetch(
+      `https://api-v2.mindee.net/v2/jobs/${jobId}`,
+      {
+        headers: { 'Authorization': apiKey }
+      }
+    );
+    
+    if (!jobStatusResponse.ok) {
+      console.warn(`[Mindee V2] ⚠️ Polling attempt ${attempt} failed (${jobStatusResponse.status})`);
+      
+      if (jobStatusResponse.status === 429) {
+        console.log('[Mindee V2] Rate limited, waiting longer...');
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Esperar 5s extra
+      }
+      
+      continue;
     }
     
-    console.log(`[Mindee] Async job created: ${jobId}, polling for results...`);
+    const jobData = await jobStatusResponse.json();
+    const status = jobData.job?.status;
     
-    // Polling con timeout de 60 segundos
-    const maxAttempts = 30; // 30 intentos x 2s = 60s max
-    let attempt = 0;
+    console.log(`[Mindee V2] Job status: ${status}`);
     
-    while (attempt < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2s entre intentos
+    if (status === 'Processed') {
+      const resultUrl = jobData.job?.result_url;
+      const inferenceId = resultUrl?.split('/').pop();
       
-      const statusResponse = await fetch(
-        `https://api.mindee.net/v1/products/mindee/invoices/v4/documents/${jobId}`,
+      if (!inferenceId) {
+        console.error('[Mindee V2] No inference ID in processed job:', jobData);
+        throw new Error('Mindee V2: inference ID not found');
+      }
+      
+      console.log(`[Mindee V2] ✅ Job processed! Inference ID: ${inferenceId}`);
+      
+      // ============================================================================
+      // STEP 3: GET RESULT (/v2/inferences/{inference_id})
+      // ============================================================================
+      
+      console.log(`[Mindee V2] → GET /v2/inferences/${inferenceId}`);
+      
+      const resultResponse = await fetch(
+        `https://api-v2.mindee.net/v2/inferences/${inferenceId}`,
         {
-          headers: { 'Authorization': `Token ${token}` }
+          headers: { 'Authorization': apiKey }
         }
       );
       
-      if (!statusResponse.ok) {
-        console.warn(`[Mindee] Polling attempt ${attempt + 1} failed`);
-        attempt++;
-        continue;
+      if (!resultResponse.ok) {
+        const errorText = await resultResponse.text();
+        console.error('[Mindee V2] Failed to fetch result:', resultResponse.status, errorText);
+        throw new Error(`Mindee V2: failed to fetch result (${resultResponse.status})`);
       }
       
-      const statusData = await statusResponse.json();
-      const status = statusData.job?.status;
+      const inferenceData = await resultResponse.json();
+      console.log('[Mindee V2] ✅ Inference result retrieved');
       
-      console.log(`[Mindee] Async job status: ${status} (attempt ${attempt + 1}/${maxAttempts})`);
+      return processMindeeV2Response(inferenceData);
       
-      if (status === 'completed') {
-        console.log('[Mindee] ✅ Async extraction completed');
-        // Continuar con el procesamiento normal
-        const mindeeResult = statusData;
-        return processMindeeResponse(mindeeResult);
-      } else if (status === 'failed') {
-        throw new Error('Mindee async processing failed');
-      }
-      
-      attempt++;
+    } else if (status === 'Failed') {
+      const error = jobData.job?.error;
+      console.error('[Mindee V2] Job failed:', error);
+      throw new Error(`Mindee V2 processing failed: ${error?.detail || 'Unknown error'}`);
     }
     
-    throw new Error('Mindee async processing timeout (60s exceeded)');
+    // Status: Processing, continuar polling
   }
-
-  const mindeeResult = await response.json();
-  console.log('[Mindee] ✅ Extraction completed (sync mode)');
   
-  return processMindeeResponse(mindeeResult);
+  throw new Error('Mindee V2 timeout: job did not complete in 120 seconds');
 }
 
 // ============================================================================
-// PROCESAMIENTO DE RESPUESTA MINDEE (Extraído para reutilización)
+// PROCESAMIENTO DE RESPUESTA MINDEE V2
 // ============================================================================
-function processMindeeResponse(mindeeResult: any): MindeeExtractionResult {
-  const prediction = mindeeResult.document.inference.prediction;
+function processMindeeV2Response(inferenceData: any): MindeeExtractionResult {
+  const inference = inferenceData.inference;
+  const result = inference.result;
+  const fields = result.fields;
+  
+  console.log('[Mindee V2] Processing inference result...');
+  console.log('[Mindee V2] File:', inference.file?.name, `(${inference.file?.page_count} pages)`);
+  
+  // Helper: extraer valor de campo V2
+  const getFieldValue = (field: any) => field?.value ?? null;
+  const getFieldConfidence = (field: any): number => {
+    if (!field?.confidence) return 0;
+    // V2 usa: "Certain", "High", "Medium", "Low", "Uncertain"
+    const confidenceMap: Record<string, number> = {
+      'Certain': 95,
+      'High': 85,
+      'Medium': 70,
+      'Low': 50,
+      'Uncertain': 30
+    };
+    return confidenceMap[field.confidence] || 0;
+  };
 
-  // Mapear respuesta de Mindee a nuestro formato EnhancedInvoiceData
+  // Mapear respuesta de Mindee V2 a nuestro formato EnhancedInvoiceData
   const data: EnhancedInvoiceData = {
-    document_type: prediction.invoice_type?.value === 'CREDIT_NOTE' ? 'credit_note' : 'invoice',
+    document_type: getFieldValue(fields.document_type) === 'credit_note' ? 'credit_note' : 'invoice',
     issuer: {
-      name: prediction.supplier_name?.value || '',
-      vat_id: prediction.supplier_company_registrations?.find((r: any) => 
-        r.type === 'VAT_NUMBER' || r.type === 'TAX_ID'
-      )?.value || null
+      name: getFieldValue(fields.supplier_name) || '',
+      vat_id: getFieldValue(fields.supplier_tax_id) || null
     },
     receiver: {
-      name: prediction.customer_name?.value || null,
-      vat_id: prediction.customer_company_registrations?.find((r: any) => 
-        r.type === 'VAT_NUMBER' || r.type === 'TAX_ID'
-      )?.value || null,
-      address: prediction.customer_address?.value || null
+      name: getFieldValue(fields.customer_name) || null,
+      vat_id: getFieldValue(fields.customer_tax_id) || null,
+      address: getFieldValue(fields.customer_address) || null
     },
-    invoice_number: prediction.invoice_number?.value || '',
-    issue_date: prediction.date?.value || '',
-    due_date: prediction.due_date?.value || null,
+    invoice_number: getFieldValue(fields.invoice_number) || '',
+    issue_date: getFieldValue(fields.invoice_date) || '',
+    due_date: getFieldValue(fields.due_date) || null,
     totals: {
-      currency: prediction.total_amount?.currency || 'EUR',
+      currency: getFieldValue(fields.currency) || 'EUR',
       base_10: null,
       vat_10: null,
       base_21: null,
       vat_21: null,
       other_taxes: [],
-      total: prediction.total_amount?.value || 0
+      total: getFieldValue(fields.total_amount) || 0
     },
-    lines: prediction.line_items?.map((item: any, index: number) => ({
-      description: item.description || `Línea ${index + 1}`,
-      quantity: item.quantity || null,
-      unit_price: item.unit_price || null,
-      amount: item.total_amount || 0
-    })) || [],
+    lines: [],
     centre_hint: null,
     payment_method: null,
     confidence_notes: [],
@@ -255,24 +297,43 @@ function processMindeeResponse(mindeeResult: any): MindeeExtractionResult {
     proposed_fix: null
   };
 
-  // Extraer VAT breakdown si está disponible
-  const taxes = prediction.taxes || [];
-  taxes.forEach((tax: any) => {
-    const rate = parseFloat(tax.rate);
-    if (Math.abs(rate - 10) < 0.5) {
-      data.totals.base_10 = tax.base || 0;
-      data.totals.vat_10 = tax.value || 0;
-    } else if (Math.abs(rate - 21) < 0.5) {
-      data.totals.base_21 = tax.base || 0;
-      data.totals.vat_21 = tax.value || 0;
-    } else if (tax.code && tax.code.includes('IRPF')) {
-      data.totals.other_taxes.push({
-        type: 'IRPF',
-        base: tax.base || 0,
-        quota: tax.value || 0
-      });
-    }
-  });
+  // Extraer líneas de factura (V2)
+  const lineItems = fields.line_items;
+  if (Array.isArray(lineItems)) {
+    data.lines = lineItems.map((item: any, index: number) => ({
+      description: getFieldValue(item.description) || `Línea ${index + 1}`,
+      quantity: getFieldValue(item.quantity) || null,
+      unit_price: getFieldValue(item.unit_price) || null,
+      amount: getFieldValue(item.total_amount) || 0
+    }));
+  }
+
+  // Extraer VAT breakdown si está disponible (V2)
+  const taxes = fields.taxes;
+  if (Array.isArray(taxes)) {
+    taxes.forEach((tax: any) => {
+      const rate = getFieldValue(tax.rate);
+      const base = getFieldValue(tax.base_amount) || 0;
+      const amount = getFieldValue(tax.tax_amount) || 0;
+      
+      if (rate && Math.abs(rate - 10) < 0.5) {
+        data.totals.base_10 = base;
+        data.totals.vat_10 = amount;
+      } else if (rate && Math.abs(rate - 21) < 0.5) {
+        data.totals.base_21 = base;
+        data.totals.vat_21 = amount;
+      } else {
+        const taxType = getFieldValue(tax.type) || 'OTHER';
+        if (taxType.includes('IRPF') || taxType.includes('retention')) {
+          data.totals.other_taxes.push({
+            type: 'IRPF',
+            base,
+            quota: amount
+          });
+        }
+      }
+    });
+  }
 
   // ============================================================================
   // GENERADOR DE CONFIDENCE NOTES
@@ -320,20 +381,20 @@ function processMindeeResponse(mindeeResult: any): MindeeExtractionResult {
   }
 
   // ============================================================================
-  // CÁLCULO DE CONFIDENCE POR CAMPO (ENRIQUECIDO)
+  // CÁLCULO DE CONFIDENCE POR CAMPO (V2)
   // ============================================================================
   
   const confidenceByField: Record<string, number> = {
-    'issuer.name': (prediction.supplier_name?.confidence || 0) * 100,
-    'issuer.vat_id': (prediction.supplier_company_registrations?.[0]?.confidence || 0) * 100,
-    'invoice_number': (prediction.invoice_number?.confidence || 0) * 100,
-    'totals.total': (prediction.total_amount?.confidence || 0) * 100,
-    'issue_date': (prediction.date?.confidence || 0) * 100,
-    'due_date': (prediction.due_date?.confidence || 0) * 100,
-    'receiver.vat_id': (prediction.customer_company_registrations?.[0]?.confidence || 0) * 100,
-    'line_items': prediction.line_items?.length > 0 
-      ? (prediction.line_items.reduce((sum: number, item: any) => 
-          sum + (item.confidence || 0), 0) / prediction.line_items.length) * 100 
+    'issuer.name': getFieldConfidence(fields.supplier_name),
+    'issuer.vat_id': getFieldConfidence(fields.supplier_tax_id),
+    'invoice_number': getFieldConfidence(fields.invoice_number),
+    'totals.total': getFieldConfidence(fields.total_amount),
+    'issue_date': getFieldConfidence(fields.invoice_date),
+    'due_date': getFieldConfidence(fields.due_date),
+    'receiver.vat_id': getFieldConfidence(fields.customer_tax_id),
+    'line_items': Array.isArray(fields.line_items) && fields.line_items.length > 0
+      ? fields.line_items.reduce((sum: number, item: any) => 
+          sum + getFieldConfidence(item), 0) / fields.line_items.length
       : 0
   };
 
@@ -359,12 +420,12 @@ function processMindeeResponse(mindeeResult: any): MindeeExtractionResult {
     console.log(`[Mindee] ⚠️ Confidence warnings (${data.confidence_notes.length}):`, data.confidence_notes);
   }
 
-  console.log(`[Mindee] Confidence: ${Math.round(avgConfidence)}%`);
+  console.log(`[Mindee V2] Confidence: ${Math.round(avgConfidence)}%`);
 
   return {
     data,
     confidence_score: Math.round(avgConfidence),
     confidence_by_field: confidenceByField,
-    raw_response: mindeeResult
+    raw_response: inferenceData
   };
 }

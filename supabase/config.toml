@@ -1,5 +1,17 @@
 project_id = "srwnjnrhxzcpftmbbyib"
 
+[functions.ponto-oauth-callback]
+verify_jwt = false
+
+[functions.ponto-institutions]
+verify_jwt = true
+
+[functions.ponto-sync]
+verify_jwt = true
+
+[functions.ponto-webhooks]
+verify_jwt = false
+
 [functions.sync-orquest-services]
 verify_jwt = true
 

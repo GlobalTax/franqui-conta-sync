@@ -1,0 +1,96 @@
+/**
+ * Utilidades para gestión de rutas de archivos en Supabase Storage
+ * Compatible con Web Crypto API (navegador) y estructura de carpetas del proyecto
+ */
+
+/**
+ * Genera una ruta estructurada para almacenar PDFs de facturas en Supabase Storage
+ * 
+ * @example
+ * buildInvoicePath({
+ *   invoiceType: 'received',
+ *   centroCode: '1252',
+ *   originalName: 'factura_proveedor.pdf',
+ *   date: new Date()
+ * })
+ * // => "received/1252/2025/01/550e8400-e29b-41d4-a716-446655440000_factura_proveedor.pdf"
+ */
+export function buildInvoicePath(params: {
+  invoiceType: 'received' | 'issued';
+  centroCode: string;
+  companyId?: string;  // Opcional para futura migración
+  originalName?: string;
+  invoiceId?: string;
+  date?: Date;
+}): string {
+  const date = params.date ?? new Date();
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  
+  // Usar Web Crypto API (disponible en navegador)
+  const uid = crypto.randomUUID();
+  
+  // Sanitizar nombre del archivo original
+  const baseName = params.originalName 
+    ? params.originalName.replace(/[^\w.-]/g, '_').slice(0, 50)
+    : params.invoiceId 
+    ? `invoice_${params.invoiceId}`
+    : 'document';
+  
+  // Usar centroCode por compatibilidad (o companyId si se migra)
+  const identifier = params.companyId || params.centroCode;
+  
+  return `${params.invoiceType}/${identifier}/${yyyy}/${mm}/${uid}_${baseName}.pdf`;
+}
+
+/**
+ * Valida que una ruta sea un PDF válido
+ * 
+ * @throws {Error} Si la ruta es inválida o no es PDF
+ */
+export function ensurePdfPath(path?: string | null): string {
+  if (!path || typeof path !== 'string') {
+    throw new Error('OCR: ruta de archivo requerida');
+  }
+  
+  if (!/\.pdf$/i.test(path)) {
+    throw new Error(`OCR: el archivo debe ser PDF (recibido: ${path})`);
+  }
+  
+  return path;
+}
+
+/**
+ * Extrae metadata de una ruta de PDF de invoice
+ * 
+ * @example
+ * parseInvoicePath('received/1252/2025/01/uuid_factura.pdf')
+ * // => { type: 'received', centroCode: '1252', year: 2025, month: 1, filename: 'uuid_factura.pdf' }
+ */
+export function parseInvoicePath(path: string): {
+  type: 'received' | 'issued';
+  centroCode: string;
+  year: number;
+  month: number;
+  filename: string;
+  uuid?: string;
+  originalName?: string;
+} | null {
+  const regex = /^(received|issued)\/([^/]+)\/(\d{4})\/(\d{2})\/(.+)\.pdf$/i;
+  const match = path.match(regex);
+  
+  if (!match) return null;
+  
+  const [, type, centroCode, yearStr, monthStr, filename] = match;
+  const [uuid, ...nameParts] = filename.split('_');
+  
+  return {
+    type: type as 'received' | 'issued',
+    centroCode,
+    year: parseInt(yearStr, 10),
+    month: parseInt(monthStr, 10),
+    filename: `${filename}.pdf`,
+    uuid: uuid.length === 36 ? uuid : undefined,
+    originalName: nameParts.length > 0 ? nameParts.join('_') : undefined,
+  };
+}

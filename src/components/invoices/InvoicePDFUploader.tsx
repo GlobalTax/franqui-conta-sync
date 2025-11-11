@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Upload, FileText, X, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { buildInvoicePath } from "@/lib/storage-utils";
 
 interface InvoicePDFUploaderProps {
   invoiceId?: string;
@@ -41,11 +42,13 @@ export const InvoicePDFUploader = ({
 
     setUploading(true);
     try {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const fileName = `${invoiceId}_${Date.now()}.pdf`;
-      const path = `${invoiceType}/${centroCode}/${year}/${month}/${fileName}`;
+      const path = buildInvoicePath({
+        invoiceType,
+        centroCode,
+        invoiceId,
+        originalName: file.name,
+        date: new Date()
+      });
 
       const { error: uploadError } = await supabase.storage
         .from("invoice-documents")

@@ -57,11 +57,18 @@ export async function extractWithMindee(
   input: Blob | string // ✅ FASE 1: Aceptar Blob o base64
 ): Promise<MindeeExtractionResult> {
   
-  const MINDEE_API_KEY = Deno.env.get('MINDEE_API_KEY');
-  if (!MINDEE_API_KEY) {
+  // ⭐ Sanitizar MINDEE_API_KEY
+  const rawKey = Deno.env.get('MINDEE_API_KEY');
+  if (!rawKey) {
     throw new Error('MINDEE_API_KEY not configured');
   }
 
+  // Normalizar: eliminar comillas, espacios y prefijos Bearer/Token
+  const token = rawKey.trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/^\s*(Token|Bearer)\s+/i, '');
+
+  console.log('[Init] 🔑 MINDEE key fingerprint:', `${token.slice(0,4)}…${token.slice(-4)} (len:${token.length})`);
   console.log('[Mindee] Starting extraction...');
 
   // ✅ FASE 1: Manejar ambos formatos (Blob directo o base64)
@@ -108,7 +115,7 @@ export async function extractWithMindee(
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Authorization': `Token ${MINDEE_API_KEY}`
+      'Authorization': `Token ${token}`
     },
     body: formData
   });
@@ -164,7 +171,7 @@ export async function extractWithMindee(
       const statusResponse = await fetch(
         `https://api.mindee.net/v1/products/mindee/invoices/v4/documents/${jobId}`,
         {
-          headers: { 'Authorization': `Token ${MINDEE_API_KEY}` }
+          headers: { 'Authorization': `Token ${token}` }
         }
       );
       

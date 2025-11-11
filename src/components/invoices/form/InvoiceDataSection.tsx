@@ -44,7 +44,7 @@ export function InvoiceDataSection({ control, watch, setValue }: InvoiceDataSect
               <FormItem>
                 <FormLabel>Moneda</FormLabel>
                 <FormControl>
-                  <Input {...field} disabled className="bg-muted" />
+                  <Input {...field} value={field.value ?? ''} disabled className="bg-muted" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -59,7 +59,7 @@ export function InvoiceDataSection({ control, watch, setValue }: InvoiceDataSect
               <FormItem>
                 <FormLabel>Número de Factura *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="FAC-2025-001" />
+                  <Input {...field} value={field.value ?? ''} placeholder="FAC-2025-001" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -76,7 +76,7 @@ export function InvoiceDataSection({ control, watch, setValue }: InvoiceDataSect
               <FormItem>
                 <FormLabel>Fecha de Emisión *</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,7 +91,7 @@ export function InvoiceDataSection({ control, watch, setValue }: InvoiceDataSect
               <FormItem>
                 <FormLabel>Fecha de Vencimiento</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

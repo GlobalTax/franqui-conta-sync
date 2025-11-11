@@ -400,8 +400,10 @@ export default function InvoiceDetailEditor() {
       toast.success("PDF subido correctamente");
       console.log('[Upload] Programando auto-trigger OCR en 300ms con path');
       setTimeout(() => {
-        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path y motor', selectedEngine);
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: selectedEngine });
+        // ⭐ Priorizar Mindee temporalmente debido a 429 de OpenAI
+        const preferredEngine = 'mindee';
+        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path y motor', preferredEngine);
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: preferredEngine });
       }, 300);
     }
   };

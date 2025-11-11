@@ -339,7 +339,6 @@ serve(async (req) => {
         ...orchestratorResult.final_invoice_json,
         _pipeline: pipelineStages  // ⭐ NUEVO: Pipeline granular
       },
-      confidence_score: orchestratorResult.confidence_final,
       confidence: orchestratorResult.confidence_final / 100,
       processing_time_ms: processingTime
     };

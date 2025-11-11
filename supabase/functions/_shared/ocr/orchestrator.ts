@@ -1,11 +1,12 @@
 // ============================================================================
-// OCR ORCHESTRATOR - Multi-Engine with Intelligent Merge
+// OCR ORCHESTRATOR - Multi-Engine with Intelligent Merge + Circuit Breaker
 // ============================================================================
 
 import { extractWithOpenAI } from "./openai-client.ts";
 import { extractWithMindee } from "./mindee-client.ts";
 import { validateSpanishVAT } from "../fiscal/normalize-es.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { isEngineAvailable, recordSuccess, recordFailure } from "./circuit-breaker.ts";
 import type {
   EnhancedInvoiceData,
   InvoiceStatus,
@@ -107,15 +108,23 @@ export async function orchestrateOCR(
 
   // OPCIÓN A: Usuario prefiere Mindee explícitamente
   if (preferredEngine === 'mindee') {
-    addLog('ROUTING', 'User prefers Mindee', 'Executing Mindee first', 'User explicitly selected Mindee engine');
-    console.log('[Orchestrator] Using Mindee as preferred engine...');
+    // Verificar circuit breaker
+    const mindeeAvailable = await isEngineAvailable('mindee');
     
-    try {
-      markStart('mindee_extraction');
-      const startMindee = Date.now();
-      mindeeResult = await extractWithMindee(fileBlob || base64Content);
-      ms_mindee = Date.now() - startMindee;
-      markEnd('mindee_extraction');
+    if (!mindeeAvailable) {
+      addLog('ROUTING', 'Mindee circuit breaker OPEN', 'Skipping Mindee', 'Circuit breaker protection');
+      mergeNotes.push('⚠️ Mindee temporalmente no disponible (circuit breaker)');
+      console.log('[Orchestrator] ⚠️ Mindee circuit breaker is OPEN, falling back to OpenAI...');
+    } else {
+      addLog('ROUTING', 'User prefers Mindee', 'Executing Mindee first', 'User explicitly selected Mindee engine');
+      console.log('[Orchestrator] Using Mindee as preferred engine...');
+      
+      try {
+        markStart('mindee_extraction');
+        const startMindee = Date.now();
+        mindeeResult = await extractWithMindee(fileBlob || base64Content);
+        ms_mindee = Date.now() - startMindee;
+        markEnd('mindee_extraction');
       
       rawResponses.mindee = mindeeResult;
       console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
@@ -136,52 +145,76 @@ export async function orchestrateOCR(
         status
       });
       
-      console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
-      mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
-      mergeNotes.push(`📊 Estado final: ${status}`);
-      
-      return {
-        ocr_engine: 'mindee',
-        final_invoice_json: mindeeResult.data,
-        confidence_final: mindeeResult.confidence_score,
-        status,
-        merge_notes: mergeNotes,
-        orchestrator_logs: orchestratorLogs,
-        raw_responses: rawResponses,
-        timing: { ms_openai, ms_mindee }
-      };
-    } catch (error) {
-      console.error('[Orchestrator] Mindee failed, falling back to OpenAI:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      addLog('EXECUTION', 'Mindee failed', 'Falling back to OpenAI', errorMsg);
-      mergeNotes.push(`⚠️ Mindee falló: ${errorMsg}, intentando OpenAI como fallback`);
+        console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
+        mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
+        mergeNotes.push(`📊 Estado final: ${status}`);
+        
+        // Registrar éxito en circuit breaker
+        await recordSuccess('mindee');
+        
+        return {
+          ocr_engine: 'mindee',
+          final_invoice_json: mindeeResult.data,
+          confidence_final: mindeeResult.confidence_score,
+          status,
+          merge_notes: mergeNotes,
+          orchestrator_logs: orchestratorLogs,
+          raw_responses: rawResponses,
+          timing: { ms_openai, ms_mindee }
+        };
+      } catch (error) {
+        console.error('[Orchestrator] Mindee failed, falling back to OpenAI:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Registrar fallo en circuit breaker
+        await recordFailure('mindee', error as Error);
+        
+        addLog('EXECUTION', 'Mindee failed', 'Falling back to OpenAI', errorMsg);
+        mergeNotes.push(`⚠️ Mindee falló: ${errorMsg}, intentando OpenAI como fallback`);
+      }
     }
   }
 
   // OPCIÓN B: Usuario prefiere OpenAI o merged, O Mindee falló
-  addLog('ROUTING', 'Attempting OpenAI Vision', preferredEngine === 'openai' ? 'User preference' : 'Fallback from Mindee');
-  console.log('[Orchestrator] Attempting OpenAI Vision...');
+  // Verificar circuit breaker para OpenAI
+  const openaiAvailable = await isEngineAvailable('openai');
   
-  try {
-    markStart('openai_extraction');
-    const startOpenAI = Date.now();
-    openaiResult = await extractWithOpenAI(base64Content, mimeType);
-    ms_openai = Date.now() - startOpenAI;
-    markEnd('openai_extraction');
+  if (!openaiAvailable) {
+    addLog('ROUTING', 'OpenAI circuit breaker OPEN', 'Skipping OpenAI', 'Circuit breaker protection');
+    mergeNotes.push('⚠️ OpenAI temporalmente no disponible (circuit breaker)');
+    console.log('[Orchestrator] ⚠️ OpenAI circuit breaker is OPEN, skipping...');
+  } else {
+    addLog('ROUTING', 'Attempting OpenAI Vision', preferredEngine === 'openai' ? 'User preference' : 'Fallback from Mindee');
+    console.log('[Orchestrator] Attempting OpenAI Vision...');
     
-    rawResponses.openai = openaiResult;
-    console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
-    
-    addLog('EXECUTION', 'OpenAI completed', `Confidence: ${openaiResult.confidence_score}%`, undefined, {
-      duration_ms: ms_openai,
-      confidence: openaiResult.confidence_score,
-      engine: 'openai'
-    });
-  } catch (error) {
-    console.error('[Orchestrator] OpenAI Vision failed:', error);
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    addLog('EXECUTION', 'OpenAI failed', 'ERROR', errorMsg);
-    mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
+    try {
+      markStart('openai_extraction');
+      const startOpenAI = Date.now();
+      openaiResult = await extractWithOpenAI(base64Content, mimeType);
+      ms_openai = Date.now() - startOpenAI;
+      markEnd('openai_extraction');
+      
+      rawResponses.openai = openaiResult;
+      console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
+      
+      // Registrar éxito en circuit breaker
+      await recordSuccess('openai');
+      
+      addLog('EXECUTION', 'OpenAI completed', `Confidence: ${openaiResult.confidence_score}%`, undefined, {
+        duration_ms: ms_openai,
+        confidence: openaiResult.confidence_score,
+        engine: 'openai'
+      });
+    } catch (error) {
+      console.error('[Orchestrator] OpenAI Vision failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Registrar fallo en circuit breaker
+      await recordFailure('openai', error as Error);
+      
+      addLog('EXECUTION', 'OpenAI failed', 'ERROR', errorMsg);
+      mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
+    }
   }
 
   // Validar campos críticos
@@ -242,27 +275,43 @@ export async function orchestrateOCR(
   );
 
   if (!mindeeResult) {
-    addLog('ROUTING', 'Attempting Mindee as fallback', 'OpenAI insufficient');
-    try {
-      markStart('mindee_extraction');
-      const startMindee = Date.now();
-      mindeeResult = await extractWithMindee(fileBlob || base64Content);
-      ms_mindee = Date.now() - startMindee;
-      markEnd('mindee_extraction');
-      
-      rawResponses.mindee = mindeeResult;
-      console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
-      
-      addLog('EXECUTION', 'Mindee completed', `Confidence: ${mindeeResult.confidence_score}%`, undefined, {
-        duration_ms: ms_mindee,
-        confidence: mindeeResult.confidence_score,
-        engine: 'mindee'
-      });
-    } catch (error) {
-      console.error('[Orchestrator] Mindee failed:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      addLog('EXECUTION', 'Mindee failed', 'ERROR', errorMsg);
-      mergeNotes.push(`⚠️ Mindee también falló: ${errorMsg}`);
+    // Verificar circuit breaker para Mindee
+    const mindeeAvailable = await isEngineAvailable('mindee');
+    
+    if (!mindeeAvailable) {
+      addLog('ROUTING', 'Mindee circuit breaker OPEN', 'Cannot use as fallback', 'Circuit breaker protection');
+      mergeNotes.push('⚠️ Mindee no disponible como fallback (circuit breaker)');
+      console.log('[Orchestrator] ⚠️ Mindee circuit breaker is OPEN, cannot use as fallback');
+    } else {
+      addLog('ROUTING', 'Attempting Mindee as fallback', 'OpenAI insufficient');
+      try {
+        markStart('mindee_extraction');
+        const startMindee = Date.now();
+        mindeeResult = await extractWithMindee(fileBlob || base64Content);
+        ms_mindee = Date.now() - startMindee;
+        markEnd('mindee_extraction');
+        
+        rawResponses.mindee = mindeeResult;
+        console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
+        
+        // Registrar éxito en circuit breaker
+        await recordSuccess('mindee');
+        
+        addLog('EXECUTION', 'Mindee completed', `Confidence: ${mindeeResult.confidence_score}%`, undefined, {
+          duration_ms: ms_mindee,
+          confidence: mindeeResult.confidence_score,
+          engine: 'mindee'
+        });
+      } catch (error) {
+        console.error('[Orchestrator] Mindee failed:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Registrar fallo en circuit breaker
+        await recordFailure('mindee', error as Error);
+        
+        addLog('EXECUTION', 'Mindee failed', 'ERROR', errorMsg);
+        mergeNotes.push(`⚠️ Mindee también falló: ${errorMsg}`);
+      }
     }
   }
 

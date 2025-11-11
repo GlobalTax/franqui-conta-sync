@@ -2888,6 +2888,42 @@ export type Database = {
           },
         ]
       }
+      ocr_circuit_breaker: {
+        Row: {
+          created_at: string | null
+          engine: string
+          error_type: string | null
+          failure_count: number
+          last_failure_at: string | null
+          last_success_at: string | null
+          next_retry_at: string | null
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          engine: string
+          error_type?: string | null
+          failure_count?: number
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          next_retry_at?: string | null
+          state: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          engine?: string
+          error_type?: string | null
+          failure_count?: number
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          next_retry_at?: string | null
+          state?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ocr_logs: {
         Row: {
           created_at: string

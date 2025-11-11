@@ -33,6 +33,7 @@ import { useInvoicesReceived, useCreateInvoiceReceived, useUpdateInvoiceReceived
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useView } from '@/contexts/ViewContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   useProcessInvoiceOCR, 
   useLogOCRProcessing,
@@ -310,15 +311,33 @@ export default function InvoiceDetailEditor() {
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
   const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' | 'mindee' }) => {
+    console.log('[OCR] ========================================');
+    console.log('[OCR] Iniciando procesamiento OCR...');
+    
+    // ⭐ NUEVO: Verificar autenticación
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[OCR] Current user:', user?.id);
+    console.log('[OCR] User email:', user?.email);
+    
+    if (!user) {
+      console.error('[OCR] ❌ No authenticated user');
+      toast.error('No estás autenticado. Por favor, inicia sesión.', {
+        description: 'Necesitas iniciar sesión para procesar documentos con OCR',
+        duration: 5000
+      });
+      return;
+    }
+    
+    console.log('[OCR] ✅ User authenticated');
+    
     const effectivePath = opts?.path ?? documentPath;
     const engine = opts?.engine ?? selectedEngine;
     
-    console.log('[OCR] Iniciando procesamiento OCR...');
     console.log('[OCR] documentPath (effective):', effectivePath);
     console.log('[OCR] motor seleccionado:', engine);
     
     if (!effectivePath) {
-      console.error('[OCR] No hay documentPath');
+      console.error('[OCR] ❌ No hay documentPath');
       toast.error("Primero sube un PDF");
       return;
     }

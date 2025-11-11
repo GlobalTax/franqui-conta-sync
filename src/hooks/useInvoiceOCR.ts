@@ -154,22 +154,39 @@ export interface OCRValidationResult {
 export const useProcessInvoiceOCR = () => {
   return useMutation({
     mutationFn: async ({ documentPath, centroCode, engine = 'openai' }: OCRRequest): Promise<OCRResponse> => {
+      console.log('[useProcessInvoiceOCR] ========================================');
+      console.log('[useProcessInvoiceOCR] Starting mutation...');
+      console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
+      console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
+      console.log('[useProcessInvoiceOCR] engine:', engine);
+      
+      console.log('[useProcessInvoiceOCR] Invoking supabase.functions.invoke...');
+      
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
         body: { documentPath, centroCode, engine }
       });
 
+      console.log('[useProcessInvoiceOCR] Response received');
+      console.log('[useProcessInvoiceOCR] data:', data);
+      console.log('[useProcessInvoiceOCR] error:', error);
+
       if (error) {
+        console.error('[useProcessInvoiceOCR] Supabase function error:', error);
+        console.error('[useProcessInvoiceOCR] Error details:', JSON.stringify(error, null, 2));
         throw new Error(error.message || 'Error al procesar OCR');
       }
 
       if (!data.success) {
+        console.error('[useProcessInvoiceOCR] OCR processing failed:', data.error);
         throw new Error(data.error || 'Error desconocido en OCR');
       }
 
+      console.log('[useProcessInvoiceOCR] OCR success! Returning data...');
       return data as OCRResponse;
     },
     onError: (error: any) => {
-      console.error('OCR processing error:', error);
+      console.error('[useProcessInvoiceOCR] ❌ Mutation error:', error);
+      console.error('[useProcessInvoiceOCR] Error stack:', error.stack);
       toast.error(`Error al procesar el documento: ${error.message}`);
     }
   });

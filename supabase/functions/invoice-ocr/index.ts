@@ -94,6 +94,12 @@ interface APMappingResult {
 // ============================================================================
 
 serve(async (req) => {
+  console.log('[INIT] ========================================');
+  console.log('[INIT] invoice-ocr function called');
+  console.log('[INIT] Method:', req.method);
+  console.log('[INIT] URL:', req.url);
+  console.log('[INIT] Headers:', Object.fromEntries(req.headers.entries()));
+  
   const requestOrigin = req.headers.get("origin") || "";
   const corsHeaders = {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes("*") 
@@ -103,13 +109,24 @@ serve(async (req) => {
   };
 
   if (req.method === 'OPTIONS') {
+    console.log('[INIT] OPTIONS request - returning CORS headers');
     return new Response(null, { headers: corsHeaders });
   }
 
   const startTime = Date.now();
 
   try {
-    const { documentPath, centroCode, engine = 'openai' } = await req.json();
+    console.log('[INIT] Parsing request body...');
+    const rawBody = await req.text();
+    console.log('[INIT] Raw body received (first 200 chars):', rawBody.substring(0, 200));
+    
+    const body = JSON.parse(rawBody);
+    console.log('[INIT] Parsed body:', body);
+    
+    const { documentPath, centroCode, engine = 'openai' } = body;
+    console.log('[INIT] documentPath:', documentPath);
+    console.log('[INIT] centroCode:', centroCode);
+    console.log('[INIT] engine:', engine);
     
     if (!documentPath || !centroCode) {
       throw new Error('documentPath and centroCode are required');

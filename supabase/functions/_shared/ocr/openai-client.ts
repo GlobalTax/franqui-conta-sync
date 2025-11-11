@@ -2,8 +2,9 @@
 // OPENAI VISION CLIENT - Pure extraction logic with error classification
 // ============================================================================
 
-import type { EnhancedInvoiceData, OpenAIExtractionResult, DocumentType } from "./types.ts";
+import type { OpenAIExtractionResult, DocumentType } from "./types.ts";
 import { getPrompt } from "./prompts.ts";
+import { adaptOpenAIToStandard } from "./openai-adapter.ts";
 
 // ============================================================================
 // MODEL CONFIGURATION
@@ -138,48 +139,11 @@ export async function extractWithOpenAI(
     }
 
     const result = await response.json();
-    const extracted = JSON.parse(result.choices[0].message.content);
 
-    console.log('[OpenAI Vision] Extraction completed');
+    console.log('[OpenAI Vision] Extraction completed, normalizing with adapter...');
 
-    // Extract usage data for telemetry
-    const usage = result.usage || {};
-    const tokensIn = usage.prompt_tokens || 0;
-    const tokensOut = usage.completion_tokens || 0;
-    const totalTokens = usage.total_tokens || tokensIn + tokensOut;
-    
-    // Calculate cost
-    const estimatedCostEur = (totalTokens / 1000) * modelConfig.costPer1kTokens;
-
-    console.log(`[OpenAI Vision] Usage: ${tokensIn} in, ${tokensOut} out, €${estimatedCostEur.toFixed(4)} estimated`);
-
-    // Calcular confidence global (promedio ponderado)
-    const confidenceByField = extracted.confidence_by_field || {};
-    const criticalFields = ['issuer.vat_id', 'invoice_number', 'totals.total', 'issue_date'];
-    
-    const criticalConfidence = criticalFields
-      .map(f => confidenceByField[f] || 0)
-      .reduce((sum, c) => sum + c, 0) / criticalFields.length;
-
-    const allFieldsConfidence = Object.values(confidenceByField)
-      .reduce((sum: number, c: any) => sum + (c as number), 0) / Math.max(Object.keys(confidenceByField).length, 1);
-
-    const globalConfidence = (criticalConfidence * 0.7) + (allFieldsConfidence * 0.3);
-
-    console.log(`[OpenAI Vision] Confidence: ${Math.round(globalConfidence)}%`);
-
-    return {
-      data: extracted.data,
-      confidence_score: Math.round(globalConfidence),
-      confidence_by_field: confidenceByField,
-      raw_response: result,
-      usage: {
-        tokens_in: tokensIn,
-        tokens_out: tokensOut,
-        total_tokens: totalTokens,
-        estimated_cost_eur: estimatedCostEur
-      }
-    };
+    // Use adapter for normalization and validation
+    return adaptOpenAIToStandard(result);
 
   } catch (error) {
     clearTimeout(timeoutId);

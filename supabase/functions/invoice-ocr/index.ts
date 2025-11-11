@@ -376,6 +376,7 @@ serve(async (req) => {
         ocr_engine: orchestratorResult.ocr_engine,
         status: orchestratorResult.status, // ⭐ Estado final del documento
         merge_notes: orchestratorResult.merge_notes,
+        orchestrator_logs: orchestratorResult.orchestrator_logs, // ⭐ NUEVO: Timeline de decisiones
         data: normalizedResponse.normalized,
         normalized: normalizedResponse.normalized,
         validation: normalizedResponse.validation,

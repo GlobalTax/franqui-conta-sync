@@ -228,6 +228,49 @@ export default function InvoiceDetailEditor() {
     return true;
   }, [form.watch()]);
 
+  // ⭐ Función helper para mostrar timeline visual en consola
+  const logOCRTimeline = (logs: any[]) => {
+    if (!logs || logs.length === 0) return;
+    
+    console.group('🔍 OCR ORCHESTRATOR TIMELINE');
+    
+    const startTime = logs[0]?.timestamp || 0;
+    
+    logs.forEach((log) => {
+      const elapsedMs = startTime > 0 ? log.timestamp - startTime : 0;
+      const icon = {
+        'INIT': '🚀',
+        'ROUTING': '🛤️',
+        'EXECUTION': '⚙️',
+        'VALIDATION': '✅',
+        'DECISION': '🎯',
+        'MERGE': '🔀',
+        'CACHE': '💾'
+      }[log.stage] || '📌';
+      
+      const style = log.decision?.includes('FAILED') || log.action?.includes('failed')
+        ? 'color: #ef4444; font-weight: bold'
+        : log.stage === 'DECISION'
+        ? 'color: #3b82f6; font-weight: bold'
+        : 'color: #6b7280';
+      
+      console.log(
+        `%c[+${elapsedMs}ms] ${icon} ${log.stage} → ${log.action}${log.decision ? ` (${log.decision})` : ''}`,
+        style
+      );
+      
+      if (log.reason) {
+        console.log(`   ℹ️  ${log.reason}`);
+      }
+      
+      if (log.metrics) {
+        console.log('   📊 Metrics:', log.metrics);
+      }
+    });
+    
+    console.groupEnd();
+  };
+
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
   const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' | 'mindee' }) => {
@@ -266,6 +309,31 @@ export default function InvoiceDetailEditor() {
       });
       
       console.log('[OCR] Resultado recibido:', result);
+      
+      // ⭐ NUEVO: Mostrar timeline visual
+      if (result.orchestrator_logs) {
+        logOCRTimeline(result.orchestrator_logs);
+      }
+      
+      // ⭐ NUEVO: Resumen de métricas
+      if (result.ocr_metrics) {
+        console.group('📊 OCR METRICS SUMMARY');
+        console.log('Engine usado:', result.ocr_engine);
+        console.log('Confianza final:', `${Math.round(result.confidence * 100)}%`);
+        console.log('Tiempo total:', `${result.processingTimeMs}ms`);
+        console.log('OpenAI:', `${result.ocr_metrics.ms_openai}ms`);
+        console.log('Mindee:', `${result.ocr_metrics.ms_mindee}ms`);
+        console.log('Páginas:', result.ocr_metrics.pages);
+        console.log('Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
+        console.groupEnd();
+      }
+      
+      // ⭐ NUEVO: Mostrar merge notes si existen
+      if (result.merge_notes && result.merge_notes.length > 0) {
+        console.group('📝 MERGE NOTES');
+        result.merge_notes.forEach(note => console.log(`  • ${note}`));
+        console.groupEnd();
+      }
 
       setRawOCRResponse(result);
       

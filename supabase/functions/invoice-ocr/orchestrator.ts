@@ -112,12 +112,29 @@ interface EnhancedInvoiceData {
 
 export type InvoiceStatus = "processed_ok" | "needs_review" | "posted";
 
+// ⭐ Logging estructurado
+export interface OrchestratorLog {
+  timestamp: number;
+  stage: string;
+  action: string;
+  decision?: string;
+  reason?: string;
+  metrics?: {
+    duration_ms?: number;
+    confidence?: number;
+    engine?: string;
+    [key: string]: any;
+  };
+  data?: any;
+}
+
 export interface OrchestratorResult {
   ocr_engine: "openai" | "mindee" | "merged" | "manual_review";
   final_invoice_json: EnhancedInvoiceData;
   confidence_final: number;
   status: InvoiceStatus; // ⭐ Estado final del documento
   merge_notes: string[];
+  orchestrator_logs: OrchestratorLog[]; // ⭐ NUEVO: Timeline de decisiones
   raw_responses: {
     openai?: OpenAIExtractionResult;
     mindee?: MindeeExtractionResult;
@@ -180,11 +197,41 @@ export async function orchestrateOCR(
   
   const mergeNotes: string[] = [];
   const rawResponses: any = {};
+  const orchestratorLogs: OrchestratorLog[] = [];
   
   // ⭐ Tracking de tiempos por motor
   let ms_openai = 0;
   let ms_mindee = 0;
 
+  // ⭐ Helper para agregar logs estructurados
+  const addLog = (stage: string, action: string, decision?: string, reason?: string, metrics?: any) => {
+    const log: OrchestratorLog = {
+      timestamp: Date.now(),
+      stage,
+      action,
+      decision,
+      reason,
+      metrics
+    };
+    orchestratorLogs.push(log);
+    console.log(`[Orchestrator::${stage}] ${action}${decision ? ` → ${decision}` : ''}${reason ? ` (${reason})` : ''}`);
+  };
+
+  // ⭐ Performance markers
+  const performanceMarkers: Record<string, number> = {};
+  const markStart = (marker: string) => {
+    performanceMarkers[`${marker}_start`] = Date.now();
+  };
+  const markEnd = (marker: string) => {
+    const start = performanceMarkers[`${marker}_start`];
+    if (start) {
+      const duration = Date.now() - start;
+      return duration;
+    }
+    return 0;
+  };
+
+  addLog('INIT', 'Starting OCR', `Engine: ${preferredEngine}`, 'User preference');
   console.log(`[Orchestrator] Starting OCR orchestration with preferred engine: ${preferredEngine}...`);
 
   // ========================================================================
@@ -196,21 +243,36 @@ export async function orchestrateOCR(
 
   // OPCIÓN A: Usuario prefiere Mindee explícitamente
   if (preferredEngine === 'mindee') {
+    addLog('ROUTING', 'User prefers Mindee', 'Executing Mindee first', 'User explicitly selected Mindee engine');
     console.log('[Orchestrator] Using Mindee as preferred engine...');
     
     try {
+      markStart('mindee_extraction');
       const startMindee = Date.now();
       mindeeResult = await extractWithMindee(base64Content);
       ms_mindee = Date.now() - startMindee;
+      markEnd('mindee_extraction');
       
       rawResponses.mindee = mindeeResult;
       console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
+      
+      addLog('EXECUTION', 'Mindee completed', `Confidence: ${mindeeResult.confidence_score}%`, undefined, {
+        duration_ms: ms_mindee,
+        confidence: mindeeResult.confidence_score,
+        engine: 'mindee'
+      });
       
       // Si Mindee tuvo éxito, devolvemos directamente
       const status: InvoiceStatus = mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
         ? 'processed_ok'
         : 'needs_review';
         
+      addLog('DECISION', 'Using Mindee result', 'No fallback needed', `Confidence ${mindeeResult.confidence_score}% meets threshold`, {
+        confidence: mindeeResult.confidence_score,
+        threshold: CONFIDENCE_THRESHOLD_AUTO_POST,
+        status
+      });
+      
       console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
       mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
       mergeNotes.push(`📊 Estado final: ${status}`);
@@ -221,12 +283,14 @@ export async function orchestrateOCR(
         confidence_final: mindeeResult.confidence_score,
         status,
         merge_notes: mergeNotes,
+        orchestrator_logs: orchestratorLogs,
         raw_responses: rawResponses,
         timing: { ms_openai, ms_mindee }
       };
     } catch (error) {
       console.error('[Orchestrator] Mindee failed, falling back to OpenAI:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog('EXECUTION', 'Mindee failed', 'Falling back to OpenAI', errorMsg);
       mergeNotes.push(`⚠️ Mindee falló: ${errorMsg}, intentando OpenAI como fallback`);
       // Continuar para intentar con OpenAI como fallback
     }
@@ -234,18 +298,28 @@ export async function orchestrateOCR(
 
   // OPCIÓN B: Usuario prefiere OpenAI o merged, O Mindee falló
   // Siempre intentamos OpenAI excepto cuando Mindee ya tuvo éxito (y ya retornamos arriba)
+  addLog('ROUTING', 'Attempting OpenAI Vision', preferredEngine === 'openai' ? 'User preference' : 'Fallback from Mindee');
   console.log('[Orchestrator] Attempting OpenAI Vision...');
   
   try {
+    markStart('openai_extraction');
     const startOpenAI = Date.now();
     openaiResult = await extractWithOpenAI(base64Content, mimeType);
     ms_openai = Date.now() - startOpenAI;
+    markEnd('openai_extraction');
     
     rawResponses.openai = openaiResult;
     console.log(`[Orchestrator] OpenAI completed: ${openaiResult.confidence_score}% confidence in ${ms_openai}ms`);
+    
+    addLog('EXECUTION', 'OpenAI completed', `Confidence: ${openaiResult.confidence_score}%`, undefined, {
+      duration_ms: ms_openai,
+      confidence: openaiResult.confidence_score,
+      engine: 'openai'
+    });
   } catch (error) {
     console.error('[Orchestrator] OpenAI Vision failed:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    addLog('EXECUTION', 'OpenAI failed', 'ERROR', errorMsg);
     mergeNotes.push(`⚠️ OpenAI Vision falló: ${errorMsg}`);
   }
 
@@ -263,7 +337,10 @@ export async function orchestrateOCR(
       const value = getFieldValue(openaiResult!.data, field);
       return !value || value === '' || value === null || value === undefined;
     });
+    addLog('VALIDATION', 'Critical fields check', 'FAILED', `Missing: ${missingFields.join(', ')}`);
     console.log(`[Orchestrator] ⚠️ Critical fields missing: ${missingFields.join(', ')}`);
+  } else if (openaiResult) {
+    addLog('VALIDATION', 'Critical fields check', 'PASSED', 'All critical fields present');
   }
 
   // ========================================================================
@@ -281,6 +358,14 @@ export async function orchestrateOCR(
       ? 'processed_ok'    // ≥ 85 → elegible para auto-post
       : 'needs_review';   // 70-84 → requiere revisión
       
+    addLog('DECISION', 'Using OpenAI result', status, `Confidence ${openaiResult.confidence_score}% + critical fields OK`, {
+      confidence: openaiResult.confidence_score,
+      critical_fields_ok: true,
+      status,
+      threshold_fallback: CONFIDENCE_THRESHOLD_FALLBACK,
+      threshold_auto_post: CONFIDENCE_THRESHOLD_AUTO_POST
+    });
+    
     console.log(`[Orchestrator] ✅ Using OpenAI result (confidence: ${openaiResult.confidence_score}%, status: ${status})`);
     mergeNotes.push(`✅ OpenAI Vision usado (confidence ${openaiResult.confidence_score}%)`);
     mergeNotes.push(`📊 Estado final: ${status}`);
@@ -291,6 +376,7 @@ export async function orchestrateOCR(
       confidence_final: openaiResult.confidence_score,
       status,
       merge_notes: mergeNotes,
+      orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
     };
@@ -309,16 +395,26 @@ export async function orchestrateOCR(
 
   // Solo ejecutar Mindee si aún no se ha ejecutado (por preferredEngine)
   if (!mindeeResult) {
+    addLog('ROUTING', 'Attempting Mindee as fallback', 'OpenAI insufficient');
     try {
+      markStart('mindee_extraction');
       const startMindee = Date.now();
       mindeeResult = await extractWithMindee(base64Content);
       ms_mindee = Date.now() - startMindee;
+      markEnd('mindee_extraction');
       
       rawResponses.mindee = mindeeResult;
       console.log(`[Orchestrator] Mindee completed: ${mindeeResult.confidence_score}% confidence in ${ms_mindee}ms`);
+      
+      addLog('EXECUTION', 'Mindee completed', `Confidence: ${mindeeResult.confidence_score}%`, undefined, {
+        duration_ms: ms_mindee,
+        confidence: mindeeResult.confidence_score,
+        engine: 'mindee'
+      });
     } catch (error) {
       console.error('[Orchestrator] Mindee failed:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog('EXECUTION', 'Mindee failed', 'ERROR', errorMsg);
       mergeNotes.push(`⚠️ Mindee también falló: ${errorMsg}`);
     }
   }
@@ -328,6 +424,10 @@ export async function orchestrateOCR(
   // ========================================================================
   
   if (openaiResult && mindeeResult) {
+    addLog('MERGE', 'Starting intelligent merge', 'Both engines available', undefined, {
+      openai_confidence: openaiResult.confidence_score,
+      mindee_confidence: mindeeResult.confidence_score
+    });
     console.log('[Orchestrator] 🔀 Performing intelligent merge...');
     
     // ⭐ Consultar historial del proveedor para priorización inteligente
@@ -352,6 +452,14 @@ export async function orchestrateOCR(
           supplierHistory = history;
           const mindeeCount = history.filter(h => h.ocr_engine === 'mindee' || h.ocr_engine === 'merged').length;
           const mindeeWinRate = mindeeCount / history.length;
+          
+          addLog('MERGE', 'Supplier history check', `Mindee win rate: ${(mindeeWinRate * 100).toFixed(0)}%`,
+            `Based on ${history.length} previous invoices`, {
+              total_invoices: history.length,
+              mindee_wins: mindeeCount,
+              win_rate: mindeeWinRate
+            });
+          
           console.log(`[Orchestrator] 📊 Supplier history: ${history.length} invoices, Mindee rate: ${(mindeeWinRate * 100).toFixed(0)}%`);
           
           if (mindeeWinRate > 0.6) {
@@ -360,10 +468,13 @@ export async function orchestrateOCR(
         }
       } catch (error) {
         console.error('[Orchestrator] Failed to fetch supplier history:', error);
+        addLog('MERGE', 'Supplier history lookup failed', 'ERROR', error instanceof Error ? error.message : 'Unknown error');
       }
     }
     
+    markStart('intelligent_merge');
     const merged = intelligentMerge(openaiResult, mindeeResult, mergeNotes, supplierHistory);
+    const mergeDuration = markEnd('intelligent_merge');
     
     // ⭐ Determinar estado basado en confidence final del merge
     const status: InvoiceStatus = merged.confidence >= CONFIDENCE_THRESHOLD_AUTO_POST
@@ -371,6 +482,14 @@ export async function orchestrateOCR(
       : merged.confidence >= CONFIDENCE_THRESHOLD_FALLBACK
         ? 'needs_review'  // 70-84 → requiere revisión
         : 'needs_review'; // < 70 → requiere revisión
+    
+    addLog('MERGE', 'Merge completed', `Final confidence: ${merged.confidence}%`, `Status: ${status}`, {
+      confidence: merged.confidence,
+      status,
+      duration_ms: mergeDuration,
+      openai_weight: '40%',
+      mindee_weight: '60%'
+    });
     
     console.log(`[Orchestrator] 🔀 Merge completed: confidence ${merged.confidence}%, status: ${status}`);
     mergeNotes.push(`📊 Estado final: ${status} (confidence: ${merged.confidence}%)`);
@@ -381,6 +500,7 @@ export async function orchestrateOCR(
       confidence_final: merged.confidence,
       status,
       merge_notes: mergeNotes,
+      orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
     };
@@ -399,6 +519,11 @@ export async function orchestrateOCR(
       ? 'processed_ok'
       : 'needs_review';
       
+    addLog('DECISION', 'Using Mindee result', status, `Best available: confidence ${mindeeResult.confidence_score}%`, {
+      confidence: mindeeResult.confidence_score,
+      status
+    });
+    
     console.log(`[Orchestrator] ✅ Using Mindee result (confidence: ${mindeeResult.confidence_score}%, status: ${status})`);
     mergeNotes.push(`✅ Mindee usado (confidence ${mindeeResult.confidence_score}%)`);
     mergeNotes.push(`📊 Estado final: ${status}`);
@@ -409,12 +534,18 @@ export async function orchestrateOCR(
       confidence_final: mindeeResult.confidence_score,
       status,
       merge_notes: mergeNotes,
+      orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
     };
   }
 
   if (openaiResult && openaiResult.confidence_score >= 40) {
+    addLog('DECISION', 'Using OpenAI result', 'needs_review', `Low confidence ${openaiResult.confidence_score}% but best available`, {
+      confidence: openaiResult.confidence_score,
+      status: 'needs_review'
+    });
+    
     console.log('[Orchestrator] ⚠️ Using OpenAI result (best available but low confidence)');
     mergeNotes.push(`⚠️ Usando OpenAI con confianza baja (${openaiResult.confidence_score}%)`);
     mergeNotes.push(`📊 Estado final: needs_review (confidence < ${CONFIDENCE_THRESHOLD_FALLBACK}%)`);
@@ -425,6 +556,7 @@ export async function orchestrateOCR(
       confidence_final: openaiResult.confidence_score,
       status: 'needs_review',
       merge_notes: mergeNotes,
+      orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
       timing: { ms_openai, ms_mindee }
     };
@@ -438,6 +570,11 @@ export async function orchestrateOCR(
   // PASO 6: Todos los motores fallaron → needs_review
   // ========================================================================
   
+  addLog('DECISION', 'All engines failed', 'manual_review', 'All OCR engines returned insufficient results', {
+    confidence: 0,
+    status: 'needs_review'
+  });
+  
   console.log('[Orchestrator] ❌ All OCR engines failed, flagging for manual review');
   mergeNotes.push('❌ Todos los motores OCR fallaron. Se requiere revisión manual.');
   mergeNotes.push('📊 Estado final: needs_review (confidence: 0%)');
@@ -448,6 +585,7 @@ export async function orchestrateOCR(
     confidence_final: 0,
     status: 'needs_review',
     merge_notes: mergeNotes,
+    orchestrator_logs: orchestratorLogs,
     raw_responses: rawResponses,
     timing: { ms_openai, ms_mindee }
   };

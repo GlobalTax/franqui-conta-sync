@@ -111,6 +111,14 @@ export interface OCRResponse {
   ocr_engine?: "openai" | "mindee" | "merged" | "manual_review";
   status?: "processed_ok" | "needs_review" | "posted"; // ⭐ Estado final del documento
   merge_notes?: string[];
+  orchestrator_logs?: Array<{
+    timestamp: number;
+    stage: string;
+    action: string;
+    decision?: string;
+    reason?: string;
+    metrics?: any;
+  }>; // ⭐ NUEVO: Timeline de decisiones del orchestrator
   confidence: number;
   data: OCRInvoiceData;
   normalized: OCRInvoiceData;
@@ -124,6 +132,15 @@ export interface OCRResponse {
   entry_validation?: InvoiceEntryValidationResult;
   rawText?: string;
   processingTimeMs: number;
+  ocr_metrics?: {
+    pages: number;
+    tokens_in: number;
+    tokens_out: number;
+    cost_estimate_eur: number;
+    ms_openai?: number;
+    ms_mindee?: number;
+    processing_time_ms?: number;
+  }; // ⭐ NUEVO: Métricas detalladas de OCR
   warnings?: string[];
   error?: string;
 }

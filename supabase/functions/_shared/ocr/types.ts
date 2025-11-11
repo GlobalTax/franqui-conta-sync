@@ -2,8 +2,10 @@
 // OCR TYPES - Shared interfaces for all OCR modules
 // ============================================================================
 
+export type DocumentType = 'invoice' | 'credit_note' | 'ticket';
+
 export interface EnhancedInvoiceData {
-  document_type: "invoice" | "credit_note" | "ticket";
+  document_type: DocumentType;
   issuer: {
     name: string;
     vat_id: string | null;
@@ -68,6 +70,12 @@ export interface OpenAIExtractionResult {
   confidence_score: number;
   confidence_by_field: Record<string, number>;
   raw_response: any;
+  usage?: {
+    tokens_in: number;
+    tokens_out: number;
+    total_tokens: number;
+    estimated_cost_eur: number;
+  };
 }
 
 export interface MindeeExtractionResult {

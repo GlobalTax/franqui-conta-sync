@@ -82,7 +82,7 @@ serve(async (req) => {
     const rawBody = await req.text();
     console.log('[INIT] Raw body received (first 200 chars):', rawBody.substring(0, 200));
     
-  const body = await req.json();
+    const body = JSON.parse(rawBody);
   const { invoice_id, documentPath, centroCode, engine = 'openai', useWebhook = false } = body;
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

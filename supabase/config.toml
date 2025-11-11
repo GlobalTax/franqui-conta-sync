@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.merge-pdf]
 verify_jwt = true
+
+[functions.api-example]
+verify_jwt = false

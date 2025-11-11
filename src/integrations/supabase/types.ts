@@ -680,6 +680,144 @@ export type Database = {
         }
         Relationships: []
       }
+      api_key_usage_logs: {
+        Row: {
+          api_key_id: string
+          endpoint: string
+          error_message: string | null
+          id: string
+          ip_address: unknown
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+          timestamp: string
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id: string
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          centro_code: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          franchisee_id: string | null
+          id: string
+          ip_whitelist: string[] | null
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          last_used_ip: unknown
+          name: string
+          rate_limit: number | null
+          request_count: number | null
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          scopes: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          last_used_ip?: unknown
+          name: string
+          rate_limit?: number | null
+          request_count?: number | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          scopes?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          centro_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          last_used_ip?: unknown
+          name?: string
+          rate_limit?: number | null
+          request_count?: number | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          scopes?: Json | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "api_keys_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "api_keys_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_rules: {
         Row: {
           active: boolean | null
@@ -4826,6 +4964,20 @@ export type Database = {
           real_sin_plan: number
         }[]
       }
+      generate_api_key: {
+        Args: {
+          p_centro_code?: string
+          p_expires_at?: string
+          p_franchisee_id?: string
+          p_name: string
+          p_scopes?: Json
+        }
+        Returns: {
+          api_key: string
+          key_id: string
+          key_prefix: string
+        }[]
+      }
       generate_closing_entries: {
         Args: {
           p_centro_code: string
@@ -5258,6 +5410,10 @@ export type Database = {
       refresh_gl_ledger_month: { Args: never; Returns: undefined }
       refresh_ocr_metrics: { Args: never; Returns: undefined }
       refresh_user_memberships: { Args: never; Returns: undefined }
+      revoke_api_key: {
+        Args: { p_key_id: string; p_reason?: string }
+        Returns: boolean
+      }
       run_franchisee_reconstruction: { Args: never; Returns: Json }
       search_locations: {
         Args: { limit_results?: number; search_query: string }
@@ -5327,6 +5483,21 @@ export type Database = {
       user_can_access_centro: {
         Args: { _centro_code: string; _user_id: string }
         Returns: boolean
+      }
+      validate_api_key: {
+        Args: {
+          p_ip_address?: unknown
+          p_key_hash: string
+          p_required_scope?: string
+        }
+        Returns: {
+          centro_code: string
+          franchisee_id: string
+          is_valid: boolean
+          key_id: string
+          scopes: Json
+          user_id: string
+        }[]
       }
       verify_hash_chain: {
         Args: { p_centro_code: string; p_invoice_type: string }

@@ -16,6 +16,7 @@ import SystemSettings from "./admin/SystemSettings";
 import DemoDataGenerator from "@/components/admin/DemoDataGenerator";
 import TestingSuite from "@/components/testing/TestingSuite";
 import SimplePLMapping from "./admin/SimplePLMapping";
+import ApiKeysManagement from "./admin/ApiKeysManagement";
 
 const Admin = () => {
   return (
@@ -29,7 +30,7 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="testing">Testing</TabsTrigger>
           <TabsTrigger value="pl-mapping">P&L</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
@@ -43,6 +44,7 @@ const Admin = () => {
           <TabsTrigger value="dq">Calidad</TabsTrigger>
           <TabsTrigger value="dq-dashboard">Dashboard DQ</TabsTrigger>
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
+          <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="settings">Config</TabsTrigger>
         </TabsList>
 
@@ -97,6 +99,10 @@ const Admin = () => {
 
         <TabsContent value="audit" className="mt-6">
           <AuditLog />
+        </TabsContent>
+
+        <TabsContent value="api-keys" className="mt-6">
+          <ApiKeysManagement />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-6">

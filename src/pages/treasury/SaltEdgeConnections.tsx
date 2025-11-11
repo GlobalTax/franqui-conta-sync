@@ -16,6 +16,11 @@ import {
   useSyncBankTransactions,
   useDeleteConnection,
 } from "@/hooks/useSaltEdgeConnections";
+import { useSaltEdgeMetrics } from "@/hooks/useSaltEdgeMetrics";
+import { SaltEdgeMetricsCards } from "@/components/treasury/SaltEdgeMetricsCards";
+import { SaltEdgeTransactionsChart } from "@/components/treasury/SaltEdgeTransactionsChart";
+import { SaltEdgeErrorsPanel } from "@/components/treasury/SaltEdgeErrorsPanel";
+import { SaltEdgeExpirationAlerts } from "@/components/treasury/SaltEdgeExpirationAlerts";
 
 const SPANISH_BANKS = [
   { code: 'bbva_es', name: 'BBVA España' },
@@ -36,6 +41,7 @@ export default function SaltEdgeConnections() {
 
   const { data: connections, isLoading: loadingConnections } = useSaltEdgeConnections(selectedCentro || undefined);
   const { data: syncLogs, isLoading: loadingLogs } = useSaltEdgeSyncLogs();
+  const { data: metrics, isLoading: loadingMetrics } = useSaltEdgeMetrics(selectedCentro || undefined);
   
   const createConnection = useCreateBankConnection();
   const syncTransactions = useSyncBankTransactions();
@@ -155,6 +161,24 @@ export default function SaltEdgeConnections() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Alerta de expiraciones */}
+      <SaltEdgeExpirationAlerts expiringCount={metrics?.expiringConnections || 0} />
+
+      {/* KPIs principales */}
+      <SaltEdgeMetricsCards
+        activeConnections={metrics?.activeConnections || 0}
+        todayTransactions={metrics?.todayTransactions || 0}
+        recentErrors={metrics?.recentErrors || 0}
+        connectedAccounts={metrics?.connectedAccounts || 0}
+        isLoading={loadingMetrics}
+      />
+
+      {/* Gráficos */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <SaltEdgeTransactionsChart data={metrics?.transactionsByDay || []} />
+        <SaltEdgeErrorsPanel errors={metrics?.errorDetails || []} />
       </div>
 
       <Card>

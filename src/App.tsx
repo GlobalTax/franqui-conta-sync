@@ -55,6 +55,7 @@ const APLearningDashboard = lazy(() => import("@/pages/settings/APLearningDashbo
 const OCRMetrics = lazy(() => import("@/pages/analytics/OCRMetrics"));
 const OCRCacheMetrics = lazy(() => import("@/pages/analytics/OCRCacheMetrics"));
 const SaltEdgeConnections = lazy(() => import("@/pages/treasury/SaltEdgeConnections"));
+const OCRInbox = lazy(() => import("@/pages/digitization/OCRInbox"));
 
 /**
  * React Query Configuration
@@ -127,6 +128,7 @@ const App = () => {
             <Route path="/invoices/received" element={<Navigate to="/invoices/inbox" replace />} />
             <Route path="/invoices/issued" element={<Navigate to="/invoices?tab=emitidas" replace />} />
             <Route path="/digitalizacion/inbox" element={<InvoicesInbox />} />
+            <Route path="/digitalizacion/inbox-v2" element={<OCRInbox />} />
             <Route path="/digitalizacion/depura" element={<InvoicesInbox />} />
             <Route path="/digitalizacion/papelera" element={<InvoicesInbox />} />
             {/* Mantener ruta legacy por compatibilidad */}

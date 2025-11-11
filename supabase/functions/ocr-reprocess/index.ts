@@ -54,7 +54,7 @@ serve(async (req) => {
 
     // 3. Descargar documento desde storage
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from('invoices')
+      .from('invoice-documents')
       .download(invoice.document_path);
 
     if (downloadError) {

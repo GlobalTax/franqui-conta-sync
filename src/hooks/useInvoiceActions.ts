@@ -224,7 +224,7 @@ export function useInvoiceActions() {
     try {
       // Obtener URL pública del storage
       const { data } = supabase.storage
-        .from('invoices')
+        .from('invoice-documents')
         .getPublicUrl(documentPath);
 
       if (!data?.publicUrl) {

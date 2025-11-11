@@ -15,7 +15,8 @@ import {
   Building2,
   Calendar,
   Database,
-  Loader2
+  Loader2,
+  FlaskConical
 } from "lucide-react";
 import { logger } from "@/lib/logger";
 
@@ -42,6 +43,16 @@ export default function SandboxPanel() {
 
     try {
       const result = await fn();
+      
+      // Si es una respuesta de edge function, mostrar detalles adicionales
+      if (result && result.environment) {
+        addLog({
+          level: 'info',
+          category: 'Edge Function',
+          message: '🔐 Variables de entorno verificadas',
+          details: result.environment,
+        });
+      }
       
       addLog({
         level: 'success',
@@ -281,6 +292,32 @@ export default function SandboxPanel() {
     );
   };
 
+  const testOCRFunction = async () => {
+    await executeOperation(
+      'test-ocr-function',
+      'Test Edge Function: invoice-ocr-test',
+      async () => {
+        console.log('[Test] Llamando a invoice-ocr-test...');
+        
+        const { data, error } = await supabase.functions.invoke('invoice-ocr-test', {
+          body: { 
+            test: true, 
+            timestamp: Date.now(),
+            message: 'Test desde SandboxPanel'
+          }
+        });
+
+        if (error) {
+          console.error('[Test] Error:', error);
+          throw error;
+        }
+
+        console.log('[Test] Respuesta:', data);
+        return data;
+      }
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -370,6 +407,29 @@ export default function SandboxPanel() {
             <div className="text-left">
               <div className="font-medium">Mov. Bancario</div>
               <div className="text-xs text-muted-foreground">Simula transacción</div>
+            </div>
+          </Button>
+        </div>
+
+        {/* Edge Functions Test */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <FlaskConical className="h-4 w-4 text-primary" />
+            Edge Functions Test
+          </div>
+          
+          <Button
+            onClick={testOCRFunction}
+            disabled={isExecuting}
+            className="w-full h-auto py-4 flex-col items-start gap-2"
+            variant="outline"
+          >
+            <Database className="h-5 w-5" />
+            <div className="text-left w-full">
+              <div className="font-medium">Test invoice-ocr-test</div>
+              <div className="text-xs text-muted-foreground">
+                Verifica conectividad básica y variables de entorno
+              </div>
             </div>
           </Button>
         </div>

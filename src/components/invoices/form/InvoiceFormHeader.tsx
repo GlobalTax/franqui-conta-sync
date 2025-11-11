@@ -5,10 +5,11 @@
 
 import { Control } from 'react-hook-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useCentres } from '@/hooks/useCentres';
 
 interface InvoiceFormHeaderProps {
@@ -16,13 +17,21 @@ interface InvoiceFormHeaderProps {
   isEditMode: boolean;
   ocrEngine?: string;
   ocrConfidence?: number;
+  onProcessOCR?: () => void;
+  isProcessing?: boolean;
+  hasDocument?: boolean;
+  onGoToUpload?: () => void;
 }
 
 export function InvoiceFormHeader({ 
   control, 
   isEditMode, 
   ocrEngine, 
-  ocrConfidence 
+  ocrConfidence,
+  onProcessOCR,
+  isProcessing,
+  hasDocument,
+  onGoToUpload
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
 
@@ -72,20 +81,45 @@ export function InvoiceFormHeader({
             )}
           />
 
-          {/* Motor OCR */}
-          {ocrEngine && (
-            <div>
-              <label className="uppercase text-xs font-bold text-primary block mb-2">
-                Reconocimiento OCR
-              </label>
-              <Badge variant="secondary" className="gap-2">
-                <Sparkles className="h-3 w-3" />
-                {ocrEngine === 'openai' && 'OpenAI GPT-4'}
-                {ocrEngine === 'mindee' && 'Mindee'}
-                {ocrEngine === 'manual' && 'Manual'}
-              </Badge>
-            </div>
-          )}
+{/* Motor OCR + Acción */}
+<div>
+  <div className="flex items-center justify-between mb-2">
+    <label className="uppercase text-xs font-bold text-primary block">
+      Reconocimiento OCR
+    </label>
+    {hasDocument ? (
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={onProcessOCR}
+        disabled={isProcessing}
+      >
+        {isProcessing && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+        Digitalizar con OCR
+      </Button>
+    ) : (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onGoToUpload}
+      >
+        Subir PDF
+      </Button>
+    )}
+  </div>
+  {ocrEngine && (
+    <Badge variant="secondary" className="gap-2">
+      <Sparkles className="h-3 w-3" />
+      {ocrEngine === 'openai' && 'OpenAI GPT-4'}
+      {ocrEngine === 'mindee' && 'Mindee'}
+      {ocrEngine === 'manual' && 'Manual'}
+      {ocrEngine === 'google_vision' && 'Google Vision'}
+    </Badge>
+  )}
+  {!hasDocument && (
+    <p className="text-xs text-muted-foreground mt-1">Sube un PDF para habilitar el OCR.</p>
+  )}
+</div>
 
           {/* Centro */}
           <FormField

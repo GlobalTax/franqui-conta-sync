@@ -216,18 +216,20 @@ export default function InvoiceDetailEditor() {
   }, [form.watch()]);
 
   // Handler de procesamiento OCR
-  const handleProcessOCR = async () => {
+  // Handler de procesamiento OCR (acepta path/centro opcionales para evitar carreras)
+  const handleProcessOCR = async (opts?: { path?: string; centro?: string }) => {
+    const effectivePath = opts?.path ?? documentPath;
     console.log('[OCR] Iniciando procesamiento OCR...');
-    console.log('[OCR] documentPath:', documentPath);
+    console.log('[OCR] documentPath (effective):', effectivePath);
     
-    if (!documentPath) {
+    if (!effectivePath) {
       console.error('[OCR] No hay documentPath');
       toast.error("Primero sube un PDF");
       return;
     }
     
     // Usar centro actual o 'temp' si no hay seleccionado
-    let centroCode = form.getValues('centro_code');
+    let centroCode = opts?.centro ?? form.getValues('centro_code');
     console.log('[OCR] Centro code inicial:', centroCode);
     
     if (!centroCode) {
@@ -238,11 +240,11 @@ export default function InvoiceDetailEditor() {
       centroCode = 'temp';
     }
 
-    console.log('[OCR] Invocando edge function con:', { documentPath, centroCode });
+    console.log('[OCR] Invocando edge function con:', { documentPath: effectivePath, centroCode });
 
     try {
       const result = await processOCR.mutateAsync({
-        documentPath,
+        documentPath: effectivePath,
         centroCode
       });
       
@@ -304,13 +306,11 @@ export default function InvoiceDetailEditor() {
     setDocumentPath(path);
     if (path) {
       toast.success("PDF subido correctamente");
-      
-      console.log('[Upload] Programando auto-trigger OCR en 500ms...');
-      // Auto-trigger OCR siempre (usará centro actual o 'temp')
+      console.log('[Upload] Programando auto-trigger OCR en 300ms con path');
       setTimeout(() => {
-        console.log('[Upload] Ejecutando auto-trigger OCR ahora');
-        handleProcessOCR();
-      }, 500);
+        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path');
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp' });
+      }, 300);
     }
   };
 
@@ -561,7 +561,7 @@ export default function InvoiceDetailEditor() {
                     className="h-full"
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center p-6">
+                  <div className="h-full flex items-center justify-center p-6" id="pdf-uploader">
                     <InvoicePDFUploader
                       invoiceId={id}
                       invoiceType="received"
@@ -594,7 +594,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={handleProcessOCR}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -639,7 +639,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={handleProcessOCR}
+                  onClick={() => handleProcessOCR()}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -671,6 +671,10 @@ export default function InvoiceDetailEditor() {
                     isEditMode={isEditMode}
                     ocrEngine={ocrEngine}
                     ocrConfidence={ocrConfidence}
+                    onProcessOCR={() => handleProcessOCR()}
+                    isProcessing={processOCR.isPending}
+                    hasDocument={!!documentPath}
+                    onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   />
 
                   {/* Badge Stripper + Ver cambios */}
@@ -836,13 +840,15 @@ export default function InvoiceDetailEditor() {
                       />
                     </div>
                   ) : (
-                    <InvoicePDFUploader
-                      invoiceId={id}
-                      invoiceType="received"
-                      centroCode={form.watch('centro_code') || 'temp'}
-                      currentPath={documentPath}
-                      onUploadComplete={handleUploadComplete}
-                    />
+                    <div id="pdf-uploader">
+                      <InvoicePDFUploader
+                        invoiceId={id}
+                        invoiceType="received"
+                        centroCode={form.watch('centro_code') || 'temp'}
+                        currentPath={documentPath}
+                        onUploadComplete={handleUploadComplete}
+                      />
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -857,7 +863,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={handleProcessOCR}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -896,7 +902,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={handleProcessOCR}
+                    onClick={() => handleProcessOCR()}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -927,6 +933,10 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
+                      onProcessOCR={() => handleProcessOCR()}
+                      isProcessing={processOCR.isPending}
+                      hasDocument={!!documentPath}
+                      onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     />
 
                     {/* Badge Stripper + Ver cambios */}

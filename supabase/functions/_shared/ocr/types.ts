@@ -83,6 +83,10 @@ export interface MindeeExtractionResult {
   confidence_score: number;
   confidence_by_field: Record<string, number>;
   raw_response: any;
+  timing?: {
+    duration_ms: number;
+    api_latency: number;
+  };
 }
 
 export interface OrchestratorResult {

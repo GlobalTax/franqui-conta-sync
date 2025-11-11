@@ -14,6 +14,7 @@ import { BankAccountSelector } from "@/components/treasury/BankAccountSelector";
 import { BankTransactionImporter } from "@/components/treasury/BankTransactionImporter";
 import { BankReconciliationPanel } from "@/components/treasury/BankReconciliationPanel";
 import { ReconciliationRuleForm } from "@/components/treasury/ReconciliationRuleForm";
+import { ImportNorma43Button } from "@/components/treasury/ImportNorma43Button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -87,6 +88,13 @@ const Banks = () => {
               <Sparkles className="h-4 w-4 mr-2" />
               Sugerir Conciliaciones
             </Button>
+            {selectedAccount && selectedCentro && (
+              <ImportNorma43Button
+                centroCode={selectedCentro}
+                bankAccountId={selectedAccount}
+                onImportSuccess={() => setShowImporter(false)}
+              />
+            )}
             <Dialog open={showImporter} onOpenChange={setShowImporter}>
               <DialogTrigger asChild>
                 <Button disabled={!selectedAccount}>Importar CSV</Button>

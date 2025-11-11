@@ -32,7 +32,8 @@ import { EntryPreview } from '@/components/invoices/EntryPreview';
 import { useInvoicesReceived, useCreateInvoiceReceived, useUpdateInvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
-import { 
+import { useView } from '@/contexts/ViewContext';
+import {
   useProcessInvoiceOCR, 
   useLogOCRProcessing,
   type OCRInvoiceData,
@@ -128,7 +129,27 @@ export default function InvoiceDetailEditor() {
   const createInvoice = useCreateInvoiceReceived();
   const updateInvoice = useUpdateInvoiceReceived();
   const invoiceActions = useInvoiceActions();
-  const { currentMembership } = useOrganization();
+  const { currentMembership, memberships } = useOrganization();
+  const { selectedView } = useView();
+
+  // Función helper para obtener el código de centro activo
+  const getDefaultCentreCode = (): string => {
+    // 1. Si hay vista de centro seleccionada en ViewContext
+    if (selectedView?.type === 'centre') {
+      const membership = memberships.find(m => m.restaurant_id === selectedView.id);
+      if (membership?.restaurant?.codigo) {
+        return membership.restaurant.codigo;
+      }
+    }
+    
+    // 2. Si el usuario tiene un restaurante asignado
+    if (currentMembership?.restaurant?.codigo) {
+      return currentMembership.restaurant.codigo;
+    }
+    
+    // 3. Default vacío
+    return '';
+  };
 
   // Encontrar la factura si estamos en modo edición
   const invoice = useMemo(() => {
@@ -142,7 +163,7 @@ export default function InvoiceDetailEditor() {
     defaultValues: {
       invoice_type: 'received',
       currency: 'EUR',
-      centro_code: currentMembership?.restaurant?.codigo || '',
+      centro_code: getDefaultCentreCode(),
       supplier_id: '',
       invoice_number: '',
       invoice_date: new Date().toISOString().split('T')[0],
@@ -171,15 +192,16 @@ export default function InvoiceDetailEditor() {
     localStorage.setItem('preferred_ocr_engine', selectedEngine);
   }, [selectedEngine]);
 
-  // Auto-seleccionar centro cuando el usuario tiene un restaurante asignado
+  // Auto-seleccionar centro basándose en ViewContext o restaurante del usuario
   useEffect(() => {
-    if (!isEditMode && currentMembership?.restaurant?.codigo) {
+    if (!isEditMode) {
+      const newCentreCode = getDefaultCentreCode();
       const currentCentro = form.getValues('centro_code');
-      if (!currentCentro || currentCentro === '') {
-        form.setValue('centro_code', currentMembership.restaurant.codigo);
+      if (newCentreCode && (!currentCentro || currentCentro === '')) {
+        form.setValue('centro_code', newCentreCode);
       }
     }
-  }, [currentMembership, isEditMode, form]);
+  }, [selectedView, currentMembership, isEditMode, form]);
 
   // Cargar datos de la factura en modo edición
   useEffect(() => {

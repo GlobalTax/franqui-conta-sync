@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useCentres } from '@/hooks/useCentres';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useView } from '@/contexts/ViewContext';
 
 interface InvoiceFormHeaderProps {
   control: Control<any>;
@@ -42,10 +43,31 @@ export function InvoiceFormHeader({
   processingTimeMs
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
-  const { currentMembership } = useOrganization();
+  const { currentMembership, memberships } = useOrganization();
+  const { selectedView } = useView();
 
-  // Determinar si el usuario tiene un centro fijo (no admin y tiene restaurante asignado)
-  const hasFixedCentre = currentMembership?.restaurant && currentMembership.role !== 'admin';
+  // Determinar el centro activo basándose en ViewContext
+  const getActiveCentreCode = (): string | null => {
+    // 1. Si hay una vista de centro seleccionada en el sidebar, usarla
+    if (selectedView?.type === 'centre') {
+      const membership = memberships.find(m => m.restaurant_id === selectedView.id);
+      return membership?.restaurant?.codigo || null;
+    }
+    
+    // 2. Si el usuario tiene un solo restaurante asignado, usarlo
+    if (currentMembership?.restaurant && currentMembership.role !== 'admin') {
+      return currentMembership.restaurant.codigo;
+    }
+    
+    // 3. Si no hay selección, no pre-rellenar
+    return null;
+  };
+
+  const activeCentreCode = getActiveCentreCode();
+  const activeCentreName = activeCentreCode 
+    ? centres?.find(c => c.codigo === activeCentreCode)?.nombre || currentMembership?.restaurant?.nombre
+    : null;
+  const hasFixedCentre = activeCentreCode !== null && currentMembership?.role !== 'admin';
 
   return (
     <div className="space-y-4">
@@ -178,7 +200,7 @@ export function InvoiceFormHeader({
               </FormLabel>
               <div className="flex items-center gap-2 h-9 px-3 py-2 bg-muted rounded-md border border-border">
                 <span className="text-sm text-foreground">
-                  {currentMembership.restaurant.codigo} - {currentMembership.restaurant.nombre}
+                  {activeCentreCode} - {activeCentreName}
                 </span>
               </div>
             </div>

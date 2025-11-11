@@ -57,7 +57,7 @@ export async function extractWithMindee(
   input: Blob | string
 ): Promise<MindeeExtractionResult> {
   
-  // ⭐ V2: Sanitizar y validar MINDEE_API_KEY
+  // ⭐ V2: Sanitizar y validar MINDEE_API_KEY (Build: 2025-11-11T17:15)
   const rawKey = Deno.env.get('MINDEE_API_KEY');
   if (!rawKey) {
     throw new Error('MINDEE_API_KEY not configured');

@@ -130,8 +130,21 @@ export async function orchestrateOCR(
     console.log(`[Orchestrator::${stage}] ${action}${decision ? ` → ${decision}` : ''}`);
   };
 
-  addLog('INIT', 'Starting OCR', `Engine: ${preferredEngine}`, { preferred_engine: preferredEngine });
-  console.log(`[Orchestrator] Starting OCR with engine: ${preferredEngine}`);
+  // PDF Detection: Force Mindee for PDFs since OpenAI Vision only accepts images
+  const isPdf = mimeType === 'application/pdf';
+  const effectiveEngine = isPdf && preferredEngine === 'openai' ? 'mindee' : preferredEngine;
+  
+  if (isPdf && preferredEngine === 'openai') {
+    console.log('[Orchestrator] ⚠️ PDF detected, switching from OpenAI to Mindee (OpenAI Vision only accepts images)');
+    mergeNotes.push('⚠️ PDF detected: using Mindee (OpenAI Vision requires images)');
+  }
+  
+  addLog('INIT', 'Starting OCR', `Engine: ${effectiveEngine}`, { 
+    preferred_engine: preferredEngine,
+    effective_engine: effectiveEngine,
+    is_pdf: isPdf
+  });
+  console.log(`[Orchestrator] Starting OCR with engine: ${effectiveEngine}`);
 
   // Helper function to try extraction with circuit breaker
   async function tryExtract(
@@ -169,8 +182,8 @@ export async function orchestrateOCR(
   let openaiResult: OpenAIExtractionResult | null = null;
   let mindeeResult: MindeeExtractionResult | null = null;
 
-  // Option A: User prefers Mindee
-  if (preferredEngine === 'mindee') {
+  // Option A: Use Mindee (preferred or forced by PDF)
+  if (effectiveEngine === 'mindee') {
     const { result, duration } = await tryExtract('mindee', 
       () => extractWithMindee(fileBlob || base64Content));
     
@@ -198,14 +211,19 @@ export async function orchestrateOCR(
     }
   }
 
-  // Option B: Try OpenAI (preferred or fallback)
-  const { result: oaiResult, duration: oaiDuration } = await tryExtract('openai',
-    () => extractWithOpenAI(base64Content, mimeType));
-  
-  if (oaiResult) {
-    openaiResult = oaiResult;
-    ms_openai = oaiDuration;
-    rawResponses.openai = oaiResult;
+  // Option B: Try OpenAI (only if not a PDF)
+  if (!isPdf) {
+    const { result: oaiResult, duration: oaiDuration } = await tryExtract('openai',
+      () => extractWithOpenAI(base64Content, mimeType));
+    
+    if (oaiResult) {
+      openaiResult = oaiResult;
+      ms_openai = oaiDuration;
+      rawResponses.openai = oaiResult;
+    }
+  } else {
+    console.log('[Orchestrator] Skipping OpenAI for PDF document');
+    mergeNotes.push('ℹ️ OpenAI skipped (PDF format not supported)');
   }
 
   // Use OpenAI if confidence good and critical fields present

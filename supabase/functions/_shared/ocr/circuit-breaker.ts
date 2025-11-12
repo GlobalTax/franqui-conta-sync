@@ -210,11 +210,19 @@ async function updateCircuitState(
   engine: OCREngine,
   updates: Partial<CircuitBreakerState>
 ): Promise<void> {
+  // Get current state to ensure we always include required fields
+  const currentState = await getCircuitState(engine);
+  
   const { error } = await supabase
     .from('ocr_circuit_breaker')
     .upsert({
       engine,
-      ...updates,
+      state: updates.state ?? currentState.state, // Always include state
+      failure_count: updates.failure_count ?? currentState.failure_count,
+      last_failure_at: updates.last_failure_at ?? currentState.last_failure_at,
+      last_success_at: updates.last_success_at ?? currentState.last_success_at,
+      next_retry_at: updates.next_retry_at ?? currentState.next_retry_at,
+      error_type: updates.error_type ?? currentState.error_type,
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'engine'

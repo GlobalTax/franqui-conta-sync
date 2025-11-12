@@ -12,6 +12,7 @@ import { ReconciliationSuggestionsList } from '@/components/treasury/Reconciliat
 import { ReconciliationRulesManager } from '@/components/treasury/ReconciliationRulesManager';
 import { BulkReconciliationActions } from '@/components/treasury/BulkReconciliationActions';
 import { ImportNorma43Button } from '@/components/treasury/ImportNorma43Button';
+import { ReconciliationAssistant } from '@/components/treasury/ReconciliationAssistant';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useAutoMatchWithRules } from '@/hooks/useNorma43';
@@ -70,6 +71,10 @@ export default function BankReconciliation() {
             <TabsTrigger value="rules">
               <Sparkles className="h-4 w-4 mr-2" />
               Reglas Automáticas
+            </TabsTrigger>
+            <TabsTrigger value="assistant">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Asistente IA
             </TabsTrigger>
           </TabsList>
 
@@ -144,6 +149,10 @@ export default function BankReconciliation() {
 
           <TabsContent value="rules" className="space-y-6">
             <ReconciliationRulesManager centroCode={centroCode} bankAccountId={selectedAccount} />
+          </TabsContent>
+
+          <TabsContent value="assistant" className="space-y-6">
+            <ReconciliationAssistant centroCode={centroCode} bankAccountId={selectedAccount} />
           </TabsContent>
         </Tabs>
     </div>

@@ -504,6 +504,92 @@ export type Database = {
         }
         Relationships: []
       }
+      ap_invoices: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          currency: string | null
+          customer_address: string | null
+          customer_name: string | null
+          customer_tax_id: string | null
+          due_date: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          job_id: string | null
+          payment_terms: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          supplier_address: string | null
+          supplier_name: string | null
+          supplier_tax_id: string | null
+          total_amount: number | null
+          total_net: number | null
+          total_tax: number | null
+          updated_at: string | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          currency?: string | null
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          job_id?: string | null
+          payment_terms?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          supplier_address?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+          total_amount?: number | null
+          total_net?: number | null
+          total_tax?: number | null
+          updated_at?: string | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          currency?: string | null
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          job_id?: string | null
+          payment_terms?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          supplier_address?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+          total_amount?: number | null
+          total_net?: number | null
+          total_tax?: number | null
+          updated_at?: string | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "mindee_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_learning_corrections: {
         Row: {
           centro_code: string | null
@@ -601,6 +687,59 @@ export type Database = {
             columns: ["suggested_rule_id"]
             isOneToOne: false
             referencedRelation: "ap_mapping_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ap_lines: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_id: string
+          line_number: number
+          line_total: number | null
+          product_code: string | null
+          quantity: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          unit_of_measure: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id: string
+          line_number: number
+          line_total?: number | null
+          product_code?: string | null
+          quantity?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          unit_of_measure?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string
+          line_number?: number
+          line_total?: number | null
+          product_code?: string | null
+          quantity?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          unit_of_measure?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "ap_invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -1277,6 +1416,13 @@ export type Database = {
             columns: ["matched_entry_id"]
             isOneToOne: false
             referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bank_transactions_reconciliation"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
             referencedColumns: ["id"]
           },
         ]
@@ -2891,6 +3037,57 @@ export type Database = {
           },
         ]
       }
+      mindee_jobs: {
+        Row: {
+          alias: string | null
+          confidence_score: number | null
+          created_at: string | null
+          error_message: string | null
+          fields: Json | null
+          id: string
+          job_id: string
+          payload: Json | null
+          polling_url: string | null
+          processed_at: string | null
+          result_url: string | null
+          status: string
+          webhook_received: boolean | null
+          webhook_received_at: string | null
+        }
+        Insert: {
+          alias?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          fields?: Json | null
+          id?: string
+          job_id: string
+          payload?: Json | null
+          polling_url?: string | null
+          processed_at?: string | null
+          result_url?: string | null
+          status?: string
+          webhook_received?: boolean | null
+          webhook_received_at?: string | null
+        }
+        Update: {
+          alias?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          fields?: Json | null
+          id?: string
+          job_id?: string
+          payload?: Json | null
+          polling_url?: string | null
+          processed_at?: string | null
+          result_url?: string | null
+          status?: string
+          webhook_received?: boolean | null
+          webhook_received_at?: string | null
+        }
+        Relationships: []
+      }
       ocr_circuit_breaker: {
         Row: {
           created_at: string | null
@@ -3957,6 +4154,87 @@ export type Database = {
           start_date?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      receipts: {
+        Row: {
+          amount: number | null
+          category: string | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          file_name: string
+          file_url: string
+          id: string
+          items: Json | null
+          notes: string | null
+          payment_method: string | null
+          receipt_date: string | null
+          receipt_number: string | null
+          receiver_address: string | null
+          receiver_name: string | null
+          receiver_tax_id: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          updated_at: string
+          user_id: string | null
+          vendor_address: string | null
+          vendor_name: string | null
+          vendor_tax_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+          receiver_address?: string | null
+          receiver_name?: string | null
+          receiver_tax_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_tax_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+          receiver_address?: string | null
+          receiver_name?: string | null
+          receiver_tax_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_tax_id?: string | null
         }
         Relationships: []
       }
@@ -5171,6 +5449,14 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      auto_match_with_rules: {
+        Args: {
+          p_bank_account_id: string
+          p_centro_code?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
       calculate_balance_sheet: {
         Args: { p_centro_code: string; p_fecha_corte: string }
         Returns: {
@@ -5880,6 +6166,14 @@ export type Database = {
           p_source: string
         }
         Returns: string
+      }
+      suggest_reconciliation_matches: {
+        Args: { p_centro_code: string; p_transaction_id: string }
+        Returns: Json
+      }
+      undo_reconciliation: {
+        Args: { p_transaction_id: string; p_user_id: string }
+        Returns: Json
       }
       unmapped_accounts: {
         Args: {

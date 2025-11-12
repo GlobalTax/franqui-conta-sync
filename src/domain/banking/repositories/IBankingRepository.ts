@@ -4,6 +4,7 @@
 // ============================================================================
 
 import type { BankTransaction, BankAccount, BankTransactionFilters } from '../types';
+import type { PaginatedBankTransactions } from '@/infrastructure/persistence/supabase/queries/BankingQueries';
 
 export interface CreateTransactionCommand {
   transaction: Omit<BankTransaction, 'id' | 'createdAt'>;
@@ -26,6 +27,7 @@ export interface ReconcileTransactionCommand {
 /**
  * Repository Interface para operaciones bancarias
  * Separa la lógica de dominio de la implementación de persistencia
+ * FASE 7: findTransactions ahora devuelve PaginatedBankTransactions
  */
 export interface IBankingRepository {
   // ========== QUERIES (Read Operations) ==========
@@ -36,9 +38,9 @@ export interface IBankingRepository {
   findTransactionById(id: string): Promise<BankTransaction | null>;
   
   /**
-   * Busca transacciones bancarias con filtros
+   * Busca transacciones bancarias con filtros y paginación
    */
-  findTransactions(filters: BankTransactionFilters): Promise<BankTransaction[]>;
+  findTransactions(filters: BankTransactionFilters): Promise<PaginatedBankTransactions>;
   
   /**
    * Obtiene cuentas bancarias por centro

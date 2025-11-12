@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useBankTransactions } from '@/hooks/useBankTransactions';
+import { useUndoReconciliation } from '@/hooks/useUndoReconciliation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Undo2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -27,6 +29,7 @@ export function BankTransactionsList({
   onSelectTransactionIds,
 }: BankTransactionsListProps) {
   const { transactions, isLoading } = useBankTransactions({ accountId: bankAccountId });
+  const { mutate: undoReconciliation, isPending: isUndoing } = useUndoReconciliation();
 
   const handleToggleSelection = (transactionId: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -37,6 +40,11 @@ export function BankTransactionsList({
     } else {
       onSelectTransactionIds([...selectedTransactionIds, transactionId]);
     }
+  };
+
+  const handleUndoReconciliation = (transactionId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    undoReconciliation({ transactionId });
   };
 
   const formatCurrency = (value: number) => {
@@ -150,19 +158,33 @@ export function BankTransactionsList({
                       {formatCurrency(transaction.amount)}
                     </p>
 
-                    {transaction.status === 'reconciled' && (
-                      <Badge variant="success" className="mt-2">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Conciliado
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 mt-2 justify-end">
+                      {transaction.status === 'reconciled' && (
+                        <>
+                          <Badge variant="success">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Conciliado
+                          </Badge>
+                          {/* FASE 6: Botón de Undo */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => handleUndoReconciliation(transaction.id, e)}
+                            disabled={isUndoing}
+                            className="h-7 px-2"
+                          >
+                            <Undo2 className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
 
-                    {transaction.status === 'ignored' && (
-                      <Badge variant="secondary" className="mt-2">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Ignorado
-                      </Badge>
-                    )}
+                      {transaction.status === 'ignored' && (
+                        <Badge variant="secondary">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Ignorado
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

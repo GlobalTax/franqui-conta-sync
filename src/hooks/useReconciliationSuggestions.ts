@@ -2,57 +2,52 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ReconciliationSuggestion {
-  id: string;
-  bank_transaction_id: string;
-  accounting_entry_id?: string;
-  invoice_id?: string;
-  daily_closure_id?: string;
-  match_type: "automatic" | "suggested";
-  confidence_score: number;
-  match_reason?: string;
-  amount?: number;
-  document_date?: string;
-  document_number?: string;
-  document_type?: string;
+  matched_id: string;
+  matched_type: string;
+  invoice_number?: string;
   supplier_name?: string;
+  customer_name?: string;
+  description?: string;
+  amount: number;
+  document_date: string;
+  document_number?: string;
+  confidence_score: number;
+  match_reason: string;
 }
 
-export const useReconciliationSuggestions = (transactionId: string | null) => {
+/**
+ * FASE 4: Hook actualizado para usar suggest_reconciliation_matches RPC
+ */
+export const useReconciliationSuggestions = (
+  transactionId: string | null, 
+  centroCode: string | null
+) => {
   return useQuery({
-    queryKey: ["reconciliation-suggestions", transactionId],
+    queryKey: ["reconciliation-suggestions", transactionId, centroCode],
     queryFn: async () => {
-      if (!transactionId) return [];
+      if (!transactionId || !centroCode) return [];
 
-      // Get existing reconciliation matches
-      const { data: matches, error } = await supabase
-        .from("reconciliation_matches")
-        .select("*")
-        .eq("transaction_id", transactionId)
-        .eq("status", "pending")
-        .order("confidence_score", { ascending: false });
+      // Llamar RPC para generar sugerencias dinámicas
+      const { data, error } = await supabase.rpc('suggest_reconciliation_matches', {
+        p_transaction_id: transactionId,
+        p_centro_code: centroCode,
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useReconciliationSuggestions] Error:', error);
+        throw error;
+      }
 
-      // Transform to match interface
-      const suggestions: ReconciliationSuggestion[] =
-        matches?.map((m) => ({
-          id: m.id,
-          bank_transaction_id: m.transaction_id,
-          accounting_entry_id: m.match_id,
-          invoice_id: undefined,
-          daily_closure_id: undefined,
-          match_type: m.match_type === "automatic" ? "automatic" : "suggested",
-          confidence_score: m.confidence_score || 0,
-          match_reason: JSON.stringify(m.matching_rules) || undefined,
-          amount: undefined,
-          document_date: undefined,
-          document_number: undefined,
-          document_type: "entry",
-          supplier_name: undefined,
-        })) || [];
+      // Castear data al tipo esperado (primero a unknown para evitar error de tipo)
+      const result = data as unknown as { success: boolean; suggestions: ReconciliationSuggestion[]; error?: string } | null;
 
-      return suggestions;
+      if (!result?.success) {
+        console.error('[useReconciliationSuggestions] RPC failed:', result?.error);
+        return [];
+      }
+
+      return result.suggestions as ReconciliationSuggestion[];
     },
-    enabled: !!transactionId,
+    enabled: !!transactionId && !!centroCode,
   });
 };

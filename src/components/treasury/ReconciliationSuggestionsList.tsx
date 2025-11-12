@@ -14,14 +14,16 @@ import { ReconciliationMatchAnimation } from "./ReconciliationMatchAnimation";
 
 interface ReconciliationSuggestionsListProps {
   transactionId: string | null;
+  centroCode: string | null;
   onReconcileSuccess?: () => void;
 }
 
 export const ReconciliationSuggestionsList = ({
   transactionId,
+  centroCode,
   onReconcileSuccess,
 }: ReconciliationSuggestionsListProps) => {
-  const { data: suggestions = [], isLoading } = useReconciliationSuggestions(transactionId);
+  const { data: suggestions = [], isLoading } = useReconciliationSuggestions(transactionId, centroCode);
   const { mutate: confirmReconciliation } = useConfirmReconciliation();
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -106,7 +108,7 @@ export const ReconciliationSuggestionsList = ({
             ) : (
               suggestions.map((suggestion) => (
                 <Card
-                  key={suggestion.id}
+                  key={suggestion.matched_id}
                   className="hover:shadow-md transition-shadow cursor-pointer border-border/40"
                 >
                   <CardContent className="p-4">
@@ -115,14 +117,14 @@ export const ReconciliationSuggestionsList = ({
                         <FileText className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-medium text-sm text-foreground">
-                            {suggestion.document_type === "invoice"
-                              ? `Factura #${suggestion.document_number}`
-                              : suggestion.document_type === "daily_closure"
+                            {suggestion.matched_type === "invoice_received" || suggestion.matched_type === "invoice_issued"
+                              ? `Factura #${suggestion.invoice_number || suggestion.document_number}`
+                              : suggestion.matched_type === "daily_closure"
                               ? `Cierre Diario`
-                              : `Documento #${suggestion.document_number}`}
+                              : `Apunte #${suggestion.document_number}`}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {suggestion.supplier_name || "Sin proveedor"}
+                            {suggestion.supplier_name || suggestion.customer_name || suggestion.description || "Sin descripción"}
                           </p>
                         </div>
                       </div>
@@ -163,7 +165,7 @@ export const ReconciliationSuggestionsList = ({
                           <TooltipTrigger asChild>
                             <Button
                               size="sm"
-                              onClick={() => handleReconcile(suggestion.id)}
+                              onClick={() => handleReconcile(suggestion.matched_id)}
                               className="flex-1"
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />

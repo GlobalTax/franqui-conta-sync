@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { IBankingRepository } from '@/domain/banking/repositories/IBankingRepository';
-import { BankingQueries } from '../queries/BankingQueries';
+import { BankingQueries, type PaginatedBankTransactions } from '../queries/BankingQueries';
 import { BankingCommands } from '../commands/BankingCommands';
 import type { BankTransaction, BankAccount, BankTransactionFilters } from '@/domain/banking/types';
 import type {
@@ -25,7 +25,7 @@ export class BankingRepositoryImpl implements IBankingRepository {
     return BankingQueries.findTransactionById(id);
   }
 
-  async findTransactions(filters: BankTransactionFilters): Promise<BankTransaction[]> {
+  async findTransactions(filters: BankTransactionFilters): Promise<PaginatedBankTransactions> {
     return BankingQueries.findTransactions(filters);
   }
 

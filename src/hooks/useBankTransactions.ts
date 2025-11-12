@@ -48,10 +48,10 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
         status: filters.status as any,
       };
 
-      const domainTransactions = await getBankTransactions(queryFilters);
+      const result = await getBankTransactions(queryFilters);
 
       // Convertir de camelCase (dominio) a snake_case (API legacy)
-      return domainTransactions.map(trans => ({
+      return result.transactions.map(trans => ({
         id: trans.id,
         bank_account_id: trans.bankAccountId,
         transaction_date: trans.transactionDate,

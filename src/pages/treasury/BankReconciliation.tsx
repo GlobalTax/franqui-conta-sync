@@ -134,6 +134,7 @@ export default function BankReconciliation() {
                 <div className="h-full p-4">
                   <ReconciliationSuggestionsList
                     transactionId={selectedTransaction}
+                    centroCode={centroCode}
                     onReconcileSuccess={() => setSelectedTransaction(null)}
                   />
                 </div>

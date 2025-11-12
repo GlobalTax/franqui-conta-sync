@@ -12,15 +12,39 @@ import type {
 } from "@/domain/banking/types";
 
 /**
+ * Respuesta con paginación
+ */
+export interface PaginatedBankTransactions {
+  transactions: BankTransaction[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+/**
+ * Filtros extendidos con paginación
+ */
+export interface BankTransactionFiltersWithPagination extends BankTransactionFilters {
+  page?: number;
+  pageSize?: number;
+}
+
+/**
  * Clase estática con queries de solo lectura para operaciones bancarias
  */
 export class BankingQueries {
   /**
-   * Obtiene transacciones bancarias con filtros
+   * Obtiene transacciones bancarias con filtros y paginación
+   * FASE 7: Añadir paginación para performance
    */
   static async findTransactions(
-    filters: BankTransactionFilters
-  ): Promise<BankTransaction[]> {
+    filters: BankTransactionFiltersWithPagination
+  ): Promise<PaginatedBankTransactions> {
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 50;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
     let query = supabase
       .from("bank_transactions")
       .select(`
@@ -31,7 +55,8 @@ export class BankingQueries {
           iban,
           centro_code
         )
-      `)
+      `, { count: 'exact' })
+      .range(from, to)
       .order("transaction_date", { ascending: false });
 
     if (filters.accountId) {
@@ -58,13 +83,22 @@ export class BankingQueries {
       query = query.ilike("description", `%${filters.searchTerm}%`);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     
     if (error) {
       throw new Error(`Error fetching bank transactions: ${error.message}`);
     }
 
-    return (data || []).map(TransactionMapper.toDomain);
+    const total = count || 0;
+    const transactions = (data || []).map(TransactionMapper.toDomain);
+
+    return {
+      transactions,
+      total,
+      page,
+      pageSize,
+      hasMore: to < total - 1,
+    };
   }
 
   /**

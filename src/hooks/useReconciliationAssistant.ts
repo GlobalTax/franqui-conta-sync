@@ -50,7 +50,8 @@ export function useAnalyzePatterns(centroCode?: string, bankAccountId?: string) 
         throw error;
       }
 
-      return data as PatternAnalysisResult;
+      // Castear data correctamente
+      return (data as unknown) as PatternAnalysisResult;
     },
     enabled: false, // Solo ejecutar manualmente
   });

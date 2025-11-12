@@ -61,7 +61,7 @@ export function ReconciliationAssistant({ centroCode, bankAccountId }: Reconcili
           description_pattern: suggestion.description_pattern,
           amount_min: suggestion.amount_min,
           amount_max: suggestion.amount_max,
-          auto_match_type: suggestion.auto_match_type,
+          auto_match_type: suggestion.auto_match_type as 'commission' | 'daily_closure' | 'invoice' | 'manual' | 'royalty',
           confidence_threshold: suggestion.confidence_threshold,
           priority: suggestion.priority,
           active: true,

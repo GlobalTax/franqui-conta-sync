@@ -508,6 +508,7 @@ export type Database = {
         Row: {
           confidence_score: number | null
           created_at: string | null
+          created_by: string | null
           currency: string | null
           customer_address: string | null
           customer_name: string | null
@@ -518,6 +519,7 @@ export type Database = {
           invoice_number: string | null
           job_id: string | null
           payment_terms: string | null
+          raw: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string | null
@@ -533,6 +535,7 @@ export type Database = {
         Insert: {
           confidence_score?: number | null
           created_at?: string | null
+          created_by?: string | null
           currency?: string | null
           customer_address?: string | null
           customer_name?: string | null
@@ -543,6 +546,7 @@ export type Database = {
           invoice_number?: string | null
           job_id?: string | null
           payment_terms?: string | null
+          raw?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string | null
@@ -558,6 +562,7 @@ export type Database = {
         Update: {
           confidence_score?: number | null
           created_at?: string | null
+          created_by?: string | null
           currency?: string | null
           customer_address?: string | null
           customer_name?: string | null
@@ -568,6 +573,7 @@ export type Database = {
           invoice_number?: string | null
           job_id?: string | null
           payment_terms?: string | null
+          raw?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string | null
@@ -956,6 +962,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      app_logs: {
+        Row: {
+          created_at: string
+          function_name: string | null
+          id: string
+          level: string
+          message: string
+          meta: Json | null
+          request_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          function_name?: string | null
+          id?: string
+          level: string
+          message: string
+          meta?: Json | null
+          request_id?: string | null
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          function_name?: string | null
+          id?: string
+          level?: string
+          message?: string
+          meta?: Json | null
+          request_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          alias_prefix: string | null
+          confidence_threshold: number
+          created_at: string
+          currency_default: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          alias_prefix?: string | null
+          confidence_threshold?: number
+          created_at?: string
+          currency_default?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          alias_prefix?: string | null
+          confidence_threshold?: number
+          created_at?: string
+          currency_default?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       approval_rules: {
         Row: {
@@ -1946,6 +2015,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      data_retention_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          retention_invoices_approved_days: number | null
+          retention_logs_days: number | null
+          retention_mindee_days: number | null
+          retention_mindee_payloads: boolean | null
+          sanitize_logs: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          retention_invoices_approved_days?: number | null
+          retention_logs_days?: number | null
+          retention_mindee_days?: number | null
+          retention_mindee_payloads?: boolean | null
+          sanitize_logs?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          retention_invoices_approved_days?: number | null
+          retention_logs_days?: number | null
+          retention_mindee_days?: number | null
+          retention_mindee_payloads?: boolean | null
+          sanitize_logs?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       dq_issues: {
         Row: {
@@ -3046,6 +3148,7 @@ export type Database = {
           fields: Json | null
           id: string
           job_id: string
+          model_id: string | null
           payload: Json | null
           polling_url: string | null
           processed_at: string | null
@@ -3062,6 +3165,7 @@ export type Database = {
           fields?: Json | null
           id?: string
           job_id: string
+          model_id?: string | null
           payload?: Json | null
           polling_url?: string | null
           processed_at?: string | null
@@ -3078,6 +3182,7 @@ export type Database = {
           fields?: Json | null
           id?: string
           job_id?: string
+          model_id?: string | null
           payload?: Json | null
           polling_url?: string | null
           processed_at?: string | null
@@ -5439,6 +5544,15 @@ export type Database = {
       }
     }
     Functions: {
+      analyze_reconciliation_patterns: {
+        Args: {
+          p_bank_account_id: string
+          p_centro_code: string
+          p_confidence_threshold?: number
+          p_min_occurrences?: number
+        }
+        Returns: Json
+      }
       auto_match_bank_transactions: {
         Args: { p_bank_account_id: string; p_limit?: number }
         Returns: {
@@ -5648,6 +5762,7 @@ export type Database = {
           parent_code: string
         }[]
       }
+      cleanup_old_data: { Args: never; Returns: undefined }
       contabilizar_asiento: {
         Args: { p_entry_id: string; p_user_id: string }
         Returns: Json
@@ -6204,6 +6319,7 @@ export type Database = {
         Args: { _centro_code: string; _user_id: string }
         Returns: boolean
       }
+      user_owns_invoice: { Args: { invoice_id: string }; Returns: boolean }
       validate_api_key: {
         Args: {
           p_ip_address?: unknown

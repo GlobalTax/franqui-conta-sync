@@ -15,6 +15,7 @@ import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useView } from '@/contexts/ViewContext';
 import { OCREngineSelector } from '@/components/invoices/OCREngineSelector';
+import type { DocumentAnalysis } from '@/hooks/useDocumentAnalyzer';
 
 interface InvoiceFormHeaderProps {
   control: Control<any>;
@@ -30,6 +31,7 @@ interface InvoiceFormHeaderProps {
   processingTimeMs?: number;
   selectedOcrEngine?: 'openai' | 'mindee';
   onOcrEngineChange?: (engine: 'openai' | 'mindee') => void;
+  documentAnalysis?: DocumentAnalysis | null;
 }
 
 export function InvoiceFormHeader({ 
@@ -45,7 +47,8 @@ export function InvoiceFormHeader({
   orchestratorLogs,
   processingTimeMs,
   selectedOcrEngine = 'mindee',
-  onOcrEngineChange
+  onOcrEngineChange,
+  documentAnalysis
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
   const { currentMembership, memberships } = useOrganization();
@@ -127,7 +130,11 @@ export function InvoiceFormHeader({
     <OCREngineSelector
       value={selectedOcrEngine}
       onChange={onOcrEngineChange}
-      estimatedPages={1}
+      estimatedPages={documentAnalysis?.pages || 1}
+      analysis={documentAnalysis || undefined}
+      onUseRecommended={documentAnalysis ? () => {
+        onOcrEngineChange(documentAnalysis.recommended_engine);
+      } : undefined}
     />
   )}
 

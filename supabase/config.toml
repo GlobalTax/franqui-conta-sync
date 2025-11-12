@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.api-example]
 verify_jwt = false
+
+[functions.analyze-document-characteristics]
+verify_jwt = true

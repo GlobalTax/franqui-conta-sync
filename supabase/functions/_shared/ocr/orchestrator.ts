@@ -130,13 +130,12 @@ export async function orchestrateOCR(
     console.log(`[Orchestrator::${stage}] ${action}${decision ? ` → ${decision}` : ''}`);
   };
 
-  // PDF Detection: Force Mindee for PDFs since OpenAI Vision only accepts images
+  // PDF Detection: OpenAI Vision CAN process PDFs via data URLs
   const isPdf = mimeType === 'application/pdf';
-  const effectiveEngine = isPdf && preferredEngine === 'openai' ? 'mindee' : preferredEngine;
+  const effectiveEngine = preferredEngine;
   
-  if (isPdf && preferredEngine === 'openai') {
-    console.log('[Orchestrator] ⚠️ PDF detected, switching from OpenAI to Mindee (OpenAI Vision only accepts images)');
-    mergeNotes.push('⚠️ PDF detected: using Mindee (OpenAI Vision requires images)');
+  if (isPdf) {
+    console.log('[Orchestrator] ℹ️ PDF detected - OpenAI Vision can process PDFs via base64 data URLs');
   }
   
   addLog('INIT', 'Starting OCR', `Engine: ${effectiveEngine}`, { 

@@ -38,7 +38,7 @@ export function useAnalyzePatterns(centroCode?: string, bankAccountId?: string) 
   return useQuery({
     queryKey: ['analyze-patterns', centroCode, bankAccountId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('analyze_reconciliation_patterns', {
+      const { data, error } = await supabase.rpc('analyze_reconciliation_patterns' as any, {
         p_centro_code: centroCode || null,
         p_bank_account_id: bankAccountId || null,
         p_min_occurrences: 3,

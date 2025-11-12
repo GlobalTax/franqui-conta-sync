@@ -14,6 +14,7 @@ import { useCentres } from '@/hooks/useCentres';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useView } from '@/contexts/ViewContext';
+import { OCREngineSelector } from '@/components/invoices/OCREngineSelector';
 
 interface InvoiceFormHeaderProps {
   control: Control<any>;
@@ -27,6 +28,8 @@ interface InvoiceFormHeaderProps {
   onRetryWithDifferentEngine?: () => void;
   orchestratorLogs?: any[];
   processingTimeMs?: number;
+  selectedOcrEngine?: 'openai' | 'mindee';
+  onOcrEngineChange?: (engine: 'openai' | 'mindee') => void;
 }
 
 export function InvoiceFormHeader({ 
@@ -40,7 +43,9 @@ export function InvoiceFormHeader({
   onGoToUpload,
   onRetryWithDifferentEngine,
   orchestratorLogs,
-  processingTimeMs
+  processingTimeMs,
+  selectedOcrEngine = 'mindee',
+  onOcrEngineChange
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
   const { currentMembership, memberships } = useOrganization();
@@ -115,23 +120,33 @@ export function InvoiceFormHeader({
             )}
           />
 
-{/* Motor OCR + Acción */}
-<div>
-  <div className="flex items-center justify-between mb-2">
+{/* Motor OCR + Selector + Acción */}
+<div className="space-y-3">
+  {/* Selector de motor OCR */}
+  {!ocrEngine && onOcrEngineChange && (
+    <OCREngineSelector
+      value={selectedOcrEngine}
+      onChange={onOcrEngineChange}
+      estimatedPages={1}
+    />
+  )}
+
+  {/* Botón de acción */}
+  <div className="flex items-center justify-between">
     <label className="uppercase text-xs font-bold text-primary block">
-      Reconocimiento OCR (Mindee)
+      {ocrEngine ? 'Procesado con OCR' : 'Acciones'}
     </label>
-    {hasDocument ? (
+    {hasDocument && !ocrEngine ? (
       <Button
         size="sm"
-        variant="secondary"
+        variant="default"
         onClick={onProcessOCR}
         disabled={isProcessing}
       >
         {isProcessing && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-        Procesar con OCR
+        Procesar con {selectedOcrEngine === 'openai' ? 'OpenAI' : 'Mindee'}
       </Button>
-    ) : (
+    ) : !hasDocument ? (
       <Button
         size="sm"
         variant="outline"
@@ -139,39 +154,47 @@ export function InvoiceFormHeader({
       >
         Subir PDF
       </Button>
-    )}
+    ) : null}
   </div>
 
   {/* Estado de procesamiento */}
   {isProcessing && (
-    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
       <Loader2 className="h-3 w-3 animate-spin" />
-      Procesando con Mindee...
+      Procesando con {selectedOcrEngine === 'openai' ? 'OpenAI GPT-4o' : 'Mindee'}...
     </div>
   )}
 
   {/* Debug Badge con orchestrator logs */}
   {ocrEngine && orchestratorLogs && orchestratorLogs.length > 0 && (
-    <div className="mt-2">
-      <OCRDebugBadge
-        logs={orchestratorLogs}
-        engine={ocrEngine}
-        confidence={ocrConfidence}
-        processingTimeMs={processingTimeMs}
-      />
-    </div>
+    <OCRDebugBadge
+      logs={orchestratorLogs}
+      engine={ocrEngine}
+      confidence={ocrConfidence}
+      processingTimeMs={processingTimeMs}
+    />
   )}
 
   {/* Badge de motor procesado */}
   {ocrEngine && (
-    <Badge variant="secondary" className="gap-2 mt-2">
-      <Sparkles className="h-3 w-3" />
-      {ocrEngine === 'openai' && 'OpenAI GPT-4'}
-      {ocrEngine === 'mindee' && 'Mindee'}
-      {ocrEngine === 'merged' && 'Multi-Motor'}
-      {ocrEngine === 'manual' && 'Manual'}
-      {ocrEngine === 'google_vision' && 'Google Vision'}
-    </Badge>
+    <div className="flex items-center gap-2">
+      <Badge variant="secondary" className="gap-2">
+        <Sparkles className="h-3 w-3" />
+        {ocrEngine === 'openai' && 'OpenAI GPT-4o'}
+        {ocrEngine === 'mindee' && 'Mindee'}
+        {ocrEngine === 'merged' && 'Multi-Motor'}
+        {ocrEngine === 'manual' && 'Manual'}
+        {ocrEngine === 'google_vision' && 'Google Vision'}
+      </Badge>
+      {ocrConfidence && (
+        <Badge 
+          variant="outline" 
+          className={ocrConfidence >= 0.9 ? 'border-green-500 text-green-700' : ocrConfidence >= 0.7 ? 'border-yellow-500 text-yellow-700' : 'border-red-500 text-red-700'}
+        >
+          {(ocrConfidence * 100).toFixed(0)}% confianza
+        </Badge>
+      )}
+    </div>
   )}
 
   {/* Botón de reprocesar OCR (si baja confianza) */}
@@ -180,15 +203,15 @@ export function InvoiceFormHeader({
       size="sm"
       variant="outline"
       onClick={onRetryWithDifferentEngine}
-      className="mt-2 w-full"
+      className="w-full"
     >
       <RefreshCw className="h-3 w-3 mr-2" />
-      Reprocesar con OCR
+      Reprocesar con otro motor
     </Button>
   )}
 
   {!hasDocument && (
-    <p className="text-xs text-muted-foreground mt-1">Sube un PDF para habilitar el OCR.</p>
+    <p className="text-xs text-muted-foreground">Sube un PDF para habilitar el OCR.</p>
   )}
 </div>
 

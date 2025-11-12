@@ -116,7 +116,7 @@ export default function InvoiceDetailEditor() {
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('openai');
+  const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('mindee');
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
 
@@ -453,10 +453,9 @@ export default function InvoiceDetailEditor() {
       toast.success("PDF subido correctamente");
       console.log('[Upload] Programando auto-trigger OCR en 300ms con path');
       setTimeout(() => {
-        // ⭐ Priorizar Mindee temporalmente debido a 429 de OpenAI
-        const preferredEngine = 'mindee';
-        console.log('[Upload] Ejecutando auto-trigger OCR ahora con path y motor', preferredEngine);
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: preferredEngine });
+        // ⭐ Auto-trigger OCR cuando se sube un nuevo PDF
+        console.log('[Upload] Usar motor seleccionado:', selectedEngine);
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: selectedEngine });
       }, 300);
     }
   };
@@ -754,7 +753,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR()}
+                      onClick={() => handleProcessOCR({ engine: selectedEngine })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -799,7 +798,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={() => handleProcessOCR()}
+                  onClick={() => handleProcessOCR({ engine: selectedEngine })}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -831,13 +830,15 @@ export default function InvoiceDetailEditor() {
                   isEditMode={isEditMode}
                   ocrEngine={ocrEngine}
                   ocrConfidence={ocrConfidence}
-                  onProcessOCR={() => handleProcessOCR()}
+                  onProcessOCR={() => handleProcessOCR({ engine: selectedEngine })}
                   isProcessing={processOCR.isPending}
                   hasDocument={!!documentPath}
                   onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
                   orchestratorLogs={orchestratorLogs}
                   processingTimeMs={processingTimeMs}
+                  selectedOcrEngine={selectedEngine}
+                  onOcrEngineChange={setSelectedEngine}
                 />
 
                   {/* Badge Stripper + Ver cambios */}
@@ -1026,7 +1027,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR()}
+                      onClick={() => handleProcessOCR({ engine: selectedEngine })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -1065,7 +1066,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={() => handleProcessOCR()}
+                    onClick={() => handleProcessOCR({ engine: selectedEngine })}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -1096,10 +1097,12 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
-                      onProcessOCR={() => handleProcessOCR()}
+                      onProcessOCR={() => handleProcessOCR({ engine: selectedEngine })}
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      selectedOcrEngine={selectedEngine}
+                      onOcrEngineChange={setSelectedEngine}
                     />
 
                     {/* Badge Stripper + Ver cambios */}

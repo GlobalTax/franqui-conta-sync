@@ -19,6 +19,7 @@ interface UploadParams {
   centroCode: string;
   companyId?: string;
   supplierId?: string;
+  preferredEngine?: 'openai' | 'mindee';
 }
 
 interface UploadResult {
@@ -41,7 +42,7 @@ export const useInvoiceUpload = () => {
   };
 
   const uploadInvoice = async (params: UploadParams): Promise<UploadResult> => {
-    const { file, centroCode, supplierId } = params;
+    const { file, centroCode, supplierId, preferredEngine = 'mindee' } = params;
 
     if (!file.type.includes('pdf')) {
       throw new Error('Solo se permiten archivos PDF');
@@ -130,12 +131,12 @@ export const useInvoiceUpload = () => {
       setProgress(80);
 
       // 6. Trigger OCR processing using webhook mode (async)
-      // El edge function espera: { invoice_id, useWebhook: true }
+      // El edge function espera: { invoice_id, useWebhook: true, provider }
       const ocrResponse = await supabase.functions.invoke('invoice-ocr', {
         body: { 
           invoice_id: invoice.id,
           useWebhook: true,
-          engine: 'mindee'
+          provider: preferredEngine
         }
       });
 

@@ -63,14 +63,26 @@ export async function extractWithMindee(
 ): Promise<MindeeExtractionResult | { job_id: string }> {
   const startTime = Date.now();
   
-  const MINDEE_API_KEY = Deno.env.get('MINDEE_API_KEY');
-  if (!MINDEE_API_KEY) {
+  const rawKey = Deno.env.get('MINDEE_API_KEY');
+  if (!rawKey) {
     throw new MindeeError('MINDEE_API_KEY not configured', 'auth');
   }
 
-  // Validate and sanitize API key
-  const sanitizedKey = MINDEE_API_KEY.trim().replace(/\s/g, '');
-  if (!sanitizedKey || sanitizedKey.length < 10) {
+  // 🔑 Robust API key normalization
+  // Remove quotes, extra spaces, and detect Token/Bearer prefixes
+  const normalizedKey = rawKey.trim()
+    .replace(/^['"]|['"]$/g, '')  // Remove surrounding quotes
+    .replace(/^\s*(Token|Bearer)\s+/i, '');  // Remove prefixes if present
+  
+  // Build proper Authorization header
+  const authHeader = (/^(Token|Bearer)\s+/i.test(rawKey.trim()))
+    ? rawKey.trim().replace(/^['"]|['"]$/g, '')  // Keep original if already has prefix
+    : `Token ${normalizedKey}`;  // Add Token prefix if missing
+
+  // 🔍 Security logging: show fingerprint without exposing full key
+  console.log('[Mindee V4] 🔑 API key fingerprint:', `${normalizedKey.slice(0,4)}…${normalizedKey.slice(-4)} (len:${normalizedKey.length})`);
+  
+  if (!normalizedKey || normalizedKey.length < 10) {
     throw new MindeeError('MINDEE_API_KEY appears to be invalid or too short', 'auth');
   }
 
@@ -146,7 +158,7 @@ export async function extractWithMindee(
     const response = await fetch(apiUrl.toString(), {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${sanitizedKey}`
+        'Authorization': authHeader
         // NO incluir Content-Type, el browser lo agrega automáticamente con boundary
       },
       body: formData,
@@ -158,14 +170,42 @@ export async function extractWithMindee(
     // ✅ FASE 1: Enhanced error handling with classification
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Mindee V4] API error:', response.status, errorText);
+      let errorData: any = {};
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { detail: errorText };
+      }
+      console.error('[Mindee V4] API error:', response.status, errorData);
       
       if (response.status === 401 || response.status === 403) {
         throw new MindeeError(
-          'Mindee API authentication failed. Check MINDEE_API_KEY.',
+          'Mindee API key inválida. Verifica MINDEE_API_KEY en Supabase secrets.',
           'auth',
           response.status,
           errorText
+        );
+      }
+      
+      if (response.status === 413) {
+        throw new MindeeError(
+          'PDF demasiado grande para Mindee (max ~25MB).',
+          'server_error',
+          413,
+          errorText
+        );
+      }
+      
+      if (response.status === 422) {
+        const detail = errorData?.api_request?.error?.message || 
+                      errorData?.error?.detail || 
+                      errorData?.detail || 
+                      'Error de validación';
+        throw new MindeeError(
+          `Mindee no pudo procesar el documento (422): ${detail}`,
+          'server_error',
+          422,
+          detail
         );
       }
       
@@ -203,7 +243,7 @@ export async function extractWithMindee(
       // If no webhook, poll for result
       if (!options?.webhook_url) {
         console.log('[Mindee V4] Starting polling for job result...');
-        return await pollMindeeJob(jobId, sanitizedKey, startTime);
+        return await pollMindeeJob(jobId, normalizedKey, startTime);
       }
       
       // If webhook configured, return immediately

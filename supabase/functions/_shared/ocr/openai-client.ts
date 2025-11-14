@@ -45,7 +45,8 @@ export class OpenAIError extends Error {
 export async function extractWithOpenAI(
   base64Content: string,
   mimeType: string,
-  documentType?: DocumentType
+  documentType?: DocumentType,
+  supplierHint?: string | null
 ): Promise<OpenAIExtractionResult> {
   
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -65,10 +66,16 @@ export async function extractWithOpenAI(
     throw new OpenAIError(`Model ${modelName} does not support vision`, 'server_error');
   }
 
-  // Get prompt based on document type
-  const systemPrompt = getPrompt(documentType);
+  // Import schema utilities dynamically
+  const { getInvoiceSchema, getSystemPrompt, detectSupplierType } = await import('./schemas/invoice-schema.ts');
+  
+  // Detect supplier type and get appropriate schema/prompt
+  const supplierType = detectSupplierType(supplierHint);
+  const jsonSchema = getInvoiceSchema(supplierType);
+  const systemPrompt = getSystemPrompt(supplierType);
 
   console.log(`[OpenAI Vision] Starting extraction with model: ${modelName}`);
+  console.log(`[OpenAI Vision] Supplier type: ${supplierType} (hint: ${supplierHint || 'none'})`);
 
   // Setup timeout
   const controller = new AbortController();
@@ -99,7 +106,14 @@ export async function extractWithOpenAI(
             ]
           }
         ],
-        response_format: { type: 'json_object' },
+        response_format: { 
+          type: 'json_schema',
+          json_schema: {
+            name: 'invoice_extraction',
+            strict: true,
+            schema: jsonSchema
+          }
+        },
         max_tokens: modelConfig.maxTokens,
         temperature: 0.1
       }),

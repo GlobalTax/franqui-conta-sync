@@ -18,7 +18,7 @@ import { InvoiceReviewSheet } from "@/components/invoices/InvoiceReviewSheet";
 import { ApprovalStatusBadge } from "@/components/invoices/ApprovalStatusBadge";
 import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Search, Plus, Building2, Eye, FileStack } from "lucide-react";
+import { Search, Plus, Building2, Eye, FileStack, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
@@ -192,9 +192,14 @@ export default function InvoicesReceivedOCR() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">
-                              {invoice.supplier?.name || "Sin proveedor"}
-                            </span>
+                            {invoice.supplier?.name ? (
+                              <span className="truncate">{invoice.supplier.name}</span>
+                            ) : (
+                              <div className="flex items-center gap-2 text-orange-600">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span className="text-sm">Sin registrar</span>
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">

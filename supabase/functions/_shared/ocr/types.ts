@@ -80,7 +80,7 @@ export interface OpenAIExtractionResult {
 }
 
 export interface OrchestratorResult {
-  ocr_engine: "openai" | "manual_review";
+  ocr_engine: "openai" | "manual_review" | "template";
   final_invoice_json: EnhancedInvoiceData;
   confidence_final: number;
   status: InvoiceStatus;
@@ -88,9 +88,11 @@ export interface OrchestratorResult {
   orchestrator_logs: OrchestratorLog[];
   raw_responses: {
     openai?: OpenAIExtractionResult;
+    template?: any;
   };
   timing: {
     ms_openai: number;
+    ms_template?: number;
   };
   pdf_converted?: boolean;
 }

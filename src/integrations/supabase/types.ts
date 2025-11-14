@@ -5000,6 +5000,68 @@ export type Database = {
           },
         ]
       }
+      supplier_ocr_templates: {
+        Row: {
+          avg_confidence: number | null
+          confidence_threshold: number | null
+          created_at: string | null
+          created_by: string | null
+          document_type: string | null
+          extraction_strategy: string | null
+          field_mappings: Json
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          preferred_ocr_engine: string | null
+          supplier_id: string | null
+          template_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          avg_confidence?: number | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          document_type?: string | null
+          extraction_strategy?: string | null
+          field_mappings?: Json
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          preferred_ocr_engine?: string | null
+          supplier_id?: string | null
+          template_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          avg_confidence?: number | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          document_type?: string | null
+          extraction_strategy?: string | null
+          field_mappings?: Json
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          preferred_ocr_engine?: string | null
+          supplier_id?: string | null
+          template_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_ocr_templates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           active: boolean | null

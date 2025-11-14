@@ -86,6 +86,24 @@ export async function updateSupplier(
 }
 
 /**
+ * Obtiene un proveedor por su NIF/CIF exacto
+ */
+export async function getSupplierByTaxId(taxId: string): Promise<Supplier | null> {
+  const { data, error } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("tax_id", taxId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Error fetching supplier by tax_id: ${error.message}`);
+  }
+
+  return data ? SupplierMapper.toDomain(data) : null;
+}
+
+/**
  * Desactiva un proveedor (soft delete)
  */
 export async function deactivateSupplier(id: string): Promise<void> {

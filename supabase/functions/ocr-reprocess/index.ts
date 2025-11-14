@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface ReprocessRequest {
   invoiceId: string;
-  engine: 'openai' | 'mindee';
+  engine: 'openai';
 }
 
 interface OCRResult {
@@ -72,13 +72,8 @@ serve(async (req) => {
     let ocrResult: OCRResult;
     const startTime = Date.now();
 
-    if (engine === 'openai') {
-      ocrResult = await processWithOpenAI(base64Content);
-    } else if (engine === 'mindee') {
-      ocrResult = await processWithMindee(fileData);
-    } else {
-      throw new Error('Motor OCR no válido');
-    }
+    // Siempre usar OpenAI
+    ocrResult = await processWithOpenAI(base64Content);
 
     const processingTime = Date.now() - startTime;
 
@@ -88,7 +83,7 @@ serve(async (req) => {
     const updateData: any = {
       ocr_confidence: ocrResult.confidence,
       ocr_extracted_data: ocrResult.data,
-      ocr_engine: engine,
+      ocr_engine: 'openai',
       updated_at: new Date().toISOString()
     };
 
@@ -114,7 +109,7 @@ serve(async (req) => {
     // 7. Log de reprocesamiento
     await supabase.from('ocr_processing_log').insert({
       invoice_id: invoiceId,
-      engine,
+      engine: 'openai',
       confidence: ocrResult.confidence,
       raw_response: ocrResult.raw,
       extracted_data: ocrResult.data,
@@ -244,85 +239,3 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`
   };
 }
 
-/**
- * Procesa documento con Mindee
- */
-async function processWithMindee(fileData: Blob): Promise<OCRResult> {
-  const rawKey = Deno.env.get('MINDEE_API_KEY');
-  if (!rawKey) {
-    throw new Error('MINDEE_API_KEY no configurada');
-  }
-
-  // 🔑 Robust API key normalization
-  const normalizedKey = rawKey.trim()
-    .replace(/^['"]|['"]$/g, '')  // Remove surrounding quotes
-    .replace(/^\s*(Token|Bearer)\s+/i, '');  // Remove prefixes if present
-  
-  // Build proper Authorization header
-  const authHeader = (/^(Token|Bearer)\s+/i.test(rawKey.trim()))
-    ? rawKey.trim().replace(/^['"]|['"]$/g, '')
-    : `Token ${normalizedKey}`;
-
-  console.log('[Reprocess/Mindee] 🔑 API key fingerprint:', `${normalizedKey.slice(0,4)}…${normalizedKey.slice(-4)} (len:${normalizedKey.length})`);
-
-  if (!normalizedKey || normalizedKey.length < 10) {
-    throw new Error('MINDEE_API_KEY appears to be invalid or too short');
-  }
-
-  const formData = new FormData();
-  formData.append('document', fileData);
-
-  const response = await fetch(
-    'https://api.mindee.net/v1/products/mindee/invoices/v4/predict',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': authHeader
-      },
-      body: formData
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Mindee] Error response:', errorText);
-    throw new Error(`Mindee API error: ${response.status}`);
-  }
-
-  const result = await response.json();
-  const prediction = result.document?.inference?.prediction;
-
-  if (!prediction) {
-    throw new Error('Respuesta de Mindee inválida');
-  }
-
-  // Mapear campos de Mindee a nuestro formato
-  const data = {
-    invoice_number: prediction.invoice_number?.value || null,
-    invoice_date: prediction.date?.value || null,
-    supplier: {
-      name: prediction.supplier_name?.value || null,
-      tax_id: prediction.supplier_company_registrations?.[0]?.value || null
-    },
-    totals: {
-      subtotal: prediction.total_net?.value || null,
-      vat_total: prediction.total_tax?.value || null,
-      total: prediction.total_amount?.value || null
-    }
-  };
-
-  // Calcular confianza promedio de campos críticos
-  const confidences = [
-    prediction.invoice_number?.confidence || 0,
-    prediction.supplier_company_registrations?.[0]?.confidence || 0,
-    prediction.total_amount?.confidence || 0
-  ];
-  
-  const avgConfidence = confidences.reduce((a, b) => a + b, 0) / confidences.length;
-
-  return {
-    confidence: avgConfidence,
-    data,
-    raw: result
-  };
-}

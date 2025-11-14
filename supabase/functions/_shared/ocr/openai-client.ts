@@ -84,35 +84,21 @@ export async function extractWithOpenAI(
   // Prepare content array based on mime type
   let contentArray: any[];
   
-  if (mimeType === 'application/pdf') {
-    // ✅ CORRECT format for PDFs according to OpenAI docs
-    console.log(`[OpenAI] Using file format for PDF`);
-    contentArray = [
-      {
-        type: 'file',
-        file: {
-          file_data: `data:application/pdf;base64,${base64Content}`
-        }
-      },
-      {
-        type: 'text',
-        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.'
-      }
-    ];
-  } else {
-    // For images, use the standard image_url format
-    console.log(`[OpenAI] Using image_url format for image`);
-    contentArray = [
-      { type: 'text', text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' },
-      { 
-        type: 'image_url', 
-        image_url: { 
-          url: `data:${mimeType};base64,${base64Content}`,
-          detail: 'high'
-        } 
-      }
-    ];
-  }
+  // ✅ Unified format: OpenAI Vision treats PDFs like images
+  console.log(`[OpenAI] Using image_url format for ${mimeType}`);
+  contentArray = [
+    { 
+      type: 'text', 
+      text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
+    },
+    { 
+      type: 'image_url', 
+      image_url: { 
+        url: `data:${mimeType};base64,${base64Content}`,
+        detail: 'high'
+      } 
+    }
+  ];
 
   try {
     // ✅ Always use chat/completions endpoint (supports both PDFs and images)

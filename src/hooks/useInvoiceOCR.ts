@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { convertPdfToPngClient } from "@/lib/pdf-converter";
 
 interface OCRRequest {
   documentPath: string;
@@ -171,18 +172,62 @@ export interface OCRValidationResult {
 
 export const useProcessInvoiceOCR = () => {
   return useMutation({
-    mutationFn: async ({ documentPath, centroCode, engine = 'openai', supplierHint }: OCRRequest): Promise<OCRResponse> => {
+    mutationFn: async ({ documentPath, centroCode, engine = 'openai', supplierHint, imageDataUrl }: OCRRequest): Promise<OCRResponse> => {
       console.log('[useProcessInvoiceOCR] ========================================');
       console.log('[useProcessInvoiceOCR] Starting mutation...');
       console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
       console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
       console.log('[useProcessInvoiceOCR] engine:', engine);
       console.log('[useProcessInvoiceOCR] supplierHint:', supplierHint);
+      console.log('[useProcessInvoiceOCR] hasImageDataUrl:', !!imageDataUrl);
+
+      let finalImageDataUrl = imageDataUrl;
+
+      // If no imageDataUrl provided and document is PDF, download and convert
+      if (!imageDataUrl && documentPath.toLowerCase().endsWith('.pdf')) {
+        console.log('[useProcessInvoiceOCR] PDF detected without imageDataUrl - downloading from storage...');
+        
+        try {
+          // Download PDF from storage
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('invoice-documents')
+            .download(documentPath);
+
+          if (downloadError) {
+            console.error('[useProcessInvoiceOCR] Error downloading PDF:', downloadError);
+            throw new Error(`Failed to download PDF: ${downloadError.message}`);
+          }
+
+          console.log('[useProcessInvoiceOCR] PDF downloaded, converting to PNG...');
+
+          // Convert PDF to PNG
+          const file = new File([fileData], documentPath, { type: 'application/pdf' });
+          finalImageDataUrl = await convertPdfToPngClient(file);
+
+          console.log('[useProcessInvoiceOCR] ✓ PDF converted to PNG, imageDataUrl size:', finalImageDataUrl.length, 'bytes');
+        } catch (conversionError) {
+          console.error('[useProcessInvoiceOCR] PDF conversion failed:', conversionError);
+          toast.error('Error al convertir PDF a imagen');
+          throw conversionError;
+        }
+      }
+
+      const body: any = {
+        documentPath,
+        centroCode,
+        engine,
+        supplierHint
+      };
+
+      if (finalImageDataUrl) {
+        body.imageDataUrl = finalImageDataUrl;
+        console.log('[useProcessInvoiceOCR] Including imageDataUrl in request');
+      }
       
       console.log('[useProcessInvoiceOCR] Invoking supabase.functions.invoke...');
       
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-        body: { documentPath, centroCode, engine, supplierHint }
+        body
       });
 
       console.log('[useProcessInvoiceOCR] Response received');

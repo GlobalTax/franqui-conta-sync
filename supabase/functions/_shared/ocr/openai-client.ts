@@ -45,7 +45,8 @@ export async function extractWithOpenAI(
   base64Content: string,
   mimeType: string,
   documentType?: DocumentType,
-  supplierHint?: string | null
+  supplierHint?: string | null,
+  modelOverride?: string
 ): Promise<OpenAIExtractionResult> {
   
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -53,8 +54,8 @@ export async function extractWithOpenAI(
     throw new OpenAIError('OPENAI_API_KEY not configured', 'auth');
   }
 
-  // Get model from env or use default
-  const modelName = Deno.env.get('OCR_OPENAI_MODEL') || DEFAULT_MODEL;
+  // Get model from override, env or use default
+  const modelName = modelOverride || Deno.env.get('OCR_OPENAI_MODEL') || DEFAULT_MODEL;
   const modelConfig = MODEL_CONFIGS[modelName];
 
   if (!modelConfig) {
@@ -162,10 +163,15 @@ export async function extractWithOpenAI(
         }
       ],
       response_format: { 
-        type: 'json_object'
+        type: 'json_schema',
+        json_schema: {
+          name: 'invoice_extraction',
+          strict: true,
+          schema: jsonSchema
+        }
       },
       max_tokens: modelConfig.maxTokens,
-      temperature: 0.1
+      temperature: 0
     };
 
     const response = await fetch(endpoint, {
@@ -215,7 +221,27 @@ export async function extractWithOpenAI(
     console.log('[OpenAI Vision] Extraction completed, normalizing with adapter...');
 
     // Use adapter for normalization and validation
-    return adaptOpenAIToStandard(result);
+    const normalized = adaptOpenAIToStandard(result);
+    
+    // ✅ FALLBACK: Retry with gpt-4o if confidence is low or critical fields missing
+    const hasCriticalFields = normalized.data?.issuer?.vat_id && 
+                               normalized.data?.issue_date && 
+                               (normalized.data?.lines?.length > 0 || normalized.data?.totals?.total > 0);
+    
+    if (!modelOverride && modelName !== 'gpt-4o' && (normalized.confidence_score < 60 || !hasCriticalFields)) {
+      console.warn(`[Fallback] Low confidence (${normalized.confidence_score}%) or missing critical fields. Retrying with gpt-4o...`);
+      console.log('[Fallback] Missing fields check:', {
+        vat_id: !!normalized.data?.issuer?.vat_id,
+        issue_date: !!normalized.data?.issue_date,
+        has_lines: normalized.data?.lines?.length > 0,
+        has_totals: normalized.data?.totals?.total > 0
+      });
+      
+      // Recursive call with gpt-4o override
+      return await extractWithOpenAI(base64Content, mimeType, documentType, supplierHint, 'gpt-4o');
+    }
+    
+    return normalized;
 
   } catch (error) {
     clearTimeout(timeoutId);

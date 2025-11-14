@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { OCREngineBadge } from './OCREngineBadge';
 import { OCRConfidenceAlert } from './OCRConfidenceAlert';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
+import { AccountingValidationAlert } from '@/components/invoices/AccountingValidationAlert';
 
 interface InvoiceInboxSidebarProps {
   invoiceId: string | null;
@@ -279,6 +280,15 @@ export function InvoiceInboxSidebar({
                     </div>
                   );
                 })()}
+
+                {/* ⭐ FASE 2: Validación Contable */}
+                {invoice.ocr_payload && typeof invoice.ocr_payload === 'object' && 'accounting_validation' in invoice.ocr_payload && (
+                  <div className="px-6 py-4">
+                    <AccountingValidationAlert 
+                      validation={(invoice.ocr_payload as any).accounting_validation}
+                    />
+                  </div>
+                )}
 
                 <Separator />
                 {invoice.document_path && (

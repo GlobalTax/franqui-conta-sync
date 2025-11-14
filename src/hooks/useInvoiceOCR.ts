@@ -129,6 +129,22 @@ export interface OCRResponse {
     warnings: string[];
   };
   autofix_applied: string[];
+  accounting_validation?: {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+    details: {
+      sum_bases: number;
+      sum_taxes: number;
+      declared_base: number;
+      declared_tax: number;
+      declared_total: number;
+      calculated_total: number;
+      diff_bases: number;
+      diff_taxes: number;
+      diff_total: number;
+    };
+  }; // ⭐ FASE 2: Validación contable avanzada
   ap_mapping: APMappingResult;
   entry_validation?: InvoiceEntryValidationResult;
   rawText?: string;

@@ -196,21 +196,11 @@ export function InvoiceInboxSidebar({
                       </div>
 
                       {/* Tiempos de procesamiento */}
-                      {(ocrLog.ms_openai || ocrLog.ms_mindee) && (
-                        <div className="text-xs space-y-1 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2">
+                      {ocrLog.ms_openai && (
+                        <div className="text-xs bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2">
                           <div className="flex items-center justify-between">
                             <span>⏱️ OpenAI:</span>
-                            <span className="font-mono">{ocrLog.ms_openai || 0}ms</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>⏱️ Mindee:</span>
-                            <span className="font-mono">{ocrLog.ms_mindee || 0}ms</span>
-                          </div>
-                          <div className="flex items-center justify-between font-semibold">
-                            <span>Total:</span>
-                            <span className="font-mono">
-                              {(ocrLog.ms_openai || 0) + (ocrLog.ms_mindee || 0)}ms
-                            </span>
+                            <span className="font-mono">{ocrLog.ms_openai}ms</span>
                           </div>
                         </div>
                       )}

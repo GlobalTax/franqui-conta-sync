@@ -51,8 +51,8 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   file_size_kb: inv.file_size_kb,
   page_count: inv.page_count,
   
-  // Campos OCR reales
-  ocr_engine: inv.ocr_engine,
+  // Campos OCR reales - asegurar tipo correcto
+  ocr_engine: inv.ocr_engine as 'openai' | 'merged' | 'manual_review' | null,
   ocr_confidence: inv.ocr_confidence,
   processing_time_ms: inv.ocr_processing_time_ms,
   ocr_ms_openai: inv.ocr_ms_openai,

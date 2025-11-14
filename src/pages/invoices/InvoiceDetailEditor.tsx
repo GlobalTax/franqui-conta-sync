@@ -368,7 +368,7 @@ export default function InvoiceDetailEditor() {
       const result = await processOCR.mutateAsync({
         documentPath: effectivePath,
         centroCode,
-        engine
+        engine: engine as 'openai'
       });
       
       console.log('[OCR] Resultado recibido:', result);
@@ -830,7 +830,7 @@ export default function InvoiceDetailEditor() {
             {ocrProcessed && (
               <>
                 <OCREngineIndicator
-                  ocrEngine={ocrEngine}
+                  ocrEngine={ocrEngine as 'openai' | 'merged' | 'manual_review' | 'google_vision'}
                   mergeNotes={mergeNotes}
                   confidence={ocrConfidence}
                   metrics={{
@@ -1099,7 +1099,7 @@ export default function InvoiceDetailEditor() {
               {ocrProcessed && (
                 <div className="mt-4 space-y-2">
                   <OCREngineIndicator
-                    ocrEngine={ocrEngine}
+                    ocrEngine={ocrEngine as 'openai' | 'merged' | 'manual_review' | 'google_vision'}
                     mergeNotes={mergeNotes}
                     confidence={ocrConfidence}
                     metrics={{

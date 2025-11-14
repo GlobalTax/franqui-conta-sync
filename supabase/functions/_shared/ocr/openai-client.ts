@@ -91,6 +91,15 @@ export async function extractWithOpenAI(
     console.log('[OpenAI] Using client-provided imageDataUrl (PDF converted on client)');
     console.log(`[OpenAI] Image size: ${Math.round(imageDataUrl.length / 1024)}KB`);
     
+    // ✅ AÑADIR: Validar formato
+    if (!imageDataUrl.startsWith('data:image/')) {
+      throw new OpenAIError(
+        'Invalid imageDataUrl format from client',
+        'server_error',
+        `Expected data:image/..., got: ${imageDataUrl.slice(0, 50)}`
+      );
+    }
+    
     contentArray = [
       { 
         type: 'text', 
@@ -104,7 +113,7 @@ export async function extractWithOpenAI(
         } 
       }
     ];
-  } 
+  }
   // Priority 2: Handle PDFs (will fail with clear error if OffscreenCanvas unavailable)
   else if (mimeType === 'application/pdf') {
     console.log('[OpenAI] Document is PDF - attempting server-side conversion...');
@@ -164,6 +173,34 @@ export async function extractWithOpenAI(
     ];
   }
 
+  // ✅ SANITY CHECK: Validar que contentArray tiene imágenes válidas
+  console.log('[OpenAI] Content array length:', contentArray.length);
+  const imageUrls = contentArray.filter(item => item.type === 'image_url');
+  console.log('[OpenAI] Image URLs count:', imageUrls.length);
+
+  if (imageUrls.length === 0) {
+    throw new OpenAIError(
+      'No images provided for OCR processing',
+      'server_error',
+      'contentArray has no image_url items'
+    );
+  }
+
+  // Validar formato de cada imagen
+  for (const item of imageUrls) {
+    const url = item.image_url?.url;
+    if (!url) {
+      throw new OpenAIError('Image URL is missing', 'server_error', JSON.stringify(item));
+    }
+    if (!url.startsWith('data:image/')) {
+      throw new OpenAIError(
+        'Invalid image format: must be data:image/... base64 URL',
+        'server_error',
+        `Got: ${url.slice(0, 50)}...`
+      );
+    }
+  }
+
   try {
     // ✅ Always use chat/completions endpoint (supports both PDFs and images)
     const endpoint = 'https://api.openai.com/v1/chat/completions';
@@ -191,6 +228,12 @@ export async function extractWithOpenAI(
       temperature: 0
     };
 
+    // ✅ AÑADIR: Validación defensiva de max_tokens
+    if (!requestBody.max_tokens || requestBody.max_tokens <= 0) {
+      console.warn('[OpenAI] max_tokens is invalid, forcing to 2000');
+      requestBody.max_tokens = 2000;
+    }
+
     // Make API request with fallback
     let response: Response;
     let actualFormat = 'json_schema';
@@ -209,7 +252,16 @@ export async function extractWithOpenAI(
       // If json_schema fails with 400, retry with json_object
       if (!response.ok && response.status === 400) {
         const errorText = await response.text();
-        console.warn('[OpenAI] json_schema failed with 400, retrying with json_object...', errorText);
+        console.warn('[OpenAI] json_schema failed with 400, retrying with json_object...');
+        console.warn('[OpenAI] Schema error details:', errorText);
+        
+        // ✅ AÑADIR: Parsear el error para ver exactamente qué campo falla
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.warn('[OpenAI] Parsed error:', JSON.stringify(errorJson, null, 2));
+        } catch {
+          console.warn('[OpenAI] Could not parse error as JSON');
+        }
         
         const retryBody = {
           ...requestBody,
@@ -287,7 +339,9 @@ export async function extractWithOpenAI(
     
     // Validate response structure before processing
     if (!result || !result.choices || result.choices.length === 0) {
-      console.error('[OpenAI Vision] Invalid response structure:', result);
+      console.error('[OpenAI Vision] Invalid response structure:', JSON.stringify(result).slice(0, 1000));
+      console.error('[OpenAI Vision] HTTP status was:', response.status);
+      console.error('[OpenAI Vision] Response headers:', JSON.stringify([...response.headers.entries()]));
       throw new OpenAIError(
         'OpenAI returned invalid response structure',
         'server_error',
@@ -295,6 +349,19 @@ export async function extractWithOpenAI(
       );
     }
 
+    // ✅ AÑADIR: Validar que choices[0] tiene message
+    const firstChoice = result.choices[0];
+    if (!firstChoice || !firstChoice.message) {
+      console.error('[OpenAI Vision] First choice missing message:', JSON.stringify(firstChoice).slice(0, 500));
+      throw new OpenAIError(
+        'OpenAI choice missing message object',
+        'server_error',
+        JSON.stringify(firstChoice)
+      );
+    }
+
+    console.log('[OpenAI Vision] First choice finish_reason:', firstChoice.finish_reason);
+    console.log('[OpenAI Vision] Message has content:', !!firstChoice.message.content);
     console.log('[OpenAI Vision] Extraction completed, normalizing with adapter...');
 
     // Use adapter for normalization and validation

@@ -127,7 +127,7 @@ export async function extractWithOpenAI(
       {
         type: 'image_url',
         image_url: {
-          url: `openai://file-${fileId}`,
+          url: fileId,
           detail: 'high'
         }
       }

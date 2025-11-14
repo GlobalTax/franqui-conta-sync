@@ -189,10 +189,6 @@ serve(async (req) => {
 
     console.log('[Cache] ❌ MISS - Executing OpenAI OCR...');
 
-    // ============================================================================
-    // OPENAI EXTRACTION
-    // ============================================================================
-    
     const ocrStartTime = Date.now();
     const openaiResult = await extractWithOpenAI(
       base64Content,

@@ -318,7 +318,7 @@ export default function InvoiceDetailEditor() {
 
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
-  const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' | 'mindee' }) => {
+  const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' }) => {
     console.log('[OCR] ========================================');
     console.log('[OCR] Iniciando procesamiento OCR...');
     
@@ -390,7 +390,6 @@ export default function InvoiceDetailEditor() {
         console.log('Confianza final:', `${Math.round(result.confidence * 100)}%`);
         console.log('Tiempo total:', `${result.processingTimeMs}ms`);
         console.log('OpenAI:', `${result.ocr_metrics.ms_openai}ms`);
-        console.log('Mindee:', `${result.ocr_metrics.ms_mindee}ms`);
         console.log('Páginas:', result.ocr_metrics.pages);
         console.log('Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
         console.groupEnd();

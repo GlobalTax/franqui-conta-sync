@@ -21,6 +21,20 @@ export interface AccountingValidationResult {
   };
 }
 
+export interface CompactValidationResult {
+  ok: boolean;
+  diffs: {
+    eq1: number; // Diferencia en céntimos (∑bases + green_point vs base_total_plus_fees)
+    eq2: number; // Diferencia en céntimos (∑taxes vs tax_total)
+    eq3: number; // Diferencia en céntimos (base+tax vs grand_total)
+  };
+  recalculated_totals: {
+    base_total_plus_fees: string;
+    tax_total: string;
+    grand_total: string;
+  };
+}
+
 /**
  * Convierte string a céntimos (evita problemas de precisión con floats)
  */
@@ -155,6 +169,60 @@ export function validateAccountingRules(data: any): AccountingValidationResult {
       diff_bases: diffBases / 100,
       diff_taxes: diffTaxes / 100,
       diff_total: diffTotal / 100
+    }
+  };
+}
+
+/**
+ * Valida coherencia contable en formato compacto (solo totales)
+ * 
+ * Ecuaciones validadas:
+ * - eq1: ∑(bases por IVA) + punto verde = base_total_plus_fees
+ * - eq2: ∑(cuotas por IVA) = tax_total
+ * - eq3: base_total_plus_fees + tax_total = grand_total
+ * 
+ * @param data - Datos de factura extraídos por OCR
+ * @returns Resultado compacto con ok, diffs (en céntimos) y totales recalculados
+ */
+export function validateAccountingRulesCompact(data: any): CompactValidationResult {
+  const totalsVAT = data?.totals_by_vat || [];
+  const greenPoint = toCents(data?.fees?.green_point);
+  const declaredBase = toCents(data?.base_total_plus_fees);
+  const declaredTax = toCents(data?.tax_total);
+  const declaredTotal = toCents(data?.grand_total);
+
+  // Calcular sumas
+  let sumBases = 0;
+  let sumTaxes = 0;
+  for (const line of totalsVAT) {
+    sumBases += toCents(line.base);
+    sumTaxes += toCents(line.tax);
+  }
+
+  // Añadir green_point a la base calculada (eq1)
+  const calculatedBase = sumBases + greenPoint;
+  const calculatedTax = sumTaxes;
+  const calculatedTotal = calculatedBase + calculatedTax;
+
+  // Diferencias con signo (positivo = calculado > declarado)
+  const diffEq1 = calculatedBase - declaredBase;
+  const diffEq2 = calculatedTax - declaredTax;
+  const diffEq3 = calculatedTotal - declaredTotal;
+
+  // Validar con tolerancia ±2 céntimos
+  const ok = Math.abs(diffEq1) <= 2 && Math.abs(diffEq2) <= 2 && Math.abs(diffEq3) <= 2;
+
+  return {
+    ok,
+    diffs: {
+      eq1: diffEq1,
+      eq2: diffEq2,
+      eq3: diffEq3
+    },
+    recalculated_totals: {
+      base_total_plus_fees: (calculatedBase / 100).toFixed(2),
+      tax_total: (calculatedTax / 100).toFixed(2),
+      grand_total: (calculatedTotal / 100).toFixed(2)
     }
   };
 }

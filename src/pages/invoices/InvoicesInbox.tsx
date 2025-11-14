@@ -254,7 +254,7 @@ export default function InvoicesInbox() {
     
     await invoiceActions.reprocessOCR({
       invoiceId: invoiceToReprocess,
-      engine: 'mindee'
+      engine: 'openai'
     });
     
     setReprocessDialogOpen(false);

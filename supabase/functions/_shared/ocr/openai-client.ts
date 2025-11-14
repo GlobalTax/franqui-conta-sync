@@ -227,6 +227,18 @@ export async function extractWithOpenAI(
         });
         
         actualFormat = 'json_object';
+        
+        // Validate that the retry was successful
+        if (!response.ok) {
+          const retryErrorText = await response.text();
+          console.error('[OpenAI] json_object retry also failed:', response.status, retryErrorText);
+          throw new OpenAIError(
+            `OpenAI retry with json_object failed: ${response.status}`,
+            response.status >= 500 ? 'server_error' : 'auth',
+            retryErrorText,
+            response.status
+          );
+        }
       }
       
       console.log(`[OpenAI] Response format used: ${actualFormat}`);
@@ -272,6 +284,16 @@ export async function extractWithOpenAI(
     }
 
     const result = await response.json();
+    
+    // Validate response structure before processing
+    if (!result || !result.choices || result.choices.length === 0) {
+      console.error('[OpenAI Vision] Invalid response structure:', result);
+      throw new OpenAIError(
+        'OpenAI returned invalid response structure',
+        'server_error',
+        JSON.stringify(result)
+      );
+    }
 
     console.log('[OpenAI Vision] Extraction completed, normalizing with adapter...');
 

@@ -197,13 +197,17 @@ export const GENERIC_INVOICE_SCHEMA = {
     }
   },
   required: [
-    "issuer", 
-    "recipient", 
-    "invoice", 
-    "totals_by_vat", 
-    "base_total_plus_fees", 
-    "tax_total", 
-    "grand_total"
+    "issuer",              // ✅ línea 19-28
+    "recipient",           // ✅ línea 30-39
+    "invoice",             // ✅ línea 41-68
+    "fees",                // ➕ línea 70-81
+    "totals_by_vat",       // ✅ línea 83-114
+    "totals_by_group",     // ➕ línea 116-145
+    "base_total_plus_fees",// ✅ línea 147-151
+    "tax_total",           // ✅ línea 153-157
+    "grand_total",         // ✅ línea 159-163
+    "validation_errors",   // ➕ línea 165-169
+    "lines"                // ➕ línea 171-197
   ],
   additionalProperties: false
 };

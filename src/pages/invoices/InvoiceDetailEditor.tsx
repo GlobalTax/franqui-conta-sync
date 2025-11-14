@@ -535,6 +535,14 @@ export default function InvoiceDetailEditor() {
   // Handlers
   const handleSaveDraft = async (data: InvoiceFormData) => {
     try {
+      // Validación de proveedor obligatorio
+      if (!data.supplier_id) {
+        toast.error('Debes seleccionar un proveedor válido', {
+          description: 'Usa el buscador o valida el NIF/CIF para asociar un proveedor'
+        });
+        return;
+      }
+
       if (isEditMode && id) {
         await updateInvoice.mutateAsync({ 
           id, 
@@ -614,6 +622,14 @@ export default function InvoiceDetailEditor() {
   const handleConfirmAndPost = async () => {
     try {
       const data = form.getValues();
+      
+      // Validación de proveedor obligatorio
+      if (!data.supplier_id) {
+        toast.error('Debes seleccionar un proveedor válido', {
+          description: 'Usa el buscador o valida el NIF/CIF para asociar un proveedor'
+        });
+        return;
+      }
       
       // 1. Guardar factura primero
       let invoiceId = id;

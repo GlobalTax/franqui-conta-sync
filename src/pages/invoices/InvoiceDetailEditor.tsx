@@ -117,7 +117,7 @@ export default function InvoiceDetailEditor() {
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('mindee');
+  const [selectedEngine, setSelectedEngine] = useState<'openai' | 'mindee'>('openai');
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
   const [documentAnalysis, setDocumentAnalysis] = useState<DocumentAnalysis | null>(null);
@@ -184,16 +184,21 @@ export default function InvoiceDetailEditor() {
   // Stripper Hook (después de form)
   const { stripperState, applyStripper, getFieldChange } = useInvoiceStripper(form);
 
-  // Persistir preferencia de motor OCR en localStorage
+  // Persistir preferencia de motor OCR en localStorage (forzar OpenAI)
   useEffect(() => {
     const savedEngine = localStorage.getItem('preferred_ocr_engine') as 'openai' | 'mindee' | null;
-    if (savedEngine) {
-      setSelectedEngine(savedEngine);
+    // Forzar OpenAI siempre, ignorar Mindee
+    if (savedEngine === 'mindee') {
+      localStorage.setItem('preferred_ocr_engine', 'openai');
+      setSelectedEngine('openai');
+    } else if (savedEngine === 'openai') {
+      setSelectedEngine('openai');
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('preferred_ocr_engine', selectedEngine);
+    // Siempre guardar 'openai' en localStorage
+    localStorage.setItem('preferred_ocr_engine', 'openai');
   }, [selectedEngine]);
 
   // Auto-seleccionar centro basándose en ViewContext o restaurante del usuario
@@ -469,41 +474,41 @@ export default function InvoiceDetailEditor() {
         });
         
         setDocumentAnalysis(analysis);
-        setSelectedEngine(analysis.recommended_engine);
+        // NO sobrescribir selectedEngine - siempre usar OpenAI
+        // setSelectedEngine(analysis.recommended_engine);
         
         console.log('[Analysis] Complete:', analysis);
+        console.log('[Analysis] Recomendación ignorada - usando OpenAI forzado');
         
         toast.success(
-          `Motor recomendado: ${analysis.recommended_engine === 'openai' ? 'OpenAI' : 'Mindee'}`,
+          'Documento analizado - procesando con OpenAI',
           { 
-            description: analysis.reasoning[0],
-            duration: 5000 
+            description: 'Motor OpenAI configurado por defecto',
+            duration: 3000 
           }
         );
       } catch (error) {
         console.error('[Analysis] Failed:', error);
-        toast.warning('No se pudo analizar el documento, usando motor por defecto', {
+        toast.warning('No se pudo analizar el documento, usando OpenAI por defecto', {
           duration: 3000
         });
       }
       toast.success("PDF subido correctamente");
-      console.log('[Upload] Programando auto-trigger OCR en 300ms con path');
+      console.log('[Upload] Programando auto-trigger OCR en 300ms con OpenAI forzado');
       setTimeout(() => {
-        // ⭐ Auto-trigger OCR cuando se sube un nuevo PDF
-        console.log('[Upload] Usar motor seleccionado:', selectedEngine);
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: selectedEngine });
+        // ⭐ Auto-trigger OCR cuando se sube un nuevo PDF - SIEMPRE con OpenAI
+        console.log('[Upload] Forzando motor OpenAI (Mindee deshabilitado)');
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
       }, 300);
     }
   };
 
-  // Handler para reintentar con motor diferente
+  // Handler para reintentar con motor diferente (deshabilitado - solo OpenAI)
   const handleRetryWithDifferentEngine = () => {
-    const newEngine = ocrEngine === 'openai' ? 'mindee' : 'openai';
-    console.log('[OCR] Reintentando con motor:', newEngine);
-    setSelectedEngine(newEngine);
-    toast.info(`Reprocesando con ${newEngine === 'openai' ? 'OpenAI Vision' : 'Mindee'}...`);
+    console.log('[OCR] Reintento con OpenAI (Mindee deshabilitado)');
+    toast.info('Reprocesando con OpenAI...');
     setTimeout(() => {
-      handleProcessOCR({ engine: newEngine });
+      handleProcessOCR({ engine: 'openai' });
     }, 300);
   };
 
@@ -789,7 +794,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: selectedEngine })}
+                      onClick={() => handleProcessOCR({ engine: 'openai' })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -834,7 +839,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={() => handleProcessOCR({ engine: selectedEngine })}
+                  onClick={() => handleProcessOCR({ engine: 'openai' })}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -866,15 +871,15 @@ export default function InvoiceDetailEditor() {
                   isEditMode={isEditMode}
                   ocrEngine={ocrEngine}
                   ocrConfidence={ocrConfidence}
-                  onProcessOCR={() => handleProcessOCR({ engine: selectedEngine })}
+                  onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
                   isProcessing={processOCR.isPending}
                   hasDocument={!!documentPath}
                   onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
                   orchestratorLogs={orchestratorLogs}
                   processingTimeMs={processingTimeMs}
-                  selectedOcrEngine={selectedEngine}
-                  onOcrEngineChange={setSelectedEngine}
+                  selectedOcrEngine="openai"
+                  onOcrEngineChange={() => {}}
                   documentAnalysis={documentAnalysis}
                 />
 
@@ -1064,7 +1069,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: selectedEngine })}
+                      onClick={() => handleProcessOCR({ engine: 'openai' })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -1103,7 +1108,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={() => handleProcessOCR({ engine: selectedEngine })}
+                    onClick={() => handleProcessOCR({ engine: 'openai' })}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -1134,12 +1139,12 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
-                      onProcessOCR={() => handleProcessOCR({ engine: selectedEngine })}
+                      onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      selectedOcrEngine={selectedEngine}
-                      onOcrEngineChange={setSelectedEngine}
+                      selectedOcrEngine="openai"
+                      onOcrEngineChange={() => {}}
                     />
 
                     {/* Badge Stripper + Ver cambios */}

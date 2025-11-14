@@ -35,12 +35,12 @@ export function ReprocessOCRSimpleDialog({
         <DialogHeader>
           <DialogTitle>Reprocesar OCR</DialogTitle>
           <DialogDescription>
-            ¿Confirmas que deseas reprocesar este documento con Mindee?
+            ¿Confirmas que deseas reprocesar este documento con OpenAI?
           </DialogDescription>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground py-4">
-          El motor Mindee está especializado en facturas europeas y proporciona mayor precisión en NIFs, fechas e importes.
+          El motor OpenAI GPT-4o Vision procesará el documento con tecnología de última generación para extraer todos los datos de la factura.
         </p>
 
         <DialogFooter>

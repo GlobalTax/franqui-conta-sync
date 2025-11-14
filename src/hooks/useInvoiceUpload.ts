@@ -43,7 +43,7 @@ export const useInvoiceUpload = () => {
   };
 
   const uploadInvoice = async (params: UploadParams): Promise<UploadResult> => {
-    const { file, centroCode, supplierId, preferredEngine = 'mindee', supplierHint = null } = params;
+    const { file, centroCode, supplierId, preferredEngine = 'openai', supplierHint = null } = params;
 
     if (!file.type.includes('pdf')) {
       throw new Error('Solo se permiten archivos PDF');
@@ -137,7 +137,8 @@ export const useInvoiceUpload = () => {
         body: { 
           invoice_id: invoice.id,
           useWebhook: true,
-          provider: preferredEngine,
+          provider: 'openai',
+          engine: 'openai',
           supplierHint
         }
       });
@@ -170,7 +171,7 @@ export const useInvoiceUpload = () => {
             clearInterval(pollInterval);
             
             if (updatedInvoice.status === 'processed_ok' || updatedInvoice.status === 'approved') {
-              toast.success(`✅ OCR completado: ${updatedInvoice.ocr_engine || 'mindee'}`);
+              toast.success(`✅ OCR completado: ${updatedInvoice.ocr_engine || 'openai'}`);
             } else if (updatedInvoice.status === 'needs_review') {
               toast.warning('OCR completado pero requiere revisión manual');
             } else {

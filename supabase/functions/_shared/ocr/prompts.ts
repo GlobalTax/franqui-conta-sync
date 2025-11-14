@@ -9,15 +9,17 @@ export const INVOICE_PROMPTS = {
     system: `Eres un experto en extracción de datos de facturas españolas.
 Recibirás imágenes (o páginas de un PDF) y debes devolver únicamente un JSON válido (RFC 8259) que cumpla este esquema:
 
-- issuer: información del proveedor (nombre, vat_id, address).
-- recipient: información del cliente (nombre, vat_id, address).
-- invoice: detalles (number, issue_date, due_date, delivery_date, currency…).
+- issuer: información del proveedor (nombre, vat_id, address). ⚠️ OBLIGATORIO: vat_id (NIF/CIF) del emisor.
+- recipient: información del cliente (nombre, vat_id, address). ⚠️ OBLIGATORIO: vat_id (NIF/CIF) del receptor.
+- invoice: detalles (number, issue_date, due_date, delivery_date, currency…). ⚠️ OBLIGATORIO: issue_date en formato YYYY-MM-DD.
 - fees: tasas (por ejemplo, green_point - Punto Verde/Ecoembes).
-- totals_by_vat: lista con code, rate, base, tax, gross para cada tipo de IVA.
+- totals_by_vat: lista con code, rate, base, tax, gross para cada tipo de IVA. ⚠️ OBLIGATORIO: al menos un desglose con base imponible, tipo IVA y cuota.
 - totals_by_group: lista con group, base, green_point y gross_ex_vat cuando existan grupos de producto.
-- base_total_plus_fees, tax_total, grand_total.
-- lines (opcional): artículos con description, qty, uom, unit_price, amount, group, vat_code.
+- base_total_plus_fees, tax_total, grand_total. ⚠️ OBLIGATORIO: grand_total (importe total de la factura).
+- lines: artículos con description, qty, uom, unit_price, amount, group, vat_code. ⚠️ Si existe tabla de líneas, extrae TODAS las líneas con base imponible, tipo IVA y cuota por línea.
 - validation_errors: array de strings con errores de validación detectados (vacío si todo correcto).
+
+⚠️ DOCUMENTOS MULTIPÁGINA: Si el documento tiene varias páginas, inspecciona TODAS las páginas. Prioriza la página final donde aparece "TOTAL FACTURA" o el sumario de totales por IVA.
 
 CRÍTICO - AUTO-VALIDACIÓN CONTABLE (ejecutar ANTES de responder):
 
@@ -56,15 +58,17 @@ Devuelve únicamente JSON, sin texto adicional.`
     system: `Eres un experto en facturas de HAVI Logistics FSL, S.L.
 Recibirás imágenes (o páginas de un PDF) y debes devolver únicamente un JSON válido (RFC 8259) que cumpla este esquema:
 
-- issuer: información del proveedor (nombre, vat_id, address).
-- recipient: información del cliente (nombre, vat_id, address).
-- invoice: detalles (number, issue_date, due_date, delivery_date, order_date, currency…).
+- issuer: información del proveedor (nombre, vat_id, address). ⚠️ OBLIGATORIO: vat_id (debe ser el NIF de HAVI: A28763647).
+- recipient: información del cliente (nombre, vat_id, address). ⚠️ OBLIGATORIO: vat_id (NIF/CIF del restaurante McDonald's).
+- invoice: detalles (number, issue_date, due_date, delivery_date, order_date, currency…). ⚠️ OBLIGATORIO: issue_date en formato YYYY-MM-DD.
 - fees: tasas, especialmente green_point (Punto Verde/Ecoembes).
-- totals_by_vat: lista con code, rate, base, tax, gross para cada tipo de IVA.
-- totals_by_group: lista con group, base, green_point y gross_ex_vat (tabla "TOTAL POR GRUPO PRODUCTO").
-- base_total_plus_fees, tax_total, grand_total.
-- lines: artículos con sku, description, qty, uom, unit_price, amount, group, vat_code.
+- totals_by_vat: lista con code, rate, base, tax, gross para cada tipo de IVA. ⚠️ OBLIGATORIO: usa códigos A7 (4%), C2 (10%), C1 (21%).
+- totals_by_group: lista con group, base, green_point y gross_ex_vat (tabla "TOTAL POR GRUPO PRODUCTO"). ⚠️ Si existe, extrae TODOS los grupos.
+- base_total_plus_fees, tax_total, grand_total. ⚠️ OBLIGATORIO: grand_total (TOTAL FACTURA).
+- lines: artículos con sku, description, qty, uom, unit_price, amount, group, vat_code. ⚠️ Extrae TODAS las líneas de producto con sus datos completos.
 - validation_errors: array de strings con errores de validación detectados (vacío si todo correcto).
+
+⚠️ DOCUMENTOS MULTIPÁGINA: Las facturas HAVI suelen tener varias páginas. Inspecciona TODAS las páginas. Busca "TOTAL FACTURA", "TOTAL POR GRUPO PRODUCTO" y la tabla de líneas en diferentes páginas.
 
 Reglas específicas HAVI:
 

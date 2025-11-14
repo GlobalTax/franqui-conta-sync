@@ -272,14 +272,14 @@ serve(async (req) => {
     // ============================================================================
     
     const tokens = {
-      tokens_in: openaiResult.usage?.tokens_in || 0,
-      tokens_out: openaiResult.usage?.tokens_out || 0,
-      total_tokens: openaiResult.usage?.total_tokens || 0
+      tokens_in: ocrResult.raw_responses.openai?.usage?.tokens_in || 0,
+      tokens_out: ocrResult.raw_responses.openai?.usage?.tokens_out || 0,
+      total_tokens: ocrResult.raw_responses.openai?.usage?.total_tokens || 0
     };
 
     const pages = quickMeta.pageCount;
     const costBreakdown = calculateOCRCost({
-      engine: 'openai',
+      engine: ocrResult.ocr_engine === 'manual_review' ? 'openai' : ocrResult.ocr_engine as 'openai' | 'mindee' | 'merged',
       pages,
       tokens_in: tokens.tokens_in,
       tokens_out: tokens.tokens_out
@@ -294,17 +294,17 @@ serve(async (req) => {
     
     const ocrLogData = {
       document_path: actualDocumentPath,
-      ocr_provider: 'openai',
-      engine: 'openai',
+      ocr_provider: ocrResult.ocr_engine,
+      engine: ocrResult.ocr_engine,
       tokens_in: tokens.tokens_in,
       tokens_out: tokens.tokens_out,
       pages,
       cost_estimate_eur: costBreakdown.cost_total_eur,
-      ms_openai: ocrTime,
-      ms_mindee: 0,
-      raw_response: { openai: openaiResult },
+      ms_openai: ocrResult.ocr_engine === 'openai' ? ocrTime : 0,
+      ms_mindee: ocrResult.ocr_engine === 'mindee' ? ocrTime : 0,
+      raw_response: ocrResult.raw_responses,
       extracted_data: normalizedResponse.normalized,
-      confidence: openaiResult.confidence_score / 100,
+      confidence: ocrResult.confidence_final / 100,
       processing_time_ms: Date.now() - startTime
     };
 
@@ -326,14 +326,14 @@ serve(async (req) => {
       // Determine status
       let finalStatus: 'pending' | 'processed_ok' | 'needs_review' | 'needs_manual_review' | 'approved' = 'needs_review';
       
-      const hasValidationErrors = (openaiResult.data.validation_errors?.length || 0) > 0;
+      const hasValidationErrors = (ocrResult.final_invoice_json.validation_errors?.length || 0) > 0;
       const hasAccountingErrors = !accountingValidation.ok;
       const hasBlockingIssues = entryValidation.blocking_issues.length > 0;
-      const highConfidence = openaiResult.confidence_score >= 85;
+      const highConfidence = ocrResult.confidence_final >= 85;
 
       if (highConfidence && !hasValidationErrors && !hasAccountingErrors && !hasBlockingIssues) {
         finalStatus = 'processed_ok';
-      } else if (openaiResult.confidence_score < 60 || hasValidationErrors) {
+      } else if (ocrResult.confidence_final < 60 || hasValidationErrors) {
         finalStatus = 'needs_manual_review';
       }
 
@@ -341,7 +341,7 @@ serve(async (req) => {
         .from('invoices_received')
         .update({
           status: finalStatus,
-          ocr_engine: 'openai',
+          ocr_engine: ocrResult.ocr_engine,
           supplier_name: normalizedResponse.normalized.issuer.name,
           supplier_vat: normalizedResponse.normalized.issuer.vat_id,
           invoice_number: normalizedResponse.normalized.invoice_number,
@@ -352,7 +352,7 @@ serve(async (req) => {
                       (normalizedResponse.normalized.totals.base_21 || 0),
           vat_amount: (normalizedResponse.normalized.totals.vat_10 || 0) + 
                      (normalizedResponse.normalized.totals.vat_21 || 0),
-          confidence_score: openaiResult.confidence_score,
+          confidence_score: ocrResult.confidence_final,
           ocr_data: normalizedResponse.normalized,
           ap_account_suggestion: apMapping.invoice_level.account_suggestion,
           processed_at: new Date().toISOString()
@@ -412,10 +412,10 @@ serve(async (req) => {
         p_document_path: actualDocumentPath,
         p_file_size: quickMeta.fileSize,
         p_page_count: pages,
-        p_ocr_engine: 'openai',
+        p_ocr_engine: ocrResult.ocr_engine,
         p_extracted_data: normalizedResponse.normalized,
         p_ap_mapping: apMapping,
-        p_confidence_score: openaiResult.confidence_score,
+        p_confidence_score: ocrResult.confidence_final,
         p_centro_code: actualCentroCode,
         p_original_cost: costBreakdown.cost_total_eur,
         p_ttl_days: 30
@@ -446,7 +446,7 @@ serve(async (req) => {
         accounting_validation: accountingValidation,
         ap_mapping: apMapping,
         entry_validation: entryValidation,
-        confidence: openaiResult.confidence_score / 100,
+        confidence: ocrResult.confidence_final / 100,
         processing_time_ms: processingTime,
         ocr_metrics: {
           pages,
@@ -454,7 +454,7 @@ serve(async (req) => {
           tokens_out: tokens.tokens_out,
           cost_estimate_eur: costBreakdown.cost_total_eur,
           processing_time_ms: processingTime,
-          model_validation_errors: openaiResult.data.validation_errors || []
+          model_validation_errors: ocrResult.final_invoice_json.validation_errors || []
         }
       }),
       { 

@@ -19,9 +19,9 @@ export const GENERIC_INVOICE_SCHEMA = {
       properties: {
         name: { type: "string", description: "Nombre completo del emisor/proveedor" },
         vat_id: { type: "string", description: "NIF/CIF español (ej: B12345678)" },
-        address: { type: "string", description: "Dirección fiscal completa" }
+        address: { type: "string", description: "Dirección fiscal completa (puede estar vacía)" }
       },
-      required: ["name", "vat_id"],
+      required: ["name", "vat_id", "address"],
       additionalProperties: false
     },
     
@@ -29,10 +29,10 @@ export const GENERIC_INVOICE_SCHEMA = {
       type: "object",
       properties: {
         name: { type: "string", description: "Nombre del cliente/restaurante" },
-        vat_id: { type: "string", description: "NIF/CIF del cliente" },
-        address: { type: "string", description: "Dirección completa del cliente" }
+        vat_id: { type: "string", description: "NIF/CIF del cliente (puede estar vacío)" },
+        address: { type: "string", description: "Dirección completa del cliente (puede estar vacía)" }
       },
-      required: ["name"],
+      required: ["name", "vat_id", "address"],
       additionalProperties: false
     },
     

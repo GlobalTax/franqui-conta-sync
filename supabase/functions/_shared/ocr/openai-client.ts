@@ -259,6 +259,14 @@ export async function extractWithOpenAI(
         try {
           const errorJson = JSON.parse(errorText);
           console.warn('[OpenAI] Parsed error:', JSON.stringify(errorJson, null, 2));
+          
+          // ➕ Logging mejorado para debugging de schema
+          if (errorJson.error?.param === 'response_format') {
+            console.error('[OpenAI] ❌ Schema validation failed. Required fields:', 
+              JSON.stringify(jsonSchema.required, null, 2));
+            console.error('[OpenAI] ❌ Schema properties keys:', 
+              Object.keys(jsonSchema.properties));
+          }
         } catch {
           console.warn('[OpenAI] Could not parse error as JSON');
         }

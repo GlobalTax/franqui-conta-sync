@@ -75,8 +75,8 @@ export async function getCircuitState(engine: OCREngine): Promise<CircuitBreaker
 export async function isEngineAvailable(engine: OCREngine): Promise<boolean> {
   const state = await getCircuitState(engine);
   
-  // Si está cerrado, está disponible
-  if (state.state === 'closed') {
+  // Si está cerrado o no tiene estado (NULL/undefined), está disponible
+  if (!state.state || state.state === 'closed') {
     return true;
   }
   
@@ -179,7 +179,7 @@ export async function recordFailure(
   
   // Incrementar contador pero mantener circuito cerrado/half-open
   await updateCircuitState(engine, {
-    state: state.state, // Mantener estado actual (crítico para upsert)
+    state: state.state || 'closed', // ➕ Fallback explícito a 'closed' si state es NULL
     failure_count: newFailureCount,
     last_failure_at: new Date().toISOString(),
     error_type: errorType

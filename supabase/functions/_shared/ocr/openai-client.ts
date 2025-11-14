@@ -85,70 +85,24 @@ export async function extractWithOpenAI(
   // Prepare content array based on mime type
   let contentArray: any[];
   
-  if (mimeType === 'application/pdf') {
-    // ✅ PDFs must be uploaded first to the OpenAI Files API and referenced by file_id
-    console.log(`[OpenAI] Uploading PDF via Files API`);
-
-    // Decode base64 -> Uint8Array
-    const byteCharacters = atob(base64Content);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-    const byteArray = new Uint8Array(byteNumbers);
-
-    const blob = new Blob([byteArray], { type: mimeType });
-    const formData = new FormData();
-    // Deno supports File constructor
-    formData.append('file', new File([blob], 'document.pdf', { type: mimeType }));
-    // Using 'assistants' purpose is accepted for multimodal file consumption in chat
-    formData.append('purpose', 'assistants');
-
-    const uploadResp = await fetch('https://api.openai.com/v1/files', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: formData,
-      signal: controller.signal
-    });
-
-    if (!uploadResp.ok) {
-      const t = await uploadResp.text();
-      console.error('[OpenAI] Files upload error:', uploadResp.status, t);
-      throw new OpenAIError('OpenAI PDF upload failed', 'server_error', t, uploadResp.status);
+  // ✅ Use data URI for both PDFs and images
+  // OpenAI Vision API accepts base64-encoded PDFs directly via data URI (up to 20MB)
+  // Note: Files API file_id is NOT supported by Vision API
+  console.log(`[OpenAI] Using data URI for ${mimeType}`);
+  
+  contentArray = [
+    { 
+      type: 'text', 
+      text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
+    },
+    { 
+      type: 'image_url', 
+      image_url: { 
+        url: `data:${mimeType};base64,${base64Content}`,
+        detail: 'high'
+      } 
     }
-
-    const uploaded = await uploadResp.json();
-    const fileId = uploaded.id as string;
-    console.log(`[OpenAI] PDF uploaded, file_id: ${fileId}`);
-
-    contentArray = [
-      { 
-        type: 'text', 
-        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
-      },
-      {
-        type: 'image_url',
-        image_url: {
-          url: fileId,
-          detail: 'high'
-        }
-      }
-    ];
-  } else {
-    // ✅ Standard image_url format for images
-    console.log(`[OpenAI] Using image_url format for image: ${mimeType}`);
-    contentArray = [
-      { 
-        type: 'text', 
-        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
-      },
-      { 
-        type: 'image_url', 
-        image_url: { 
-          url: `data:${mimeType};base64,${base64Content}`,
-          detail: 'high'
-        } 
-      }
-    ];
-  }
+  ];
 
   try {
     // ✅ Always use chat/completions endpoint (supports both PDFs and images)

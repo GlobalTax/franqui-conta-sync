@@ -51,7 +51,6 @@ export interface EnhancedInvoiceData {
 
 export type InvoiceStatus = "processed_ok" | "needs_review" | "posted";
 
-// Legacy interfaces (kept for backward compatibility with orchestrator/mindee)
 export interface OrchestratorLog {
   timestamp: number;
   stage: string;
@@ -80,21 +79,8 @@ export interface OpenAIExtractionResult {
   };
 }
 
-export interface MindeeExtractionResult {
-  data: EnhancedInvoiceData;
-  confidence_score: number;
-  confidence_by_field: Record<string, number>;
-  raw_response: any;
-  timing?: {
-    duration_ms: number;
-    api_latency: number;
-  };
-  raw_text?: string | null;
-  has_polygons?: boolean;
-}
-
 export interface OrchestratorResult {
-  ocr_engine: "openai" | "mindee" | "merged" | "manual_review";
+  ocr_engine: "openai" | "manual_review";
   final_invoice_json: EnhancedInvoiceData;
   confidence_final: number;
   status: InvoiceStatus;
@@ -102,11 +88,9 @@ export interface OrchestratorResult {
   orchestrator_logs: OrchestratorLog[];
   raw_responses: {
     openai?: OpenAIExtractionResult;
-    mindee?: MindeeExtractionResult;
   };
   timing: {
     ms_openai: number;
-    ms_mindee: number;
   };
   pdf_converted?: boolean;
 }

@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
-export type OCREngine = 'openai' | 'mindee';
+export type OCREngine = 'openai';
 export type CircuitState = 'closed' | 'open' | 'half_open';
 
 export interface CircuitBreakerState {
@@ -118,13 +118,13 @@ export async function recordSuccess(engine: OCREngine, invoiceId?: string): Prom
     
     // Log en ocr_logs
     await logCircuitEvent(engine, 'circuit_closed', 'Circuit breaker closed after recovery', invoiceId);
-  } else {
-    // Reset failure count
-    await updateCircuitState(engine, {
-      failure_count: 0,
-      last_success_at: new Date().toISOString()
-    });
+    return;
   }
+  
+  // Simplemente actualizar last_success_at
+  await updateCircuitState(engine, {
+    last_success_at: new Date().toISOString()
+  });
 }
 
 /**
@@ -132,177 +132,110 @@ export async function recordSuccess(engine: OCREngine, invoiceId?: string): Prom
  */
 export async function recordFailure(
   engine: OCREngine,
-  error: Error,
+  errorType: 'auth' | 'rate_limit' | 'timeout' | 'server_error',
+  errorMessage?: string,
   invoiceId?: string
 ): Promise<void> {
   const state = await getCircuitState(engine);
-  const errorType = classifyError(error);
-  const failureCount = state.failure_count + 1;
+  const newFailureCount = state.failure_count + 1;
   
-  console.log(`[CircuitBreaker] ${engine} failure #${failureCount}: ${errorType}`);
+  // Log del fallo
+  await logCircuitEvent(engine, 'failure_recorded', `${errorType}: ${errorMessage}`, invoiceId);
   
-  // Determinar si abrir el circuito
-  if (failureCount >= FAILURE_THRESHOLD) {
+  // Si alcanzamos el threshold, abrir el circuito
+  if (newFailureCount >= FAILURE_THRESHOLD) {
     const timeout = ERROR_TIMEOUTS[errorType] || ERROR_TIMEOUTS.unknown;
-    const nextRetryAt = new Date(Date.now() + timeout);
+    const nextRetry = new Date(Date.now() + timeout);
     
     await updateCircuitState(engine, {
       state: 'open',
-      failure_count: failureCount,
+      failure_count: newFailureCount,
       last_failure_at: new Date().toISOString(),
-      next_retry_at: nextRetryAt.toISOString(),
+      next_retry_at: nextRetry.toISOString(),
       error_type: errorType
     });
     
-    console.log(`[CircuitBreaker] ${engine} circuit OPENED (retry at ${nextRetryAt.toISOString()})`);
+    console.error(`[CircuitBreaker] ${engine} circuit OPENED after ${newFailureCount} failures (${errorType})`);
+    console.error(`[CircuitBreaker] ${engine} will retry at ${nextRetry.toISOString()}`);
     
-    // Log en ocr_logs
+    // Log crítico
     await logCircuitEvent(
-      engine,
-      'circuit_opened',
-      `Circuit breaker opened after ${failureCount} failures (${errorType})`,
-      invoiceId,
-      { error: error.message, next_retry_at: nextRetryAt.toISOString() }
+      engine, 
+      'circuit_opened', 
+      `Circuit opened after ${newFailureCount} failures. Next retry: ${nextRetry.toISOString()}`,
+      invoiceId
     );
-  } else {
-    await updateCircuitState(engine, {
-      failure_count: failureCount,
-      last_failure_at: new Date().toISOString(),
-      error_type: errorType
-    });
     
-    // Log parcial
-    await logCircuitEvent(
-      engine,
-      'failure_recorded',
-      `Failure #${failureCount}/${FAILURE_THRESHOLD} (${errorType})`,
-      invoiceId,
-      { error: error.message }
-    );
+    return;
   }
+  
+  // Incrementar contador pero mantener circuito cerrado/half-open
+  await updateCircuitState(engine, {
+    failure_count: newFailureCount,
+    last_failure_at: new Date().toISOString(),
+    error_type: errorType
+  });
+  
+  console.warn(`[CircuitBreaker] ${engine} failure ${newFailureCount}/${FAILURE_THRESHOLD} (${errorType})`);
 }
 
 /**
- * Clasificar error para determinar TTL
- */
-function classifyError(error: Error): 'auth' | 'rate_limit' | 'timeout' | 'server_error' {
-  const msg = error.message.toLowerCase();
-  
-  if (msg.includes('401') || msg.includes('authentication') || msg.includes('api key')) {
-    return 'auth';
-  }
-  
-  if (msg.includes('429') || msg.includes('rate limit')) {
-    return 'rate_limit';
-  }
-  
-  if (msg.includes('timeout') || msg.includes('timed out')) {
-    return 'timeout';
-  }
-  
-  return 'server_error';
-}
-
-/**
- * Actualizar estado en Supabase (upsert)
+ * Actualizar estado del circuit breaker
  */
 async function updateCircuitState(
   engine: OCREngine,
-  updates: Partial<CircuitBreakerState>
+  updates: Partial<Omit<CircuitBreakerState, 'engine'>>
 ): Promise<void> {
-  // Get current state to ensure we always include required fields
-  const currentState = await getCircuitState(engine);
-  
   const { error } = await supabase
     .from('ocr_circuit_breaker')
     .upsert({
       engine,
-      state: updates.state ?? currentState.state, // Always include state
-      failure_count: updates.failure_count ?? currentState.failure_count,
-      last_failure_at: updates.last_failure_at ?? currentState.last_failure_at,
-      last_success_at: updates.last_success_at ?? currentState.last_success_at,
-      next_retry_at: updates.next_retry_at ?? currentState.next_retry_at,
-      error_type: updates.error_type ?? currentState.error_type,
+      ...updates,
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'engine'
     });
-  
+
   if (error) {
     console.error(`[CircuitBreaker] Failed to update state for ${engine}:`, error);
   }
 }
 
 /**
- * Loggear eventos de circuit breaker en ocr_logs
+ * Registrar evento en ocr_logs
  */
 async function logCircuitEvent(
   engine: OCREngine,
-  event: string,
+  eventType: string,
   message: string,
-  invoiceId?: string,
-  meta?: any
+  invoiceId?: string
 ): Promise<void> {
-  // Usar la función existente log_ocr_event si está disponible
   try {
-    await supabase.rpc('log_ocr_event', {
-      p_invoice_id: invoiceId || null,
-      p_engine: engine,
-      p_event: event,
-      p_message: message,
-      p_meta: meta || {}
+    await supabase.from('ocr_logs').insert({
+      invoice_id: invoiceId || null,
+      engine,
+      event_type: eventType,
+      message,
+      metadata: { circuit_breaker: true },
+      created_at: new Date().toISOString()
     });
   } catch (error) {
-    console.error(`[CircuitBreaker] Failed to log event:`, error);
+    console.error('[CircuitBreaker] Failed to log event:', error);
   }
 }
 
-// ============================================================================
-// HEALTH CHECKS (mejorados)
-// ============================================================================
-
-export async function probeOpenAI(): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      return { ok: false, error: 'OPENAI_API_KEY not configured' };
-    }
-    
-    const response = await fetch('https://api.openai.com/v1/models', {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(5000)  // 5s timeout
-    });
-    
-    if (!response.ok) {
-      const text = await response.text();
-      return { ok: false, error: `HTTP ${response.status}: ${text}` };
-    }
-    
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-export async function probeMindee(): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const apiKey = Deno.env.get('MINDEE_API_KEY');
-    if (!apiKey) {
-      return { ok: false, error: 'MINDEE_API_KEY not configured' };
-    }
-    
-    const response = await fetch('https://api.mindee.net/v1/products/mindee/invoices/v4/openapi.json', {
-      headers: { Authorization: `Token ${apiKey}` },
-      signal: AbortSignal.timeout(5000)  // 5s timeout
-    });
-    
-    if (!response.ok) {
-      const text = await response.text();
-      return { ok: false, error: `HTTP ${response.status}: ${text}` };
-    }
-    
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
+/**
+ * Resetear manualmente el circuit breaker (para admin/debugging)
+ */
+export async function resetCircuitBreaker(engine: OCREngine): Promise<void> {
+  await updateCircuitState(engine, {
+    state: 'closed',
+    failure_count: 0,
+    last_failure_at: null,
+    next_retry_at: null,
+    error_type: null
+  });
+  
+  console.log(`[CircuitBreaker] ${engine} circuit manually reset to CLOSED`);
+  await logCircuitEvent(engine, 'manual_reset', 'Circuit breaker manually reset by admin');
 }

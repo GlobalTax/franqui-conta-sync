@@ -195,7 +195,6 @@ serve(async (req) => {
       fileData,
       'application/pdf',
       actualCentroCode,
-      'merged', // allow best-of: OpenAI if possible, fallback to Mindee
       supplierHint
     );
     const ocrTime = Date.now() - ocrStartTime;
@@ -301,7 +300,7 @@ serve(async (req) => {
       pages,
       cost_estimate_eur: costBreakdown.cost_total_eur,
       ms_openai: ocrResult.ocr_engine === 'openai' ? ocrTime : 0,
-      ms_mindee: ocrResult.ocr_engine === 'mindee' ? ocrTime : 0,
+      ms_mindee: 0,
       raw_response: ocrResult.raw_responses,
       extracted_data: normalizedResponse.normalized,
       confidence: ocrResult.confidence_final / 100,

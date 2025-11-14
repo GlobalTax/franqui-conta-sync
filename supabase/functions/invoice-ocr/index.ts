@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
-import { extractWithOpenAI } from "../_shared/ocr/openai-client.ts";
+import { orchestrateOCR } from "../_shared/ocr/orchestrator.ts";
 import { calculateOCRCost, extractPageCount, extractTokensFromOpenAI } from "./cost-calculator.ts";
 import { createDocumentHash, createStructuralHash, extractQuickMetadata } from "../_shared/hash-utils.ts";
 import { validateAndNormalizePath, parseInvoicePath } from "../_shared/storage-utils.ts";
@@ -187,20 +187,21 @@ serve(async (req) => {
       );
     }
 
-    console.log('[Cache] ❌ MISS - Executing OpenAI OCR...');
+    console.log('[Cache] ❌ MISS - Executing Orchestrator OCR...');
 
     const ocrStartTime = Date.now();
-    const openaiResult = await extractWithOpenAI(
+    const ocrResult = await orchestrateOCR(
       base64Content,
+      fileData,
       'application/pdf',
-      undefined, // document type (auto-detect)
+      actualCentroCode,
+      'merged', // allow best-of: OpenAI if possible, fallback to Mindee
       supplierHint
     );
     const ocrTime = Date.now() - ocrStartTime;
 
-    console.log(`[OpenAI] ✅ Extraction complete in ${ocrTime}ms`);
-    console.log(`[OpenAI] Confidence: ${openaiResult.confidence_score}%`);
-    console.log(`[OpenAI] Validation errors from model:`, openaiResult.data.validation_errors || []);
+    console.log(`[OCR] ✅ ${ocrResult.ocr_engine} finished in ${ocrTime}ms`);
+    console.log(`[OCR] Confidence: ${ocrResult.confidence_final}%`);
 
     // ============================================================================
     // FISCAL NORMALIZATION
@@ -208,7 +209,7 @@ serve(async (req) => {
     
     const normalizeStart = Date.now();
     const normalizedResponse: NormalizedResponse = await normalizeBackend(
-      openaiResult.data,
+      ocrResult.final_invoice_json,
       '', // rawText not available from base64
       COMPANY_VAT_IDS
     );

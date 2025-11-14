@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateSupplier, useUpdateSupplier, type Supplier, type SupplierFormData } from '@/hooks/useSuppliers';
+import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
+import { CheckCircle2, XCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SupplierFormDialogProps {
   open: boolean;
@@ -45,8 +48,30 @@ export function SupplierFormDialog({
     notes: '',
   });
 
+  const [taxIdError, setTaxIdError] = useState<string>('');
+  const [taxIdValid, setTaxIdValid] = useState<boolean>(false);
+
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
+  const { toast } = useToast();
+
+  // Validar NIF/CIF
+  const validateTaxId = (value: string) => {
+    if (!value.trim()) {
+      setTaxIdError('');
+      setTaxIdValid(false);
+      return;
+    }
+
+    const isValid = validateNIFOrCIF(value);
+    setTaxIdValid(isValid);
+    
+    if (!isValid) {
+      setTaxIdError(getNIFCIFErrorMessage(value));
+    } else {
+      setTaxIdError('');
+    }
+  };
 
   // Reset form when dialog opens/closes or editing supplier changes
   useEffect(() => {
@@ -66,6 +91,8 @@ export function SupplierFormDialog({
           default_account_code: editingSupplier.default_account_code || '',
           notes: editingSupplier.notes || '',
         });
+        // Validar tax_id existente
+        validateTaxId(editingSupplier.tax_id);
       } else {
         setFormData({
           tax_id: '',
@@ -81,12 +108,30 @@ export function SupplierFormDialog({
           default_account_code: '',
           notes: '',
         });
+        // Reset validación
+        setTaxIdError('');
+        setTaxIdValid(false);
       }
+    } else {
+      // Reset validación al cerrar
+      setTaxIdError('');
+      setTaxIdValid(false);
     }
   }, [open, editingSupplier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar NIF/CIF antes de enviar
+    if (formData.tax_id && !validateNIFOrCIF(formData.tax_id)) {
+      setTaxIdError(getNIFCIFErrorMessage(formData.tax_id));
+      toast({
+        variant: "destructive",
+        title: "Error de validación",
+        description: "El NIF/CIF introducido no es válido",
+      });
+      return;
+    }
     
     try {
       if (editingSupplier) {
@@ -126,13 +171,44 @@ export function SupplierFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="tax_id">CIF/NIF *</Label>
-                <Input
-                  id="tax_id"
-                  value={formData.tax_id}
-                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-                  required
-                  placeholder="B12345678"
-                />
+                <div className="relative">
+                  <Input
+                    id="tax_id"
+                    placeholder="Ej: B12345678, 12345678Z"
+                    value={formData.tax_id}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase();
+                      setFormData({ ...formData, tax_id: value });
+                      validateTaxId(value);
+                    }}
+                    onBlur={(e) => validateTaxId(e.target.value)}
+                    required
+                    className={
+                      formData.tax_id 
+                        ? taxIdValid 
+                          ? 'border-green-500 pr-10' 
+                          : taxIdError 
+                            ? 'border-red-500 pr-10' 
+                            : 'pr-10'
+                        : ''
+                    }
+                  />
+                  {formData.tax_id && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {taxIdValid ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : taxIdError ? (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+                {taxIdError && (
+                  <p className="text-sm text-red-500">{taxIdError}</p>
+                )}
+                {taxIdValid && !taxIdError && formData.tax_id && (
+                  <p className="text-sm text-green-600">✓ NIF/CIF válido</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Razón Social *</Label>
@@ -255,7 +331,14 @@ export function SupplierFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createSupplier.isPending || updateSupplier.isPending}>
+            <Button 
+              type="submit" 
+              disabled={
+                createSupplier.isPending || 
+                updateSupplier.isPending || 
+                (formData.tax_id !== '' && !taxIdValid)
+              }
+            >
               {editingSupplier ? 'Actualizar' : 'Crear'} Proveedor
             </Button>
           </DialogFooter>

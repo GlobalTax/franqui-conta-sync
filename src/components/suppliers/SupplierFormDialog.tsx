@@ -15,9 +15,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useCreateSupplier, useUpdateSupplier, type Supplier, type SupplierFormData } from '@/hooks/useSuppliers';
+import { toast } from '@/hooks/use-toast';
 import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { EUROPEAN_COUNTRIES } from '@/lib/constants/countries';
 import { useToast } from '@/hooks/use-toast';
 
 interface SupplierFormDialogProps {
@@ -285,12 +294,24 @@ export function SupplierFormDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">País</Label>
-                <Input
-                  id="country"
+                <Select
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="España"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, country: value })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona un país" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] bg-popover">
+                    {EUROPEAN_COUNTRIES.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        <span className="flex items-center gap-2">
+                          <span>{country.flag}</span>
+                          <span>{country.label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

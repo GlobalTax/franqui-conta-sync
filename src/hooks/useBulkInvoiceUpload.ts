@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
+import { convertPdfToPngClient } from '@/lib/pdf-converter';
 
 export interface UploadFileItem {
   id: string;
@@ -229,12 +230,28 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
+      // Convert PDF to PNG for OCR
+      let imageDataUrl: string | undefined;
+      try {
+        console.log(`[Bulk] Converting PDF ${fileItem.file.name} to PNG...`);
+        imageDataUrl = await convertPdfToPngClient(fileItem.file);
+        console.log(`[Bulk] ✓ PDF converted (${Math.round(imageDataUrl.length / 1024)}KB)`);
+      } catch (conversionError) {
+        console.warn(`[Bulk] PDF conversion failed for ${fileItem.file.name}, will try server-side:`, conversionError);
+      }
+
       // Trigger OCR processing - forzado a OpenAI
+      const ocrRequestBody: any = {
+        invoice_id: invoice.id,
+        supplierHint: null
+      };
+
+      if (imageDataUrl) {
+        ocrRequestBody.imageDataUrl = imageDataUrl;
+      }
+
       const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('invoice-ocr', {
-        body: { 
-          invoice_id: invoice.id,
-          supplierHint: null
-        }
+        body: ocrRequestBody
       });
 
       if (ocrError) throw ocrError;

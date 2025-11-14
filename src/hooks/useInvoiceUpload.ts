@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
+import { convertPdfToPngClient } from '@/lib/pdf-converter';
 
 interface UploadParams {
   file: File;
@@ -131,14 +132,31 @@ export const useInvoiceUpload = () => {
 
       setProgress(80);
 
-      // 6. Trigger OCR processing using webhook mode (async) - forzado a OpenAI
-      // El edge function espera: { invoice_id, useWebhook: true, supplierHint }
+      // 6. Convert PDF to PNG on client side for OCR
+      let imageDataUrl: string | undefined;
+      try {
+        console.log('[Upload] Converting PDF to PNG for OCR...');
+        imageDataUrl = await convertPdfToPngClient(file);
+        console.log('[Upload] ✓ PDF converted to PNG');
+      } catch (conversionError) {
+        console.warn('[Upload] PDF conversion failed, will try server-side:', conversionError);
+        // Continue without imageDataUrl - server will attempt conversion
+      }
+
+      // 7. Trigger OCR processing using webhook mode (async) - forzado a OpenAI
+      const ocrRequestBody: any = {
+        invoice_id: invoice.id,
+        useWebhook: true,
+        supplierHint
+      };
+
+      if (imageDataUrl) {
+        ocrRequestBody.imageDataUrl = imageDataUrl;
+        console.log('[Upload] Including imageDataUrl in OCR request');
+      }
+
       const ocrResponse = await supabase.functions.invoke('invoice-ocr', {
-        body: { 
-          invoice_id: invoice.id,
-          useWebhook: true,
-          supplierHint
-        }
+        body: ocrRequestBody
       });
 
       if (ocrResponse.error) {

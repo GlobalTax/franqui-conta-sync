@@ -46,7 +46,8 @@ export async function extractWithOpenAI(
   mimeType: string,
   documentType?: DocumentType,
   supplierHint?: string | null,
-  modelOverride?: string
+  modelOverride?: string,
+  imageDataUrl?: string // Optional: client-provided PNG for PDFs
 ): Promise<OpenAIExtractionResult> {
   
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -82,17 +83,38 @@ export async function extractWithOpenAI(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  // Prepare content array based on mime type
+  // Prepare content array based on mime type or client-provided image
   let contentArray: any[];
   
-  if (mimeType === 'application/pdf') {
-    console.log('[OpenAI] Document is PDF - initiating conversion to image...');
-    const conversionStartTime = Date.now();
+  // Priority 1: Use client-provided imageDataUrl if available (PDFs converted on client)
+  if (imageDataUrl) {
+    console.log('[OpenAI] Using client-provided imageDataUrl (PDF converted on client)');
+    console.log(`[OpenAI] Image size: ${Math.round(imageDataUrl.length / 1024)}KB`);
     
+    contentArray = [
+      { 
+        type: 'text', 
+        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
+      },
+      { 
+        type: 'image_url', 
+        image_url: { 
+          url: imageDataUrl,
+          detail: 'high'
+        } 
+      }
+    ];
+  } 
+  // Priority 2: Handle PDFs (will fail with clear error if OffscreenCanvas unavailable)
+  else if (mimeType === 'application/pdf') {
+    console.log('[OpenAI] Document is PDF - attempting server-side conversion...');
+    
+    // Attempt server-side conversion (will fail on Supabase Edge due to OffscreenCanvas)
     try {
       const { convertPdfToImage } = await import('./pdf-to-image.ts');
       console.log('[OpenAI] PDF converter module loaded ✓');
       
+      const conversionStartTime = Date.now();
       const imageDataUri = await convertPdfToImage(base64Content);
       const conversionTime = Date.now() - conversionStartTime;
       
@@ -113,24 +135,18 @@ export async function extractWithOpenAI(
         }
       ];
     } catch (conversionError) {
-      const conversionTime = Date.now() - conversionStartTime;
-      console.error(`[OpenAI] ✗ PDF conversion failed after ${conversionTime}ms:`, conversionError);
+      console.error(`[OpenAI] ✗ Server-side PDF conversion failed:`, conversionError);
       
-      // Enhanced error with full stack trace and context
-      const errorMsg = conversionError instanceof Error 
-        ? `${conversionError.message}${conversionError.stack ? `\n\nStack Trace:\n${conversionError.stack}` : ''}`
-        : String(conversionError);
-      
-      const detailMsg = `Conversion failed after ${conversionTime}ms. ${errorMsg}`;
-      
+      // Clear error message for client to handle
       throw new OpenAIError(
-        `Cannot process PDF document: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`, 
+        'PDF conversion not available in Edge runtime. Client must provide imageDataUrl.', 
         'server_error',
-        detailMsg
+        conversionError instanceof Error ? conversionError.message : String(conversionError)
       );
     }
-  } else {
-    // ✅ Standard image_url format for images (PNG, JPG, WebP, GIF)
+  } 
+  // Priority 3: Standard image formats (PNG, JPG, WebP, GIF)
+  else {
     console.log(`[OpenAI] Using data URI for ${mimeType}`);
     
     contentArray = [

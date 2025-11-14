@@ -229,15 +229,11 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
-      // Trigger OCR processing (choose engine by file type)
-      const engine = path.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai';
+      // Trigger OCR processing - forzado a OpenAI
       const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('invoice-ocr', {
         body: { 
-          documentPath: path, 
-          centroCode,
-          invoiceId: invoice.id,
-          engine,
-          supplierHint: null // Can be enhanced later to extract from file metadata
+          invoice_id: invoice.id,
+          supplierHint: null
         }
       });
 
@@ -262,11 +258,10 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           total: ocrData.totals?.total || 0,
           status: finalStatus, // Estados: pending | processing | processed_ok | needs_review | error
           ocr_confidence: ocrResult.confidence || 0,
-          ocr_engine: ocrResult.ocr_engine || 'openai',
+          ocr_engine: 'openai',
           ocr_payload: ocrResult, // Guardar payload completo
           ocr_processing_time_ms: ocrResult.processingTimeMs,
           ocr_ms_openai: ocrResult.msOpenai,
-          ocr_ms_mindee: ocrResult.msMindee,
           ocr_pages: ocrResult.pages || 1,
           ocr_tokens_in: ocrResult.tokensIn,
           ocr_tokens_out: ocrResult.tokensOut,

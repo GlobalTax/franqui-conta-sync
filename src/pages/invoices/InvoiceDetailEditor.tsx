@@ -49,7 +49,6 @@ import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
 import { StripperBadge } from '@/components/invoices/StripperBadge';
 import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
-import { useDocumentAnalyzer, type DocumentAnalysis } from '@/hooks/useDocumentAnalyzer';
 import { toast } from 'sonner';
 import { Scan, Loader2, FileText, Sparkles, Zap } from 'lucide-react';
 
@@ -120,13 +119,11 @@ export default function InvoiceDetailEditor() {
   const [selectedEngine, setSelectedEngine] = useState<'openai'>('openai');
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
-  const [documentAnalysis, setDocumentAnalysis] = useState<DocumentAnalysis | null>(null);
 
   // OCR Hooks
   const processOCR = useProcessInvoiceOCR();
   const logOCR = useLogOCRProcessing();
   const apLearning = useAPLearning();
-  const analyzeDocument = useDocumentAnalyzer();
 
   // Hooks
   const { data: invoicesData } = useInvoicesReceived({});
@@ -452,53 +449,16 @@ export default function InvoiceDetailEditor() {
     }
   };
 
-  // Handle PDF upload completion with automatic analysis
+  // Handle PDF upload completion with automatic OCR
   const handleUploadComplete = async (path: string | null) => {
     console.log('[Upload] PDF subido, path:', path);
     setDocumentPath(path);
     
     if (path) {
-      // Reset analysis state
-      setDocumentAnalysis(null);
-      
-      // Start document analysis
-      toast.info('Analizando características del documento...', {
-        duration: 3000
-      });
-      
-      try {
-        const analysis = await analyzeDocument.mutateAsync({
-          documentPath: path,
-          supplierVatId: form.getValues('supplier_tax_id')
-        });
-        
-        setDocumentAnalysis(analysis);
-        // NO sobrescribir selectedEngine - siempre usar OpenAI
-        // setSelectedEngine(analysis.recommended_engine);
-        
-        console.log('[Analysis] Complete:', analysis);
-        console.log('[Analysis] Recomendación ignorada - usando OpenAI forzado');
-        
-        toast.success(
-          'Documento analizado - procesando con OpenAI',
-          { 
-            description: 'Motor OpenAI configurado por defecto',
-            duration: 3000 
-          }
-        );
-      } catch (error) {
-        console.error('[Analysis] Failed:', error);
-        toast.warning('No se pudo analizar el documento, usando OpenAI por defecto', {
-          duration: 3000
-        });
-      }
       toast.success("PDF subido correctamente");
-      console.log('[Upload] Programando auto-trigger OCR en 300ms con motor por tipo de archivo');
+      console.log('[Upload] Auto-trigger OCR en 300ms con OpenAI');
       setTimeout(() => {
-        // Auto-trigger OCR cuando se sube un nuevo PDF - siempre OpenAI
-        const engine = 'openai';
-        console.log('[Upload] Engine elegido:', engine);
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine });
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
       }, 300);
     }
   };
@@ -880,7 +840,6 @@ export default function InvoiceDetailEditor() {
                   processingTimeMs={processingTimeMs}
                   selectedOcrEngine="openai"
                   onOcrEngineChange={() => {}}
-                  documentAnalysis={documentAnalysis}
                 />
 
                   {/* Badge Stripper + Ver cambios */}

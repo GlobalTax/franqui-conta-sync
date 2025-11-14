@@ -30,12 +30,15 @@ export function buildInvoicePath(params: {
   // Usar Web Crypto API (disponible en navegador)
   const uid = crypto.randomUUID();
   
-  // Sanitizar nombre del archivo original
-  const baseName = params.originalName 
+  // Sanitizar nombre del archivo original y eliminar .pdf si ya existe
+  const baseNameRaw = params.originalName 
     ? params.originalName.replace(/[^\w.-]/g, '_').slice(0, 50)
     : params.invoiceId 
     ? `invoice_${params.invoiceId}`
     : 'document';
+  
+  // Eliminar .pdf del final si existe para evitar .pdf.pdf
+  const baseName = baseNameRaw.replace(/\.pdf$/i, '');
   
   // Prioridad: centroCode > companyId > 'unassigned'
   const identifier = params.centroCode || params.companyId || 'unassigned';

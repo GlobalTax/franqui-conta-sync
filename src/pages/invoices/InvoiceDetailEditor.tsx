@@ -49,6 +49,7 @@ import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
 import { StripperBadge } from '@/components/invoices/StripperBadge';
 import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
+import { InvoiceEntryModeToggle } from '@/components/invoices/form/InvoiceEntryModeToggle';
 import { toast } from 'sonner';
 import { Scan, Loader2, FileText, Sparkles, Zap } from 'lucide-react';
 
@@ -119,6 +120,9 @@ export default function InvoiceDetailEditor() {
   const [selectedEngine, setSelectedEngine] = useState<'openai'>('openai');
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
+  
+  // Estado para modo de entrada (auto-ocr vs manual)
+  const [entryMode, setEntryMode] = useState<'auto-ocr' | 'manual'>('auto-ocr');
 
   // OCR Hooks
   const processOCR = useProcessInvoiceOCR();
@@ -456,10 +460,19 @@ export default function InvoiceDetailEditor() {
     
     if (path) {
       toast.success("PDF subido correctamente");
-      console.log('[Upload] Auto-trigger OCR en 300ms con OpenAI');
-      setTimeout(() => {
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
-      }, 300);
+      
+      // Solo auto-trigger OCR si está en modo automático
+      if (entryMode === 'auto-ocr') {
+        console.log('[Upload] Auto-trigger OCR en 300ms con OpenAI');
+        setTimeout(() => {
+          handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
+        }, 300);
+      } else {
+        console.log('[Upload] Modo manual - OCR no se ejecutará automáticamente');
+        toast.info("PDF listo. Completa los campos manualmente o procesa con OCR cuando quieras.", {
+          duration: 4000
+        });
+      }
     }
   };
 
@@ -713,6 +726,13 @@ export default function InvoiceDetailEditor() {
         <div className="hidden lg:grid lg:grid-cols-[45%_55%] gap-6">
           {/* Izquierda: PDF */}
           <div className="sticky top-6 h-[calc(100vh-8rem)] overflow-hidden space-y-4">
+            {/* Toggle de modo de entrada */}
+            <InvoiceEntryModeToggle 
+              mode={entryMode}
+              onChange={setEntryMode}
+              disabled={!!documentPath}
+            />
+            
             <Card className="h-full">
               <CardContent className="p-0 h-full">
                 {documentPath ? (
@@ -734,8 +754,8 @@ export default function InvoiceDetailEditor() {
               </CardContent>
             </Card>
 
-            {/* Botón OCR manual PROMINENTE si no se ha procesado */}
-            {documentPath && !ocrProcessed && (
+            {/* Botón OCR manual - Prominente en modo auto, discreto en modo manual */}
+            {documentPath && !ocrProcessed && entryMode === 'auto-ocr' && (
               <Card className="border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg animate-pulse">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center gap-4 text-center">
@@ -780,6 +800,38 @@ export default function InvoiceDetailEditor() {
                         Si no ocurre, usa este botón.
                       </p>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Botón OCR en modo manual - Opcional y discreto */}
+            {documentPath && !ocrProcessed && entryMode === 'manual' && (
+              <Card className="border border-muted">
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileText className="h-4 w-4" />
+                      <span>Modo manual activado</span>
+                    </div>
+                    <Button
+                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      disabled={processOCR.isPending}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {processOCR.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Scan className="mr-2 h-4 w-4" />
+                          Procesar con OCR (opcional)
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -164,7 +164,7 @@ async function processWithOpenAI(base64Content: string): Promise<OCRResult> {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'user',

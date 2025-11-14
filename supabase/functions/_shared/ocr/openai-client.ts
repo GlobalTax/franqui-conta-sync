@@ -16,7 +16,7 @@ const MODEL_CONFIGS: Record<string, { maxTokens: number; supportsVision: boolean
   'gpt-4-vision-preview': { maxTokens: 4096, supportsVision: true, costPer1kTokens: 0.01 }
 };
 
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_MODEL = 'gpt-4o';
 const REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
 
 // ============================================================================

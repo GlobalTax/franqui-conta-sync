@@ -121,9 +121,12 @@ export async function recordSuccess(engine: OCREngine, invoiceId?: string): Prom
     return;
   }
   
-  // Simplemente actualizar last_success_at
+  // Simplemente actualizar last_success_at y cerrar circuito
   await updateCircuitState(engine, {
-    last_success_at: new Date().toISOString()
+    state: 'closed',
+    last_success_at: new Date().toISOString(),
+    next_retry_at: null,
+    error_type: null
   });
 }
 
@@ -171,6 +174,7 @@ export async function recordFailure(
   
   // Incrementar contador pero mantener circuito cerrado/half-open
   await updateCircuitState(engine, {
+    state: state.state, // Mantener estado actual (crítico para upsert)
     failure_count: newFailureCount,
     last_failure_at: new Date().toISOString(),
     error_type: errorType

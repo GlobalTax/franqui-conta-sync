@@ -109,9 +109,16 @@ export async function extractWithOpenAI(
       ];
     } catch (conversionError) {
       console.error('[OpenAI] PDF conversion failed:', conversionError);
+      
+      // Enhanced error message with full context for debugging
+      const errorMsg = conversionError instanceof Error 
+        ? `${conversionError.message}${conversionError.stack ? `\nStack: ${conversionError.stack}` : ''}` 
+        : String(conversionError);
+      
       throw new OpenAIError(
-        `Cannot process PDF: ${conversionError instanceof Error ? conversionError.message : 'Conversion failed'}`,
-        'server_error'
+        `PDF conversion failed: ${errorMsg}`, 
+        'server_error',
+        errorMsg // Add detail for debugging
       );
     }
   } else {

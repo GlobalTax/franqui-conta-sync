@@ -7,6 +7,7 @@ interface OCRRequest {
   centroCode: string;
   engine?: 'openai';
   supplierHint?: string | null;
+  imageDataUrl?: string; // Optional: client-provided PNG for PDFs
 }
 
 export interface OCRInvoiceData {

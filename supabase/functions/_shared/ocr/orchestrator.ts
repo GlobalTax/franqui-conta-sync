@@ -103,7 +103,8 @@ export async function orchestrateOCR(
   fileBlob: Blob | null,
   mimeType: string,
   centroCode: string,
-  supplierHint?: string | null
+  supplierHint?: string | null,
+  imageDataUrl?: string // Optional: client-provided PNG for PDFs
 ): Promise<OrchestratorResult> {
   
   const mergeNotes: string[] = [];
@@ -120,7 +121,10 @@ export async function orchestrateOCR(
     action: 'orchestrator_start',
     decision: 'openai_only',
     reason: 'OpenAI-only mode active',
-    metrics: { mime_type: mimeType }
+    metrics: { 
+      mime_type: mimeType,
+      has_client_image: !!imageDataUrl 
+    }
   });
 
   // ============================================================================
@@ -147,16 +151,23 @@ export async function orchestrateOCR(
   }
 
   // ============================================================================
-  // 2. EXECUTE OPENAI EXTRACTION
+  // 2. EXECUTE OPENAI EXTRACTION (with client image or PDF support)
   // ============================================================================
   
-  console.log('[Orchestrator] Attempting OpenAI extraction (PDF support enabled)');
+  console.log(`[Orchestrator] Attempting OpenAI extraction${imageDataUrl ? ' (using client-provided image)' : ' (PDF support enabled)'}`);
   
   let openaiResult: OpenAIExtractionResult | null = null;
   
   const t0 = performance.now();
   try {
-    openaiResult = await extractWithOpenAI(base64Content, mimeType, undefined, supplierHint);
+    openaiResult = await extractWithOpenAI(
+      base64Content, 
+      mimeType, 
+      undefined, 
+      supplierHint,
+      undefined, // modelOverride
+      imageDataUrl // Pass through client-provided image
+    );
     ms_openai = Math.round(performance.now() - t0);
     
     console.log(`[Orchestrator] openai ✅ ${openaiResult.confidence_score}% in ${ms_openai}ms`);

@@ -20,7 +20,9 @@ declare class OffscreenCanvasRenderingContext2D {
  */
 function checkOffscreenCanvasSupport(): void {
   if (typeof OffscreenCanvas === 'undefined') {
-    throw new Error('OffscreenCanvas is not available in this Deno runtime. Please upgrade to Deno 1.30+');
+    const errorMsg = 'OffscreenCanvas is not available in this Deno runtime. PDF conversion must be done on client side.';
+    console.error('[PDF→PNG]', errorMsg);
+    throw new Error(errorMsg);
   }
   console.log('[PDF→PNG] OffscreenCanvas is available ✓');
 }

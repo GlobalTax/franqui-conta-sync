@@ -80,7 +80,8 @@ serve(async (req) => {
       invoice_id, 
       documentPath, 
       centroCode,
-      supplierHint 
+      supplierHint,
+      imageDataUrl 
     } = body;
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -130,6 +131,7 @@ serve(async (req) => {
     
     console.log('[INIT] Processing:', actualDocumentPath);
     console.log('[INIT] Centro:', actualCentroCode);
+    console.log('[INIT] Client imageDataUrl provided:', !!imageDataUrl);
 
     // Validar path
     const { validPath } = validateAndNormalizePath(actualDocumentPath);
@@ -205,7 +207,8 @@ serve(async (req) => {
       fileData,
       'application/pdf',
       actualCentroCode,
-      supplierHint
+      supplierHint,
+      imageDataUrl // Pass through client-provided image
     );
     const ocrTime = Date.now() - ocrStartTime;
 

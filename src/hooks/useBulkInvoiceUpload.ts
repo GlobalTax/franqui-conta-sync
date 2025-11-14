@@ -235,6 +235,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           documentPath: path, 
           centroCode,
           invoiceId: invoice.id,
+          engine: 'openai',
           supplierHint: null // Can be enhanced later to extract from file metadata
         }
       });

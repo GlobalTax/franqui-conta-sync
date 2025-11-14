@@ -275,16 +275,13 @@ export const HAVI_INVOICE_SCHEMA = {
           group: { 
             type: "string",
             enum: [
-              "CARNE",
-              "PAN Y BOLLERIA", 
-              "PRODUCTOS LACTEOS",
-              "ALIMENTACION SECA",
               "CONGELADOS",
-              "ACEITES Y GRASAS",
-              "VERDURAS",
-              "OTROS"
+              "REFRIGERADOS",
+              "ALIMENTOS SECOS",
+              "PAPEL",
+              "PRODUCTOS DE LIMPIEZA"
             ],
-            description: "Familia de producto HAVI"
+            description: "Grupos de producto HAVI según tabla 'TOTAL POR GRUPO PRODUCTO'"
           },
           vat_code: { 
             type: "string",
@@ -329,24 +326,52 @@ REGLAS CRÍTICAS:
 - Valida que base + tax = gross en cada línea de totals_by_vat
 - Valida que base_total_plus_fees + tax_total = grand_total`,
 
-  havi: `Eres un extractor especializado en facturas HAVI (proveedor McDonald's España).
+  havi: `Eres un asistente especializado en facturas de HAVI Logistics FSL, S.L.
+Recibirás imágenes (o páginas de un PDF) y debes devolver únicamente un JSON válido (RFC 8259) que cumpla este esquema:
 
-CONOCIMIENTO ESPECÍFICO HAVI:
-- Códigos IVA: A7 = 4% (aceites), C2 = 10% (alimentación básica), C1 = 21% (general)
-- Familias producto: CARNE, PAN Y BOLLERIA, PRODUCTOS LACTEOS, ALIMENTACION SECA, CONGELADOS, ACEITES Y GRASAS, VERDURAS
-- SKUs: Códigos numéricos de 7-8 dígitos
-- Unidades: UN (unidades), KG (kilos), CA (cajas), LT (litros)
-- Punto verde: Fee obligatorio, buscar en sección de cargos/fees
+- issuer: información del proveedor (nombre, vat_id, address).
+- recipient: información del cliente (nombre, vat_id, address).
+- invoice: detalles (number, issue_date, due_date, delivery_date, order_date, currency…).
+- fees: tasas, especialmente green_point (Punto Verde/Ecoembes).
+- totals_by_vat: lista con code, rate, base, tax, gross para cada tipo de IVA.
+- totals_by_group: lista con group, base, green_point y gross_ex_vat (tabla "TOTAL POR GRUPO PRODUCTO").
+- base_total_plus_fees, tax_total, grand_total.
+- lines: artículos con sku, description, qty, uom, unit_price, amount, group, vat_code.
 
-REGLAS EXTRACCIÓN:
-- Importes como STRING con 2 decimales: "8848.96"
-- Fechas YYYY-MM-DD: "2025-10-31"
-- Asigna vat_code a cada línea según el tipo de producto
-- Agrupa totales por A7, C2, C1
-- NO inventes datos, usa "" si no lo encuentras
-- Valida sumas: ∑(bases) + fees = base_total_plus_fees
-- Valida: ∑(taxes) = tax_total
-- Valida: base_total_plus_fees + tax_total = grand_total`
+Reglas específicas HAVI:
+
+1. Códigos de IVA:
+   - A7 → 4% (aceites y grasas)
+   - C2 → 10% (alimentación)
+   - C1 → 21% (general)
+   Usa estos códigos exactos en totals_by_vat[i].code y el porcentaje en rate.
+
+2. Grupos de producto (buscar en tabla "TOTAL POR GRUPO PRODUCTO"):
+   - CONGELADOS, REFRIGERADOS, ALIMENTOS SECOS, PAPEL, PRODUCTOS DE LIMPIEZA.
+   Extrae cada grupo con su base, green_point (si aplica) y gross_ex_vat.
+
+3. Punto verde:
+   - Localiza el importe "Punto verde" o "Punto Ecoembes".
+   - Inclúyelo en fees.green_point.
+   - Verifica: base_total_plus_fees = suma de bases + fees.green_point.
+
+4. Fechas múltiples:
+   - Fecha emisión → invoice.issue_date
+   - Fecha entrega → invoice.delivery_date
+   - Fecha vencimiento → invoice.due_date
+   - Fecha pedido → invoice.order_date (si existe)
+   Todas en formato YYYY-MM-DD.
+
+5. Validación de impuestos:
+   - Suma de totals_by_vat[].base debe coincidir con base_total_plus_fees - fees.green_point.
+   - Suma de totals_by_vat[].tax debe coincidir con tax_total.
+   - Si hay un código IVA adicional no listado arriba, usa el porcentaje como code y rate.
+
+Instrucciones adicionales:
+- Devuelve importes como cadenas con dos decimales y punto decimal (e.g. "1234.56").
+- Si un campo no aparece o no se lee bien, déjalo vacío o no lo incluyas.
+- No añadas texto explicativo.
+- Normaliza separadores: coma como decimal → punto, quita puntos de miles.`
 };
 
 export function getSystemPrompt(supplierType: SupplierType = 'generic'): string {

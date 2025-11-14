@@ -229,13 +229,14 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
-      // Trigger OCR processing
+      // Trigger OCR processing (choose engine by file type)
+      const engine = path.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai';
       const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('invoice-ocr', {
         body: { 
           documentPath: path, 
           centroCode,
           invoiceId: invoice.id,
-          engine: 'openai',
+          engine,
           supplierHint: null // Can be enhanced later to extract from file metadata
         }
       });

@@ -132,13 +132,14 @@ export const useInvoiceUpload = () => {
       setProgress(80);
 
       // 6. Trigger OCR processing using webhook mode (async)
-      // El edge function espera: { invoice_id, useWebhook: true, provider, supplierHint }
+      // El edge function espera: { invoice_id, useWebhook: true, provider, engine, supplierHint }
+      const engine = file.name.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai';
       const ocrResponse = await supabase.functions.invoke('invoice-ocr', {
         body: { 
           invoice_id: invoice.id,
           useWebhook: true,
-          provider: 'openai',
-          engine: 'openai',
+          provider: engine,
+          engine,
           supplierHint
         }
       });

@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.api-example]
 verify_jwt = false
+
+[functions.validate-eu-vat]
+verify_jwt = false

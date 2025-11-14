@@ -112,11 +112,15 @@ serve(async (req) => {
       actualDocumentPath = invoice.file_path;
       actualCentroCode = invoice.centro_code;
       
-      // Validación: remover extensión .pdf duplicada si existe
-      if (actualDocumentPath.endsWith('.pdf.pdf')) {
-        console.warn(`[PATH] Detected duplicate .pdf extension: ${actualDocumentPath}`);
-        actualDocumentPath = actualDocumentPath.replace(/\.pdf\.pdf$/, '.pdf');
+      // Normalize path: remove duplicate .pdf extensions
+      const originalPath = actualDocumentPath;
+      actualDocumentPath = actualDocumentPath.replace(/\.pdf\.pdf$/i, '.pdf');
+      
+      if (originalPath !== actualDocumentPath) {
+        console.warn(`[PATH] ⚠️ Normalized duplicate extension: "${originalPath}" → "${actualDocumentPath}"`);
       }
+
+      console.log(`[PATH] ✓ Final document path: ${actualDocumentPath}`);
     } else if (documentPath && centroCode) {
       actualDocumentPath = documentPath;
       actualCentroCode = centroCode;

@@ -49,7 +49,7 @@ import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
 import { StripperBadge } from '@/components/invoices/StripperBadge';
 import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
-import { InvoiceEntryModeToggle } from '@/components/invoices/form/InvoiceEntryModeToggle';
+import { InvoiceEntryModeTabs } from '@/components/invoices/form/InvoiceEntryModeTabs';
 import { toast } from 'sonner';
 import { Scan, Loader2, FileText, Sparkles, Zap } from 'lucide-react';
 
@@ -722,16 +722,50 @@ export default function InvoiceDetailEditor() {
       />
 
       <div className="container mx-auto max-w-[1800px] p-6">
+        {/* Header con tabs de modo */}
+        <div className="mb-6">
+          <InvoiceEntryModeTabs 
+            mode={entryMode}
+            onChange={setEntryMode}
+            disabled={!!documentPath}
+          />
+        </div>
+
+        {/* Descripción del modo activo */}
+        <Card className="mb-6 border-l-4" style={{ 
+          borderLeftColor: entryMode === 'auto-ocr' ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' 
+        }}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              {entryMode === 'auto-ocr' ? (
+                <>
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Modo OCR Automático activo</p>
+                    <p className="text-xs text-muted-foreground">
+                      Al subir el PDF, se extraerán los datos automáticamente
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Modo Manual activo</p>
+                    <p className="text-xs text-muted-foreground">
+                      Completa los campos manualmente. Puedes procesar con OCR después si lo deseas
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Desktop: Grid 2 columnas */}
         <div className="hidden lg:grid lg:grid-cols-[45%_55%] gap-6">
           {/* Izquierda: PDF */}
           <div className="sticky top-6 h-[calc(100vh-8rem)] overflow-hidden space-y-4">
-            {/* Toggle de modo de entrada */}
-            <InvoiceEntryModeToggle 
-              mode={entryMode}
-              onChange={setEntryMode}
-              disabled={!!documentPath}
-            />
             
             <Card className="h-full">
               <CardContent className="p-0 h-full">

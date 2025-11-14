@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
 import { convertPdfToPngClient } from '@/lib/pdf-converter';
+import { autoDetectCentro } from '@/lib/centro-detection';
 
 interface UploadParams {
   file: File;
@@ -22,6 +23,7 @@ interface UploadParams {
   supplierId?: string;
   preferredEngine?: 'openai' | 'mindee';
   supplierHint?: string | null;
+  autoDetectCentro?: boolean;
 }
 
 interface UploadResult {
@@ -44,7 +46,7 @@ export const useInvoiceUpload = () => {
   };
 
   const uploadInvoice = async (params: UploadParams): Promise<UploadResult> => {
-    const { file, centroCode, supplierId, preferredEngine = 'openai', supplierHint = null } = params;
+    const { file, centroCode, supplierId, preferredEngine = 'openai', supplierHint = null, autoDetectCentro: shouldAutoDetect = false } = params;
 
     if (!file.type.includes('pdf')) {
       throw new Error('Solo se permiten archivos PDF');
@@ -204,9 +206,29 @@ export const useInvoiceUpload = () => {
       } else if (ocrResponse.data?.success) {
         // Synchronous mode (fallback)
         console.log('OCR completed (sync):', ocrResponse.data);
-        toast.success(
-          `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
-        );
+        
+        // Auto-detect centro if enabled
+        if (shouldAutoDetect && ocrResponse.data.rawText) {
+          const detection = autoDetectCentro(ocrResponse.data.rawText, ocrResponse.data.json);
+          if (detection.centroCode && detection.confidence === 'high') {
+            await supabase
+              .from('invoices_received')
+              .update({ centro_code: detection.centroCode })
+              .eq('id', invoice.id);
+            
+            toast.success(
+              `OCR completado: ${ocrResponse.data.engine} · Centro detectado: ${detection.centroCode}`
+            );
+          } else {
+            toast.success(
+              `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
+            );
+          }
+        } else {
+          toast.success(
+            `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
+          );
+        }
       }
 
       setProgress(100);

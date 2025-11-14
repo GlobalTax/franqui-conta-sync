@@ -5,7 +5,7 @@ import { toast } from "sonner";
 interface OCRRequest {
   documentPath: string;
   centroCode: string;
-  engine?: 'openai' | 'mindee';
+  engine?: 'openai';
   supplierHint?: string | null;
 }
 

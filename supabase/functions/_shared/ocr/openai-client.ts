@@ -125,8 +125,11 @@ export async function extractWithOpenAI(
         text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
       },
       {
-        type: 'file',
-        file: { file_id: fileId }
+        type: 'image_url',
+        image_url: {
+          url: `openai://file-${fileId}`,
+          detail: 'high'
+        }
       }
     ];
   } else {
@@ -174,15 +177,53 @@ export async function extractWithOpenAI(
       temperature: 0
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal
-    });
+    // Make API request with fallback
+    let response: Response;
+    let actualFormat = 'json_schema';
+    
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+
+      // If json_schema fails with 400, retry with json_object
+      if (!response.ok && response.status === 400) {
+        const errorText = await response.text();
+        console.warn('[OpenAI] json_schema failed with 400, retrying with json_object...', errorText);
+        
+        const retryBody = {
+          ...requestBody,
+          response_format: { type: 'json_object' }
+        };
+        
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(retryBody),
+          signal: controller.signal
+        });
+        
+        actualFormat = 'json_object';
+      }
+      
+      console.log(`[OpenAI] Response format used: ${actualFormat}`);
+      
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new OpenAIError('OpenAI request timeout', 'timeout');
+      }
+      throw new OpenAIError(`Network error: ${fetchError.message}`, 'server_error', String(fetchError));
+    }
 
     clearTimeout(timeoutId);
 

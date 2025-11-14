@@ -45,7 +45,7 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
 
   // Calcular métricas agregadas
   const totalTime = logs.reduce((acc, log) => 
-    acc + (log.processing_time_ms || log.ms_openai || log.ms_mindee || 0), 0
+    acc + (log.processing_time_ms || log.ms_openai || 0), 0
   );
   const totalTokens = logs.reduce((acc, log) => 
     acc + (log.tokens_in || 0) + (log.tokens_out || 0), 0
@@ -170,9 +170,9 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
                         Duración: {log.processing_time_ms}ms
                       </span>
                     )}
-                    {(log.ms_openai || log.ms_mindee) && (
+                    {log.ms_openai && (
                       <span className="inline-block mr-3">
-                        OpenAI: {log.ms_openai || 0}ms | Mindee: {log.ms_mindee || 0}ms
+                        Tiempo OpenAI: {log.ms_openai}ms
                       </span>
                     )}
                     {log.pages && (

@@ -4,13 +4,39 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 
-// Configure worker using local file
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Configure worker using real Worker instance
+try {
+  const pdfWorkerInstance = new PdfWorker();
+  pdfjsLib.GlobalWorkerOptions.workerPort = pdfWorkerInstance;
+  console.log('[PDF→PNG Client] Worker configured successfully');
+} catch (err) {
+  console.warn('[PDF→PNG Client] Worker initialization failed, will use fallback', err);
+}
 
 const DEFAULT_SCALE = 2.0; // 2x for good quality OCR
 const MAX_DIMENSION = 1920; // Prevent huge images
+
+/**
+ * Helper to load PDF with fallback if worker fails
+ */
+async function getPdfDocument(arrayBuffer: ArrayBuffer) {
+  try {
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    return await loadingTask.promise;
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    if (errMsg.includes('worker') || errMsg.includes('Worker')) {
+      console.warn('[PDF→PNG Client] Worker failed, clearing workerPort and retrying', err);
+      pdfjsLib.GlobalWorkerOptions.workerPort = null;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      return await loadingTask.promise;
+    }
+    throw err;
+  }
+}
 
 /**
  * Convert PDF file to PNG data URL (first page only)
@@ -22,10 +48,9 @@ export async function convertPdfToPngClient(file: File): Promise<string> {
   const startTime = Date.now();
 
   try {
-    // Load PDF
+    // Load PDF with fallback
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
+    const pdf = await getPdfDocument(arrayBuffer);
     
     console.log(`[PDF→PNG Client] Loaded PDF with ${pdf.numPages} page(s)`);
 
@@ -90,8 +115,7 @@ export async function convertPdfPagesToPng(file: File, maxPages: number = 1): Pr
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
+    const pdf = await getPdfDocument(arrayBuffer);
     
     const pagesToConvert = Math.min(maxPages, pdf.numPages);
     console.log(`[PDF→PNG Client] Converting ${pagesToConvert} of ${pdf.numPages} page(s)`);

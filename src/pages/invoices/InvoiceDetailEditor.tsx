@@ -214,6 +214,35 @@ export default function InvoiceDetailEditor() {
     }
   }, [selectedView, currentMembership, isEditMode, form]);
 
+  // 🔗 Auto-vincular proveedor existente si falta supplier_id
+  useEffect(() => {
+    const autoLinkSupplier = async () => {
+      if (!invoice) return;
+      
+      // Extraer datos del emisor desde ocr_extracted_data
+      const issuerVat = invoice.ocr_extracted_data?.issuer?.vat || 
+                        invoice.ocr_extracted_data?.issuer_vat;
+      
+      // Si NO hay supplier_id pero SÍ hay issuerVat del OCR
+      if (!invoice.supplier_id && issuerVat) {
+        const existingSupplier = await getSupplierByTaxId(issuerVat);
+        
+        if (existingSupplier) {
+          // Auto-vincular silenciosamente
+          form.setValue('supplier_id', existingSupplier.id);
+          form.setValue('supplier_tax_id', existingSupplier.taxId);
+          form.setValue('supplier_name', existingSupplier.name);
+          
+          toast.info(`Proveedor vinculado automáticamente: ${existingSupplier.name}`);
+        }
+      }
+    };
+    
+    if (isEditMode && invoice) {
+      autoLinkSupplier();
+    }
+  }, [isEditMode, invoice, form]);
+
   // Cargar datos de la factura en modo edición
   useEffect(() => {
     if (invoice && isEditMode) {

@@ -1,5 +1,6 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -26,6 +28,10 @@ import { InvoiceApprovalDialog } from "./InvoiceApprovalDialog";
 import { useInvoiceReview } from "@/hooks/useInvoiceReview";
 import { useCentres } from "@/hooks/useCentres";
 import { useInvoiceLines } from "@/hooks/useInvoicesReceived";
+import { useCreateSupplier } from "@/hooks/useSuppliers";
+import { getSupplierByTaxId } from "@/infrastructure/persistence/supabase/queries/SupplierQueries";
+import { validateNIFOrCIF } from "@/lib/nif-validator";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CheckCircle2,
   XCircle,
@@ -35,9 +41,11 @@ import {
   DollarSign,
   AlertTriangle,
   FileCheck,
+  UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { toast } from "sonner";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
 
 // ✅ Lazy load: Secciones pesadas del sheet
@@ -60,12 +68,66 @@ export function InvoiceReviewSheet({
   onClose,
 }: InvoiceReviewSheetProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedCentro, setSelectedCentro] = useState<string>("");
+  const [showSupplierBanner, setShowSupplierBanner] = useState(false);
+  const [creatingSupplier, setCreatingSupplier] = useState(false);
 
   const { data: centres } = useCentres();
   const { data: invoiceLines } = useInvoiceLines(invoice?.id || null, "received");
   const { assignCentre, generateEntry, isLoading } = useInvoiceReview(invoice?.id || null);
+  const createSupplier = useCreateSupplier();
+
+  // 🔍 Auto-detección: Verificar si el proveedor existe o necesita creación
+  useEffect(() => {
+    if (!invoice || !open) return;
+
+    const checkSupplier = async () => {
+      // Si ya tiene supplier_id vinculado, no hacer nada
+      if (invoice.supplier_id) {
+        setShowSupplierBanner(false);
+        return;
+      }
+
+      // Extraer datos del emisor desde ocr_extracted_data
+      const issuerVat = invoice.ocr_extracted_data?.issuer?.vat || 
+                        invoice.ocr_extracted_data?.issuer_vat;
+      const issuerName = invoice.ocr_extracted_data?.issuer?.name ||
+                         invoice.ocr_extracted_data?.issuer_name;
+
+      // Si hay datos del emisor en el OCR
+      if (issuerVat) {
+        const existingSupplier = await getSupplierByTaxId(issuerVat);
+        
+        if (existingSupplier) {
+          // Proveedor existe pero no está vinculado → auto-vincular
+          try {
+            await supabase
+              .from('invoices_received')
+              .update({ 
+                supplier_id: existingSupplier.id,
+                supplier_tax_id: existingSupplier.taxId,
+                supplier_name: existingSupplier.name
+              })
+              .eq('id', invoice.id);
+
+            queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+            queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoice.id] });
+            
+            toast.info(`Proveedor vinculado automáticamente: ${existingSupplier.name}`);
+          } catch (error) {
+            console.error('[Auto-link supplier]', error);
+          }
+        } else if (issuerName) {
+          // Proveedor NO existe pero tenemos datos del OCR
+          setShowSupplierBanner(true);
+        }
+      }
+    };
+
+    checkSupplier();
+  }, [invoice, open, queryClient]);
 
   const handleAssignCentre = () => {
     if (!invoice || !selectedCentro) return;
@@ -75,6 +137,65 @@ export function InvoiceReviewSheet({
   const handleGenerateEntry = () => {
     if (!invoice) return;
     generateEntry(invoice.id);
+  };
+
+  // 🚀 Auto-crear proveedor desde datos OCR
+  const handleAutoCreateSupplier = async () => {
+    if (!invoice) return;
+
+    // Extraer datos del emisor desde ocr_extracted_data
+    const issuerVat = invoice.ocr_extracted_data?.issuer?.vat || 
+                      invoice.ocr_extracted_data?.issuer_vat;
+    const issuerName = invoice.ocr_extracted_data?.issuer?.name ||
+                       invoice.ocr_extracted_data?.issuer_name;
+    const issuerAddress = invoice.ocr_extracted_data?.issuer?.address ||
+                          invoice.ocr_extracted_data?.issuer_address;
+
+    if (!issuerVat || !issuerName) {
+      toast.error('Faltan datos del proveedor en el OCR');
+      return;
+    }
+
+    // Validar formato NIF
+    const isValid = validateNIFOrCIF(issuerVat);
+    if (!isValid) {
+      toast.error('NIF/CIF inválido. Revisa los datos y créalo manualmente.');
+      return;
+    }
+
+    setCreatingSupplier(true);
+    try {
+      const newSupplier = await createSupplier.mutateAsync({
+        tax_id: issuerVat,
+        name: issuerName,
+        address: issuerAddress || null,
+        payment_terms: 30,
+        notes: `Creado automáticamente desde factura ${invoice.invoice_number || invoice.id}`
+      });
+
+      // Vincular supplier_id a la factura
+      await supabase
+        .from('invoices_received')
+        .update({ 
+          supplier_id: newSupplier.id,
+          supplier_name: newSupplier.name,
+          supplier_tax_id: newSupplier.tax_id
+        })
+        .eq('id', invoice.id);
+
+      setShowSupplierBanner(false);
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoice.id] });
+      
+      toast.success(`✅ Proveedor "${newSupplier.name}" creado y vinculado`, {
+        description: 'Ahora puedes aprobar la factura'
+      });
+    } catch (error) {
+      console.error('[Auto-create supplier]', error);
+      toast.error('Error al crear proveedor automáticamente');
+    } finally {
+      setCreatingSupplier(false);
+    }
   };
 
   const getConfidenceBadge = (confidence: number | null) => {
@@ -137,6 +258,61 @@ export function InvoiceReviewSheet({
               </Suspense>
 
               <Separator />
+
+              {/* 🆕 Banner de auto-creación de proveedor */}
+              {showSupplierBanner && (() => {
+                const issuerVat = invoice.ocr_extracted_data?.issuer?.vat || 
+                                  invoice.ocr_extracted_data?.issuer_vat;
+                const issuerName = invoice.ocr_extracted_data?.issuer?.name ||
+                                   invoice.ocr_extracted_data?.issuer_name;
+                
+                return (
+                  <Alert className="border-orange-200 bg-orange-50">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <AlertTitle className="text-orange-900">Proveedor no registrado</AlertTitle>
+                    <AlertDescription className="space-y-3">
+                      <div className="text-sm text-orange-800">
+                        <p className="mb-2">
+                          <Badge variant="outline" className="mr-2 border-orange-300 text-orange-800">
+                            {issuerVat}
+                          </Badge>
+                          <strong>{issuerName}</strong>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Este proveedor no está dado de alta. Créalo automáticamente con los datos del OCR.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={handleAutoCreateSupplier}
+                          disabled={creatingSupplier}
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          {creatingSupplier ? (
+                            <>
+                              <Skeleton className="h-4 w-4 mr-2 animate-spin" />
+                              Creando...
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Crear proveedor automáticamente
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => navigate(`/invoices/edit/${invoice.id}`)}
+                        >
+                          Crear con más datos
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                );
+              })()}
 
               {/* Datos OCR */}
               <section>

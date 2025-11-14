@@ -22,9 +22,8 @@ export interface InvoiceReceived {
   payment_transaction_id: string | null;
   ocr_confidence: number | null;
   // Campos OCR detallados
-  ocr_engine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  ocr_engine: 'openai' | 'merged' | 'manual_review' | null;
   ocr_ms_openai: number | null;
-  ocr_ms_mindee: number | null;
   ocr_pages: number | null;
   ocr_tokens_in: number | null;
   ocr_tokens_out: number | null;
@@ -138,7 +137,6 @@ export const useInvoicesReceived = (filters?: {
         // Campos OCR
         ocr_engine: inv.ocrEngine,
         ocr_ms_openai: inv.ocrMsOpenai,
-        ocr_ms_mindee: inv.ocrMsMindee,
         ocr_pages: inv.ocrPages,
         ocr_tokens_in: inv.ocrTokensIn,
         ocr_tokens_out: inv.ocrTokensOut,

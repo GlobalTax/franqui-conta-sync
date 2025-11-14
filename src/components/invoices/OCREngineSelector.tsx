@@ -8,8 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { DocumentAnalysis } from '@/hooks/useDocumentAnalyzer';
 
 interface OCREngineSelectorProps {
-  value: 'openai' | 'mindee';
-  onChange: (value: 'openai' | 'mindee') => void;
+  value: 'openai';
+  onChange: (value: 'openai') => void;
   estimatedPages?: number;
   analysis?: DocumentAnalysis;
   onUseRecommended?: () => void;
@@ -27,17 +27,6 @@ const ENGINE_SPECS = {
     bgColor: 'bg-green-50 dark:bg-green-950/30',
     borderColor: 'border-green-200 dark:border-green-800',
   },
-  mindee: {
-    name: 'Mindee',
-    icon: Cpu,
-    costPerPage: 0.055,
-    expectedConfidence: 92,
-    description: 'Especializado en facturas estándar',
-    pros: ['Mayor precisión en facturas', 'Optimizado para documentos fiscales'],
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    borderColor: 'border-blue-200 dark:border-blue-800',
-  },
 };
 
 export function OCREngineSelector({ 
@@ -47,11 +36,8 @@ export function OCREngineSelector({
   analysis,
   onUseRecommended
 }: OCREngineSelectorProps) {
-  const calculateCost = (engine: 'openai' | 'mindee') => {
-    if (engine === 'openai') {
-      return ENGINE_SPECS.openai.costPerInvoice;
-    }
-    return ENGINE_SPECS.mindee.costPerPage * estimatedPages;
+  const calculateCost = () => {
+    return ENGINE_SPECS.openai.costPerInvoice;
   };
 
   return (
@@ -72,7 +58,7 @@ export function OCREngineSelector({
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <h4 className="font-semibold text-sm">Recomendación Inteligente</h4>
                 <Badge variant="default" className="bg-purple-600">
-                  {analysis.recommended_engine === 'openai' ? 'OpenAI GPT-4o' : 'Mindee'}
+                  OpenAI GPT-4o
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {analysis.confidence}% confianza
@@ -130,81 +116,71 @@ export function OCREngineSelector({
       )}
 
       <RadioGroup value={value} onValueChange={onChange}>
-        {(['openai', 'mindee'] as const).map((engine) => {
-          const spec = ENGINE_SPECS[engine];
-          const Icon = spec.icon;
-          const cost = calculateCost(engine);
-          const isSelected = value === engine;
-
-          return (
-            <Card
-              key={engine}
-              className={`cursor-pointer transition-all ${
-                isSelected
-                  ? `${spec.borderColor} ${spec.bgColor} border-2`
-                  : 'border border-border hover:border-primary/50'
-              }`}
-              onClick={() => onChange(engine)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <RadioGroupItem value={engine} id={engine} className="mt-1" />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-4 w-4 ${spec.color}`} />
-                      <Label htmlFor={engine} className="font-semibold cursor-pointer">
-                        {spec.name}
-                      </Label>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      {spec.description}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-3 pt-1">
-                      {/* Coste estimado */}
-                      <div className="flex items-center gap-1.5">
-                        <Euro className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium">
-                          {cost.toFixed(3)}€
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {engine === 'openai' ? '/factura' : '/página'}
-                        </span>
-                      </div>
-
-                      {/* Confianza esperada */}
-                      <div className="flex items-center gap-1.5">
-                        <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium">
-                          ~{spec.expectedConfidence}%
-                        </span>
-                        <span className="text-xs text-muted-foreground">confianza</span>
-                      </div>
-
-                      {/* Badge recomendado */}
-                      {engine === 'mindee' && (
-                        <Badge variant="secondary" className="text-xs">
-                          Recomendado
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Pros */}
-                    <ul className="text-xs text-muted-foreground space-y-0.5 mt-2">
-                      {spec.pros.map((pro, idx) => (
-                        <li key={idx} className="flex items-start gap-1.5">
-                          <span className={`${spec.color} font-bold`}>•</span>
-                          <span>{pro}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+        {/* Solo OpenAI disponible */}
+        <Card
+          className={`cursor-pointer transition-all ${
+            value === 'openai'
+              ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 border-2'
+              : 'border border-border hover:border-primary/50'
+          }`}
+          onClick={() => onChange('openai')}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <RadioGroupItem value="openai" id="openai" className="mt-1" />
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <Label htmlFor="openai" className="font-semibold cursor-pointer">
+                    OpenAI GPT-4o
+                  </Label>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+
+                <p className="text-xs text-muted-foreground">
+                  Mejor en documentos complejos y variados
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {/* Coste estimado */}
+                  <div className="flex items-center gap-1.5">
+                    <Euro className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs font-medium">
+                      {calculateCost().toFixed(3)}€
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      /factura
+                    </span>
+                  </div>
+
+                  {/* Confianza esperada */}
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs font-medium">
+                      ~85%
+                    </span>
+                    <span className="text-xs text-muted-foreground">confianza</span>
+                  </div>
+
+                  <Badge variant="secondary" className="text-xs">
+                    Activo
+                  </Badge>
+                </div>
+
+                {/* Pros */}
+                <ul className="text-xs text-muted-foreground space-y-0.5 mt-2">
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-500">✓</span>
+                    <span>Flexible con formatos no estándar</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-500">✓</span>
+                    <span>Buena comprensión contextual</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </RadioGroup>
 
       <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3">

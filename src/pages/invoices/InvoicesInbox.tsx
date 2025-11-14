@@ -56,7 +56,6 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   ocr_confidence: inv.ocr_confidence,
   processing_time_ms: inv.ocr_processing_time_ms,
   ocr_ms_openai: inv.ocr_ms_openai,
-  ocr_ms_mindee: inv.ocr_ms_mindee,
   ocr_pages: inv.ocr_pages,
   ocr_tokens_in: inv.ocr_tokens_in,
   ocr_tokens_out: inv.ocr_tokens_out,

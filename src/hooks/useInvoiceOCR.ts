@@ -155,7 +155,6 @@ export interface OCRResponse {
     tokens_out: number;
     cost_estimate_eur: number;
     ms_openai?: number;
-    ms_mindee?: number;
     processing_time_ms?: number;
   }; // ⭐ NUEVO: Métricas detalladas de OCR
   warnings?: string[];
@@ -229,7 +228,6 @@ export const useLogOCRProcessing = () => {
       pages?: number;
       costEstimateEur?: number;
       msOpenai?: number;
-      msMindee?: number;
       userCorrections?: any;
       orchestratorLogs?: any[];
     }) => {
@@ -255,7 +253,6 @@ export const useLogOCRProcessing = () => {
           pages: logData.pages,
           cost_estimate_eur: logData.costEstimateEur,
           ms_openai: logData.msOpenai,
-          ms_mindee: logData.msMindee,
           user_corrections: logData.userCorrections,
           created_by: user?.id
         });

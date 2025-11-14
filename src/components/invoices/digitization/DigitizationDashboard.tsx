@@ -209,12 +209,6 @@ export function DigitizationDashboard({ centroCode }: DigitizationDashboardProps
                 {metrics.cost_openai.toFixed(2)}€
               </span>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-border/40">
-              <span className="text-sm text-muted-foreground">Mindee</span>
-              <span className="text-sm font-semibold">
-                {metrics.cost_mindee.toFixed(2)}€
-              </span>
-            </div>
           </CardContent>
         </Card>
 

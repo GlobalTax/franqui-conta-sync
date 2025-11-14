@@ -21,22 +21,11 @@ const ENGINE_SPECS = {
     icon: Brain,
     costPerInvoice: 0.08,
     expectedConfidence: 85,
-    description: 'Mejor en documentos complejos y variados',
-    pros: ['Flexible con formatos no estándar', 'Buena comprensión contextual'],
+    description: 'Motor OCR principal',
+    pros: ['Flexible con formatos variados', 'Buena comprensión contextual'],
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-50 dark:bg-green-950/30',
     borderColor: 'border-green-200 dark:border-green-800',
-  },
-  mindee: {
-    name: 'Mindee',
-    icon: Cpu,
-    costPerPage: 0.055,
-    expectedConfidence: 92,
-    description: 'Especializado en facturas estándar',
-    pros: ['Mayor precisión en facturas', 'Optimizado para documentos fiscales'],
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    borderColor: 'border-blue-200 dark:border-blue-800',
   },
 };
 
@@ -47,11 +36,8 @@ export function OCREngineSelector({
   analysis,
   onUseRecommended
 }: OCREngineSelectorProps) {
-  const calculateCost = (engine: 'openai' | 'mindee') => {
-    if (engine === 'openai') {
-      return ENGINE_SPECS.openai.costPerInvoice;
-    }
-    return ENGINE_SPECS.mindee.costPerPage * estimatedPages;
+  const calculateCost = (engine: 'openai') => {
+    return ENGINE_SPECS.openai.costPerInvoice;
   };
 
   return (
@@ -101,16 +87,6 @@ export function OCREngineSelector({
                   </li>
                 ))}
               </ul>
-
-              {/* Cost comparison */}
-              {analysis.cost_comparison.savings_eur > 0.01 && (
-                <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded border border-green-200 dark:border-green-800 mb-3">
-                  <p className="text-xs font-medium text-green-700 dark:text-green-400">
-                    💰 Ahorro estimado: €{analysis.cost_comparison.savings_eur.toFixed(3)} 
-                    ({analysis.cost_comparison.savings_percent.toFixed(0)}%)
-                  </p>
-                </div>
-              )}
 
               {/* Use recommended button */}
               {value !== analysis.recommended_engine && onUseRecommended && (

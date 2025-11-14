@@ -7,6 +7,7 @@ import { extractWithMindee } from "./mindee-client.ts";
 import { validateSpanishVAT } from "./validators.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { isEngineAvailable, recordSuccess, recordFailure } from "./circuit-breaker.ts";
+import { convertPdfToImages } from "../pdf-converter.ts";
 import type {
   EnhancedInvoiceData,
   InvoiceStatus,
@@ -119,6 +120,47 @@ export async function orchestrateOCR(
   
   let ms_openai = 0;
   let ms_mindee = 0;
+  let pdfConverted = false;
+
+  // ============================================================================
+  // PDF CONVERSION FOR OPENAI (Phase 2)
+  // ============================================================================
+  
+  // If OpenAI is preferred and document is PDF, convert to images first
+  if ((preferredEngine === 'openai' || preferredEngine === 'merged') && 
+      mimeType === 'application/pdf') {
+    
+    console.log('[Orchestrator] PDF detected - converting to images for OpenAI Vision');
+    
+    try {
+      // Decode base64 to bytes
+      const pdfBytes = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
+      
+      // Convert PDF → PNG images (first 3 pages)
+      const conversionStart = performance.now();
+      const { images, mimeType: imgMimeType } = await convertPdfToImages(pdfBytes, 3);
+      const conversionMs = Math.round(performance.now() - conversionStart);
+      
+      // Use first page as primary image for OpenAI
+      base64Content = images[0];
+      mimeType = imgMimeType;
+      pdfConverted = true;
+      
+      mergeNotes.push(`✅ PDF converted to ${images.length} image(s) in ${conversionMs}ms`);
+      console.log(`[Orchestrator] PDF conversion successful: ${images.length} pages → PNG (${conversionMs}ms)`);
+      
+    } catch (error) {
+      console.error('[Orchestrator] PDF conversion failed:', error);
+      mergeNotes.push(`⚠️ PDF conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Fallback: use Mindee for PDF if conversion fails
+      if (preferredEngine === 'openai') {
+        console.log('[Orchestrator] Falling back to Mindee for PDF processing');
+        preferredEngine = 'mindee';
+        mergeNotes.push('🔄 Switched to Mindee due to PDF conversion failure');
+      }
+    }
+  }
 
   // Simplified logging - only critical decisions
   const addLog = (stage: string, action: string, decision?: string, metrics?: any) => {
@@ -239,11 +281,11 @@ export async function orchestrateOCR(
       ocr_engine: 'openai',
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
-      status,
       merge_notes: mergeNotes,
-      orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
-      timing: { ms_openai, ms_mindee }
+      orchestrator_logs: orchestratorLogs,
+      timing: { ms_openai, ms_mindee },
+      pdf_converted: pdfConverted
     };
   }
 

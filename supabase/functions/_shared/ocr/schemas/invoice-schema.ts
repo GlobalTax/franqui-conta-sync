@@ -8,27 +8,29 @@ export type SupplierType = 'havi' | 'generic';
 // BASE SCHEMA - Plan General Contable Español compliant
 // ============================================================================
 
+// ============================================================================
+// ENHANCED GENERIC SCHEMA - Complete Spanish invoice with groups and lines
+// ============================================================================
 export const GENERIC_INVOICE_SCHEMA = {
   type: "object",
   properties: {
-    supplier: {
+    issuer: {
       type: "object",
       properties: {
-        name: { type: "string", description: "Nombre completo del proveedor" },
-        tax_id: { type: "string", description: "NIF/CIF español (ej: B12345678)" },
+        name: { type: "string", description: "Nombre completo del emisor/proveedor" },
+        vat_id: { type: "string", description: "NIF/CIF español (ej: B12345678)" },
         address: { type: "string", description: "Dirección fiscal completa" }
       },
-      required: ["name", "tax_id"],
+      required: ["name", "vat_id"],
       additionalProperties: false
     },
     
-    customer: {
+    recipient: {
       type: "object",
       properties: {
         name: { type: "string", description: "Nombre del cliente/restaurante" },
-        tax_id: { type: "string", description: "NIF/CIF del cliente" },
-        billing_address: { type: "string", description: "Dirección de facturación" },
-        delivery_address: { type: "string", description: "Dirección de entrega (si diferente)" }
+        vat_id: { type: "string", description: "NIF/CIF del cliente" },
+        address: { type: "string", description: "Dirección completa del cliente" }
       },
       required: ["name"],
       additionalProperties: false
@@ -43,7 +45,6 @@ export const GENERIC_INVOICE_SCHEMA = {
           pattern: "^\\d{4}-\\d{2}-\\d{2}$",
           description: "Fecha de emisión formato YYYY-MM-DD"
         },
-        delivery_note: { type: "string", description: "Número de albarán" },
         delivery_date: { 
           type: "string", 
           pattern: "^\\d{4}-\\d{2}-\\d{2}$",
@@ -70,7 +71,7 @@ export const GENERIC_INVOICE_SCHEMA = {
         green_point: { 
           type: "string", 
           pattern: "^-?\\d+\\.\\d{2}$",
-          description: "Punto verde en formato decimal (ej: 1.23)"
+          description: "Punto verde / tasa de reciclaje en formato decimal (ej: 1.23)"
         }
       },
       additionalProperties: false
@@ -81,40 +82,77 @@ export const GENERIC_INVOICE_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          code: { type: "string", description: "Código IVA (ej: C1, C2, A7)" },
-          rate: { type: "string", description: "Tipo impositivo (ej: 21%, 10%, 4%)" },
+          code: { 
+            type: "string", 
+            description: "Código IVA (ej: A7, C1, C2) o porcentaje si no hay código (ej: '21', '10')" 
+          },
+          rate: { 
+            type: "string", 
+            description: "Tipo impositivo en porcentaje (ej: '21', '10', '4')" 
+          },
           base: { 
             type: "string", 
             pattern: "^-?\\d+\\.\\d{2}$",
-            description: "Base imponible"
+            description: "Base imponible en EUR con 2 decimales"
           },
           tax: { 
             type: "string", 
             pattern: "^-?\\d+\\.\\d{2}$",
-            description: "Cuota IVA"
+            description: "Cuota IVA en EUR con 2 decimales"
           },
           gross: { 
             type: "string", 
             pattern: "^-?\\d+\\.\\d{2}$",
-            description: "Base + IVA"
+            description: "Base + IVA en EUR con 2 decimales"
           }
         },
         required: ["code", "rate", "base", "tax", "gross"],
         additionalProperties: false
       },
-      description: "Desglose de totales por tipo de IVA"
+      description: "Desglose de totales por cada tipo de IVA detectado"
+    },
+    
+    totals_by_group: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          group: { 
+            type: "string", 
+            description: "Nombre del grupo de productos (ej: 'ALIMENTOS', 'BEBIDAS', 'LIMPIEZA')" 
+          },
+          base: { 
+            type: "string", 
+            pattern: "^-?\\d+\\.\\d{2}$",
+            description: "Base imponible del grupo (sin IVA)"
+          },
+          green_point: { 
+            type: "string", 
+            pattern: "^-?\\d+\\.\\d{2}$",
+            description: "Punto verde aplicado al grupo (si existe)"
+          },
+          gross_ex_vat: { 
+            type: "string", 
+            pattern: "^-?\\d+\\.\\d{2}$",
+            description: "Total del grupo sin IVA (base + punto verde)"
+          }
+        },
+        required: ["group", "base", "gross_ex_vat"],
+        additionalProperties: false
+      },
+      description: "Totales agrupados por familia de productos (opcional)"
     },
     
     base_total_plus_fees: { 
       type: "string", 
       pattern: "^-?\\d+\\.\\d{2}$",
-      description: "Total base imponible + fees (antes de impuestos)"
+      description: "Suma de todas las bases imponibles + fees (punto verde)"
     },
     
     tax_total: { 
       type: "string", 
       pattern: "^-?\\d+\\.\\d{2}$",
-      description: "Total de impuestos (IVA)"
+      description: "Suma de todas las cuotas de IVA"
     },
     
     grand_total: { 
@@ -152,8 +190,8 @@ export const GENERIC_INVOICE_SCHEMA = {
     }
   },
   required: [
-    "supplier", 
-    "customer", 
+    "issuer", 
+    "recipient", 
     "invoice", 
     "totals_by_vat", 
     "base_total_plus_fees", 

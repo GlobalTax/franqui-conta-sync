@@ -210,8 +210,9 @@ export async function orchestrateOCR(
     }
   }
 
-  // Option B: Try OpenAI (only if not a PDF)
-  if (!isPdf) {
+  // Option B: Try OpenAI (supports PDFs via base64 data URLs)
+  if (effectiveEngine === 'openai' || effectiveEngine === 'merged') {
+    console.log('[Orchestrator] Attempting OpenAI extraction (PDF support enabled)');
     const { result: oaiResult, duration: oaiDuration } = await tryExtract('openai',
       () => extractWithOpenAI(base64Content, mimeType));
     
@@ -220,15 +221,10 @@ export async function orchestrateOCR(
       ms_openai = oaiDuration;
       rawResponses.openai = oaiResult;
     }
-  } else {
-    console.log('[Orchestrator] Skipping OpenAI for PDF document');
-    mergeNotes.push('ℹ️ OpenAI skipped (PDF format not supported)');
   }
 
-  // Use OpenAI if confidence good and critical fields present
-  if (openaiResult && 
-      openaiResult.confidence_score >= CONFIDENCE_THRESHOLD_FALLBACK && 
-      hasCritical(openaiResult.data)) {
+  // Use OpenAI if available and has critical fields
+  if (openaiResult && hasCritical(openaiResult.data)) {
     
     const status: InvoiceStatus = openaiResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
       ? 'processed_ok' : 'needs_review';
@@ -248,102 +244,10 @@ export async function orchestrateOCR(
     };
   }
 
-  // Fallback to Mindee if OpenAI insufficient
-  if (!mindeeResult) {
-    console.log('[Orchestrator] OpenAI insufficient, trying Mindee fallback...');
-    mergeNotes.push(openaiResult 
-      ? `⚠️ OpenAI low confidence (${openaiResult.confidence_score}%) or missing fields`
-      : '⚠️ OpenAI not available');
-    
-    const { result: mdResult, duration: mdDuration } = await tryExtract('mindee',
-      () => extractWithMindee(fileBlob || base64Content));
-    
-    if (mdResult) {
-      mindeeResult = mdResult;
-      ms_mindee = mdDuration;
-      rawResponses.mindee = mdResult;
-    }
-  }
+  // No fallback to Mindee - using OpenAI only
+  console.log('[Orchestrator] OpenAI-only mode enabled, no Mindee fallback');
 
-  // Intelligent Merge if both engines succeeded
-  if (openaiResult && mindeeResult) {
-    addLog('MERGE', 'Starting intelligent merge', 'Both engines available', {
-      openai: openaiResult.confidence_score,
-      mindee: mindeeResult.confidence_score
-    });
-    console.log('[Orchestrator] 🔀 Intelligent merge...');
-    
-    // Fetch supplier history for merge weights
-    let supplierHistory = null;
-    const supplierVat = mindeeResult.data.issuer.vat_id || openaiResult.data.issuer.vat_id;
-    
-    if (supplierVat) {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        const { data: history } = await supabase
-          .from('invoices_received')
-          .select('ocr_engine, confidence_score')
-          .eq('supplier_vat_id', supplierVat)
-          .gte('confidence_score', 70)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        if (history && history.length > 0) {
-          supplierHistory = history;
-          const mindeeWins = history.filter(h => h.ocr_engine === 'mindee' || h.ocr_engine === 'merged').length;
-          const winRate = mindeeWins / history.length;
-          console.log(`[Orchestrator] 📊 Supplier: ${history.length} invoices, Mindee: ${(winRate * 100).toFixed(0)}%`);
-          if (winRate > 0.6) {
-            mergeNotes.push(`🎯 Supplier prefers Mindee (${(winRate * 100).toFixed(0)}% in ${history.length} invoices)`);
-          }
-        }
-      } catch (error) {
-        console.error('[Orchestrator] Supplier history lookup failed:', error);
-      }
-    }
-    
-    const merged = intelligentMerge(openaiResult, mindeeResult, mergeNotes, supplierHistory);
-    
-    const status: InvoiceStatus = merged.confidence >= CONFIDENCE_THRESHOLD_AUTO_POST
-      ? 'processed_ok' : 'needs_review';
-    
-    addLog('DECISION', 'Using merged result', status, { confidence: merged.confidence });
-    mergeNotes.push(`📊 Merged → ${status} (${merged.confidence}%)`);
-    
-    return {
-      ocr_engine: 'merged',
-      final_invoice_json: merged.data,
-      confidence_final: merged.confidence,
-      status,
-      merge_notes: mergeNotes,
-      orchestrator_logs: orchestratorLogs,
-      raw_responses: rawResponses,
-      timing: { ms_openai, ms_mindee }
-    };
-  }
-
-  // Use best available result
-  if (mindeeResult && mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_FALLBACK) {
-    const status: InvoiceStatus = mindeeResult.confidence_score >= CONFIDENCE_THRESHOLD_AUTO_POST
-      ? 'processed_ok' : 'needs_review';
-    
-    addLog('DECISION', 'Using Mindee result', status, { confidence: mindeeResult.confidence_score });
-    mergeNotes.push(`✅ Mindee ${mindeeResult.confidence_score}% → ${status}`);
-    
-    return {
-      ocr_engine: 'mindee',
-      final_invoice_json: mindeeResult.data,
-      confidence_final: mindeeResult.confidence_score,
-      status,
-      merge_notes: mergeNotes,
-      orchestrator_logs: orchestratorLogs,
-      raw_responses: rawResponses,
-      timing: { ms_openai, ms_mindee }
-    };
-  }
+  // OpenAI-only mode: skip merge and Mindee-only results
 
   if (openaiResult && openaiResult.confidence_score >= 40) {
     addLog('DECISION', 'Using OpenAI result', 'needs_review', { confidence: openaiResult.confidence_score });

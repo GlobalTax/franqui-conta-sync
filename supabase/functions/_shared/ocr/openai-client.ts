@@ -3,7 +3,6 @@
 // ============================================================================
 
 import type { OpenAIExtractionResult, DocumentType } from "./types.ts";
-import { getPrompt } from "./prompts.ts";
 import { adaptOpenAIToStandard } from "./openai-adapter.ts";
 
 // ============================================================================

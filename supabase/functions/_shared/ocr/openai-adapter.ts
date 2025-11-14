@@ -25,16 +25,24 @@ export function adaptOpenAIToStandard(
     throw new Error('OpenAI response is not valid JSON');
   }
 
-  // Destructuring de campos principales
+  // Destructuring de campos principales (soporte ambos formatos: issuer/receiver y supplier/customer)
   const data = extracted.data || extracted;
-  const { issuer = {}, receiver = {}, totals = {}, lines = [] } = data;
+  const issuer = data.issuer || data.supplier || {};
+  const receiver = data.recipient || data.receiver || data.customer || {};
+  const invoice = data.invoice || {};
+  const fees = data.fees || {};
+  const totals_by_vat = data.totals_by_vat || [];
+  const totals_by_group = data.totals_by_group || [];
+  const lines = data.lines || [];
+  const totals = data.totals || {};
   
   const supplierName = issuer.name || '';
-  const supplierVAT = normalizeNIF(issuer.vat_id) || null;
-  const invoiceNumber = data.invoice_number || '';
-  const issueDate = data.issue_date || '';
-  const dueDate = data.due_date || null;
-  const totalAmount = totals.total || 0;
+  const supplierVAT = normalizeNIF(issuer.vat_id || issuer.tax_id) || null;
+  const invoiceNumber = invoice.number || data.invoice_number || '';
+  const issueDate = invoice.issue_date || data.issue_date || '';
+  const dueDate = invoice.due_date || data.due_date || null;
+  const deliveryDate = invoice.delivery_date || data.delivery_date || null;
+  const totalAmount = parseFloat(data.grand_total || totals.total || '0');
 
   // Detectar tipo de documento (credit notes)
   let documentType: "invoice" | "credit_note" | "ticket" = data.document_type || "invoice";
@@ -47,13 +55,37 @@ export function adaptOpenAIToStandard(
     documentType = "credit_note";
   }
 
-  // TAX AGGREGATION: Recalcular bases de IVA 10% y 21%
+  // TAX AGGREGATION from enhanced schema (totals_by_vat array)
   let base10 = totals.base_10 || 0;
   let vat10 = totals.vat_10 || 0;
   let base21 = totals.base_21 || 0;
   let vat21 = totals.vat_21 || 0;
   const otherTaxes: Array<{ type: string; base: number; quota: number }> = 
     totals.other_taxes || [];
+
+  // Parse totals_by_vat array from enhanced schema
+  if (totals_by_vat && totals_by_vat.length > 0) {
+    for (const vatEntry of totals_by_vat) {
+      const rate = vatEntry.rate || vatEntry.code || '';
+      const base = parseFloat(vatEntry.base || '0');
+      const tax = parseFloat(vatEntry.tax || '0');
+      
+      if (rate.includes('10')) {
+        base10 += base;
+        vat10 += tax;
+      } else if (rate.includes('21')) {
+        base21 += base;
+        vat21 += tax;
+      } else if (rate.includes('4')) {
+        // IVA reducido 4% → other_taxes
+        otherTaxes.push({
+          type: `IVA ${rate}%`,
+          base,
+          quota: tax
+        });
+      }
+    }
+  }
 
   // Si el LLM puso IVA 10% o 21% en other_taxes, moverlos a campos principales
   const remaining: Array<{ type: string; base: number; quota: number }> = [];
@@ -76,6 +108,9 @@ export function adaptOpenAIToStandard(
   const finalVat10 = vat10 > 0 ? Math.round(vat10 * 100) / 100 : null;
   const finalBase21 = base21 > 0 ? Math.round(base21 * 100) / 100 : null;
   const finalVat21 = vat21 > 0 ? Math.round(vat21 * 100) / 100 : null;
+  
+  // Extract green_point fee if present
+  const greenPoint = fees.green_point ? parseFloat(fees.green_point) : null;
 
   // Validar que base + IVA ≈ total (tolerancia ±1€)
   const calculatedTotal = (finalBase10 || 0) + (finalVat10 || 0) + 
@@ -103,12 +138,15 @@ export function adaptOpenAIToStandard(
     console.warn(`[OpenAI Adapter] Invalid date format: ${issueDate}`);
   }
 
-  // NORMALIZAR LÍNEAS con fallbacks
+  // Normalizar lines con campos extendidos
   const normalizedLines = lines.map((line: any) => ({
-    description: line.description || 'Sin descripción',
-    quantity: line.quantity ?? null,
-    unit_price: line.unit_price ?? null,
-    amount: line.amount || 0
+    description: line.description || line.name || '',
+    quantity: line.quantity || line.qty || null,
+    unit_price: line.unit_price || line.price || null,
+    amount: line.amount || line.total || 0,
+    uom: line.uom || line.unit || null,
+    group: line.group || line.category || null,
+    vat_code: line.vat_code || line.tax_code || null
   }));
 
   // CALCULAR CONFIDENCE_BY_FIELD basado en validación real
@@ -137,7 +175,7 @@ export function adaptOpenAIToStandard(
 
   console.log(`[OpenAI Adapter] Final confidence: ${confidenceScore}%`);
 
-  // Construir resultado final
+  // Construir resultado final con campos extendidos
   const finalData: EnhancedInvoiceData = {
     document_type: documentType,
     issuer: {
@@ -176,7 +214,6 @@ export function adaptOpenAIToStandard(
   const tokensOut = usage.completion_tokens || 0;
   const totalTokens = usage.total_tokens || tokensIn + tokensOut;
   
-  // Cost estimation (gpt-4o-mini default)
   const costPer1kTokens = 0.00015;
   const estimatedCostEur = (totalTokens / 1000) * costPer1kTokens;
 
@@ -184,7 +221,7 @@ export function adaptOpenAIToStandard(
     data: finalData,
     confidence_score: confidenceScore,
     confidence_by_field: confidenceByField,
-    raw_response: rawResponse,
+    raw: rawResponse,
     usage: {
       tokens_in: tokensIn,
       tokens_out: tokensOut,

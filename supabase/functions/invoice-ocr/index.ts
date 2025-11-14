@@ -12,6 +12,7 @@ import { validateAndNormalizePath, parseInvoicePath } from "../_shared/storage-u
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import { apMapperEngine, matchSupplier } from "../_shared/ap/mapping-engine.ts";
 import { validateInvoiceEntry } from "../_shared/gl/validator.ts";
+import { validateAccountingRules, formatValidationSummary } from "../_shared/validators/accounting-validator.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
@@ -338,6 +339,17 @@ serve(async (req) => {
     // 3. Fiscal Normalizer ES (usando nueva arquitectura modular)
     const normalizedResponse = normalizeBackend(orchestratorResult.final_invoice_json, '', COMPANY_VAT_IDS);
     
+    // ⭐ FASE 2: Validación contable avanzada (sumas IVA, totales, redondeos)
+    console.log('[ACCOUNTING] Running advanced accounting validation...');
+    const accountingValidation = validateAccountingRules(orchestratorResult.final_invoice_json);
+    console.log(`[ACCOUNTING] Valid: ${accountingValidation.valid}, Errors: ${accountingValidation.errors.length}, Warnings: ${accountingValidation.warnings.length}`);
+    if (!accountingValidation.valid) {
+      console.error('[ACCOUNTING] Validation errors:', accountingValidation.errors);
+    }
+    if (accountingValidation.warnings.length > 0) {
+      console.warn('[ACCOUNTING] Validation warnings:', accountingValidation.warnings);
+    }
+    
     // 4. AP Mapping Engine
     const apMapping = await apMapperEngine(
       normalizedResponse.normalized,
@@ -401,6 +413,15 @@ serve(async (req) => {
           autofix_applied: normalizedResponse.autofix_applied
         },
         {
+          stage: 'accounting_validation',
+          timestamp: Date.now(),
+          duration_ms: 30,
+          success: accountingValidation.valid,
+          errors: accountingValidation.errors,
+          warnings: accountingValidation.warnings,
+          details: accountingValidation.details
+        },
+        {
           stage: 'ap_mapping',
           timestamp: Date.now(),
           duration_ms: apMappingTime,
@@ -459,16 +480,17 @@ serve(async (req) => {
     if (invoiceId) {
       console.log('[MODE-B] Updating invoice in DB:', invoiceId);
       
-      // Determine final status based on confidence and validation
+      // Determine final status based on confidence, validation, and accounting rules
       let finalStatus: 'pending' | 'processed_ok' | 'needs_review' | 'needs_manual_review' | 'approved' | 'rejected' | 'paid' = 'needs_review';
       
       if (orchestratorResult.ocr_engine === 'manual_review') {
         finalStatus = 'needs_manual_review';
       } else if (orchestratorResult.status === 'processed_ok' && 
                  entryValidation.blocking_issues.length === 0 &&
-                 normalizedResponse.validation.errors.length === 0) {
+                 normalizedResponse.validation.errors.length === 0 &&
+                 accountingValidation.valid) {
         finalStatus = 'processed_ok';
-      } else if (orchestratorResult.confidence_final >= 70) {
+      } else if (orchestratorResult.confidence_final >= 70 && accountingValidation.valid) {
         finalStatus = 'needs_review';
       } else {
         finalStatus = 'needs_manual_review';
@@ -481,12 +503,23 @@ serve(async (req) => {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const documentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       
-      // Update invoice with comprehensive results
+      // Update invoice with comprehensive results including accounting validation
+      const enrichedPayload = {
+        ...orchestratorResult,
+        accounting_validation: accountingValidation,
+        fiscal_normalization: normalizedResponse.validation,
+        ap_mapping_summary: {
+          confidence: apMapping.invoice_level.confidence_score,
+          matched_rule: apMapping.invoice_level.matched_rule_name,
+          centre_id: apMapping.invoice_level.centre_id
+        }
+      };
+      
       const { error: updateError } = await supabase
         .from('invoices_received')
         .update({
           ocr_engine: orchestratorResult.ocr_engine,
-          ocr_payload: orchestratorResult,
+          ocr_payload: enrichedPayload,
           ocr_extracted_data: normalizedResponse.normalized,
           confidence_score: orchestratorResult.confidence_final,
           status: finalStatus,
@@ -610,6 +643,7 @@ serve(async (req) => {
         normalized: normalizedResponse.normalized,
         validation: normalizedResponse.validation,
         autofix_applied: normalizedResponse.autofix_applied,
+        accounting_validation: accountingValidation, // ⭐ FASE 2: Validación contable
         ap_mapping: apMapping,
         entry_validation: entryValidation,
         confidence: orchestratorResult.confidence_final / 100,

@@ -57,7 +57,7 @@ interface APMappingResult {
 
 serve(async (req) => {
   console.log('[INIT] ========================================');
-  console.log('[INIT] invoice-ocr function called (OpenAI-only v3.0)');
+  console.log('[INIT] invoice-ocr function called (OpenAI-only v3.1 - Schema Fixed)');
   console.log('[INIT] Method:', req.method);
   
   const requestOrigin = req.headers.get("origin") || "";

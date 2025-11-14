@@ -248,9 +248,25 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`
  * Procesa documento con Mindee
  */
 async function processWithMindee(fileData: Blob): Promise<OCRResult> {
-  const apiKey = Deno.env.get('MINDEE_API_KEY');
-  if (!apiKey) {
+  const rawKey = Deno.env.get('MINDEE_API_KEY');
+  if (!rawKey) {
     throw new Error('MINDEE_API_KEY no configurada');
+  }
+
+  // 🔑 Robust API key normalization
+  const normalizedKey = rawKey.trim()
+    .replace(/^['"]|['"]$/g, '')  // Remove surrounding quotes
+    .replace(/^\s*(Token|Bearer)\s+/i, '');  // Remove prefixes if present
+  
+  // Build proper Authorization header
+  const authHeader = (/^(Token|Bearer)\s+/i.test(rawKey.trim()))
+    ? rawKey.trim().replace(/^['"]|['"]$/g, '')
+    : `Token ${normalizedKey}`;
+
+  console.log('[Reprocess/Mindee] 🔑 API key fingerprint:', `${normalizedKey.slice(0,4)}…${normalizedKey.slice(-4)} (len:${normalizedKey.length})`);
+
+  if (!normalizedKey || normalizedKey.length < 10) {
+    throw new Error('MINDEE_API_KEY appears to be invalid or too short');
   }
 
   const formData = new FormData();
@@ -261,7 +277,7 @@ async function processWithMindee(fileData: Blob): Promise<OCRResult> {
     {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${apiKey}`
+        'Authorization': authHeader
       },
       body: formData
     }

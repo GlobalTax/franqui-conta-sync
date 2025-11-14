@@ -35,13 +35,15 @@ interface SupplierFormDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: (supplier: Supplier) => void;
   editingSupplier?: Supplier | null;
+  initialTaxId?: string;
 }
 
 export function SupplierFormDialog({ 
   open, 
   onOpenChange, 
   onSuccess,
-  editingSupplier 
+  editingSupplier,
+  initialTaxId 
 }: SupplierFormDialogProps) {
   const [formData, setFormData] = useState<SupplierFormData>({
     tax_id: '',
@@ -158,7 +160,7 @@ export function SupplierFormDialog({
         validateTaxId(editingSupplier.tax_id, editingSupplier.country);
       } else {
         setFormData({
-          tax_id: '',
+          tax_id: initialTaxId || '',
           name: '',
           commercial_name: '',
           email: '',
@@ -174,6 +176,11 @@ export function SupplierFormDialog({
         // Reset validación
         setTaxIdError('');
         setTaxIdValid(false);
+        
+        // Si hay initialTaxId, validarlo automáticamente
+        if (initialTaxId) {
+          validateTaxId(initialTaxId, 'España');
+        }
       }
     } else {
       // Reset validación al cerrar
@@ -181,7 +188,7 @@ export function SupplierFormDialog({
       setTaxIdValid(false);
       setIsValidating(false);
     }
-  }, [open, editingSupplier]);
+  }, [open, editingSupplier, initialTaxId]);
 
   // Re-validar tax_id cuando cambia el país
   useEffect(() => {

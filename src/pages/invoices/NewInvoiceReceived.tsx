@@ -69,7 +69,18 @@ export default function NewInvoiceReceived() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!supplierId || !invoiceNumber || lines.length === 0) {
+    // Validación de proveedor obligatorio
+    if (!supplierId) {
+      toast.error('Debes seleccionar un proveedor válido', {
+        description: 'Usa el buscador o valida el NIF/CIF para asociar un proveedor'
+      });
+      return;
+    }
+
+    if (!invoiceNumber || lines.length === 0) {
+      toast.error('Completa todos los campos obligatorios', {
+        description: 'Número de factura y al menos una línea son requeridos'
+      });
       return;
     }
 

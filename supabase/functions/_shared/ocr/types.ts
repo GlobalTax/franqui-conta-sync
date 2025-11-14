@@ -107,4 +107,5 @@ export interface OrchestratorResult {
     ms_openai: number;
     ms_mindee: number;
   };
+  pdf_converted?: boolean;
 }

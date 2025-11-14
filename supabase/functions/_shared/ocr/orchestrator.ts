@@ -247,11 +247,12 @@ export async function orchestrateOCR(
         final_invoice_json: result.data,
         confidence_final: result.confidence_score,
         status,
-        merge_notes: mergeNotes,
-        orchestrator_logs: orchestratorLogs,
-        raw_responses: rawResponses,
-        timing: { ms_openai, ms_mindee }
-      };
+      merge_notes: mergeNotes,
+      orchestrator_logs: orchestratorLogs,
+      raw_responses: rawResponses,
+      timing: { ms_openai, ms_mindee },
+      pdf_converted: pdfConverted
+    };
     }
   }
 
@@ -281,6 +282,7 @@ export async function orchestrateOCR(
       ocr_engine: 'openai',
       final_invoice_json: openaiResult.data,
       confidence_final: openaiResult.confidence_score,
+      status,
       merge_notes: mergeNotes,
       raw_responses: rawResponses,
       orchestrator_logs: orchestratorLogs,
@@ -306,7 +308,8 @@ export async function orchestrateOCR(
       merge_notes: mergeNotes,
       orchestrator_logs: orchestratorLogs,
       raw_responses: rawResponses,
-      timing: { ms_openai, ms_mindee }
+      timing: { ms_openai, ms_mindee },
+      pdf_converted: pdfConverted
     };
   }
 
@@ -324,7 +327,8 @@ export async function orchestrateOCR(
     merge_notes: mergeNotes,
     orchestrator_logs: orchestratorLogs,
     raw_responses: rawResponses,
-    timing: { ms_openai, ms_mindee }
+    timing: { ms_openai, ms_mindee },
+    pdf_converted: pdfConverted
   };
 }
 

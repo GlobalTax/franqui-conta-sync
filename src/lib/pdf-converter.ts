@@ -4,9 +4,10 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Configure worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure worker using local file
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const DEFAULT_SCALE = 2.0; // 2x for good quality OCR
 const MAX_DIMENSION = 1920; // Prevent huge images

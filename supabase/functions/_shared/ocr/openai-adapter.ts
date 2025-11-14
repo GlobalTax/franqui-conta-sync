@@ -15,18 +15,48 @@ export function adaptOpenAIToStandard(
   
   console.log('[OpenAI Adapter] Processing response...');
   
+  // ✅ GUARDAR: Validar estructura completa de rawResponse
+  if (!rawResponse) {
+    console.error('[OpenAI Adapter] rawResponse is null/undefined');
+    throw new Error('OpenAI returned null response');
+  }
+  
+  if (!rawResponse.choices || rawResponse.choices.length === 0) {
+    console.error('[OpenAI Adapter] Missing choices array:', JSON.stringify(rawResponse).slice(0, 500));
+    throw new Error('OpenAI response missing choices array');
+  }
+  
+  const choice = rawResponse.choices[0];
+  if (!choice || !choice.message) {
+    console.error('[OpenAI Adapter] Missing message in choice:', JSON.stringify(choice).slice(0, 500));
+    throw new Error('OpenAI choice missing message object');
+  }
+  
+  const content = choice.message.content;
+  if (!content) {
+    console.error('[OpenAI Adapter] Empty content in message:', JSON.stringify(choice.message).slice(0, 500));
+    throw new Error('OpenAI message has empty content');
+  }
+  
   // Parse JSON con try/catch robusto
   let extracted: any;
   try {
-    const content = rawResponse.choices[0].message.content;
     extracted = typeof content === 'string' ? JSON.parse(content) : content;
   } catch (error) {
     console.error('[OpenAI Adapter] JSON parsing failed:', error);
-    throw new Error('OpenAI response is not valid JSON');
+    console.error('[OpenAI Adapter] Content that failed to parse:', content.slice(0, 1000));
+    throw new Error(`OpenAI response is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
+  // ✅ GUARDAR: Validar que extracted no es null
+  if (!extracted) {
+    console.error('[OpenAI Adapter] Parsed JSON is null/undefined');
+    throw new Error('OpenAI returned null after JSON parse');
   }
 
   // Destructuring de campos principales (soporte ambos formatos: issuer/receiver y supplier/customer)
-  const data = extracted.data || extracted;
+  const data = extracted?.data || extracted || {};
+  console.log('[OpenAI Adapter] Extracted data keys:', Object.keys(data).slice(0, 20));
   const issuer = data.issuer || data.supplier || {};
   const receiver = data.recipient || data.receiver || data.customer || {};
   const invoice = data.invoice || {};

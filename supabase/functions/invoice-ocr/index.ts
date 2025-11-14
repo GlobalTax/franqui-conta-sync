@@ -12,7 +12,7 @@ import { validateAndNormalizePath, parseInvoicePath } from "../_shared/storage-u
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import { apMapperEngine, matchSupplier } from "../_shared/ap/mapping-engine.ts";
 import { validateInvoiceEntry } from "../_shared/gl/validator.ts";
-import { validateAccountingRules, formatValidationSummary } from "../_shared/validators/accounting-validator.ts";
+import { validateAccountingRules, validateAccountingRulesCompact, formatValidationSummary } from "../_shared/validators/accounting-validator.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
@@ -350,6 +350,13 @@ serve(async (req) => {
       console.warn('[ACCOUNTING] Validation warnings:', accountingValidation.warnings);
     }
     
+    // ⭐ FASE 2b: Validación contable compacta (formato estructurado para API)
+    const compactValidation = validateAccountingRulesCompact(orchestratorResult.final_invoice_json);
+    console.log(`[ACCOUNTING] Compact: ok=${compactValidation.ok}, diffs=[eq1:${compactValidation.diffs.eq1}¢, eq2:${compactValidation.diffs.eq2}¢, eq3:${compactValidation.diffs.eq3}¢]`);
+    if (!compactValidation.ok) {
+      console.log(`[ACCOUNTING] Recalculated totals: Base=${compactValidation.recalculated_totals.base_total_plus_fees}, Tax=${compactValidation.recalculated_totals.tax_total}, Total=${compactValidation.recalculated_totals.grand_total}`);
+    }
+    
     // 4. AP Mapping Engine
     const apMapping = await apMapperEngine(
       normalizedResponse.normalized,
@@ -643,7 +650,11 @@ serve(async (req) => {
         normalized: normalizedResponse.normalized,
         validation: normalizedResponse.validation,
         autofix_applied: normalizedResponse.autofix_applied,
-        accounting_validation: accountingValidation, // ⭐ FASE 2: Validación contable
+        accounting_validation: compactValidation, // ⭐ FASE 2b: Validación compacta (ok, diffs, recalculated_totals)
+        accounting_details: accountingValidation.valid ? null : {
+          errors: accountingValidation.errors,
+          warnings: accountingValidation.warnings
+        }, // ⭐ FASE 2: Detalles de validación avanzada (solo si hay errores)
         ap_mapping: apMapping,
         entry_validation: entryValidation,
         confidence: orchestratorResult.confidence_final / 100,

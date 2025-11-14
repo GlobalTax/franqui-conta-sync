@@ -47,6 +47,7 @@ import { useInvoiceStripper } from '@/hooks/useInvoiceStripper';
 import { stripAndNormalize, type NormalizationChange } from '@/lib/fiscal-normalizer';
 import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
+import { getSupplierByTaxId } from '@/infrastructure/persistence/supabase/queries/SupplierQueries';
 import { StripperBadge } from '@/components/invoices/StripperBadge';
 import { StripperChangesDialog } from '@/components/invoices/StripperChangesDialog';
 import { InvoiceEntryModeTabs } from '@/components/invoices/form/InvoiceEntryModeTabs';
@@ -421,9 +422,43 @@ export default function InvoiceDetailEditor() {
       setOcrProcessed(true);
 
       // PRE-FILL FORMULARIO
+      // 1. Supplier ID si viene matcheado del backend
       if (normalized.supplier?.matchedId) {
         form.setValue('supplier_id', normalized.supplier.matchedId);
       }
+      
+      // 2. Extraer datos del emisor para pre-llenar tax_id y name
+      const vatId = normalized.issuer?.vat_id || 
+                    normalized.issuer?.tax_id || 
+                    normalized.issuer?.nif || 
+                    null;
+      const legalName = normalized.issuer?.name || 
+                        normalized.issuer?.legal_name || 
+                        normalized.issuer?.company_name || 
+                        null;
+
+      if (vatId) form.setValue('supplier_tax_id', vatId);
+      if (legalName) form.setValue('supplier_name', legalName);
+
+      // 3. Auto-match por NIF si no vino matcheado del backend
+      if (!normalized.supplier?.matchedId && vatId) {
+        try {
+          console.log('[Supplier Match] Buscando proveedor por NIF:', vatId);
+          const found = await getSupplierByTaxId(vatId);
+          if (found?.id) {
+            form.setValue('supplier_id', found.id);
+            console.log('[Supplier Match] ✅ Proveedor encontrado:', found.name);
+            toast.success(`Proveedor "${found.name}" localizado por NIF y seleccionado`);
+          } else {
+            console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
+            toast.info('Proveedor no encontrado por NIF. Puedes crearlo con "Crear proveedor".');
+          }
+        } catch (e: any) {
+          console.error('[Supplier Match] Error al buscar proveedor:', e);
+        }
+      }
+      
+      // 4. Resto de campos de factura
       form.setValue('invoice_number', normalized.invoice_number || '');
       form.setValue('invoice_date', normalized.issue_date || '');
       form.setValue('due_date', normalized.due_date || '');

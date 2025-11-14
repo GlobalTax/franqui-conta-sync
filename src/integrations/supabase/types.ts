@@ -2998,11 +2998,14 @@ export type Database = {
           ocr_confidence_notes: string[] | null
           ocr_cost_estimate_eur: number | null
           ocr_engine: string | null
+          ocr_engine_used: string | null
           ocr_extracted_data: Json | null
           ocr_ms_openai: number | null
           ocr_pages: number | null
           ocr_payload: Json | null
           ocr_processing_time_ms: number | null
+          ocr_template_id: string | null
+          ocr_template_name: string | null
           ocr_tokens_in: number | null
           ocr_tokens_out: number | null
           original_filename: string | null
@@ -3017,6 +3020,7 @@ export type Database = {
           supplier_id: string | null
           supplier_name: string | null
           supplier_tax_id: string | null
+          supplier_vat_id: string | null
           tax_total: number | null
           total: number
           total_amount: number | null
@@ -3046,11 +3050,14 @@ export type Database = {
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
           ocr_engine?: string | null
+          ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
           ocr_processing_time_ms?: number | null
+          ocr_template_id?: string | null
+          ocr_template_name?: string | null
           ocr_tokens_in?: number | null
           ocr_tokens_out?: number | null
           original_filename?: string | null
@@ -3065,6 +3072,7 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           supplier_tax_id?: string | null
+          supplier_vat_id?: string | null
           tax_total?: number | null
           total: number
           total_amount?: number | null
@@ -3094,11 +3102,14 @@ export type Database = {
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
           ocr_engine?: string | null
+          ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
           ocr_processing_time_ms?: number | null
+          ocr_template_id?: string | null
+          ocr_template_name?: string | null
           ocr_tokens_in?: number | null
           ocr_tokens_out?: number | null
           original_filename?: string | null
@@ -3113,6 +3124,7 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           supplier_tax_id?: string | null
+          supplier_vat_id?: string | null
           tax_total?: number | null
           total?: number
           total_amount?: number | null
@@ -3129,6 +3141,13 @@ export type Database = {
             columns: ["entry_id"]
             isOneToOne: false
             referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_received_ocr_template_id_fkey"
+            columns: ["ocr_template_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_ocr_templates"
             referencedColumns: ["id"]
           },
           {

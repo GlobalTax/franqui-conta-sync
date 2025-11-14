@@ -234,6 +234,8 @@ export async function orchestrateOCR(
                 final_invoice_json: invoiceData,
                 confidence_final: Math.round(templateResult.confidence * 100),
                 status: 'processed_ok',
+                template_id: template.id,
+                template_name: template.template_name,
                 merge_notes: mergeNotes,
                 orchestrator_logs: orchestratorLogs,
                 raw_responses: { template: templateResult },

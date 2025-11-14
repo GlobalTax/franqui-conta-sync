@@ -84,6 +84,8 @@ export interface OrchestratorResult {
   final_invoice_json: EnhancedInvoiceData;
   confidence_final: number;
   status: InvoiceStatus;
+  template_id?: string;
+  template_name?: string;
   merge_notes: string[];
   orchestrator_logs: OrchestratorLog[];
   raw_responses: {

@@ -100,7 +100,7 @@ export function OCRTable({ rows, isLoading, onSelectionChange }: OCRTableProps) 
               <TableHead className="w-[200px]">Proveedor</TableHead>
               <TableHead className="text-right w-[120px]">Total</TableHead>
               <TableHead className="w-[100px]">Centro</TableHead>
-              <TableHead className="text-center w-[80px]">OCR %</TableHead>
+              <TableHead className="text-center w-[100px]">OCR</TableHead>
               <TableHead className="w-[140px]">Estado</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -160,29 +160,36 @@ export function OCRTable({ rows, isLoading, onSelectionChange }: OCRTableProps) 
                     className="text-center"
                     onClick={() => handleOpenSheet(invoice)}
                   >
-                    {invoice.ocr_confidence ? (
-                      <span
-                        className={`font-medium tabular-nums ${getOcrConfidenceColor(
-                          invoice.ocr_confidence
-                        )}`}
-                      >
-                        {Math.round(invoice.ocr_confidence * 100)}%
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    <div className="flex flex-col items-center gap-1">
+                      {invoice.ocr_confidence ? (
+                        <>
+                          <span
+                            className={`font-medium tabular-nums text-xs ${getOcrConfidenceColor(
+                              invoice.ocr_confidence
+                            )}`}
+                          >
+                            {Math.round(invoice.ocr_confidence * 100)}%
+                          </span>
+                          {(invoice as any).ocr_template_name && (
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                              📄 {(invoice as any).ocr_template_name}
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell onClick={() => handleOpenSheet(invoice)}>
-                    <ApprovalStatusBadge status={invoice.approval_status} />
+                    <ApprovalStatusBadge status={invoice.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSheet(invoice);
-                      }}
+                      size="icon"
+                      onClick={() => handleOpenSheet(invoice)}
+                      className="h-8 w-8"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -191,9 +198,10 @@ export function OCRTable({ rows, isLoading, onSelectionChange }: OCRTableProps) 
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
-                  <div className="text-muted-foreground">
-                    No se encontraron facturas
+                <TableCell colSpan={9} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Building2 className="h-8 w-8" />
+                    <p>No hay facturas para mostrar</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -202,38 +210,14 @@ export function OCRTable({ rows, isLoading, onSelectionChange }: OCRTableProps) 
         </Table>
       </Card>
 
-      {/* Summary */}
-      {rows.length > 0 && (
-        <Card className="p-4 mt-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Mostrando {rows.length} facturas
-              {selectedIds.length > 0 && ` (${selectedIds.length} seleccionadas)`}
-            </span>
-            <div className="flex gap-4 text-muted-foreground">
-              <span>
-                Total:{" "}
-                <span className="font-medium text-foreground tabular-nums">
-                  {rows
-                    .reduce((sum, inv) => sum + inv.total, 0)
-                    .toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
-                </span>
-              </span>
-            </div>
-          </div>
-        </Card>
+      {selectedInvoice && (
+        <InvoiceReviewSheet
+          invoice={selectedInvoice}
+          open={sheetOpen}
+          onOpenChange={handleCloseSheet}
+          onClose={handleCloseSheet}
+        />
       )}
-
-      {/* Review Sheet */}
-      <InvoiceReviewSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        invoice={selectedInvoice}
-        onClose={handleCloseSheet}
-      />
     </>
   );
 }

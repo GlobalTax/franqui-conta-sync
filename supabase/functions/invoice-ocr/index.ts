@@ -213,7 +213,7 @@ serve(async (req) => {
     const normalizeStart = Date.now();
     const normalizedResponse: NormalizedResponse = await normalizeBackend(
       openaiResult.data,
-      supabase,
+      '', // rawText not available from base64
       COMPANY_VAT_IDS
     );
     const normalizeTime = Date.now() - normalizeStart;
@@ -245,11 +245,11 @@ serve(async (req) => {
       actualCentroCode
     );
 
-    const apMapping: APMappingResult = await apMapperEngine({
-      normalizedData: normalizedResponse.normalized,
+    const apMapping: APMappingResult = await apMapperEngine(
+      normalizedResponse.normalized,
       supabase,
       supplierData
-    });
+    );
     
     const apMappingTime = Date.now() - apMappingStart;
     console.log(`[AP Mapping] ✅ Complete in ${apMappingTime}ms`);
@@ -260,12 +260,11 @@ serve(async (req) => {
     // ============================================================================
     
     const validationStart = Date.now();
-    const entryValidation = await validateInvoiceEntry(
-      normalizedResponse.normalized,
-      apMapping,
-      actualCentroCode,
-      supabase
-    );
+    const entryValidation = validateInvoiceEntry({
+      normalized_invoice: normalizedResponse.normalized,
+      ap_mapping: apMapping,
+      centro_code: actualCentroCode
+    });
     const validationTime = Date.now() - validationStart;
 
     console.log(`[Entry Validation] ✅ Complete in ${validationTime}ms`);
@@ -284,9 +283,9 @@ serve(async (req) => {
     const pages = quickMeta.pageCount;
     const costBreakdown = calculateOCRCost({
       engine: 'openai',
-      tokens,
       pages,
-      mindeeTime: 0
+      tokens_in: tokens.tokens_in,
+      tokens_out: tokens.tokens_out
     });
 
     console.log(`[Metrics] Cost: €${costBreakdown.cost_total_eur.toFixed(4)}`);
@@ -402,7 +401,7 @@ serve(async (req) => {
     const structuralHash = await createStructuralHash(
       normalizedResponse.normalized.issuer.vat_id,
       normalizedResponse.normalized.invoice_number,
-      normalizedResponse.normalized.totals.total
+      String(normalizedResponse.normalized.totals.total)
     );
     
     try {

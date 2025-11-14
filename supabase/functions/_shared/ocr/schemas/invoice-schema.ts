@@ -61,7 +61,7 @@ export const GENERIC_INVOICE_SCHEMA = {
           description: "Moneda siempre EUR"
         }
       },
-      required: ["number", "issue_date", "currency"],
+      required: ["number", "issue_date", "delivery_date", "due_date", "currency"],
       additionalProperties: false
     },
     
@@ -74,6 +74,7 @@ export const GENERIC_INVOICE_SCHEMA = {
           description: "Punto verde / tasa de reciclaje en formato decimal (ej: 1.23)"
         }
       },
+      required: ["green_point"],
       additionalProperties: false
     },
     
@@ -137,7 +138,7 @@ export const GENERIC_INVOICE_SCHEMA = {
             description: "Total del grupo sin IVA (base + punto verde)"
           }
         },
-        required: ["group", "base", "gross_ex_vat"],
+        required: ["group", "base", "green_point", "gross_ex_vat"],
         additionalProperties: false
       },
       description: "Totales agrupados por familia de productos (opcional)"
@@ -189,7 +190,7 @@ export const GENERIC_INVOICE_SCHEMA = {
           group: { type: "string", description: "Grupo/familia de producto" },
           vat_code: { type: "string", description: "Código IVA aplicado" }
         },
-        required: ["description", "qty", "unit_price", "amount"],
+        required: ["description", "qty", "uom", "unit_price", "amount", "sku", "group", "vat_code"],
         additionalProperties: false
       },
       description: "Líneas de detalle de la factura"

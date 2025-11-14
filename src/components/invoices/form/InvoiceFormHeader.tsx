@@ -29,8 +29,8 @@ interface InvoiceFormHeaderProps {
   onRetryWithDifferentEngine?: () => void;
   orchestratorLogs?: any[];
   processingTimeMs?: number;
-  selectedOcrEngine?: 'openai' | 'mindee';
-  onOcrEngineChange?: (engine: 'openai' | 'mindee') => void;
+  selectedOcrEngine?: 'openai';
+  onOcrEngineChange?: (engine: 'openai') => void;
   documentAnalysis?: DocumentAnalysis | null;
 }
 
@@ -46,7 +46,7 @@ export function InvoiceFormHeader({
   onRetryWithDifferentEngine,
   orchestratorLogs,
   processingTimeMs,
-  selectedOcrEngine = 'mindee',
+  selectedOcrEngine = 'openai',
   onOcrEngineChange,
   documentAnalysis
 }: InvoiceFormHeaderProps) {
@@ -132,9 +132,7 @@ export function InvoiceFormHeader({
       onChange={onOcrEngineChange}
       estimatedPages={documentAnalysis?.pages || 1}
       analysis={documentAnalysis || undefined}
-      onUseRecommended={documentAnalysis ? () => {
-        onOcrEngineChange(documentAnalysis.recommended_engine);
-      } : undefined}
+      onUseRecommended={undefined}
     />
   )}
 
@@ -151,7 +149,7 @@ export function InvoiceFormHeader({
         disabled={isProcessing}
       >
         {isProcessing && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-        Procesar con {selectedOcrEngine === 'openai' ? 'OpenAI' : 'Mindee'}
+        Procesar con OpenAI
       </Button>
     ) : !hasDocument ? (
       <Button
@@ -168,7 +166,7 @@ export function InvoiceFormHeader({
   {isProcessing && (
     <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
       <Loader2 className="h-3 w-3 animate-spin" />
-      Procesando con {selectedOcrEngine === 'openai' ? 'OpenAI GPT-4o' : 'Mindee'}...
+      Procesando con OpenAI GPT-4o...
     </div>
   )}
 
@@ -188,7 +186,7 @@ export function InvoiceFormHeader({
       <Badge variant="secondary" className="gap-2">
         <Sparkles className="h-3 w-3" />
         {ocrEngine === 'openai' && 'OpenAI GPT-4o'}
-        {ocrEngine === 'mindee' && 'Mindee'}
+        {ocrEngine === 'openai' && 'OpenAI GPT-4o'}
         {ocrEngine === 'merged' && 'Multi-Motor'}
         {ocrEngine === 'manual' && 'Manual'}
         {ocrEngine === 'google_vision' && 'Google Vision'}

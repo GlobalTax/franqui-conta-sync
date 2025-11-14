@@ -12,6 +12,8 @@ import { MergeDocumentsDialog } from '@/components/invoices/inbox/dialogs/MergeD
 import { BulkPostDialog } from '@/components/invoices/inbox/dialogs/BulkPostDialog';
 import { ReprocessOCRSimpleDialog } from '@/components/invoices/inbox/ReprocessOCRSimpleDialog';
 import { AssignCentreDialog } from '@/components/invoices/inbox/dialogs/AssignCentreDialog';
+import { InboxBulkDropzone } from '@/components/invoices/InboxBulkDropzone';
+import { CircuitBreakerStatus } from '@/components/ocr/CircuitBreakerStatus';
 import { usePDFOperations } from '@/hooks/usePDFOperations';
 import { useBulkPost } from '@/hooks/useBulkPost';
 import { InboxAssignCentreDialog } from '@/components/invoices/inbox/InboxAssignCentreDialog';
@@ -24,8 +26,9 @@ import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 
 // Transform invoice data to match table interface
 const transformInvoice = (inv: InvoiceReceived) => ({
@@ -98,6 +101,7 @@ export default function InvoicesInbox() {
   const [selectedInvoiceForSplit, setSelectedInvoiceForSplit] = useState<any | null>(null);
   const [assignCentreDialogOpen, setAssignCentreDialogOpen] = useState(false);
   const [invoicesToAssignCentre, setInvoicesToAssignCentre] = useState<string[]>([]);
+  const [showUploadZone, setShowUploadZone] = useState(false);
   
   const { splitPDF, mergePDF, isLoading: isPDFLoading } = usePDFOperations();
   const { bulkPost, isPosting, progress } = useBulkPost();
@@ -324,10 +328,22 @@ export default function InvoicesInbox() {
     <div className="flex h-screen flex-col">
       {/* Header */}
       <div className="border-b bg-background px-6 py-4">
-        <h1 className="text-2xl font-heading font-bold">Digitalización de Documentos</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gestión de facturas y documentos OCR
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-heading font-bold">Digitalización de Documentos</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gestión de facturas y documentos OCR
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUploadZone(!showUploadZone)}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {showUploadZone ? 'Ocultar subida' : 'Subida rápida'}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs superiores */}
@@ -391,6 +407,25 @@ export default function InvoicesInbox() {
         compactView={compactView}
         onCompactViewChange={setCompactView}
       />
+
+      {/* Circuit Breaker & Upload Zone */}
+      <div className="px-6 pt-4 space-y-4">
+        <CircuitBreakerStatus />
+        
+        {showUploadZone && (
+          <Card className="p-4">
+            <InboxBulkDropzone
+              centroCode={filters.centro_code || ''}
+              onUploadComplete={() => {
+                queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+                setShowUploadZone(false);
+                toast.success('Facturas procesadas correctamente');
+              }}
+              supplierHint="Restaurantes McDonald's, S.A. (A28586097)"
+            />
+          </Card>
+        )}
+      </div>
 
       {/* Contenido principal */}
       <div className="flex-1 overflow-auto">

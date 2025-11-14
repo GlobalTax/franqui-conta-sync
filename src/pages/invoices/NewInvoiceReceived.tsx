@@ -6,24 +6,143 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SupplierSelector } from '@/components/invoices/SupplierSelector';
 import { InvoiceLineItemsTable, type InvoiceLine } from '@/components/invoices/InvoiceLineItemsTable';
+import { APMappingSuggestions } from '@/components/invoices/APMappingSuggestions';
 import { useCreateInvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useAPMappingSuggestions } from '@/hooks/useAPMappingSuggestions';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { normalizeLite } from '@/lib/fiscal';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import type { APMappingResult } from '@/hooks/useInvoiceOCR';
+import type { Supplier } from '@/hooks/useSuppliers';
 
 export default function NewInvoiceReceived() {
   const navigate = useNavigate();
   const { currentMembership } = useOrganization();
   const createInvoice = useCreateInvoiceReceived();
+  const getMappingSuggestions = useAPMappingSuggestions();
 
   const [supplierId, setSupplierId] = useState('');
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<InvoiceLine[]>([]);
+  const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
+
+  // Handler para cambio de proveedor - obtiene sugerencias AP
+  const handleSupplierChange = async (newSupplierId: string) => {
+    setSupplierId(newSupplierId);
+    
+    if (!newSupplierId) {
+      setApMapping(null);
+      setSupplier(null);
+      return;
+    }
+    
+    // Obtener datos completos del proveedor
+    const { data: supplierData } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', newSupplierId)
+      .single();
+    
+    if (!supplierData?.tax_id) {
+      setSupplier(null);
+      return;
+    }
+    
+    setSupplier(supplierData as Supplier);
+    
+    // Obtener sugerencias AP
+    if (currentMembership?.restaurant?.codigo) {
+      try {
+        const mapping = await getMappingSuggestions.mutateAsync({
+          supplierVatId: supplierData.tax_id,
+          centroCode: currentMembership.restaurant.codigo,
+          lines: lines.map(l => ({
+            description: l.description,
+            quantity: l.quantity,
+            unit_price: l.unit_price
+          }))
+        });
+        
+        setApMapping(mapping);
+      } catch (error) {
+        console.error('[AP Mapping] Error:', error);
+        toast.error('Error al obtener sugerencias de cuentas');
+      }
+    }
+  };
+
+  // Handler para cambio de líneas - recalcula sugerencias
+  const handleLinesChange = async (newLines: InvoiceLine[]) => {
+    setLines(newLines);
+    
+    // Re-calcular sugerencias si hay proveedor seleccionado
+    if (supplier?.tax_id && currentMembership?.restaurant?.codigo) {
+      try {
+        const mapping = await getMappingSuggestions.mutateAsync({
+          supplierVatId: supplier.tax_id,
+          centroCode: currentMembership.restaurant.codigo,
+          lines: newLines.map(l => ({
+            description: l.description,
+            quantity: l.quantity,
+            unit_price: l.unit_price
+          }))
+        });
+        
+        setApMapping(mapping);
+      } catch (error) {
+        console.error('[AP Mapping] Error on lines change:', error);
+      }
+    }
+  };
+
+  // Aceptar todas las sugerencias (factura + líneas)
+  const handleAcceptAllSuggestions = () => {
+    if (!apMapping) return;
+    
+    const updatedLines = lines.map((line, index) => {
+      // Primera línea: sugerencia de factura
+      if (index === 0) {
+        return {
+          ...line,
+          account_code: apMapping.invoice_level.account_suggestion
+        };
+      }
+      
+      // Líneas siguientes: sugerencias por línea si existen
+      if (apMapping.line_level && apMapping.line_level[index]) {
+        return {
+          ...line,
+          account_code: apMapping.line_level[index].account_suggestion
+        };
+      }
+      
+      return line;
+    });
+    
+    setLines(updatedLines);
+    toast.success('Sugerencias aplicadas a todas las líneas');
+  };
+
+  // Aceptar solo sugerencia de factura
+  const handleAcceptInvoiceSuggestion = () => {
+    if (!apMapping || lines.length === 0) return;
+    
+    const updatedLines = [...lines];
+    updatedLines[0] = {
+      ...updatedLines[0],
+      account_code: apMapping.invoice_level.account_suggestion
+    };
+    
+    setLines(updatedLines);
+    toast.success('Sugerencia de factura aplicada');
+  };
 
   const handleQuickValidate = () => {
     const subtotalCalc = lines.reduce((sum, line) => {
@@ -141,7 +260,7 @@ export default function NewInvoiceReceived() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Proveedor *</Label>
-                <SupplierSelector value={supplierId} onValueChange={setSupplierId} />
+                <SupplierSelector value={supplierId} onValueChange={handleSupplierChange} />
               </div>
               <div className="space-y-2">
                 <Label>Número de Factura *</Label>
@@ -184,12 +303,49 @@ export default function NewInvoiceReceived() {
             </CardContent>
           </Card>
 
+        {/* Sugerencias de cuentas AP */}
+        {getMappingSuggestions.isPending && (
+          <Card className="p-6">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Generando sugerencias de cuentas contables...</span>
+            </div>
+          </Card>
+        )}
+
+        {apMapping && (
+          <APMappingSuggestions
+            invoiceSuggestion={{
+              account_suggestion: apMapping.invoice_level.account_suggestion,
+              confidence_score: apMapping.invoice_level.confidence_score,
+              rationale: apMapping.invoice_level.rationale,
+              tax_account: apMapping.invoice_level.tax_account,
+              ap_account: apMapping.invoice_level.ap_account,
+              centre_id: apMapping.invoice_level.centre_id,
+              matched_rule_id: apMapping.invoice_level.matched_rule_id,
+              matched_rule_name: apMapping.invoice_level.matched_rule_name
+            }}
+            lineSuggestions={(apMapping.line_level || []).map((line) => ({
+              account_suggestion: line.account_suggestion,
+              confidence_score: line.confidence_score,
+              rationale: line.rationale,
+              tax_account: line.tax_account,
+              ap_account: line.ap_account,
+              centre_id: line.centre_id,
+              matched_rule_id: line.matched_rule_id,
+              matched_rule_name: line.matched_rule_name
+            }))}
+            onAcceptAll={handleAcceptAllSuggestions}
+            onAcceptInvoice={handleAcceptInvoiceSuggestion}
+          />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Líneas de Factura</CardTitle>
           </CardHeader>
           <CardContent>
-            <InvoiceLineItemsTable lines={lines} onChange={setLines} />
+            <InvoiceLineItemsTable lines={lines} onChange={handleLinesChange} />
           </CardContent>
         </Card>
 

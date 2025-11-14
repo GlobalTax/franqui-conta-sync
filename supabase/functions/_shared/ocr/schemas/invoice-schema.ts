@@ -158,7 +158,13 @@ export const GENERIC_INVOICE_SCHEMA = {
     grand_total: { 
       type: "string", 
       pattern: "^-?\\d+\\.\\d{2}$",
-      description: "Total final de la factura"
+      description: "Total final de la factura (base_total_plus_fees + tax_total)"
+    },
+    
+    validation_errors: {
+      type: "array",
+      items: { type: "string" },
+      description: "Errores de validación contable detectados por auto-validación (vacío si todo correcto)"
     },
     
     lines: {

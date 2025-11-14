@@ -46,10 +46,12 @@ export interface EnhancedInvoiceData {
     what: string;
     why: string;
   } | null;
+  validation_errors?: string[]; // Auto-validation errors from OpenAI prompt
 }
 
 export type InvoiceStatus = "processed_ok" | "needs_review" | "posted";
 
+// Legacy interfaces (kept for backward compatibility with orchestrator/mindee)
 export interface OrchestratorLog {
   timestamp: number;
   stage: string;
@@ -87,7 +89,6 @@ export interface MindeeExtractionResult {
     duration_ms: number;
     api_latency: number;
   };
-  // ✨ Advanced Mindee V4 features
   raw_text?: string | null;
   has_polygons?: boolean;
 }

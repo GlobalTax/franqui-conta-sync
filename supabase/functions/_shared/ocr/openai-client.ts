@@ -85,24 +85,53 @@ export async function extractWithOpenAI(
   // Prepare content array based on mime type
   let contentArray: any[];
   
-  // ✅ Use data URI for both PDFs and images
-  // OpenAI Vision API accepts base64-encoded PDFs directly via data URI (up to 20MB)
-  // Note: Files API file_id is NOT supported by Vision API
-  console.log(`[OpenAI] Using data URI for ${mimeType}`);
-  
-  contentArray = [
-    { 
-      type: 'text', 
-      text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
-    },
-    { 
-      type: 'image_url', 
-      image_url: { 
-        url: `data:${mimeType};base64,${base64Content}`,
-        detail: 'high'
-      } 
+  if (mimeType === 'application/pdf') {
+    // ✅ Convert PDF to PNG first (OpenAI Vision only accepts images)
+    console.log('[OpenAI] Converting PDF to image...');
+    
+    try {
+      const { convertPdfToImage } = await import('./pdf-to-image.ts');
+      const imageDataUri = await convertPdfToImage(base64Content);
+      console.log('[OpenAI] PDF converted to PNG successfully');
+      
+      contentArray = [
+        { 
+          type: 'text', 
+          text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
+        },
+        { 
+          type: 'image_url', 
+          image_url: { 
+            url: imageDataUri, // data:image/png;base64,...
+            detail: 'high'
+          } 
+        }
+      ];
+    } catch (conversionError) {
+      console.error('[OpenAI] PDF conversion failed:', conversionError);
+      throw new OpenAIError(
+        `Cannot process PDF: ${conversionError instanceof Error ? conversionError.message : 'Conversion failed'}`,
+        'server_error'
+      );
     }
-  ];
+  } else {
+    // ✅ Standard image_url format for images (PNG, JPG, WebP, GIF)
+    console.log(`[OpenAI] Using data URI for ${mimeType}`);
+    
+    contentArray = [
+      { 
+        type: 'text', 
+        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' 
+      },
+      { 
+        type: 'image_url', 
+        image_url: { 
+          url: `data:${mimeType};base64,${base64Content}`,
+          detail: 'high'
+        } 
+      }
+    ];
+  }
 
   try {
     // ✅ Always use chat/completions endpoint (supports both PDFs and images)

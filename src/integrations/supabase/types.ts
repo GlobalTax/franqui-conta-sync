@@ -2665,6 +2665,104 @@ export type Database = {
           },
         ]
       }
+      invoice_data: {
+        Row: {
+          base_total_plus_fees: number | null
+          created_at: string
+          customer_tax_id: string | null
+          due_date: string | null
+          file_id: string | null
+          grand_total: number | null
+          id: string
+          invoice_number: string | null
+          issue_date: string | null
+          raw_json: Json
+          supplier_tax_id: string | null
+          tax_total: number | null
+          updated_at: string
+          valid: boolean
+          validation_report: Json | null
+        }
+        Insert: {
+          base_total_plus_fees?: number | null
+          created_at?: string
+          customer_tax_id?: string | null
+          due_date?: string | null
+          file_id?: string | null
+          grand_total?: number | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string | null
+          raw_json: Json
+          supplier_tax_id?: string | null
+          tax_total?: number | null
+          updated_at?: string
+          valid?: boolean
+          validation_report?: Json | null
+        }
+        Update: {
+          base_total_plus_fees?: number | null
+          created_at?: string
+          customer_tax_id?: string | null
+          due_date?: string | null
+          file_id?: string | null
+          grand_total?: number | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string | null
+          raw_json?: Json
+          supplier_tax_id?: string | null
+          tax_total?: number | null
+          updated_at?: string
+          valid?: boolean
+          validation_report?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_data_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "invoice_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_files: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          mime_type: string
+          org_id: string | null
+          sha256: string
+          supplier_hint: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          mime_type: string
+          org_id?: string | null
+          sha256: string
+          supplier_hint?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          mime_type?: string
+          org_id?: string | null
+          sha256?: string
+          supplier_hint?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       invoice_lines: {
         Row: {
           account_code: string | null
@@ -2895,21 +2993,19 @@ export type Database = {
           id: string
           invoice_date: string
           invoice_number: string
-          job_id: string | null
           notes: string | null
           ocr_confidence: number | null
           ocr_confidence_notes: string[] | null
           ocr_cost_estimate_eur: number | null
           ocr_engine: string | null
           ocr_extracted_data: Json | null
-          ocr_merge_notes: string[] | null
-          ocr_ms_mindee: number | null
           ocr_ms_openai: number | null
           ocr_pages: number | null
           ocr_payload: Json | null
           ocr_processing_time_ms: number | null
           ocr_tokens_in: number | null
           ocr_tokens_out: number | null
+          original_filename: string | null
           payment_transaction_id: string | null
           rejected_at: string | null
           rejected_by: string | null
@@ -2919,8 +3015,11 @@ export type Database = {
           status: string | null
           subtotal: number | null
           supplier_id: string | null
+          supplier_name: string | null
+          supplier_tax_id: string | null
           tax_total: number | null
           total: number
+          total_amount: number | null
           updated_at: string | null
           uploaded_at: string | null
           uploaded_by: string | null
@@ -2942,21 +3041,19 @@ export type Database = {
           id?: string
           invoice_date: string
           invoice_number: string
-          job_id?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
           ocr_engine?: string | null
           ocr_extracted_data?: Json | null
-          ocr_merge_notes?: string[] | null
-          ocr_ms_mindee?: number | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
           ocr_processing_time_ms?: number | null
           ocr_tokens_in?: number | null
           ocr_tokens_out?: number | null
+          original_filename?: string | null
           payment_transaction_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
@@ -2966,8 +3063,11 @@ export type Database = {
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
           tax_total?: number | null
           total: number
+          total_amount?: number | null
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
@@ -2989,21 +3089,19 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number?: string
-          job_id?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
           ocr_engine?: string | null
           ocr_extracted_data?: Json | null
-          ocr_merge_notes?: string[] | null
-          ocr_ms_mindee?: number | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
           ocr_processing_time_ms?: number | null
           ocr_tokens_in?: number | null
           ocr_tokens_out?: number | null
+          original_filename?: string | null
           payment_transaction_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
@@ -3013,8 +3111,11 @@ export type Database = {
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
           tax_total?: number | null
           total?: number
+          total_amount?: number | null
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
@@ -3213,7 +3314,7 @@ export type Database = {
           last_failure_at?: string | null
           last_success_at?: string | null
           next_retry_at?: string | null
-          state: string
+          state?: string
           updated_at?: string | null
         }
         Update: {
@@ -3278,7 +3379,7 @@ export type Database = {
           extracted_data: Json | null
           id: string
           invoice_id: string | null
-          ms_mindee: number | null
+          is_reprocess: boolean | null
           ms_openai: number | null
           ocr_provider: string
           pages: number | null
@@ -3298,7 +3399,7 @@ export type Database = {
           extracted_data?: Json | null
           id?: string
           invoice_id?: string | null
-          ms_mindee?: number | null
+          is_reprocess?: boolean | null
           ms_openai?: number | null
           ocr_provider?: string
           pages?: number | null
@@ -3318,7 +3419,7 @@ export type Database = {
           extracted_data?: Json | null
           id?: string
           invoice_id?: string | null
-          ms_mindee?: number | null
+          is_reprocess?: boolean | null
           ms_openai?: number | null
           ocr_provider?: string
           pages?: number | null
@@ -3384,33 +3485,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      ocr_webhook_deliveries: {
-        Row: {
-          body: Json | null
-          headers: Json | null
-          job_id: string
-          received_at: string
-          signature_valid: boolean | null
-          status: string
-        }
-        Insert: {
-          body?: Json | null
-          headers?: Json | null
-          job_id: string
-          received_at?: string
-          signature_valid?: boolean | null
-          status?: string
-        }
-        Update: {
-          body?: Json | null
-          headers?: Json | null
-          job_id?: string
-          received_at?: string
-          signature_valid?: boolean | null
-          status?: string
-        }
-        Relationships: []
       }
       organization_settings: {
         Row: {

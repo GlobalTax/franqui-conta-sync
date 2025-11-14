@@ -96,7 +96,7 @@ export function BulkUploadDropzone({ onUploaded }: BulkUploadDropzoneProps) {
             body: {
               documentPath: filePath,
               centroCode: currentMembership.restaurant?.codigo || 'DEFAULT',
-              engine: 'mindee',
+              engine: 'openai',
             },
           }
         );

@@ -1,9 +1,9 @@
 // ============================================================================
 // PDF TO IMAGE CONVERTER - Deno-compatible version
-// Uses pdfjs-dist with canvas polyfill
+// Uses pdfjs-dist with Deno-targeted imports and OffscreenCanvas
 // ============================================================================
 
-// Type declaration for OffscreenCanvas (available in Deno runtime)
+// Type declarations for OffscreenCanvas (available in Deno 1.30+)
 declare class OffscreenCanvas {
   constructor(width: number, height: number);
   getContext(contextId: '2d'): OffscreenCanvasRenderingContext2D | null;
@@ -13,6 +13,16 @@ declare class OffscreenCanvas {
 declare class OffscreenCanvasRenderingContext2D {
   // Basic context methods needed by pdfjs
   [key: string]: any;
+}
+
+/**
+ * Check if OffscreenCanvas is available in the current runtime
+ */
+function checkOffscreenCanvasSupport(): void {
+  if (typeof OffscreenCanvas === 'undefined') {
+    throw new Error('OffscreenCanvas is not available in this Deno runtime. Please upgrade to Deno 1.30+');
+  }
+  console.log('[PDF→PNG] OffscreenCanvas is available ✓');
 }
 
 /**
@@ -26,6 +36,9 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
   console.log('[PDF→PNG] Starting conversion with Deno-compatible renderer...');
   
   try {
+    // 0. Check runtime support
+    checkOffscreenCanvasSupport();
+
     // 1. Decode base64 to bytes
     const binaryString = atob(base64Pdf);
     const bytes = new Uint8Array(binaryString.length);
@@ -34,11 +47,13 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     }
     console.log(`[PDF→PNG] Decoded ${bytes.length} bytes`);
 
-    // 2. Load PDF using pdfjs-dist (Deno-compatible)
-    const pdfjsLib = await import('https://esm.sh/pdfjs-dist@4.0.379');
+    // 2. Load PDF using pdfjs-dist with Deno target
+    console.log('[PDF→PNG] Loading pdfjs-dist with Deno target...');
+    const pdfjsLib = await import('https://esm.sh/pdfjs-dist@4.0.379?target=deno&bundle');
     
-    // Configure worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
+    // Configure worker with Deno target
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs?target=deno&bundle';
+    console.log('[PDF→PNG] Worker configured ✓');
 
     const loadingTask = pdfjsLib.getDocument({ data: bytes });
     const pdfDocument = await loadingTask.promise;
@@ -70,7 +85,9 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     console.log('[PDF→PNG] Page rendered to canvas');
 
     // 5. Convert canvas to PNG blob
+    console.log('[PDF→PNG] Converting canvas to PNG blob...');
     const blob = await canvas.convertToBlob({ type: 'image/png' });
+    console.log(`[PDF→PNG] Blob created: ${blob.size} bytes`);
     
     // 6. Convert blob to base64
     const arrayBuffer = await blob.arrayBuffer();
@@ -78,18 +95,20 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     const base64 = btoa(String.fromCharCode(...uint8Array));
     const pngDataUrl = `data:image/png;base64,${base64}`;
     
-    console.log(`[PDF→PNG] Conversion complete. PNG size: ${pngDataUrl.length} chars`);
+    console.log(`[PDF→PNG] ✓ Conversion complete. PNG data URI: ${pngDataUrl.length} chars, image size: ${blob.size} bytes`);
 
     return pngDataUrl;
 
   } catch (error) {
-    console.error('[PDF→PNG] Conversion error:', error);
+    console.error('[PDF→PNG] ✗ Conversion error:', error);
     
-    // Enhanced error message with stack trace
+    // Enhanced error message with full stack trace and context
     const errorMsg = error instanceof Error 
-      ? `${error.message}${error.stack ? `\nStack: ${error.stack}` : ''}` 
+      ? `${error.message}${error.stack ? `\n\nStack Trace:\n${error.stack}` : ''}`
       : String(error);
     
-    throw new Error(`Failed to convert PDF to image: ${errorMsg}`);
+    const contextInfo = `\nRuntime: Deno ${Deno.version.deno}\nOffscreenCanvas available: ${typeof OffscreenCanvas !== 'undefined'}`;
+    
+    throw new Error(`PDF to image conversion failed: ${errorMsg}${contextInfo}`);
   }
 }

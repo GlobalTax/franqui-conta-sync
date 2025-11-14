@@ -86,11 +86,16 @@ export async function isEngineAvailable(engine: OCREngine): Promise<boolean> {
     const retryAt = new Date(state.next_retry_at);
     
     if (now >= retryAt) {
+      console.log(`[CircuitBreaker] ${engine} retry timeout passed, transitioning to half-open`);
       // Pasar a half-open para probar
-      await updateCircuitState(engine, { state: 'half_open' });
+      await updateCircuitState(engine, { 
+        state: 'half_open',
+        next_retry_at: null 
+      });
       return true;  // Permitir un intento
     }
     
+    console.log(`[CircuitBreaker] ${engine} is open, retry available at ${state.next_retry_at}`);
     return false;  // Aún bloqueado
   }
   
@@ -190,6 +195,13 @@ async function updateCircuitState(
   engine: OCREngine,
   updates: Partial<Omit<CircuitBreakerState, 'engine'>>
 ): Promise<void> {
+  // CRITICAL: Ensure 'state' is always provided to prevent NULL constraint violations
+  if (!updates.state) {
+    console.warn(`[CircuitBreaker] ⚠️ updateCircuitState called without 'state' field. This may cause issues if row doesn't exist.`);
+  }
+
+  console.log(`[CircuitBreaker] Updating state for ${engine}:`, updates);
+
   const { error } = await supabase
     .from('ocr_circuit_breaker')
     .upsert({
@@ -202,7 +214,10 @@ async function updateCircuitState(
 
   if (error) {
     console.error(`[CircuitBreaker] Failed to update state for ${engine}:`, error);
+    throw error;
   }
+
+  console.log(`[CircuitBreaker] ✓ State updated successfully for ${engine}`);
 }
 
 /**

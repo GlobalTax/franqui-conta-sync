@@ -86,13 +86,18 @@ export async function extractWithOpenAI(
   let contentArray: any[];
   
   if (mimeType === 'application/pdf') {
-    // ✅ Convert PDF to PNG first (OpenAI Vision only accepts images)
-    console.log('[OpenAI] Converting PDF to image...');
+    console.log('[OpenAI] Document is PDF - initiating conversion to image...');
+    const conversionStartTime = Date.now();
     
     try {
       const { convertPdfToImage } = await import('./pdf-to-image.ts');
+      console.log('[OpenAI] PDF converter module loaded ✓');
+      
       const imageDataUri = await convertPdfToImage(base64Content);
-      console.log('[OpenAI] PDF converted to PNG successfully');
+      const conversionTime = Date.now() - conversionStartTime;
+      
+      console.log(`[OpenAI] ✓ PDF converted to PNG successfully in ${conversionTime}ms`);
+      console.log(`[OpenAI] Image data URI length: ${imageDataUri.length} chars`);
       
       contentArray = [
         { 
@@ -102,23 +107,26 @@ export async function extractWithOpenAI(
         { 
           type: 'image_url', 
           image_url: { 
-            url: imageDataUri, // data:image/png;base64,...
+            url: imageDataUri,
             detail: 'high'
           } 
         }
       ];
     } catch (conversionError) {
-      console.error('[OpenAI] PDF conversion failed:', conversionError);
+      const conversionTime = Date.now() - conversionStartTime;
+      console.error(`[OpenAI] ✗ PDF conversion failed after ${conversionTime}ms:`, conversionError);
       
-      // Enhanced error message with full context for debugging
+      // Enhanced error with full stack trace and context
       const errorMsg = conversionError instanceof Error 
-        ? `${conversionError.message}${conversionError.stack ? `\nStack: ${conversionError.stack}` : ''}` 
+        ? `${conversionError.message}${conversionError.stack ? `\n\nStack Trace:\n${conversionError.stack}` : ''}`
         : String(conversionError);
       
+      const detailMsg = `Conversion failed after ${conversionTime}ms. ${errorMsg}`;
+      
       throw new OpenAIError(
-        `PDF conversion failed: ${errorMsg}`, 
+        `Cannot process PDF document: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`, 
         'server_error',
-        errorMsg // Add detail for debugging
+        detailMsg
       );
     }
   } else {

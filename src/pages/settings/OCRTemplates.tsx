@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,10 +15,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TemplateBuilder } from '@/components/ocr/TemplateBuilder';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, FileText, Eye, Edit, Trash2, Zap } from 'lucide-react';
+import { Plus, FileText, Eye, Edit, Trash2, Zap, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OCRTemplates() {
+  const navigate = useNavigate();
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -110,11 +112,21 @@ export default function OCRTemplates() {
 
   return (
     <div className="container mx-auto py-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Templates OCR</h1>
-        <p className="text-muted-foreground">
-          Configura templates para extraer datos automáticamente de facturas recurrentes
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Templates OCR</h1>
+          <p className="text-muted-foreground">
+            Configura templates para extraer datos automáticamente de facturas recurrentes
+          </p>
+        </div>
+        <Button
+          onClick={() => navigate('/configuracion/ocr-templates/metrics')}
+          variant="outline"
+          className="gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Ver Métricas
+        </Button>
       </div>
 
       <Card className="p-6">

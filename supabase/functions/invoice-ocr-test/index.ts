@@ -33,7 +33,6 @@ serve(async (req) => {
     console.log('- SUPABASE_URL:', !!Deno.env.get('SUPABASE_URL'));
     console.log('- SUPABASE_SERVICE_ROLE_KEY:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     console.log('- OPENAI_API_KEY:', !!Deno.env.get('OPENAI_API_KEY'));
-    console.log('- MINDEE_API_KEY:', !!Deno.env.get('MINDEE_API_KEY'));
     
     // Test Storage Utilities
     console.log('Testing storage utilities...');
@@ -76,8 +75,7 @@ serve(async (req) => {
       environment: {
         supabase_url: !!Deno.env.get('SUPABASE_URL'),
         service_role_key: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-        openai_key: !!Deno.env.get('OPENAI_API_KEY'),
-        mindee_key: !!Deno.env.get('MINDEE_API_KEY')
+        openai_key: !!Deno.env.get('OPENAI_API_KEY')
       },
       storage_utils_tests: {
         buildInvoicePath: {

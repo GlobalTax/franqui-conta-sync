@@ -3,7 +3,7 @@
 // ============================================================================
 
 interface CostParams {
-  engine: 'openai' | 'mindee' | 'merged';
+  engine: 'openai';
   pages: number;
   tokens_in?: number;
   tokens_out?: number;
@@ -11,7 +11,6 @@ interface CostParams {
 
 interface CostBreakdown {
   cost_openai_eur: number;
-  cost_mindee_eur: number;
   cost_total_eur: number;
 }
 
@@ -25,9 +24,6 @@ const RATES = {
     tokens_in: 3000,
     tokens_out: 2000,
     cost_eur: 0.08  // Promedio por factura
-  },
-  mindee: {
-    per_page: 0.055  // EUR por página
   }
 };
 
@@ -36,35 +32,21 @@ const RATES = {
  */
 export function calculateOCRCost(params: CostParams): CostBreakdown {
   let cost_openai_eur = 0;
-  let cost_mindee_eur = 0;
 
   // Coste OpenAI (basado en tokens o promedio)
-  if (params.engine === 'openai' || params.engine === 'merged') {
-    if (params.tokens_in && params.tokens_out) {
-      // Cálculo exacto si tenemos tokens
-      cost_openai_eur = 
-        (params.tokens_in / 1000) * RATES.openai_gpt4o.input_per_1k +
-        (params.tokens_out / 1000) * RATES.openai_gpt4o.output_per_1k;
-    } else {
-      // Usar promedio si no hay tokens
-      cost_openai_eur = RATES.openai_avg_invoice.cost_eur;
-    }
+  if (params.tokens_in && params.tokens_out) {
+    // Cálculo exacto si tenemos tokens
+    cost_openai_eur = 
+      (params.tokens_in / 1000) * RATES.openai_gpt4o.input_per_1k +
+      (params.tokens_out / 1000) * RATES.openai_gpt4o.output_per_1k;
+  } else {
+    // Usar promedio si no hay tokens
+    cost_openai_eur = RATES.openai_avg_invoice.cost_eur;
   }
-
-  // Coste Mindee (basado en páginas)
-  if (params.engine === 'mindee' || params.engine === 'merged') {
-    cost_mindee_eur = params.pages * RATES.mindee.per_page;
-  }
-
-  // Si merged, tomar el máximo (no sumamos porque son alternativos)
-  const cost_total_eur = params.engine === 'merged'
-    ? Math.max(cost_openai_eur, cost_mindee_eur)
-    : cost_openai_eur + cost_mindee_eur;
 
   return {
     cost_openai_eur: Math.round(cost_openai_eur * 10000) / 10000,
-    cost_mindee_eur: Math.round(cost_mindee_eur * 10000) / 10000,
-    cost_total_eur: Math.round(cost_total_eur * 10000) / 10000
+    cost_total_eur: Math.round(cost_openai_eur * 10000) / 10000
   };
 }
 

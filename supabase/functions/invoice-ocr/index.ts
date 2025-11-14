@@ -278,7 +278,7 @@ serve(async (req) => {
 
     const pages = quickMeta.pageCount;
     const costBreakdown = calculateOCRCost({
-      engine: ocrResult.ocr_engine === 'manual_review' ? 'openai' : ocrResult.ocr_engine as 'openai' | 'mindee' | 'merged',
+      engine: 'openai',
       pages,
       tokens_in: tokens.tokens_in,
       tokens_out: tokens.tokens_out

@@ -7,7 +7,7 @@ import { validateSpanishVAT, normalizeNIF, validateDateFormat } from "./validato
 
 /**
  * Adapta respuesta de OpenAI al formato estándar con validación robusta
- * Similar a Mindee adapter pero con tax aggregation post-LLM
+ * OpenAI Vision API adapter with tax aggregation post-LLM
  */
 export function adaptOpenAIToStandard(
   rawResponse: any

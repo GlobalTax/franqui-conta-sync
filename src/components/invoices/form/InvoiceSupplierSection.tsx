@@ -3,6 +3,7 @@
 // Sección de datos del proveedor con validación NIF
 // ============================================================================
 
+import { useState } from 'react';
 import { Control, UseFormSetValue } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -10,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 import { SupplierSelector } from '@/components/invoices/SupplierSelector';
+import { SupplierFormDialog } from '@/components/suppliers/SupplierFormDialog';
 import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
 import { toast } from 'sonner';
+import { useSuppliers } from '@/hooks/useSuppliers';
 
 interface InvoiceSupplierSectionProps {
   control: Control<any>;
@@ -20,6 +23,8 @@ interface InvoiceSupplierSectionProps {
 }
 
 export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupplierSectionProps) {
+  const [showSupplierDialog, setShowSupplierDialog] = useState(false);
+  const { data: suppliers } = useSuppliers({ active: true });
   const handleValidateNIF = () => {
     const nif = watch('supplier_tax_id');
     if (!nif) {
@@ -56,7 +61,15 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
                   value={field.value}
                   onValueChange={(value) => {
                     field.onChange(value);
+                    
+                    // Auto-rellenar campos del proveedor cuando se selecciona
+                    const selectedSupplier = suppliers?.find(s => s.id === value);
+                    if (selectedSupplier) {
+                      setValue('supplier_tax_id', selectedSupplier.tax_id);
+                      setValue('supplier_name', selectedSupplier.name);
+                    }
                   }}
+                  onCreateNew={() => setShowSupplierDialog(true)}
                 />
               </FormControl>
               <FormMessage />
@@ -105,6 +118,19 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
           )}
         />
       </CardContent>
+
+      {/* Diálogo de creación de proveedor */}
+      <SupplierFormDialog
+        open={showSupplierDialog}
+        onOpenChange={setShowSupplierDialog}
+        onSuccess={(newSupplier) => {
+          // Auto-seleccionar el proveedor recién creado
+          setValue('supplier_id', newSupplier.id);
+          setValue('supplier_tax_id', newSupplier.tax_id);
+          setValue('supplier_name', newSupplier.name);
+          toast.success(`✅ Proveedor "${newSupplier.name}" creado y seleccionado`);
+        }}
+      />
     </Card>
   );
 }

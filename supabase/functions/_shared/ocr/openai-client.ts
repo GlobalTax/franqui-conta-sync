@@ -75,47 +75,98 @@ export async function extractWithOpenAI(
 
   console.log(`[OpenAI Vision] Starting extraction with model: ${modelName}`);
   console.log(`[OpenAI Vision] Supplier type: ${supplierType} (hint: ${supplierHint || 'none'})`);
+  console.log(`[OpenAI Vision] Document type: ${mimeType}`);
 
   // Setup timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
+  // Prepare content based on mime type
+  let contentArray: any[];
+  
+  if (mimeType === 'application/pdf') {
+    // For PDFs, use the new input_file format
+    console.log(`[OpenAI] Using input_file format for PDF`);
+    contentArray = [
+      {
+        type: 'input_file',
+        filename: 'invoice.pdf',
+        file_data: base64Content
+      },
+      {
+        type: 'input_text',
+        text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.'
+      }
+    ];
+  } else {
+    // For images, use the standard image_url format
+    console.log(`[OpenAI] Using image_url format for image`);
+    contentArray = [
+      { type: 'text', text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.' },
+      { 
+        type: 'image_url', 
+        image_url: { 
+          url: `data:${mimeType};base64,${base64Content}`,
+          detail: 'high'
+        } 
+      }
+    ];
+  }
+
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use /v1/responses endpoint for PDF support
+    const endpoint = mimeType === 'application/pdf' 
+      ? 'https://api.openai.com/v1/responses'
+      : 'https://api.openai.com/v1/chat/completions';
+
+    console.log(`[OpenAI] Using endpoint: ${endpoint}`);
+
+    const requestBody = mimeType === 'application/pdf'
+      ? {
+          model: modelName,
+          input: [
+            {
+              role: 'user',
+              content: contentArray
+            }
+          ],
+          response_format: { 
+            type: 'json_schema',
+            json_schema: {
+              name: 'invoice_extraction',
+              strict: true,
+              schema: jsonSchema
+            }
+          }
+        }
+      : {
+          model: modelName,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content: contentArray
+            }
+          ],
+          response_format: { 
+            type: 'json_schema',
+            json_schema: {
+              name: 'invoice_extraction',
+              strict: true,
+              schema: jsonSchema
+            }
+          },
+          max_tokens: modelConfig.maxTokens,
+          temperature: 0.1
+        };
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Extrae los datos de esta factura española:' },
-              { 
-                type: 'image_url', 
-                image_url: { 
-                  url: `data:${mimeType};base64,${base64Content}`,
-                  detail: 'high'
-                } 
-              }
-            ]
-          }
-        ],
-        response_format: { 
-          type: 'json_schema',
-          json_schema: {
-            name: 'invoice_extraction',
-            strict: true,
-            schema: jsonSchema
-          }
-        },
-        max_tokens: modelConfig.maxTokens,
-        temperature: 0.1
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 

@@ -81,20 +81,21 @@ export async function extractWithOpenAI(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  // Prepare content based on mime type
+  // Prepare content array based on mime type
   let contentArray: any[];
   
   if (mimeType === 'application/pdf') {
-    // For PDFs, use the new input_file format
-    console.log(`[OpenAI] Using input_file format for PDF`);
+    // ✅ CORRECT format for PDFs according to OpenAI docs
+    console.log(`[OpenAI] Using file format for PDF`);
     contentArray = [
       {
-        type: 'input_file',
-        filename: 'invoice.pdf',
-        file_data: base64Content
+        type: 'file',
+        file: {
+          file_data: `data:application/pdf;base64,${base64Content}`
+        }
       },
       {
-        type: 'input_text',
+        type: 'text',
         text: 'Extrae todos los datos de esta factura española conforme al esquema. IMPORTANTE: Ejecuta la auto-validación contable (EQ1, EQ2, EQ3) antes de responder.'
       }
     ];
@@ -114,51 +115,31 @@ export async function extractWithOpenAI(
   }
 
   try {
-    // Use /v1/responses endpoint for PDF support
-    const endpoint = mimeType === 'application/pdf' 
-      ? 'https://api.openai.com/v1/responses'
-      : 'https://api.openai.com/v1/chat/completions';
-
+    // ✅ Always use chat/completions endpoint (supports both PDFs and images)
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
     console.log(`[OpenAI] Using endpoint: ${endpoint}`);
 
-    const requestBody = mimeType === 'application/pdf'
-      ? {
-          model: modelName,
-          input: [
-            {
-              role: 'user',
-              content: contentArray
-            }
-          ],
-          response_format: { 
-            type: 'json_schema',
-            json_schema: {
-              name: 'invoice_extraction',
-              strict: true,
-              schema: jsonSchema
-            }
-          }
+    // ✅ Unified request body for all document types
+    const requestBody = {
+      model: modelName,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: contentArray
         }
-      : {
-          model: modelName,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user',
-              content: contentArray
-            }
-          ],
-          response_format: { 
-            type: 'json_schema',
-            json_schema: {
-              name: 'invoice_extraction',
-              strict: true,
-              schema: jsonSchema
-            }
-          },
-          max_tokens: modelConfig.maxTokens,
-          temperature: 0.1
-        };
+      ],
+      response_format: { 
+        type: 'json_schema',
+        json_schema: {
+          name: 'invoice_extraction',
+          strict: true,
+          schema: jsonSchema
+        }
+      },
+      max_tokens: modelConfig.maxTokens,
+      temperature: 0.1
+    };
 
     const response = await fetch(endpoint, {
       method: 'POST',

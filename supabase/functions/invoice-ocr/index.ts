@@ -81,6 +81,7 @@ serve(async (req) => {
       documentPath, 
       centroCode,
       supplierHint,
+      supplierVatId,
       imageDataUrl 
     } = body;
     
@@ -208,7 +209,8 @@ serve(async (req) => {
       'application/pdf',
       actualCentroCode,
       supplierHint,
-      imageDataUrl // Pass through client-provided image
+      imageDataUrl, // Pass through client-provided image
+      supplierVatId // Pass supplier VAT ID for template detection
     );
     const ocrTime = Date.now() - ocrStartTime;
 
@@ -355,6 +357,7 @@ serve(async (req) => {
           ocr_engine: ocrResult.ocr_engine,
           supplier_name: normalizedResponse.normalized.issuer.name,
           supplier_vat: normalizedResponse.normalized.issuer.vat_id,
+          supplier_vat_id: normalizedResponse.normalized.issuer.vat_id,
           invoice_number: normalizedResponse.normalized.invoice_number,
           invoice_date: normalizedResponse.normalized.issue_date,
           due_date: normalizedResponse.normalized.due_date,
@@ -366,6 +369,9 @@ serve(async (req) => {
           confidence_score: ocrResult.confidence_final,
           ocr_data: normalizedResponse.normalized,
           ap_account_suggestion: apMapping.invoice_level.account_suggestion,
+          ocr_template_id: ocrResult.template_id || null,
+          ocr_template_name: ocrResult.template_name || null,
+          ocr_engine_used: ocrResult.ocr_engine,
           processed_at: new Date().toISOString()
         })
         .eq('id', invoiceId);

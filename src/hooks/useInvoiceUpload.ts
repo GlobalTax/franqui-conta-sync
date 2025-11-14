@@ -145,7 +145,22 @@ export const useInvoiceUpload = () => {
         // Continue without imageDataUrl - server will attempt conversion
       }
 
-      // 7. Trigger OCR processing using webhook mode (async) - forzado a OpenAI
+      // 7. Get supplier VAT ID if supplier is known
+      let supplierVatId: string | null = null;
+      if (supplierId) {
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('tax_id')
+          .eq('id', supplierId)
+          .maybeSingle();
+        
+        if (supplier?.tax_id) {
+          supplierVatId = supplier.tax_id;
+          console.log('[Upload] Supplier VAT ID found:', supplierVatId);
+        }
+      }
+
+      // 8. Trigger OCR processing using webhook mode (async) - forzado a OpenAI
       const ocrRequestBody: any = {
         invoice_id: invoice.id,
         useWebhook: true,
@@ -155,6 +170,11 @@ export const useInvoiceUpload = () => {
       if (imageDataUrl) {
         ocrRequestBody.imageDataUrl = imageDataUrl;
         console.log('[Upload] Including imageDataUrl in OCR request');
+      }
+
+      if (supplierVatId) {
+        ocrRequestBody.supplierVatId = supplierVatId;
+        console.log('[Upload] Including supplierVatId for template detection');
       }
 
       const ocrResponse = await supabase.functions.invoke('invoice-ocr', {

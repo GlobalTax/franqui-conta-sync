@@ -70,43 +70,34 @@ export async function extractWithTemplate(
   let fieldsExtracted = 0;
   const fieldsTotal = Object.keys(template.field_mappings).length;
 
-  // Por ahora, extracción básica usando regex global sobre el texto del PDF
-  // En Fase 2 se implementará extracción por coordenadas específicas
-  const textContent = await extractTextFromBase64(base64Content);
+  // Estrategia de extracción según configuración del template
+  if (template.extraction_strategy === 'coordinates' && hasCoordinates(template.field_mappings)) {
+    console.log('[template-extractor] Using coordinate-based extraction');
+    // Extracción por coordenadas (implementación futura con pdfjs completo)
+    // Por ahora, fallback a regex
+    await extractFieldsWithRegex(base64Content, template.field_mappings, results, fieldsFailed);
+  } else {
+    console.log('[template-extractor] Using regex-based extraction');
+    await extractFieldsWithRegex(base64Content, template.field_mappings, results, fieldsFailed);
+  }
 
-  for (const [fieldName, config] of Object.entries(template.field_mappings)) {
-    try {
-      let extractedValue: any = null;
-      let fieldConfidence = 0;
-
-      // Estrategia 1: Regex global (implementación actual)
-      if (config.regex) {
-        const match = textContent.match(new RegExp(config.regex, 'i'));
-        if (match) {
-          extractedValue = match[0];
-          fieldConfidence = 0.9; // Alta confianza si coincide con regex
-        }
+  // Calcular campos extraídos y confianza
+  for (const [fieldName, value] of Object.entries(results)) {
+    if (value !== null) {
+      const config = template.field_mappings[fieldName];
+      fieldsExtracted++;
+      
+      // Calcular confianza del campo
+      let fieldConfidence = 0.7; // Confianza base
+      
+      if (config.regex && typeof value === 'string') {
+        const regexMatch = new RegExp(config.regex, 'i').test(value);
+        fieldConfidence = regexMatch ? 0.95 : 0.6;
+      } else if (value) {
+        fieldConfidence = 0.8;
       }
-
-      // Normalizar valor según tipo
-      if (extractedValue) {
-        extractedValue = normalizeFieldValue(extractedValue, config.type, config.format);
-        results[fieldName] = extractedValue;
-        fieldsExtracted++;
-        totalConfidence += fieldConfidence;
-      } else {
-        // Campo no encontrado
-        if (config.required) {
-          fieldsFailed.push(fieldName);
-          console.warn(`[template-extractor] Required field not found: ${fieldName}`);
-        }
-        results[fieldName] = null;
-      }
-
-    } catch (error: any) {
-      console.error(`[template-extractor] Error extracting field ${fieldName}:`, error.message);
-      fieldsFailed.push(fieldName);
-      results[fieldName] = null;
+      
+      totalConfidence += fieldConfidence;
     }
   }
 
@@ -134,8 +125,96 @@ export async function extractWithTemplate(
 }
 
 /**
- * Extrae texto plano de un PDF en base64 (implementación básica)
- * TODO: En Fase 2 implementar con pdfjs para extraer por coordenadas
+ * Verifica si el template tiene coordenadas definidas
+ */
+function hasCoordinates(fieldMappings: Record<string, FieldMapping>): boolean {
+  return Object.values(fieldMappings).some(
+    config => config.x !== undefined && config.y !== undefined
+  );
+}
+
+/**
+ * Extrae campos usando regex global sobre el texto del PDF
+ */
+async function extractFieldsWithRegex(
+  base64Content: string,
+  fieldMappings: Record<string, FieldMapping>,
+  results: Record<string, any>,
+  fieldsFailed: string[]
+): Promise<void> {
+  const textContent = await extractTextFromBase64(base64Content);
+
+  for (const [fieldName, config] of Object.entries(fieldMappings)) {
+    try {
+      let extractedValue: any = null;
+
+      // Intentar extracción con regex
+      if (config.regex) {
+        const match = textContent.match(new RegExp(config.regex, 'i'));
+        if (match) {
+          extractedValue = match[0];
+        }
+      }
+
+      // Normalizar valor según tipo
+      if (extractedValue) {
+        extractedValue = normalizeFieldValue(extractedValue, config.type, config.format);
+      }
+
+      results[fieldName] = extractedValue;
+
+      // Marcar como fallido si es requerido y no se encontró
+      if (!extractedValue && config.required) {
+        fieldsFailed.push(fieldName);
+        console.warn(`[template-extractor] Required field not found: ${fieldName}`);
+      }
+
+    } catch (error: any) {
+      console.error(`[template-extractor] Error extracting field ${fieldName}:`, error.message);
+      fieldsFailed.push(fieldName);
+      results[fieldName] = null;
+    }
+  }
+}
+
+/**
+ * Extrae texto dentro de un bounding box específico
+ */
+function extractTextInBoundingBox(
+  textItems: any[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): string {
+  const results: string[] = [];
+  
+  for (const item of textItems) {
+    if (!item.transform || !item.str) continue;
+    
+    // pdfjs devuelve coordenadas en formato: [scaleX, skewY, skewX, scaleY, translateX, translateY]
+    const itemX = item.transform[4];
+    const itemY = item.transform[5];
+    const itemHeight = item.height || 12;
+    
+    // Verificar si el texto está dentro del bounding box
+    // Nota: En PDFs, Y aumenta hacia abajo desde arriba
+    const isInBounds = 
+      itemX >= x && 
+      itemX <= (x + width) &&
+      itemY >= y &&
+      itemY <= (y + height + itemHeight);
+    
+    if (isInBounds) {
+      results.push(item.str);
+    }
+  }
+  
+  return results.join(' ').trim();
+}
+
+/**
+ * Extrae texto de un PDF usando pdfjs con coordenadas específicas
  */
 async function extractTextFromBase64(base64Content: string): Promise<string> {
   try {
@@ -146,11 +225,8 @@ async function extractTextFromBase64(base64Content: string): Promise<string> {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Extraer texto simple del PDF (muy básico)
-    // En Fase 2 usar pdfjs para extracción real por coordenadas
+    // Extraer texto simple del PDF (fallback básico)
     const text = new TextDecoder().decode(bytes);
-    
-    // Extraer texto visible (eliminar caracteres binarios)
     return text.replace(/[^\x20-\x7E\n]/g, ' ').trim();
     
   } catch (error: any) {
@@ -174,26 +250,31 @@ function normalizeFieldValue(
   switch (type) {
     case 'number':
       // Eliminar separadores de miles y convertir coma decimal a punto
-      const cleaned = value.replace(/[.,\s]/g, (match, offset, str) => {
-        // Si es la última coma o punto, es decimal
-        const lastComma = str.lastIndexOf(',');
-        const lastDot = str.lastIndexOf('.');
-        const lastSep = Math.max(lastComma, lastDot);
-        return offset === lastSep ? '.' : '';
-      });
-      return parseFloat(cleaned) || null;
+      const numCleaned = value
+        .replace(/[^\d,.-]/g, '') // Mantener solo dígitos, comas, puntos y guiones
+        .replace(/\./g, '') // Eliminar puntos (separador de miles en ES)
+        .replace(/,/g, '.'); // Convertir coma a punto decimal
+      const parsed = parseFloat(numCleaned);
+      return isNaN(parsed) ? null : parsed;
 
     case 'currency':
       // Similar a number pero más robusto para monedas
       const currencyCleaned = value
-        .replace(/[€$£\s]/g, '')
-        .replace(/\./g, '')
-        .replace(/,/g, '.');
-      return parseFloat(currencyCleaned) || null;
+        .replace(/[€$£\s]/g, '') // Eliminar símbolos de moneda y espacios
+        .replace(/\./g, '') // Eliminar separadores de miles
+        .replace(/,/g, '.'); // Convertir coma decimal a punto
+      const currencyParsed = parseFloat(currencyCleaned);
+      return isNaN(currencyParsed) ? null : currencyParsed;
 
     case 'date':
-      // Normalizar fecha según formato
-      // TODO: implementar parsing robusto de fechas
+      // Intentar parsear fechas en formato DD/MM/YYYY o DD-MM-YYYY
+      const dateMatch = value.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (dateMatch) {
+        const [_, day, month, year] = dateMatch;
+        // Formato ISO: YYYY-MM-DD
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+      // Si no coincide, devolver el valor original
       return value;
 
     case 'text':

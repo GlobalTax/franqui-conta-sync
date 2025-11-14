@@ -221,7 +221,7 @@ export function adaptOpenAIToStandard(
     data: finalData,
     confidence_score: confidenceScore,
     confidence_by_field: confidenceByField,
-    raw: rawResponse,
+    raw_response: rawResponse,
     usage: {
       tokens_in: tokensIn,
       tokens_out: tokensOut,

@@ -83,7 +83,14 @@ serve(async (req) => {
     console.log('[INIT] Raw body received (first 200 chars):', rawBody.substring(0, 200));
     
     const body = JSON.parse(rawBody);
-  const { invoice_id, documentPath, centroCode, engine = 'openai', useWebhook = false } = body;
+  const { 
+    invoice_id, 
+    documentPath, 
+    centroCode, 
+    engine = 'openai', 
+    useWebhook = false,
+    supplierHint 
+  } = body;
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -299,13 +306,14 @@ serve(async (req) => {
     // ============================================================================
 
     // Usar Orchestrator para OCR con motor seleccionado
-    // ✅ FASE 1: Pasar Blob original para evitar conversión innecesaria
+    // ✅ FASE 1: Pasar Blob original para evitar conversión innecesaria + supplierHint para JSON schema
     const orchestratorResult = await orchestrateOCR(
       base64Content,
       fileData, // ✅ Pasar Blob original para Mindee
       fileData.type || 'application/pdf',
       actualCentroCode,
-      engine as 'openai' | 'mindee' | 'merged'
+      engine as 'openai' | 'mindee' | 'merged',
+      supplierHint || null
     );
 
     console.log(`[Main] OCR Engine used: ${orchestratorResult.ocr_engine}`);

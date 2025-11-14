@@ -61,7 +61,8 @@ function createEmptyInvoiceData(): EnhancedInvoiceData {
 export async function runOcr(
   bytes: Uint8Array, 
   centroCode: string,
-  preferredEngine?: 'openai' | 'mindee'
+  preferredEngine?: 'openai' | 'mindee',
+  supplierHint?: string | null
 ): Promise<{
   engine: 'openai' | 'mindee' | 'merged' | 'manual_review';
   json: EnhancedInvoiceData | null;
@@ -82,7 +83,8 @@ export async function runOcr(
     null, // No blob for this simplified API
     mimeType, 
     centroCode,
-    preferredEngine || 'openai'
+    preferredEngine || 'openai',
+    supplierHint
   );
   
   return {
@@ -107,7 +109,8 @@ export async function orchestrateOCR(
   fileBlob: Blob | null,
   mimeType: string,
   centroCode: string,
-  preferredEngine: 'openai' | 'mindee' | 'merged' = 'openai'
+  preferredEngine: 'openai' | 'mindee' | 'merged' = 'openai',
+  supplierHint?: string | null
 ): Promise<OrchestratorResult> {
   
   const mergeNotes: string[] = [];
@@ -214,7 +217,7 @@ export async function orchestrateOCR(
   if (effectiveEngine === 'openai' || effectiveEngine === 'merged') {
     console.log('[Orchestrator] Attempting OpenAI extraction (PDF support enabled)');
     const { result: oaiResult, duration: oaiDuration } = await tryExtract('openai',
-      () => extractWithOpenAI(base64Content, mimeType));
+      () => extractWithOpenAI(base64Content, mimeType, undefined, supplierHint));
     
     if (oaiResult) {
       openaiResult = oaiResult;

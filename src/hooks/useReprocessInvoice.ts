@@ -5,18 +5,20 @@ import { toast } from 'sonner';
 interface ReprocessParams {
   invoiceId: string;
   provider: 'openai' | 'mindee';
+  supplierHint?: string | null;
 }
 
 export function useReprocessInvoice() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async ({ invoiceId, provider }: ReprocessParams) => {
+    mutationFn: async ({ invoiceId, provider, supplierHint }: ReprocessParams) => {
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
         body: { 
           invoiceId, 
           provider,
-          reprocess: true 
+          reprocess: true,
+          supplierHint
         },
       });
 

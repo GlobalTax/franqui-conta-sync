@@ -234,7 +234,8 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         body: { 
           documentPath: path, 
           centroCode,
-          invoiceId: invoice.id 
+          invoiceId: invoice.id,
+          supplierHint: null // Can be enhanced later to extract from file metadata
         }
       });
 

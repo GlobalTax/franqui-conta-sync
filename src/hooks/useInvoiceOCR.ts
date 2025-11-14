@@ -6,6 +6,7 @@ interface OCRRequest {
   documentPath: string;
   centroCode: string;
   engine?: 'openai' | 'mindee';
+  supplierHint?: string | null;
 }
 
 export interface OCRInvoiceData {
@@ -153,17 +154,18 @@ export interface OCRValidationResult {
 
 export const useProcessInvoiceOCR = () => {
   return useMutation({
-    mutationFn: async ({ documentPath, centroCode, engine = 'openai' }: OCRRequest): Promise<OCRResponse> => {
+    mutationFn: async ({ documentPath, centroCode, engine = 'openai', supplierHint }: OCRRequest): Promise<OCRResponse> => {
       console.log('[useProcessInvoiceOCR] ========================================');
       console.log('[useProcessInvoiceOCR] Starting mutation...');
       console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
       console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
       console.log('[useProcessInvoiceOCR] engine:', engine);
+      console.log('[useProcessInvoiceOCR] supplierHint:', supplierHint);
       
       console.log('[useProcessInvoiceOCR] Invoking supabase.functions.invoke...');
       
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-        body: { documentPath, centroCode, engine }
+        body: { documentPath, centroCode, engine, supplierHint }
       });
 
       console.log('[useProcessInvoiceOCR] Response received');

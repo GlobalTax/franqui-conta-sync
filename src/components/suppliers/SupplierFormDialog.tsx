@@ -25,9 +25,10 @@ import {
 import { useCreateSupplier, useUpdateSupplier, type Supplier, type SupplierFormData } from '@/hooks/useSuppliers';
 import { toast } from '@/hooks/use-toast';
 import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
-import { CheckCircle2, XCircle } from 'lucide-react';
-import { EUROPEAN_COUNTRIES } from '@/lib/constants/countries';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { EUROPEAN_COUNTRIES, getCountryISOCode } from '@/lib/constants/countries';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SupplierFormDialogProps {
   open: boolean;
@@ -59,26 +60,79 @@ export function SupplierFormDialog({
 
   const [taxIdError, setTaxIdError] = useState<string>('');
   const [taxIdValid, setTaxIdValid] = useState<boolean>(false);
+  const [isValidating, setIsValidating] = useState<boolean>(false);
 
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const { toast } = useToast();
 
-  // Validar NIF/CIF
-  const validateTaxId = (value: string) => {
+  // Validar NIF/CIF (España) o VAT (UE) según país
+  const validateTaxId = async (value: string, country: string) => {
     if (!value.trim()) {
       setTaxIdError('');
       setTaxIdValid(false);
       return;
     }
 
-    const isValid = validateNIFOrCIF(value);
-    setTaxIdValid(isValid);
-    
-    if (!isValid) {
-      setTaxIdError(getNIFCIFErrorMessage(value));
-    } else {
-      setTaxIdError('');
+    // Auto-formatear: mayúsculas y sin espacios
+    const cleanValue = value.trim().toUpperCase().replace(/\s/g, '');
+
+    // 🇪🇸 ESPAÑA → Validación local con validateNIFOrCIF
+    if (country === 'España') {
+      const isValid = validateNIFOrCIF(cleanValue);
+      setTaxIdValid(isValid);
+      setTaxIdError(isValid ? '' : getNIFCIFErrorMessage(cleanValue));
+      return;
+    }
+
+    // 🇪🇺 OTROS PAÍSES UE → Validación VIES
+    const countryCode = getCountryISOCode(country);
+    if (!countryCode) {
+      setTaxIdError('País no soportado para validación automática');
+      setTaxIdValid(false);
+      return;
+    }
+
+    // Pre-validación de formato básico
+    if (!/^[\w]{4,12}$/.test(cleanValue)) {
+      setTaxIdError(`Formato inválido. Debe ser: ${countryCode}XXXXXXXXXX (4-12 caracteres)`);
+      setTaxIdValid(false);
+      return;
+    }
+
+    setIsValidating(true);
+    console.log(`[Validation] Calling VIES for ${countryCode}${cleanValue}`);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-eu-vat', {
+        body: { countryCode, vatNumber: cleanValue }
+      });
+
+      if (error) {
+        console.error('[Validation] Supabase error:', error);
+        throw error;
+      }
+
+      const { valid, name, error: viesError } = data;
+
+      setTaxIdValid(valid);
+      setTaxIdError(valid ? '' : (viesError || 'CIF/VAT no válido en sistema VIES'));
+
+      console.log(`[Validation] VIES result: valid=${valid}, name=${name}`);
+
+      // Opcional: auto-rellenar nombre si VIES lo devuelve y el campo está vacío
+      if (valid && name && !formData.name) {
+        toast({
+          title: '✨ Datos encontrados',
+          description: `Se encontró: ${name}. Puedes usar este nombre.`,
+        });
+      }
+    } catch (err) {
+      console.error('[Validation] Error calling VIES:', err);
+      setTaxIdError('⚠️ Error al conectar con VIES. Verifica el formato e intenta de nuevo.');
+      setTaxIdValid(false);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -101,7 +155,7 @@ export function SupplierFormDialog({
           notes: editingSupplier.notes || '',
         });
         // Validar tax_id existente
-        validateTaxId(editingSupplier.tax_id);
+        validateTaxId(editingSupplier.tax_id, editingSupplier.country);
       } else {
         setFormData({
           tax_id: '',
@@ -125,8 +179,16 @@ export function SupplierFormDialog({
       // Reset validación al cerrar
       setTaxIdError('');
       setTaxIdValid(false);
+      setIsValidating(false);
     }
   }, [open, editingSupplier]);
+
+  // Re-validar tax_id cuando cambia el país
+  useEffect(() => {
+    if (formData.tax_id && formData.country && open) {
+      validateTaxId(formData.tax_id, formData.country);
+    }
+  }, [formData.country]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,44 +241,62 @@ export function SupplierFormDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tax_id">CIF/NIF *</Label>
+                <Label htmlFor="tax_id">
+                  {formData.country === 'España' 
+                    ? 'CIF/NIF *' 
+                    : `VAT Number (${getCountryISOCode(formData.country) || '??'}) *`
+                  }
+                </Label>
                 <div className="relative">
                   <Input
                     id="tax_id"
-                    placeholder="Ej: B12345678, 12345678Z"
+                    placeholder={
+                      formData.country === 'España'
+                        ? 'Ej: B12345678, 12345678Z'
+                        : `Ej: ${getCountryISOCode(formData.country)}123456789`
+                    }
                     value={formData.tax_id}
                     onChange={(e) => {
-                      const value = e.target.value.toUpperCase();
+                      const value = e.target.value.toUpperCase().replace(/\s/g, '');
                       setFormData({ ...formData, tax_id: value });
-                      validateTaxId(value);
+                      
+                      // Solo validar en onChange para España (evitar muchas llamadas VIES)
+                      if (formData.country === 'España') {
+                        validateTaxId(value, formData.country);
+                      }
                     }}
-                    onBlur={(e) => validateTaxId(e.target.value)}
+                    onBlur={(e) => validateTaxId(e.target.value, formData.country)}
                     required
-                    className={
-                      formData.tax_id 
-                        ? taxIdValid 
-                          ? 'border-green-500 pr-10' 
-                          : taxIdError 
-                            ? 'border-red-500 pr-10' 
-                            : 'pr-10'
-                        : ''
-                    }
+                    disabled={isValidating}
+                    className={`pr-10 ${
+                      taxIdError ? 'border-red-500' : taxIdValid ? 'border-green-500' : ''
+                    }`}
                   />
-                  {formData.tax_id && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {taxIdValid ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : taxIdError ? (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      ) : null}
-                    </div>
-                  )}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    {isValidating ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : formData.tax_id && taxIdValid ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : formData.tax_id && taxIdError ? (
+                      <XCircle className="h-5 w-5 text-red-500" />
+                    ) : null}
+                  </div>
                 </div>
-                {taxIdError && (
+                
+                {/* Mensajes de validación */}
+                {isValidating && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Validando con VIES...
+                  </p>
+                )}
+                {taxIdError && !isValidating && (
                   <p className="text-sm text-red-500">{taxIdError}</p>
                 )}
-                {taxIdValid && !taxIdError && formData.tax_id && (
-                  <p className="text-sm text-green-600">✓ NIF/CIF válido</p>
+                {taxIdValid && !taxIdError && formData.tax_id && !isValidating && (
+                  <p className="text-sm text-green-600">
+                    ✓ {formData.country === 'España' ? 'NIF/CIF válido' : 'VAT válido en VIES'}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">

@@ -41,7 +41,6 @@ export function createTestInvoiceReceived(overrides?: Partial<InvoiceReceived>):
     // Campos OCR
     ocrEngine: null,
     ocrMsOpenai: null,
-    ocrMsMindee: null,
     ocrPages: null,
     ocrTokensIn: null,
     ocrTokensOut: null,

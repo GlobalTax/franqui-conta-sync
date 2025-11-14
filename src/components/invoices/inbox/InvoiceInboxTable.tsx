@@ -46,7 +46,7 @@ interface Invoice {
   iva_percentage?: number;
   document_type?: 'invoice' | 'receipt' | 'delivery_note' | 'credit_note';
   document_path?: string;
-  ocr_engine?: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  ocr_engine?: 'openai' | 'merged' | 'manual_review' | null;
   ocr_confidence?: number;
   processing_time_ms?: number;
   

@@ -107,12 +107,6 @@ export function OCRDebugBadge({
                   OpenAI
                 </Badge>
               )}
-              {engine === 'mindee' && (
-                <Badge variant="secondary" className="gap-1">
-                  <Shield className="h-3 w-3 text-blue-600" />
-                  Mindee
-                </Badge>
-              )}
               {engine === 'merged' && (
                 <Badge variant="secondary">🔀 Multi-Motor</Badge>
               )}

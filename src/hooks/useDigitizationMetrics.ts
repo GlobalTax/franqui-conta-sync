@@ -10,7 +10,6 @@ export interface DigitizationMetrics {
   avg_confidence: number;
   total_cost_eur: number;
   cost_openai: number;
-  cost_mindee: number;
   avg_processing_time_sec: number;
   auto_post_rate: number;
   fallback_rate: number;

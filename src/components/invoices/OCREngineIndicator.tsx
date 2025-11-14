@@ -3,7 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sparkles, Eye, Layers, AlertTriangle } from "lucide-react";
 
 interface Props {
-  ocrEngine: "openai" | "mindee" | "merged" | "manual_review" | "google_vision";
+  ocrEngine: "openai" | "merged" | "manual_review" | "google_vision";
   mergeNotes: string[];
   confidence: number;
   metrics?: {
@@ -12,7 +12,6 @@ interface Props {
     tokens_out?: number;
     cost_estimate_eur?: number;
     ms_openai?: number;
-    ms_mindee?: number;
   };
 }
 
@@ -23,11 +22,6 @@ export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics 
       label: 'OpenAI Vision',
       icon: Sparkles,
       color: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700'
-    },
-    mindee: {
-      label: 'Mindee',
-      icon: Eye,
-      color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
     },
     merged: {
       label: 'Fusión Inteligente',

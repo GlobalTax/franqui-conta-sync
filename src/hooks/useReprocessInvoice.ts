@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 interface ReprocessParams {
   invoiceId: string;
-  provider: 'openai' | 'mindee';
+  provider: 'openai';
   supplierHint?: string | null;
 }
 

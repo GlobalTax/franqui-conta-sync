@@ -23,20 +23,15 @@ export function OCREngineMetrics() {
       if (error) throw error;
       if (!data || data.length === 0) return null;
 
-      const mindeeCount = data.filter(l => l.engine === 'mindee').length;
       const openaiCount = data.filter(l => l.engine === 'openai').length;
       const totalCost = data.reduce((sum, l) => sum + (l.cost_estimate_eur || 0), 0);
       const avgConfidence = data.reduce((sum, l) => sum + (l.confidence || 0), 0) / data.length;
 
       return {
         total: data.length,
-        mindee_count: mindeeCount,
         openai_count: openaiCount,
-        mindee_percent: (mindeeCount / data.length) * 100,
-        openai_percent: (openaiCount / data.length) * 100,
         total_cost: totalCost,
         avg_confidence: avgConfidence * 100,
-        most_used: mindeeCount > openaiCount ? 'mindee' : 'openai'
       };
     },
     refetchInterval: 30000 // Refresh every 30s
@@ -57,19 +52,10 @@ export function OCREngineMetrics() {
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Motor más usado</p>
+            <p className="text-sm text-muted-foreground">Motor OCR</p>
             <div className="flex items-center gap-2 mt-1">
-              {metrics.most_used === 'mindee' ? (
-                <>
-                  <Cpu className="h-4 w-4 text-blue-600" />
-                  <Badge variant="secondary">Mindee ({Math.round(metrics.mindee_percent)}%)</Badge>
-                </>
-              ) : (
-                <>
-                  <Brain className="h-4 w-4 text-green-600" />
-                  <Badge variant="secondary">OpenAI ({Math.round(metrics.openai_percent)}%)</Badge>
-                </>
-              )}
+              <Brain className="h-4 w-4 text-green-600" />
+              <Badge variant="secondary">OpenAI</Badge>
             </div>
           </div>
 
@@ -99,12 +85,12 @@ export function OCREngineMetrics() {
         <div className="mt-4 pt-4 border-t">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <Cpu className="h-3 w-3" />
-              <span>Mindee: {metrics.mindee_count}</span>
-            </div>
-            <div className="flex items-center gap-1">
               <Brain className="h-3 w-3" />
               <span>OpenAI: {metrics.openai_count}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              <span>Total: {metrics.total}</span>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/tooltip';
 
 interface OCREngineBadgeProps {
-  engine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  engine: 'openai' | 'merged' | 'manual_review' | null;
   confidence?: number;
   processingTime?: number;
   className?: string;
@@ -28,12 +28,6 @@ export function OCREngineBadge({
       icon: Brain,
       dot: 'bg-green-500',
       className: 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950 dark:text-green-300',
-    },
-    mindee: {
-      label: 'Mindee',
-      icon: Cpu,
-      dot: 'bg-blue-500',
-      className: 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300',
     },
     merged: {
       label: 'Fusionado',

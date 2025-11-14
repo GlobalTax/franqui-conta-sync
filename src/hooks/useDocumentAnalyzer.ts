@@ -12,20 +12,16 @@ export interface DocumentAnalysis {
   complexity: 'simple' | 'standard' | 'complex';
   estimated_text_density: number;
   is_scanned: boolean;
-  recommended_engine: 'openai' | 'mindee';
+  recommended_engine: 'openai';
   confidence: number;
   reasoning: string[];
   cost_comparison: {
     openai: number;
-    mindee: number;
-    savings_eur: number;
-    savings_percent: number;
   };
   supplier_history?: {
     total: number;
-    mindee: { count: number; avg_confidence: number };
     openai: { count: number; avg_confidence: number };
-    preferred_engine: 'openai' | 'mindee';
+    preferred_engine: 'openai';
   };
 }
 

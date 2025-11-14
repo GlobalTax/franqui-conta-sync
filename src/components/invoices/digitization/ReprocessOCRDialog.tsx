@@ -21,7 +21,7 @@ interface ReprocessOCRDialogProps {
 }
 
 /**
- * Diálogo para re-procesar OCR con Mindee
+ * Diálogo para re-procesar OCR
  */
 export function ReprocessOCRDialog({
   open,
@@ -50,10 +50,10 @@ export function ReprocessOCRDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
-      <DialogHeader>
+        <DialogHeader>
           <DialogTitle>Re-procesar OCR</DialogTitle>
           <DialogDescription>
-            Reprocesar la factura con Mindee. El resultado anterior se sobrescribirá.
+            Reprocesar la factura con OpenAI. El resultado anterior se sobrescribirá.
           </DialogDescription>
         </DialogHeader>
 
@@ -68,16 +68,16 @@ export function ReprocessOCRDialog({
             </AlertDescription>
           </Alert>
 
-          {/* Información sobre Mindee */}
+          {/* Información sobre OpenAI */}
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              <strong>Mindee Invoice API</strong>
+              <strong>OpenAI Vision OCR</strong>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Especializado en facturas europeas</li>
-                <li>Mayor precisión en NIFs, fechas e importes</li>
-                <li>Datos procesados en UE (GDPR)</li>
-                <li>Ideal para facturas estructuradas</li>
+                <li>Modelo avanzado de visión por computadora</li>
+                <li>Alta precisión en documentos complejos</li>
+                <li>Capacidad de razonamiento contextual</li>
+                <li>Ideal para facturas de cualquier formato</li>
               </ul>
             </AlertDescription>
           </Alert>

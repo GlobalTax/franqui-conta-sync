@@ -494,11 +494,12 @@ export default function InvoiceDetailEditor() {
         });
       }
       toast.success("PDF subido correctamente");
-      console.log('[Upload] Programando auto-trigger OCR en 300ms con OpenAI forzado');
+      console.log('[Upload] Programando auto-trigger OCR en 300ms con motor por tipo de archivo');
       setTimeout(() => {
-        // ⭐ Auto-trigger OCR cuando se sube un nuevo PDF - SIEMPRE con OpenAI
-        console.log('[Upload] Forzando motor OpenAI (Mindee deshabilitado)');
-        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
+        // Auto-trigger OCR cuando se sube un nuevo PDF - elegir motor por tipo
+        const engine = path.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai';
+        console.log('[Upload] Engine elegido:', engine);
+        handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine });
       }, 300);
     }
   };
@@ -794,7 +795,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -839,7 +840,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={() => handleProcessOCR({ engine: 'openai' })}
+                  onClick={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -871,7 +872,7 @@ export default function InvoiceDetailEditor() {
                   isEditMode={isEditMode}
                   ocrEngine={ocrEngine}
                   ocrConfidence={ocrConfidence}
-                  onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                  onProcessOCR={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                   isProcessing={processOCR.isPending}
                   hasDocument={!!documentPath}
                   onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -1069,7 +1070,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -1108,7 +1109,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={() => handleProcessOCR({ engine: 'openai' })}
+                    onClick={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -1139,7 +1140,7 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
-                      onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                      onProcessOCR={() => handleProcessOCR({ engine: documentPath?.toLowerCase().endsWith('.pdf') ? 'mindee' : 'openai' })}
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}

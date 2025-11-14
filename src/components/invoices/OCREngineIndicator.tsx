@@ -94,13 +94,11 @@ export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics 
                 <span className="font-medium">€{metrics.cost_estimate_eur.toFixed(4)}</span>
               </div>
             )}
-            {(metrics.ms_openai || metrics.ms_mindee) && (
+            {metrics.ms_openai && (
               <div className="flex justify-between">
                 <span className="opacity-70">Tiempo:</span>
                 <span className="font-medium">
-                  {metrics.ms_openai ? `${metrics.ms_openai}ms` : ''}
-                  {metrics.ms_openai && metrics.ms_mindee ? ' / ' : ''}
-                  {metrics.ms_mindee ? `${metrics.ms_mindee}ms` : ''}
+                  {metrics.ms_openai}ms
                 </span>
               </div>
             )}

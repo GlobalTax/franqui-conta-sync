@@ -41,7 +41,7 @@ export default function OCRDetail() {
     mapping
   );
 
-  const handleReprocess = async (provider: 'openai' | 'mindee') => {
+  const handleReprocess = async (provider: 'openai') => {
     await reprocess({ invoiceId: id!, provider });
   };
 
@@ -80,17 +80,9 @@ export default function OCRDetail() {
             disabled={isReprocessing}
           >
             {isReprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Reprocesar OpenAI
+            Reprocesar OCR
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => handleReprocess('mindee')}
-            disabled={isReprocessing}
-          >
-            {isReprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Reprocesar Mindee
-          </Button>
-          <Button 
+          <Button
             disabled={!validation.ready_to_post || isPosting}
             onClick={handlePost}
           >

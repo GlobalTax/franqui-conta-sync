@@ -28,7 +28,7 @@ interface RejectInvoiceParams {
 
 interface ReprocessOCRParams {
   invoiceId: string;
-  engine: 'openai' | 'mindee';
+  engine: 'openai';
 }
 
 interface PostInvoiceParams {

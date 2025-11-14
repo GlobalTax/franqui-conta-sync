@@ -5,7 +5,7 @@ import { toast } from "sonner";
 interface OCRRequest {
   documentPath: string;
   centroCode: string;
-  engine?: 'openai' | 'mindee';
+  engine?: 'openai';
   supplierHint?: string | null;
 }
 
@@ -109,7 +109,7 @@ export interface InvoiceEntryValidationResult {
 
 export interface OCRResponse {
   success: boolean;
-  ocr_engine?: "openai" | "mindee" | "merged" | "manual_review";
+  ocr_engine?: "openai" | "merged" | "manual_review";
   status?: "processed_ok" | "needs_review" | "posted"; // ⭐ Estado final del documento
   merge_notes?: string[];
   orchestrator_logs?: Array<{

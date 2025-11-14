@@ -19,7 +19,7 @@ interface UploadParams {
   centroCode: string;
   companyId?: string;
   supplierId?: string;
-  preferredEngine?: 'openai' | 'mindee';
+  preferredEngine?: 'openai';
   supplierHint?: string | null;
 }
 

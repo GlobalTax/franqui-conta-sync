@@ -8,8 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { DocumentAnalysis } from '@/hooks/useDocumentAnalyzer';
 
 interface OCREngineSelectorProps {
-  value: 'openai' | 'mindee';
-  onChange: (value: 'openai' | 'mindee') => void;
+  value: 'openai';
+  onChange: (value: 'openai') => void;
   estimatedPages?: number;
   analysis?: DocumentAnalysis;
   onUseRecommended?: () => void;

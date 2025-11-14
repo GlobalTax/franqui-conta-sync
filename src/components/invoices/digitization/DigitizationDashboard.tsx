@@ -162,17 +162,7 @@ export function DigitizationDashboard({ centroCode }: DigitizationDashboardProps
           variant={autoPostVariant}
         />
 
-        {/* 5. FALLBACK RATE (Mindee) */}
-        <KPICard
-          title="Fallback Rate"
-          value={metrics.fallback_rate}
-          subtitle={`${metrics.cost_mindee.toFixed(2)}€ en Mindee`}
-          icon={RefreshCw}
-          format="percentage"
-          variant={fallbackVariant}
-        />
-
-        {/* 6. TASA CONTABILIZACIÓN */}
+        {/* 5. TASA CONTABILIZACIÓN */}
         <KPICard
           title="Tasa Contabilización"
           value={metrics.post_rate}

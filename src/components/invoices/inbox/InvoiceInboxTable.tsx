@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { format } from 'date-fns';
 import { Eye, FileText, MoreVertical, RefreshCw, Trash2, Edit, FileCheck, MapPin, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -107,6 +109,15 @@ export function InvoiceInboxTable({
   const allSelected = invoices.length > 0 && selectedIds.length === invoices.length;
   const someSelected = selectedIds.length > 0 && !allSelected;
 
+  const parentRef = useRef<HTMLDivElement>(null);
+  
+  const rowVirtualizer = useVirtualizer({
+    count: invoices.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 72,
+    overscan: 10,
+  });
+
   if (loading) {
     return (
       <div className="space-y-3 p-6">
@@ -119,9 +130,10 @@ export function InvoiceInboxTable({
 
   return (
     <TooltipProvider>
-      <Table>
-        <TableHeader>
-          <TableRow>
+      <div ref={parentRef} className="h-[calc(100vh-300px)] overflow-auto">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-background">
+            <TableRow>
             <TableHead className="w-12">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -150,15 +162,34 @@ export function InvoiceInboxTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {invoices.map((invoice) => (
-            <TableRow
-              key={invoice.id}
-              className={cn(
-                "cursor-pointer hover:bg-muted/50 transition-colors",
-                compact && "h-10"
-              )}
-              onClick={() => onRowClick(invoice)}
-            >
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const invoice = invoices[virtualRow.index];
+              
+              return (
+                <TableRow
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50 transition-colors",
+                    compact && "h-10"
+                  )}
+                  onClick={() => onRowClick(invoice)}
+                >
               <TableCell onClick={(e) => e.stopPropagation()} className={cn(compact && "py-1")}>
                 <Checkbox
                   checked={selectedIds.includes(invoice.id)}
@@ -375,9 +406,12 @@ export function InvoiceInboxTable({
                 </DropdownMenu>
               </TableCell>
             </TableRow>
-          ))}
+          );
+        })}
+          </div>
         </TableBody>
       </Table>
+      </div>
     </TooltipProvider>
   );
 }

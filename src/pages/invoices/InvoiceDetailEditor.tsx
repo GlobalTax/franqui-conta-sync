@@ -4,7 +4,7 @@
 // Layout: PDF izquierda + Formulario contable derecha
 // ============================================================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { InvoicePDFPreview } from '@/components/invoices/InvoicePDFPreview';
 import { InvoicePDFUploader } from '@/components/invoices/InvoicePDFUploader';
 import { InvoiceFormHeader } from '@/components/invoices/form/InvoiceFormHeader';
 import { InvoiceSupplierSection } from '@/components/invoices/form/InvoiceSupplierSection';
@@ -28,6 +27,10 @@ import { InvoiceActionButtons } from '@/components/invoices/form/InvoiceActionBu
 import { APMappingSuggestions } from '@/components/invoices/APMappingSuggestions';
 import { OCREngineIndicator } from '@/components/invoices/OCREngineIndicator';
 import { NormalizationChangesAlert } from '@/components/invoices/NormalizationChangesAlert';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load del visor PDF pesado
+const InvoicePDFPreview = lazy(() => import('@/components/invoices/InvoicePDFPreview').then(m => ({ default: m.InvoicePDFPreview })));
 import { EntryPreview } from '@/components/invoices/EntryPreview';
 import { useInvoicesReceived, useCreateInvoiceReceived, useUpdateInvoiceReceived } from '@/hooks/useInvoicesReceived';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
@@ -850,10 +853,19 @@ export default function InvoiceDetailEditor() {
             <Card className="h-full">
               <CardContent className="p-0 h-full">
                 {documentPath ? (
-                  <InvoicePDFPreview
-                    documentPath={documentPath}
-                    className="h-full"
-                  />
+                  <Suspense fallback={
+                    <div className="h-full flex items-center justify-center bg-muted">
+                      <div className="text-center space-y-2">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                        <p className="text-sm text-muted-foreground">Cargando PDF...</p>
+                      </div>
+                    </div>
+                  }>
+                    <InvoicePDFPreview
+                      documentPath={documentPath}
+                      className="h-full"
+                    />
+                  </Suspense>
                 ) : (
                   <div className="h-full flex items-center justify-center p-6" id="pdf-uploader">
                     <InvoicePDFUploader
@@ -1165,10 +1177,14 @@ export default function InvoiceDetailEditor() {
                 <CardContent className="p-6">
                   {documentPath ? (
                     <div className="h-[70vh]">
-                      <InvoicePDFPreview
-                        documentPath={documentPath}
-                        className="h-full"
-                      />
+                      <Suspense fallback={
+                        <Skeleton className="h-full w-full" />
+                      }>
+                        <InvoicePDFPreview
+                          documentPath={documentPath}
+                          className="h-full"
+                        />
+                      </Suspense>
                     </div>
                   ) : (
                     <div id="pdf-uploader">

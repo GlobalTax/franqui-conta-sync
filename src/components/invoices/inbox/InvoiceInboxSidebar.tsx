@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { X, CheckCircle, XCircle, Building2, FileText, Calendar, DollarSign } from 'lucide-react';
 import {
   Sheet,
@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { InboxStatusBadge } from './InboxStatusBadge';
-import { InvoicePDFPreview } from '../InvoicePDFPreview';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +21,9 @@ import { OCREngineBadge } from './OCREngineBadge';
 import { OCRConfidenceAlert } from './OCRConfidenceAlert';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 import { AccountingValidationAlert } from '@/components/invoices/AccountingValidationAlert';
+
+// Lazy load del visor PDF
+const InvoicePDFPreview = lazy(() => import('../InvoicePDFPreview').then(m => ({ default: m.InvoicePDFPreview })));
 
 interface InvoiceInboxSidebarProps {
   invoiceId: string | null;
@@ -294,10 +296,14 @@ export function InvoiceInboxSidebar({
                 {invoice.document_path && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold">Documento PDF</h3>
-                    <InvoicePDFPreview
-                      documentPath={invoice.document_path}
-                      className="h-[400px]"
-                    />
+                    <Suspense fallback={
+                      <Skeleton className="h-[400px] w-full" />
+                    }>
+                      <InvoicePDFPreview
+                        documentPath={invoice.document_path}
+                        className="h-[400px]"
+                      />
+                    </Suspense>
                   </div>
                 )}
 

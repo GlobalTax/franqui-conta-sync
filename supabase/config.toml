@@ -1,5 +1,8 @@
 project_id = "srwnjnrhxzcpftmbbyib"
 
+[functions.post-inventory-closure]
+verify_jwt = true
+
 [functions.ponto-oauth-callback]
 verify_jwt = false
 

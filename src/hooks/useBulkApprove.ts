@@ -1,6 +1,6 @@
 // ============================================================================
-// HOOK: useBulkPost
-// Contabilización masiva de facturas
+// HOOK: useBulkApprove
+// Aprobación masiva de facturas
 // ============================================================================
 
 import { useState } from 'react';
@@ -8,17 +8,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-interface BulkPostParams {
+interface BulkApproveParams {
   invoiceIds: string[];
-  postingDate: Date;
 }
 
-export function useBulkPost() {
+export function useBulkApprove() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  const bulkPostMutation = useMutation({
-    mutationFn: async ({ invoiceIds, postingDate }: BulkPostParams) => {
+  const bulkApproveMutation = useMutation({
+    mutationFn: async ({ invoiceIds }: BulkApproveParams) => {
       setProgress({ current: 0, total: invoiceIds.length });
 
       const results = {
@@ -31,13 +30,10 @@ export function useBulkPost() {
         const invoiceId = invoiceIds[i];
         
         try {
-          // Get invoice data with supplier
+          // Get current invoice status
           const { data: invoice, error: fetchError } = await supabase
             .from('invoices_received')
-            .select(`
-              *,
-              supplier:suppliers(name)
-            `)
+            .select('id, status, approval_status')
             .eq('id', invoiceId)
             .single();
 
@@ -45,30 +41,21 @@ export function useBulkPost() {
             throw new Error('Factura no encontrada');
           }
 
-          // Validate
+          // Validate can be approved
           if (invoice.status === 'posted') {
             throw new Error('Ya contabilizada');
           }
-          if (invoice.approval_status !== 'approved_accounting') {
-            throw new Error('No aprobada contablemente');
-          }
-          if (!invoice.supplier_id) {
-            throw new Error('Sin proveedor asignado');
-          }
-          if (!invoice.centro_code) {
-            throw new Error('Sin centro asignado');
-          }
-          if (invoice.entry_id) {
-            throw new Error('Ya tiene asiento contable');
+          if (invoice.approval_status === 'approved_accounting') {
+            throw new Error('Ya aprobada');
           }
 
-          // Mark invoice as posted
+          // Approve invoice
           const { error: updateError } = await supabase
             .from('invoices_received')
             .update({ 
-              status: 'posted',
-              posted_at: new Date().toISOString(),
-              notes: `Contabilizada el ${postingDate.toISOString()}` 
+              approval_status: 'approved_accounting',
+              status: 'approved',
+              approved_at: new Date().toISOString(),
             })
             .eq('id', invoiceId);
 
@@ -76,7 +63,7 @@ export function useBulkPost() {
 
           results.success++;
         } catch (error: any) {
-          console.error(`Error posting invoice ${invoiceId}:`, error);
+          console.error(`Error approving invoice ${invoiceId}:`, error);
           results.failed++;
           results.errors.push({
             invoiceId,
@@ -91,13 +78,12 @@ export function useBulkPost() {
     },
     onSuccess: (results) => {
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
-      queryClient.invalidateQueries({ queryKey: ['accounting_entries'] });
 
       if (results.failed === 0) {
-        toast.success(`✓ ${results.success} factura${results.success > 1 ? 's' : ''} contabilizada${results.success > 1 ? 's' : ''}`);
+        toast.success(`✅ ${results.success} factura${results.success > 1 ? 's' : ''} aprobada${results.success > 1 ? 's' : ''}`);
       } else {
         toast.warning(
-          `✓ ${results.success} facturas contabilizadas. ${results.failed} fallaron.`,
+          `✅ ${results.success} aprobadas. ${results.failed} fallaron.`,
           {
             description: results.errors.length > 0 ? results.errors[0].error : undefined,
           }
@@ -107,15 +93,15 @@ export function useBulkPost() {
       setProgress({ current: 0, total: 0 });
     },
     onError: (error: Error) => {
-      console.error('Error in bulk post:', error);
+      console.error('Error in bulk approve:', error);
       toast.error(`Error: ${error.message}`);
       setProgress({ current: 0, total: 0 });
     },
   });
 
   return {
-    bulkPost: bulkPostMutation.mutate,
-    isPosting: bulkPostMutation.isPending,
-    progress: bulkPostMutation.isPending ? progress : undefined,
+    bulkApprove: bulkApproveMutation.mutate,
+    isApproving: bulkApproveMutation.isPending,
+    progress: bulkApproveMutation.isPending ? progress : undefined,
   };
 }

@@ -72,7 +72,7 @@ export function ProvisionForm({
 
     const provisionDate = new Date(values.provision_date);
     const data = {
-      centro_code: selectedView.id,
+      centro_code: selectedView.code || selectedView.id,
       provision_date: values.provision_date,
       period_year: provisionDate.getFullYear(),
       period_month: provisionDate.getMonth() + 1,

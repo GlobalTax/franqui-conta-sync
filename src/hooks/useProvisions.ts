@@ -45,7 +45,7 @@ export const useProvisions = () => {
       const { data, error } = await supabase
         .from("provisions")
         .select("*")
-        .eq("centro_code", selectedView.id)
+        .eq("centro_code", selectedView.code || selectedView.id)
         .order("provision_date", { ascending: false });
 
       if (error) throw error;

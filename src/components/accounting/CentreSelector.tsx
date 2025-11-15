@@ -35,6 +35,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         onChange({
           type: 'centre',
           id: found1050.id,
+          code: found1050.codigo,
           name: `${found1050.codigo} - ${found1050.nombre}`
         });
       } else {
@@ -45,6 +46,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
           onChange({
             type: 'company',
             id: firstCompany.id,
+            code: firstCompany.cif,
             name: firstCompany.razon_social
           });
         }
@@ -107,7 +109,8 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
           if (foundCompany) {
             onChange({ 
               type: 'company', 
-              id, 
+              id,
+              code: foundCompany.cif,
               name: foundCompany.razon_social
             });
           }
@@ -121,7 +124,8 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
           if (foundCentre) {
             onChange({ 
               type: 'centre', 
-              id, 
+              id,
+              code: foundCentre.codigo,
               name: `${foundCentre.codigo} - ${foundCentre.nombre}` 
             });
           }

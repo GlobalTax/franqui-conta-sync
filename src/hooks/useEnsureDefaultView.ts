@@ -30,6 +30,7 @@ export const useEnsureDefaultView = () => {
           const defaultView: ViewSelection = {
             type: 'centre',
             id: prioritizedCentre.id,
+            code: prioritizedCentre.codigo,
             name: `${prioritizedCentre.codigo} - ${prioritizedCentre.nombre}`,
           };
           setSelectedView(defaultView);

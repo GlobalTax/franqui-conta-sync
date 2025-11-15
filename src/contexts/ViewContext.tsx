@@ -3,6 +3,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 export interface ViewSelection {
   type: 'all' | 'company' | 'centre';
   id: string;
+  code?: string; // Código del centro o sociedad (TEXT)
   name: string;
 }
 

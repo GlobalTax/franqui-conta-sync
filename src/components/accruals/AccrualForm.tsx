@@ -64,7 +64,7 @@ export function AccrualForm({ onSubmit, onCancel, isSubmitting }: AccrualFormPro
 
     await onSubmit({
       ...data,
-      centro_code: selectedView.id,
+      centro_code: selectedView.code || selectedView.id,
       created_by: user.user.id,
     });
   };

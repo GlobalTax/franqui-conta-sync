@@ -12,11 +12,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { MigrationState } from "@/hooks/useHistoricalMigration";
 import { ErrorExportDialog, type ValidationError } from "./ErrorExportDialog";
+import { AdvancedValidationsPanel } from "./AdvancedValidationsPanel";
+import { useAdvancedValidations } from "@/hooks/useAdvancedValidations";
 
 interface StepCierreProps {
   state: MigrationState;
@@ -32,6 +34,12 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Advanced validations
+  const { data: advancedValidations } = useAdvancedValidations(
+    state.fiscalYear.fiscalYearId || '',
+    state.fiscalYear.centroCode
+  );
 
   const handleValidate = async () => {
     setValidating(true);
@@ -250,11 +258,12 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
           </Button>
           <Button 
             onClick={() => setShowConfirmDialog(true)}
-            disabled={closing || !validationResult?.valid}
+            disabled={closing || !validationResult?.valid || !advancedValidations?.overallValid}
             variant="destructive"
           >
             {closing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            🔒 Cerrar Ejercicio Definitivamente
+            {!advancedValidations?.overallValid && <Lock className="h-4 w-4 mr-2" />}
+            {advancedValidations?.overallValid ? '🔒 Cerrar Ejercicio Definitivamente' : '🔒 Bloqueado'}
           </Button>
         </div>
 

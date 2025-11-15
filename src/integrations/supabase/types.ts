@@ -1623,6 +1623,151 @@ export type Database = {
           },
         ]
       }
+      bs_rubrics: {
+        Row: {
+          code: string
+          created_at: string
+          formula: string | null
+          id: string
+          is_total: boolean
+          level: number
+          name: string
+          notes: string | null
+          parent_code: string | null
+          section: string
+          sign: string
+          sort: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          formula?: string | null
+          id?: string
+          is_total?: boolean
+          level: number
+          name: string
+          notes?: string | null
+          parent_code?: string | null
+          section: string
+          sign?: string
+          sort: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          formula?: string | null
+          id?: string
+          is_total?: boolean
+          level?: number
+          name?: string
+          notes?: string | null
+          parent_code?: string | null
+          section?: string
+          sign?: string
+          sort?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bs_rubrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "bs_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bs_rules: {
+        Row: {
+          account: string | null
+          account_from: string | null
+          account_like: string | null
+          account_to: string | null
+          created_at: string
+          group_code: string | null
+          id: string
+          match_kind: string
+          notes: string | null
+          priority: number
+          rubric_code: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          account?: string | null
+          account_from?: string | null
+          account_like?: string | null
+          account_to?: string | null
+          created_at?: string
+          group_code?: string | null
+          id?: string
+          match_kind: string
+          notes?: string | null
+          priority?: number
+          rubric_code: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          account?: string | null
+          account_from?: string | null
+          account_like?: string | null
+          account_to?: string | null
+          created_at?: string
+          group_code?: string | null
+          id?: string
+          match_kind?: string
+          notes?: string | null
+          priority?: number
+          rubric_code?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bs_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "bs_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bs_templates: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       centre_companies: {
         Row: {
           activo: boolean
@@ -6152,6 +6297,40 @@ export type Database = {
           balance: number
           grupo: string
           nombre_grupo: string
+        }[]
+      }
+      calculate_balance_sheet_custom: {
+        Args: {
+          p_centro_code: string
+          p_fecha_corte: string
+          p_template_code: string
+        }
+        Returns: {
+          amount: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          rubric_code: string
+          rubric_name: string
+          section: string
+          sort: number
+        }[]
+      }
+      calculate_balance_sheet_custom_consolidated: {
+        Args: {
+          p_centro_codes: string[]
+          p_fecha_corte: string
+          p_template_code: string
+        }
+        Returns: {
+          amount: number
+          is_total: boolean
+          level: number
+          parent_code: string
+          rubric_code: string
+          rubric_name: string
+          section: string
+          sort: number
         }[]
       }
       calculate_balance_sheet_full: {

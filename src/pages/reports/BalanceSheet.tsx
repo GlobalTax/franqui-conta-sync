@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useBalanceSheet } from "@/hooks/useBalanceSheet";
+import { useBalanceSheetCustom, useBalanceSheetTemplates } from "@/hooks/useBalanceSheetCustom";
 import { useView } from "@/contexts/ViewContext";
 import { DateRangePicker } from "@/components/reports/DateRangePicker";
 import { ExportButton } from "@/components/reports/ExportButton";
@@ -9,20 +9,29 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function BalanceSheet() {
   const { selectedView } = useView();
   const [fechaCorte, setFechaCorte] = useState<Date | undefined>(new Date());
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("PGC_2025");
   const printRef = useRef<HTMLDivElement>(null);
 
   const fechaCorteStr = fechaCorte ? format(fechaCorte, "yyyy-MM-dd") : "";
 
-  const { data, isLoading } = useBalanceSheet(selectedView, fechaCorteStr);
+  const { data: templates, isLoading: loadingTemplates } = useBalanceSheetTemplates();
+  const { data: balanceData, isLoading } = useBalanceSheetCustom(
+    selectedTemplate,
+    selectedView,
+    fechaCorteStr
+  );
 
-  const exportData = data?.items.map((item) => ({
-    Grupo: item.grupo,
-    Nombre: item.nombre_grupo,
-    Saldo: item.balance,
+  const exportData = balanceData?.map((item) => ({
+    Código: item.rubric_code,
+    Rubro: item.rubric_name,
+    Sección: item.section,
+    Importe: item.amount,
   })) || [];
 
   if (!selectedView) {
@@ -66,28 +75,52 @@ export default function BalanceSheet() {
               : `Centro: ${selectedView.name}`
           }
           actions={
-            <>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="template" className="whitespace-nowrap">Plantilla</Label>
+                <Select
+                  value={selectedTemplate}
+                  onValueChange={setSelectedTemplate}
+                  disabled={loadingTemplates}
+                >
+                  <SelectTrigger id="template" className="w-64">
+                    <SelectValue placeholder="Seleccionar plantilla" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates?.map((template) => (
+                      <SelectItem key={template.code} value={template.code}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <DateRangePicker
                 startDate={fechaCorte}
                 endDate={fechaCorte}
                 onStartDateChange={setFechaCorte}
                 onEndDateChange={setFechaCorte}
               />
-              {data && (
+              {balanceData && (
                 <ExportButton
                   printRef={printRef}
                   data={exportData}
-                  filename={`balance-${fechaCorteStr}`}
+                  filename={`balance-${selectedTemplate}-${fechaCorteStr}`}
                 />
               )}
-            </>
+            </div>
           }
         />
 
         <div ref={printRef}>
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="p-4 border-b border-border bg-muted/30">
-              <h2 className="text-lg font-semibold">Fecha de corte: {fechaCorte ? format(fechaCorte, "dd/MM/yyyy") : "-"}</h2>
+              <h2 className="text-lg font-semibold">
+                {templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Fecha de corte: {fechaCorte ? format(fechaCorte, "dd/MM/yyyy") : "-"}
+              </p>
             </div>
             <div className="overflow-x-auto">
             {isLoading ? (
@@ -106,45 +139,22 @@ export default function BalanceSheet() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.items.map((item) => (
-                    <TableRow key={item.grupo}>
-                      <TableCell className="font-medium">{item.grupo}</TableCell>
-                      <TableCell className="whitespace-normal break-words">{item.nombre_grupo}</TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.balance).toLocaleString("es-ES", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                  {balanceData?.map((item) => (
+                    <TableRow 
+                      key={item.rubric_code}
+                      className={item.is_total ? "bg-muted/50 font-semibold" : ""}
+                    >
+                      <TableCell className={item.level > 1 ? `pl-${item.level * 4}` : ""}>
+                        {item.rubric_code} - {item.rubric_name}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {new Intl.NumberFormat("es-ES", {
+                          style: "currency",
+                          currency: "EUR",
+                        }).format(item.amount)}
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell colSpan={2}>TOTAL ACTIVO</TableCell>
-                    <TableCell className="text-right">
-                      {Number(data?.totals.activo || 0).toLocaleString("es-ES", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow className="font-bold">
-                    <TableCell colSpan={2}>TOTAL PASIVO</TableCell>
-                    <TableCell className="text-right">
-                      {Number(data?.totals.pasivo || 0).toLocaleString("es-ES", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow className="font-bold">
-                    <TableCell colSpan={2}>PATRIMONIO NETO</TableCell>
-                    <TableCell className="text-right">
-                      {Number(data?.totals.patrimonioNeto || 0).toLocaleString("es-ES", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                  </TableRow>
                 </TableBody>
               </Table>
             )}

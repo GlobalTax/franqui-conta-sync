@@ -42,6 +42,7 @@ const InvoicesInbox = lazy(() => import("@/pages/invoices/InvoicesInbox"));
 const InvoiceDetailEditor = lazy(() => import("@/pages/invoices/InvoiceDetailEditor"));
 const Suppliers = lazy(() => import("@/pages/Suppliers"));
 const BalanceSheet = lazy(() => import("@/pages/reports/BalanceSheet"));
+const BalanceTemplates = lazy(() => import("@/pages/reports/BalanceTemplates"));
 const GeneralLedger = lazy(() => import("@/pages/reports/GeneralLedger"));
 const JournalBook = lazy(() => import("@/pages/reports/JournalBook"));
 const TrialBalance = lazy(() => import("@/pages/reports/TrialBalance"));
@@ -176,7 +177,8 @@ const App = () => {
               <Route path="/contabilidad/provisiones" element={<Provisions />} />
               <Route path="/contabilidad/existencias" element={<InventoryClosures />} />
               <Route path="/reportes/libro-bienes" element={<AssetsRegister />} />
-              <Route path="/reportes/balance" element={<BalanceSheet />} />
+                <Route path="/reportes/balance" element={<BalanceSheet />} />
+                <Route path="/reportes/balance-templates" element={<BalanceTemplates />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />
               <Route path="/reportes/diario" element={<JournalBook />} />
               <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />

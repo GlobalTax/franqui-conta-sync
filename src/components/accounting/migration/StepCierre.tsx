@@ -19,6 +19,7 @@ import type { MigrationState } from "@/hooks/useHistoricalMigration";
 import { ErrorExportDialog, type ValidationError } from "./ErrorExportDialog";
 import { AdvancedValidationsPanel } from "./AdvancedValidationsPanel";
 import { useAdvancedValidations } from "@/hooks/useAdvancedValidations";
+import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 
 interface StepCierreProps {
   state: MigrationState;
@@ -43,7 +44,14 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
 
   const handleValidate = async () => {
     setValidating(true);
+    
+    const logger = state.migrationRunId 
+      ? createMigrationLogger('cierre', state.migrationRunId, state.fiscalYear.centroCode, state.fiscalYear.fiscalYearId)
+      : null;
+
     try {
+      await logger?.start('Iniciando validación de datos migrados');
+
       // Call validation edge function
       const { data, error } = await supabase.functions.invoke('validate-migration', {
         body: {
@@ -54,22 +62,34 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        await logger?.error('Error en validación', error.message);
+        throw error;
+      }
 
       setValidationResult(data);
       setValidationErrors([...(data.errors || []), ...(data.warnings || [])]);
       
       if (data.errors && data.errors.length > 0) {
+        await logger?.validation(`Validación completada con errores`, false, {
+          errorsCount: data.errors.length,
+          warningsCount: data.warnings?.length || 0,
+        });
         toast.error(`❌ ${data.errors.length} errores encontrados`);
         setShowErrorDialog(true);
       } else if (data.warnings && data.warnings.length > 0) {
+        await logger?.validation(`Validación completada con advertencias`, true, {
+          warningsCount: data.warnings.length,
+        });
         toast.warning(`⚠️ ${data.warnings.length} advertencias`);
         setShowErrorDialog(true);
       } else {
+        await logger?.validation(`Validación exitosa sin errores`, true);
         toast.success("✅ Validación exitosa - No hay errores");
       }
     } catch (error: any) {
       console.error('Validation error:', error);
+      await logger?.error('Error crítico en validación', error);
       toast.error("Error al validar");
       setValidationResult({ valid: false, errors: [], warnings: [] });
       setValidationErrors([{
@@ -92,7 +112,17 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
     }
 
     setClosing(true);
+    
+    const logger = state.migrationRunId 
+      ? createMigrationLogger('cierre', state.migrationRunId, state.fiscalYear.centroCode, state.fiscalYear.fiscalYearId)
+      : null;
+
     try {
+      await logger?.start('Iniciando cierre definitivo del ejercicio fiscal', {
+        fiscalYear: state.fiscalYear.year,
+        fiscalYearId: state.fiscalYear.fiscalYearId,
+      });
+
       // Call close-fiscal-year edge function
       const { data, error } = await supabase.functions.invoke('close-fiscal-year', {
         body: {
@@ -102,10 +132,21 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        await logger?.error('Error al cerrar ejercicio fiscal', error.message);
+        throw error;
+      }
 
       if (data.success) {
         const closedAt = new Date().toISOString();
+        
+        await logger?.success('Ejercicio fiscal cerrado exitosamente', {
+          closedAt,
+          periods_closed: data.periods_closed,
+          result_amount: data.result_amount,
+          closing_entries: data.closing_entries,
+        });
+
         setShowConfirmDialog(false);
         onComplete(closedAt);
         
@@ -125,10 +166,12 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
           duration: 8000,
         });
       } else {
+        await logger?.error('Error en cierre de ejercicio', data.error);
         throw new Error(data.error || 'Error al cerrar el ejercicio');
       }
     } catch (error: any) {
       console.error('Closing error:', error);
+      await logger?.error('Error crítico en cierre de ejercicio', error);
       toast.error(error.message || "Error al cerrar el ejercicio");
     } finally {
       setClosing(false);

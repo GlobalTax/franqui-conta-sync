@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2 } from "lucide-react";
 import { JournalCSVImporter } from "@/components/accounting/JournalCSVImporter";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
+import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 
 interface StepDiarioProps {
   config: FiscalYearConfig;
@@ -12,6 +13,7 @@ interface StepDiarioProps {
   entriesCount: number;
   totalDebit?: number;
   totalCredit?: number;
+  migrationRunId?: string;
   onComplete: (entriesCount: number, totalDebit: number, totalCredit: number) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -23,13 +25,24 @@ export function StepDiario({
   entriesCount, 
   totalDebit, 
   totalCredit,
+  migrationRunId,
   onComplete, 
   onNext, 
   onPrev 
 }: StepDiarioProps) {
   const [showImporter, setShowImporter] = useState(false);
 
-  const handleImportSuccess = (count: number, debit: number, credit: number) => {
+  const handleImportSuccess = async (count: number, debit: number, credit: number) => {
+    const logger = migrationRunId 
+      ? createMigrationLogger('diario', migrationRunId, config.centroCode, config.fiscalYearId)
+      : null;
+    
+    await logger?.success(`Libro diario importado completamente`, {
+      entriesCount: count,
+      totalDebit: debit,
+      totalCredit: credit,
+    });
+    
     onComplete(count, debit, credit);
     setShowImporter(false);
   };

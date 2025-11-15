@@ -6049,6 +6049,52 @@ export type Database = {
           },
         ]
       }
+      mv_invoices_issued_summary: {
+        Row: {
+          centro_city: string | null
+          centro_code: string | null
+          centro_name: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_tax_id: string | null
+          due_date: string | null
+          entry_id: string | null
+          full_invoice_number: string | null
+          id: string | null
+          invoice_date: string | null
+          invoice_number: number | null
+          invoice_series: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_transaction_id: string | null
+          pdf_path: string | null
+          sent_at: string | null
+          status: string | null
+          subtotal: number | null
+          tax_total: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_issued_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_issued_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mv_ocr_metrics: {
         Row: {
           avg_confidence: number | null

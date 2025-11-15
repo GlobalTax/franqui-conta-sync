@@ -30,6 +30,7 @@ const DemoData = lazy(() => import("@/pages/admin/DemoData"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const AccountingEntries = lazy(() => import("@/pages/accounting/AccountingEntries"));
 const NewAccountingEntry = lazy(() => import("@/pages/accounting/NewAccountingEntry"));
+const FiscalYears = lazy(() => import("@/pages/accounting/FiscalYears"));
 const CompanyConfiguration = lazy(() => import("@/pages/admin/CompanyConfiguration"));
 const NewInvoiceReceived = lazy(() => import("@/pages/invoices/NewInvoiceReceived"));
 const InvoicesReceivedOCR = lazy(() => import("@/pages/invoices/InvoicesReceivedOCR"));
@@ -165,6 +166,7 @@ const App = () => {
               <Route path="/pnl/consolidado" element={<ProfitAndLossConsolidated />} />
               <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
               <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
+              <Route path="/contabilidad/ejercicios-fiscales" element={<FiscalYears />} />
               <Route path="/contabilidad/importacion-historica" element={<HistoricalImport />} />
               <Route path="/contabilidad/ejercicios-historicos" element={<HistoricalYears />} />
               <Route path="/contabilidad/ejercicios" element={<HistoricalYears />} />

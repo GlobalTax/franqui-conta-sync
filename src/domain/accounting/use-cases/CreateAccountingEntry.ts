@@ -70,7 +70,10 @@ export class CreateAccountingEntryUseCase {
         .single();
 
       if (fyError || !fiscalYear) {
-        throw new Error('No hay ejercicio fiscal abierto para este centro');
+        throw new Error(
+          `No hay ejercicio fiscal abierto para el centro ${input.centroCode}. ` +
+          `Por favor, crea un ejercicio fiscal en Contabilidad > Ejercicios Fiscales antes de crear asientos.`
+        );
       }
 
       fiscalYearId = fiscalYear.id;

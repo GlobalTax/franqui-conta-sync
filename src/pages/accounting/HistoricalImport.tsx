@@ -10,7 +10,8 @@ import { StepIVA } from "@/components/accounting/migration/StepIVA";
 import { StepBancos } from "@/components/accounting/migration/StepBancos";
 import { StepCierre } from "@/components/accounting/migration/StepCierre";
 import { LogsViewer } from "@/components/accounting/migration/LogsViewer";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { TestingPanel } from "@/components/accounting/migration/TestingPanel";
+import { CheckCircle2, Loader2, TestTube2 } from "lucide-react";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -18,10 +19,13 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export default function HistoricalImport() {
   const { selectedView } = useView();
   const migration = useHistoricalMigration();
+  const [showTesting, setShowTesting] = useState(false);
 
   const breadcrumbs = [
     { label: "Contabilidad", href: "/contabilidad/apuntes" },
@@ -59,14 +63,34 @@ export default function HistoricalImport() {
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-1 tracking-tight">
-            Migración de Ejercicios Históricos
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Importa ejercicios contables completos de años anteriores
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold text-foreground mb-1 tracking-tight">
+              Migración de Ejercicios Históricos
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Importa ejercicios contables completos de años anteriores
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTesting(!showTesting)}
+            className="gap-2"
+          >
+            <TestTube2 className="h-4 w-4" />
+            {showTesting ? 'Ocultar' : 'Testing'}
+          </Button>
         </div>
+
+        {/* Testing Panel */}
+        {showTesting && migration.state.fiscalYear.centroCode && (
+          <TestingPanel
+            centroCode={migration.state.fiscalYear.centroCode}
+            year={migration.state.fiscalYear.year}
+            onClose={() => setShowTesting(false)}
+          />
+        )}
 
         {/* Progress Bar */}
         <div className="space-y-3">

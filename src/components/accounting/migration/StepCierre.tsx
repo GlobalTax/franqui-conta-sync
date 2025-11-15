@@ -2,6 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +31,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
   const [validationResult, setValidationResult] = useState<any>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleValidate = async () => {
     setValidating(true);
@@ -87,12 +98,24 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
 
       if (data.success) {
         const closedAt = new Date().toISOString();
+        setShowConfirmDialog(false);
         onComplete(closedAt);
         
-        toast.success(
-          `✅ Ejercicio ${state.fiscalYear.year} cerrado exitosamente\n${data.message}`,
-          { duration: 5000 }
-        );
+        toast.success("✅ Ejercicio cerrado exitosamente", {
+          description: (
+            <div className="space-y-1 text-sm mt-2">
+              <p>📅 Ejercicio: {state.fiscalYear.year}</p>
+              <p>📊 Asientos de cierre creados</p>
+              <p>🔒 {data.periods_closed?.monthly || 0} cierres mensuales + 1 cierre anual</p>
+              {data.result_amount !== undefined && (
+                <p className="mt-2 font-semibold">
+                  Resultado final: {data.result_amount.toFixed(2)} €
+                </p>
+              )}
+            </div>
+          ),
+          duration: 8000,
+        });
       } else {
         throw new Error(data.error || 'Error al cerrar el ejercicio');
       }
@@ -226,11 +249,12 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
             Validar Ejercicio
           </Button>
           <Button 
-            onClick={handleClose} 
+            onClick={() => setShowConfirmDialog(true)}
             disabled={closing || !validationResult?.valid}
+            variant="destructive"
           >
             {closing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Cerrar Ejercicio
+            🔒 Cerrar Ejercicio Definitivamente
           </Button>
         </div>
 
@@ -240,6 +264,105 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
           errors={validationErrors.filter(e => e.severity === 'error')}
           warnings={validationErrors.filter(e => e.severity === 'warning')}
         />
+
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-xl">
+                <AlertTriangle className="h-6 w-6 text-warning" />
+                ¿Cerrar ejercicio {state.fiscalYear.year}?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-base">
+                Esta acción creará los asientos de regularización y cierre, marcando el ejercicio como <strong>cerrado definitivamente</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted rounded-lg p-4">
+                  <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Periodo Fiscal</h4>
+                  <p className="text-lg font-bold">{state.fiscalYear.year}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(state.fiscalYear.startDate).toLocaleDateString('es-ES')} - {new Date(state.fiscalYear.endDate).toLocaleDateString('es-ES')}
+                  </p>
+                </div>
+
+                <div className="bg-muted rounded-lg p-4">
+                  <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Centro</h4>
+                  <p className="text-lg font-bold">{state.fiscalYear.centroCode}</p>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-sm mb-3">📊 Datos que se cerrarán:</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span>Asiento de apertura</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span className="font-semibold">{state.diario.entriesCount} asientos contables</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span>{state.iva.emitidas.count} facturas emitidas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span>{state.iva.recibidas.count} facturas recibidas</span>
+                  </div>
+                  {!state.bancos.skipped && (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <span>{state.bancos.movements} movimientos bancarios</span>
+                    </div>
+                  )}
+                  {state.diario.totalDebit && (
+                    <div className="col-span-2 mt-2 pt-2 border-t border-border">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Debe total:</span>
+                        <span className="font-bold">{state.diario.totalDebit.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Haber total:</span>
+                        <span className="font-bold">{state.diario.totalCredit?.toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>⚠️ Acción irreversible</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>Una vez cerrado el ejercicio:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
+                    <li>Se crearán <strong>asientos de regularización</strong> (grupos 6, 7 → 129)</li>
+                    <li>Se creará el <strong>asiento de cierre</strong> (grupos 1-5 → cuentas 13X)</li>
+                    <li><strong>No podrás modificar</strong> asientos del ejercicio {state.fiscalYear.year}</li>
+                    <li>Solo podrás deshacerlo mediante <strong>rollback completo</strong> de la migración</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={closing}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleClose}
+                disabled={closing}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {closing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                🔒 Confirmar Cierre Definitivo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

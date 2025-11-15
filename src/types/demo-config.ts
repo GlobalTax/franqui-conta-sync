@@ -29,11 +29,22 @@ export interface DemoSupplierConfig {
   tax_id: string;
 }
 
+export interface AdvancedDemoConfig {
+  dataVolume: 'light' | 'medium' | 'heavy';
+  generateBankData: boolean;
+  generateInvoices: boolean;
+  generateEntries: boolean;
+  autoReconcile: boolean;
+  yearRange: { from: number; to: number };
+  testingMode?: 'reconciliation' | 'ocr' | 'pl_reports' | 'full';
+}
+
 export interface DemoDataConfig {
   franchisee: DemoFranchiseeConfig;
   companies: DemoCompanyConfig[];
   centres: DemoCentreConfig[];
   suppliers: DemoSupplierConfig[];
+  advanced?: AdvancedDemoConfig;
 }
 
 export const getDefaultDemoConfig = (): DemoDataConfig => ({
@@ -41,6 +52,15 @@ export const getDefaultDemoConfig = (): DemoDataConfig => ({
     name: "Grupo Demo McDonald's",
     company_tax_id: "B99999999",
     email: "demo@mcdonalds-group.es",
+  },
+  advanced: {
+    dataVolume: 'medium',
+    generateBankData: true,
+    generateInvoices: true,
+    generateEntries: true,
+    autoReconcile: true,
+    yearRange: { from: 2025, to: 2025 },
+    testingMode: 'full',
   },
   companies: [
     {

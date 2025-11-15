@@ -259,7 +259,7 @@ const Layout = () => {
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(5, 13).map((item) => (
+              {navItems.slice(5, 14).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

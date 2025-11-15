@@ -5,6 +5,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+const SUPABASE_URL = "https://srwnjnrhxzcpftmbbyib.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyd25qbnJoeHpjcGZ0bWJieWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMzY1NjMsImV4cCI6MjA2ODkxMjU2M30.JCQDhjjtXKrPCDV8QRYJmmJ6n9YxMtBPfUm8E52UbI4";
+
 export interface CreateMigrationRunParams {
   centroCode: string;
   fiscalYear: number;
@@ -20,11 +23,11 @@ export async function createMigrationRun(params: CreateMigrationRunParams): Prom
   const { data: user } = await supabase.auth.getUser();
   
   try {
-    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/migration_runs`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/migration_runs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': supabase.supabaseKey,
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         'Prefer': 'return=representation',
       },
@@ -43,10 +46,10 @@ export async function createMigrationRun(params: CreateMigrationRunParams): Prom
       // Si ya existe (unique violation), obtenerlo
       if (response.status === 409) {
         const existingResponse = await fetch(
-          `${supabase.supabaseUrl}/rest/v1/migration_runs?centro_code=eq.${params.centroCode}&fiscal_year=eq.${params.fiscalYear}&select=id`,
+          `${SUPABASE_URL}/rest/v1/migration_runs?centro_code=eq.${params.centroCode}&fiscal_year=eq.${params.fiscalYear}&select=id`,
           {
             headers: {
-              'apikey': supabase.supabaseKey,
+              'apikey': SUPABASE_ANON_KEY,
               'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
             },
           }
@@ -135,11 +138,11 @@ export async function trackClosingPeriods(migrationRunId: string, periodIds: str
  */
 export async function completeMigration(migrationRunId: string) {
   try {
-    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/migration_runs?id=eq.${migrationRunId}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/migration_runs?id=eq.${migrationRunId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': supabase.supabaseKey,
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
       },
       body: JSON.stringify({
@@ -161,11 +164,11 @@ export async function completeMigration(migrationRunId: string) {
  */
 export async function failMigration(migrationRunId: string, reason: string) {
   try {
-    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/migration_runs?id=eq.${migrationRunId}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/migration_runs?id=eq.${migrationRunId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': supabase.supabaseKey,
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
       },
       body: JSON.stringify({

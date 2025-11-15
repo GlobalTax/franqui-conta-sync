@@ -2707,6 +2707,115 @@ export type Database = {
           },
         ]
       }
+      inventory_closure_lines: {
+        Row: {
+          account_code: string | null
+          category: string
+          closure_id: string
+          created_at: string
+          description: string
+          final_stock: number
+          id: string
+          initial_stock: number
+          line_number: number
+          variation: number | null
+          variation_account: string | null
+        }
+        Insert: {
+          account_code?: string | null
+          category: string
+          closure_id: string
+          created_at?: string
+          description: string
+          final_stock?: number
+          id?: string
+          initial_stock?: number
+          line_number: number
+          variation?: number | null
+          variation_account?: string | null
+        }
+        Update: {
+          account_code?: string | null
+          category?: string
+          closure_id?: string
+          created_at?: string
+          description?: string
+          final_stock?: number
+          id?: string
+          initial_stock?: number
+          line_number?: number
+          variation?: number | null
+          variation_account?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_closure_lines_closure_id_fkey"
+            columns: ["closure_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_closures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_closures: {
+        Row: {
+          accounting_entry_id: string | null
+          centro_code: string
+          closure_month: number
+          closure_year: number
+          created_at: string
+          created_by: string | null
+          entry_type: string
+          id: string
+          notes: string | null
+          posted_at: string | null
+          posted_by: string | null
+          status: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          centro_code: string
+          closure_month: number
+          closure_year: number
+          created_at?: string
+          created_by?: string | null
+          entry_type?: string
+          id?: string
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          centro_code?: string
+          closure_month?: number
+          closure_year?: number
+          created_at?: string
+          created_by?: string | null
+          entry_type?: string
+          id?: string
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_closures_accounting_entry_id_fkey"
+            columns: ["accounting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invites: {
         Row: {
           accepted_at: string | null

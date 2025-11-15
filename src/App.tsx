@@ -64,6 +64,7 @@ const FixedAssets = lazy(() => import("@/pages/accounting/FixedAssets"));
 const AssetsRegister = lazy(() => import("@/pages/reports/AssetsRegister"));
 const Provisions = lazy(() => import("@/pages/accounting/Provisions"));
 const Accruals = lazy(() => import("@/pages/accounting/Accruals"));
+const InventoryClosures = lazy(() => import("@/pages/accounting/InventoryClosures"));
 
 /**
  * React Query Configuration
@@ -166,6 +167,7 @@ const App = () => {
               <Route path="/contabilidad/activos-fijos" element={<FixedAssets />} />
               <Route path="/contabilidad/periodificaciones" element={<Accruals />} />
               <Route path="/contabilidad/provisiones" element={<Provisions />} />
+              <Route path="/contabilidad/existencias" element={<InventoryClosures />} />
               <Route path="/reportes/libro-bienes" element={<AssetsRegister />} />
               <Route path="/reportes/balance" element={<BalanceSheet />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { FileText, Plus, Filter, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +13,55 @@ import {
 } from "@/components/ui/select";
 import { useInvoicesIssued } from "@/hooks/useInvoicesIssued";
 import { InvoicesIssuedVirtualList } from "@/components/invoices/InvoicesIssuedVirtualList";
+import { InvoiceQueries } from "@/infrastructure/persistence/supabase/queries/InvoiceQueries";
+import { useOrganization } from "@/hooks/useOrganization";
 
 export default function InvoicesIssued() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentMembership } = useOrganization();
   const [page, setPage] = useState(0);
+  const [isPrefetching, setIsPrefetching] = useState(false);
   const pageSize = 50;
   const { data: invoices = [], isLoading } = useInvoicesIssued({ page, pageSize });
+
+  const prefetchNextPage = async () => {
+    if (isPrefetching || invoices.length < pageSize) return;
+    
+    setIsPrefetching(true);
+    
+    try {
+      const selectedCentro = currentMembership?.restaurant?.codigo;
+      
+      await queryClient.prefetchQuery({
+        queryKey: ['invoices_issued', { page: page + 1, pageSize }, selectedCentro, page + 1],
+        queryFn: async () => {
+          const domainInvoices = await InvoiceQueries.findInvoicesIssued({
+            centroCode: selectedCentro,
+            page: page + 1,
+            pageSize,
+          });
+          
+          return domainInvoices.map(inv => ({
+            id: inv.id,
+            centro_code: inv.centroCode,
+            customer_name: inv.customerName,
+            full_invoice_number: inv.fullInvoiceNumber,
+            invoice_date: inv.invoiceDate,
+            total: inv.total,
+            status: inv.status,
+          }));
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+      
+      console.log(`✅ Prefetch: Página ${page + 1} precargada`);
+    } catch (error) {
+      console.error('Error prefetching:', error);
+    } finally {
+      setIsPrefetching(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -46,6 +90,9 @@ export default function InvoicesIssued() {
             <InvoicesIssuedVirtualList
               invoices={invoices}
               onInvoiceClick={(invoice) => navigate(`/facturas/emitidas/${invoice.id}`)}
+              currentPage={page}
+              totalInPage={invoices.length}
+              onNearEnd={prefetchNextPage}
             />
           )}
           

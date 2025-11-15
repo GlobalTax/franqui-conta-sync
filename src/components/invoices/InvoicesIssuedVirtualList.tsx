@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FileText, Eye, Calendar, Building2 } from 'lucide-react';
@@ -20,20 +20,42 @@ interface Invoice {
 interface InvoicesIssuedVirtualListProps {
   invoices: Invoice[];
   onInvoiceClick: (invoice: Invoice) => void;
+  currentPage: number;
+  totalInPage: number;
+  onNearEnd?: () => void;
 }
 
 export function InvoicesIssuedVirtualList({ 
   invoices, 
-  onInvoiceClick 
+  onInvoiceClick,
+  currentPage,
+  totalInPage,
+  onNearEnd
 }: InvoicesIssuedVirtualListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   
   const rowVirtualizer = useVirtualizer({
     count: invoices.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 96, // altura de cada tarjeta
+    estimateSize: () => 96,
     overscan: 5,
   });
+
+  // Detección de proximidad al final para prefetch inteligente
+  useEffect(() => {
+    if (!onNearEnd) return;
+    
+    const virtualItems = rowVirtualizer.getVirtualItems();
+    if (virtualItems.length === 0) return;
+    
+    const lastItem = virtualItems[virtualItems.length - 1];
+    const threshold = 10;
+    const isNearEnd = lastItem && (invoices.length - lastItem.index <= threshold);
+    
+    if (isNearEnd && invoices.length === totalInPage) {
+      onNearEnd();
+    }
+  }, [rowVirtualizer.getVirtualItems(), invoices.length, onNearEnd, totalInPage]);
 
   if (invoices.length === 0) {
     return (

@@ -107,6 +107,10 @@ ${config.startDate},Asiento ejemplo,4700000,0,1000.00,Proveedor XYZ`}
         onOpenChange={setShowImporter}
         centroCode={config.centroCode}
         onImportComplete={handleImportSuccess}
+        fiscalYearRange={{
+          startDate: `${config.year}-01-01`,
+          endDate: `${config.year}-12-31`
+        }}
       />
     </>
   );

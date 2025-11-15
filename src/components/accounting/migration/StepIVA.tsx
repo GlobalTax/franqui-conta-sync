@@ -3,12 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Upload, AlertCircle } from "lucide-react";
-import { useDropzone } from "react-dropzone";
-import Papa from "papaparse";
-import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
+import { useSupabase } from "@/integrations/supabase/client";
+import { IVACSVValidator } from "@/components/accounting/IVACSVValidator";
 
 interface StepIVAProps {
   config: FiscalYearConfig;
@@ -22,19 +21,8 @@ interface StepIVAProps {
   onPrev: () => void;
 }
 
-export function StepIVA({ 
-  config, 
-  emitidasCompleted, 
-  emitidasCount, 
-  recibidasCompleted, 
-  recibidasCount,
-  onEmitidasComplete, 
-  onRecibidasComplete, 
-  onNext, 
-  onPrev 
-}: StepIVAProps) {
+export function StepIVA({ config, emitidasCompleted, emitidasCount, recibidasCompleted, recibidasCount, onEmitidasComplete, onRecibidasComplete, onNext, onPrev }: StepIVAProps) {
   const [activeTab, setActiveTab] = useState<'emitidas' | 'recibidas'>('emitidas');
-
   const allCompleted = emitidasCompleted && recibidasCompleted;
 
   if (allCompleted) {
@@ -50,9 +38,7 @@ export function StepIVA({
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertTitle>Libros IVA importados</AlertTitle>
-            <AlertDescription>
-              Facturas emitidas: {emitidasCount} | Facturas recibidas: {recibidasCount}
-            </AlertDescription>
+            <AlertDescription>Emitidas: {emitidasCount} | Recibidas: {recibidasCount}</AlertDescription>
           </Alert>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onPrev}>← Atrás</Button>
@@ -67,44 +53,21 @@ export function StepIVA({
     <Card>
       <CardHeader>
         <CardTitle>Paso 4: Libros IVA</CardTitle>
-        <CardDescription>
-          Importa las facturas emitidas y recibidas del ejercicio {config.year}
-        </CardDescription>
+        <CardDescription>Importa facturas del ejercicio {config.year}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="emitidas" className="flex items-center gap-2">
-              Facturas Emitidas
-              {emitidasCompleted && <CheckCircle2 className="h-4 w-4 text-success" />}
-            </TabsTrigger>
-            <TabsTrigger value="recibidas" className="flex items-center gap-2">
-              Facturas Recibidas
-              {recibidasCompleted && <CheckCircle2 className="h-4 w-4 text-success" />}
-            </TabsTrigger>
+            <TabsTrigger value="emitidas">Emitidas {emitidasCompleted && <CheckCircle2 className="h-4 w-4 ml-2" />}</TabsTrigger>
+            <TabsTrigger value="recibidas">Recibidas {recibidasCompleted && <CheckCircle2 className="h-4 w-4 ml-2" />}</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="emitidas" className="space-y-4">
-            <IVAImportPanel
-              type="emitidas"
-              config={config}
-              completed={emitidasCompleted}
-              count={emitidasCount}
-              onComplete={onEmitidasComplete}
-            />
+          <TabsContent value="emitidas">
+            <IVAImportPanel type="emitidas" config={config} completed={emitidasCompleted} count={emitidasCount} onComplete={onEmitidasComplete} />
           </TabsContent>
-
-          <TabsContent value="recibidas" className="space-y-4">
-            <IVAImportPanel
-              type="recibidas"
-              config={config}
-              completed={recibidasCompleted}
-              count={recibidasCount}
-              onComplete={onRecibidasComplete}
-            />
+          <TabsContent value="recibidas">
+            <IVAImportPanel type="recibidas" config={config} completed={recibidasCompleted} count={recibidasCount} onComplete={onRecibidasComplete} />
           </TabsContent>
         </Tabs>
-
         <div className="flex gap-3">
           <Button variant="outline" onClick={onPrev}>← Atrás</Button>
           {allCompleted && <Button onClick={onNext}>Continuar →</Button>}
@@ -123,73 +86,21 @@ interface IVAImportPanelProps {
 }
 
 function IVAImportPanel({ type, config, completed, count, onComplete }: IVAImportPanelProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [rows, setRows] = useState<any[]>([]);
+  const [showValidator, setShowValidator] = useState(false);
   const [importing, setImporting] = useState(false);
+  const supabase = useSupabase();
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: { 'text/csv': ['.csv'] },
-    maxFiles: 1,
-    onDrop: (acceptedFiles) => {
-      const f = acceptedFiles[0];
-      if (f) {
-        setFile(f);
-        Papa.parse(f, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (result) => {
-            setRows(result.data);
-            toast.success(`${result.data.length} facturas detectadas`);
-          },
-        });
-      }
-    },
-  });
-
-  const handleImport = async () => {
-    if (rows.length === 0) return;
-
+  const handleValidated = async (rows: any[]) => {
     setImporting(true);
     try {
-      // Call the import-iva-historical edge function
       const { data, error } = await supabase.functions.invoke('import-iva-historical', {
-        body: {
-          centroCode: config.centroCode,
-          fiscalYear: config.year,
-          invoiceType: type,
-          rows: rows.map((r: any) => ({
-            fecha: r.fecha || r.date || '',
-            numero: r.numero || r.number || '',
-            nif: r.nif || r.tax_id || '',
-            nombre: r.nombre || r.name || '',
-            base: parseFloat(r.base || r.subtotal || '0'),
-            tipo: parseFloat(r.tipo || r.tax_rate || '0'),
-            cuota: parseFloat(r.cuota || r.tax_amount || '0'),
-            total: parseFloat(r.total || r.total_amount || '0'),
-          })),
-        },
+        body: { centroCode: config.centroCode, fiscalYear: config.year, type, rows }
       });
-
       if (error) throw error;
-
-      if (data.success) {
-        onComplete(data.count);
-        toast.success(
-          `${data.count} facturas importadas\nBase: ${data.total_base.toFixed(2)}€ | IVA: ${data.total_cuota.toFixed(2)}€`
-        );
-        
-        if (data.errors && data.errors.length > 0) {
-          toast.warning(`${data.errors.length} advertencias detectadas`, {
-            description: 'Revisa la consola para más detalles',
-          });
-          console.warn('Import warnings:', data.errors);
-        }
-      } else {
-        throw new Error(data.message || 'Error en la importación');
-      }
+      toast.success(`${data.count} facturas importadas`);
+      onComplete(data.count);
     } catch (error: any) {
-      toast.error(error.message || 'Error al importar IVA');
-      console.error('IVA import error:', error);
+      toast.error(error.message || 'Error al importar');
     } finally {
       setImporting(false);
     }
@@ -199,32 +110,24 @@ function IVAImportPanel({ type, config, completed, count, onComplete }: IVAImpor
     return (
       <Alert>
         <CheckCircle2 className="h-4 w-4" />
-        <AlertTitle>Importación completada</AlertTitle>
-        <AlertDescription>{count} facturas {type} importadas</AlertDescription>
+        <AlertTitle>Facturas {type} importadas</AlertTitle>
+        <AlertDescription>{count} facturas</AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-          isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-        }`}
-      >
-        <input {...getInputProps()} />
-        <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          {file ? file.name : `Arrastra el CSV de facturas ${type}`}
-        </p>
-      </div>
-
-      {rows.length > 0 && (
-        <Button onClick={handleImport} disabled={importing}>
-          {importing ? "Importando..." : `Importar ${rows.length} facturas`}
-        </Button>
-      )}
-    </div>
+    <>
+      <Button onClick={() => setShowValidator(true)} disabled={importing} className="w-full">
+        {importing ? "Importando..." : `Seleccionar CSV de ${type}`}
+      </Button>
+      <IVACSVValidator
+        open={showValidator}
+        onOpenChange={setShowValidator}
+        type={type}
+        onValidated={handleValidated}
+        fiscalYearRange={{ startDate: `${config.year}-01-01`, endDate: `${config.year}-12-31` }}
+      />
+    </>
   );
 }

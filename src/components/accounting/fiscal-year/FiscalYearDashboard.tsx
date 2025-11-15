@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { FileText, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Building2, Receipt, Landmark, ChevronDown, RefreshCw, Download, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { MigrationSummaryExport } from "../migration/MigrationSummaryExport";
 
 interface FiscalYearDashboardProps {
   fiscalYearId: string;
@@ -82,13 +84,30 @@ export function FiscalYearDashboard({ fiscalYearId }: FiscalYearDashboardProps) 
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Exportar Resumen</DialogTitle>
+                    <DialogDescription>
+                      Genere informes en PDF o Excel del ejercicio fiscal
+                    </DialogDescription>
+                  </DialogHeader>
+                  <MigrationSummaryExport 
+                    fiscalYearId={fiscalYearId}
+                    centroCode={data.overview.centroCode}
+                  />
+                </DialogContent>
+              </Dialog>
+              
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refrescar
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
               </Button>
             </div>
           </div>

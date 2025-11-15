@@ -59,6 +59,7 @@ const OCRCacheMetrics = lazy(() => import("@/pages/analytics/OCRCacheMetrics"));
 const SaltEdgeConnections = lazy(() => import("@/pages/treasury/SaltEdgeConnections"));
 const OCRInbox = lazy(() => import("@/pages/digitization/OCRInbox"));
 const OCRDetail = lazy(() => import("@/pages/digitization/OCRDetail"));
+const HistoricalImport = lazy(() => import("@/pages/accounting/HistoricalImport"));
 
 /**
  * React Query Configuration
@@ -157,6 +158,7 @@ const App = () => {
               <Route path="/pnl/consolidado" element={<ProfitAndLossConsolidated />} />
               <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
               <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
+              <Route path="/contabilidad/migracion-historica" element={<HistoricalImport />} />
               <Route path="/reportes/balance" element={<BalanceSheet />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />
               <Route path="/reportes/diario" element={<JournalBook />} />

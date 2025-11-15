@@ -1,16 +1,19 @@
 import { useReconciliationSuggestions } from "@/hooks/useReconciliationSuggestions";
 import { useConfirmReconciliation } from "@/hooks/useBankReconciliation";
+import { useBankTransactions } from "@/hooks/useBankTransactions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, Eye, FileText, Receipt, Calendar } from "lucide-react";
+import { CheckCircle2, Eye, FileText, Receipt, Calendar, Search } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
 import { ReconciliationMatchAnimation } from "./ReconciliationMatchAnimation";
+import { InvoiceSearchDialog } from "./InvoiceSearchDialog";
+import { EntrySearchDialog } from "./EntrySearchDialog";
 
 interface ReconciliationSuggestionsListProps {
   transactionId: string | null;
@@ -25,7 +28,13 @@ export const ReconciliationSuggestionsList = ({
 }: ReconciliationSuggestionsListProps) => {
   const { data: suggestions = [], isLoading } = useReconciliationSuggestions(transactionId, centroCode);
   const { mutate: confirmReconciliation } = useConfirmReconciliation();
+  const { transactions = [] } = useBankTransactions({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showInvoiceSearch, setShowInvoiceSearch] = useState(false);
+  const [showEntrySearch, setShowEntrySearch] = useState(false);
+
+  // Encontrar la transacción seleccionada
+  const selectedTransaction = transactions.find((t) => t.id === transactionId);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("es-ES", {
@@ -101,9 +110,27 @@ export const ReconciliationSuggestionsList = ({
                 <p className="text-sm text-muted-foreground mb-4">
                   No se encontraron sugerencias automáticas
                 </p>
-                <Button variant="outline" size="sm">
-                  Conciliar Manualmente
-                </Button>
+                <p className="text-xs text-muted-foreground mb-6">
+                  Busca manualmente facturas o asientos contables que coincidan
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowInvoiceSearch(true)}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Buscar Factura
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEntrySearch(true)}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Buscar Asiento
+                  </Button>
+                </div>
               </div>
             ) : (
               suggestions.map((suggestion) => (
@@ -198,6 +225,38 @@ export const ReconciliationSuggestionsList = ({
           </div>
         </ScrollArea>
       </div>
+
+      {/* Diálogos de búsqueda manual */}
+      {selectedTransaction && (
+        <>
+          <InvoiceSearchDialog
+            open={showInvoiceSearch}
+            onOpenChange={setShowInvoiceSearch}
+            transactionId={transactionId!}
+            transactionAmount={selectedTransaction.amount}
+            transactionDate={selectedTransaction.transaction_date}
+            onReconcileSuccess={() => {
+              setShowSuccess(true);
+              setTimeout(() => setShowSuccess(false), 2000);
+              onReconcileSuccess?.();
+            }}
+          />
+
+          <EntrySearchDialog
+            open={showEntrySearch}
+            onOpenChange={setShowEntrySearch}
+            transactionId={transactionId!}
+            transactionAmount={selectedTransaction.amount}
+            transactionDate={selectedTransaction.transaction_date}
+            centroCode={centroCode!}
+            onReconcileSuccess={() => {
+              setShowSuccess(true);
+              setTimeout(() => setShowSuccess(false), 2000);
+              onReconcileSuccess?.();
+            }}
+          />
+        </>
+      )}
     </>
   );
 };

@@ -194,6 +194,7 @@ export function useDashboardMain(selectedView: { type: 'all' | 'company' | 'cent
       };
     },
     enabled: !!selectedView,
-    refetchInterval: 60000, // 1 minute
+    refetchOnWindowFocus: true,
+    refetchInterval: 2 * 60 * 1000, // Solo cada 2 min si tiene foco
   });
 }

@@ -1986,39 +1986,6 @@ export type Database = {
           },
         ]
       }
-      companies_backup_20241109: {
-        Row: {
-          activo: boolean | null
-          cif: string | null
-          created_at: string | null
-          franchisee_id: string | null
-          id: string | null
-          razon_social: string | null
-          tipo_sociedad: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          activo?: boolean | null
-          cif?: string | null
-          created_at?: string | null
-          franchisee_id?: string | null
-          id?: string | null
-          razon_social?: string | null
-          tipo_sociedad?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          activo?: boolean | null
-          cif?: string | null
-          created_at?: string | null
-          franchisee_id?: string | null
-          id?: string | null
-          razon_social?: string | null
-          tipo_sociedad?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       company_enrichment_cache: {
         Row: {
           cif: string

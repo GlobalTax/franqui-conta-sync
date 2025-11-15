@@ -39,7 +39,7 @@ export function OCREngineMetrics() {
         most_used: mindeeCount > openaiCount ? 'mindee' : 'openai'
       };
     },
-    refetchInterval: 30000 // Refresh every 30s
+    refetchOnWindowFocus: true,
   });
 
   if (isLoading || !metrics) {

@@ -61,20 +61,27 @@ export const useInvoicesIssued = (filters?: {
   status?: string;
   date_from?: string;
   date_to?: string;
+  page?: number;
+  pageSize?: number;
 }) => {
   const { currentMembership } = useOrganization();
   const selectedCentro = currentMembership?.restaurant?.codigo;
 
+  const page = filters?.page || 0;
+  const pageSize = filters?.pageSize || 50;
+
   return useQuery({
-    queryKey: ['invoices_issued', filters, selectedCentro],
+    queryKey: ['invoices_issued', filters, selectedCentro, page],
     queryFn: async () => {
       const centroFilter = filters?.centro_code || selectedCentro;
       
-      const queryFilters: Omit<InvoiceFilters, 'supplierId' | 'approvalStatus'> = {
+      const queryFilters: Omit<InvoiceFilters, 'supplierId' | 'approvalStatus'> & { page: number; pageSize: number } = {
         centroCode: centroFilter,
         status: filters?.status as any,
         dateFrom: filters?.date_from,
         dateTo: filters?.date_to,
+        page,
+        pageSize,
       };
 
       const domainInvoices = await InvoiceQueries.findInvoicesIssued(queryFilters);
@@ -108,6 +115,7 @@ export const useInvoicesIssued = (filters?: {
       })) as InvoiceIssued[];
     },
     enabled: !!selectedCentro || !!filters?.centro_code,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -132,7 +140,7 @@ export const useCreateInvoiceIssued = () => {
 
       const { data: sequence, error: seqError } = await supabase
         .from('invoice_sequences')
-        .select('*')
+        .select('last_number, centro_code, invoice_type, series, year')
         .eq('centro_code', invoiceFields.centro_code)
         .eq('invoice_type', 'issued')
         .eq('series', series)

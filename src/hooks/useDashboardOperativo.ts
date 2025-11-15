@@ -252,7 +252,8 @@ export const useDashboardOperativo = (viewSelection: ViewSelection | null) => {
       return kpis;
     },
     enabled: !!viewSelection,
-    refetchInterval: 60000, // Refrescar cada minuto
+    refetchOnWindowFocus: true,
+    refetchInterval: 2 * 60 * 1000, // Solo cada 2 min si tiene foco
   });
 };
 

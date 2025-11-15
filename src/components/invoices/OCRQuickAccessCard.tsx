@@ -19,7 +19,7 @@ export function OCRQuickAccessCard() {
         .eq('status', 'pending_ocr');
       return count || 0;
     },
-    refetchInterval: 30000, // Refresh cada 30s
+    refetchOnWindowFocus: true,
   });
 
   return (

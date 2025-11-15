@@ -77,7 +77,8 @@ export function CircuitBreakerStatus() {
       if (error) throw error;
       return data as CircuitBreakerState[];
     },
-    refetchInterval: 10000  // Refresh cada 10s
+    refetchOnWindowFocus: true,
+    refetchInterval: 2 * 60 * 1000, // Solo cada 2 min si tiene foco
   });
 
   if (isLoading) {

@@ -29,7 +29,15 @@ export function useInvoiceApprovals(invoiceId?: string) {
     queryFn: async () => {
       const query = supabase
         .from('invoice_approvals')
-        .select('*')
+        .select(`
+          id,
+          invoice_id,
+          approver_id,
+          approval_level,
+          action,
+          comments,
+          created_at
+        `)
         .order('created_at', { ascending: false });
 
       if (invoiceId) {
@@ -42,6 +50,7 @@ export function useInvoiceApprovals(invoiceId?: string) {
       return data as InvoiceApproval[];
     },
     enabled: !!invoiceId,
+    refetchOnWindowFocus: true,
   });
 }
 

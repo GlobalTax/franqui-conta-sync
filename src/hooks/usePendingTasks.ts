@@ -163,6 +163,8 @@ export function usePendingTasks() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
     },
-    refetchInterval: 60000, // Refetch every minute
+    enabled: !!currentMembership?.restaurant_id,
+    refetchOnWindowFocus: true,
+    refetchInterval: 2 * 60 * 1000, // Solo cada 2 min si tiene foco
   });
 }

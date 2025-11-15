@@ -17,7 +17,7 @@ export const useNotifications = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: true,
   });
 };
 

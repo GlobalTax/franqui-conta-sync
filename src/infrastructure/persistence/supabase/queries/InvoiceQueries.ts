@@ -131,12 +131,41 @@ export class InvoiceQueries {
    * Obtiene facturas emitidas con filtros
    */
   static async findInvoicesIssued(
-    filters: Omit<InvoiceFilters, 'supplierId' | 'approvalStatus'>
+    filters: Omit<InvoiceFilters, 'supplierId' | 'approvalStatus'> & { page?: number; pageSize?: number }
   ): Promise<InvoiceIssued[]> {
+    const page = filters.page || 0;
+    const pageSize = filters.pageSize || 50;
+
     let query = supabase
       .from("invoices_issued")
-      .select("*")
-      .order("invoice_date", { ascending: false });
+      .select(`
+        id,
+        centro_code,
+        customer_name,
+        customer_tax_id,
+        customer_email,
+        customer_address,
+        invoice_series,
+        invoice_number,
+        full_invoice_number,
+        invoice_date,
+        due_date,
+        subtotal,
+        tax_total,
+        total,
+        status,
+        entry_id,
+        payment_transaction_id,
+        pdf_path,
+        sent_at,
+        paid_at,
+        notes,
+        created_at,
+        updated_at,
+        created_by
+      `)
+      .order("invoice_date", { ascending: false })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (filters.centroCode) {
       query = query.eq("centro_code", filters.centroCode);
@@ -176,7 +205,22 @@ export class InvoiceQueries {
   ): Promise<InvoiceLine[]> {
     const { data, error } = await supabase
       .from("invoice_lines")
-      .select("*")
+      .select(`
+        id,
+        invoice_id,
+        invoice_type,
+        line_number,
+        description,
+        quantity,
+        unit_price,
+        discount_percentage,
+        discount_amount,
+        subtotal,
+        tax_rate,
+        tax_amount,
+        total,
+        account_code
+      `)
       .eq("invoice_id", invoiceId)
       .eq("invoice_type", invoiceType)
       .order("line_number");
@@ -199,7 +243,7 @@ export class InvoiceQueries {
 
     const { data: sequence } = await supabase
       .from("invoice_sequences")
-      .select("*")
+      .select("last_number, centro_code, invoice_type, series, year")
       .eq("centro_code", centroCode)
       .eq("invoice_type", "issued")
       .eq("series", series)

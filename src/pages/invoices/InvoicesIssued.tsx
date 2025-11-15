@@ -3,14 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useInvoicesIssued } from '@/hooks/useInvoicesIssued';
 import { InvoiceStatusBadge } from '@/components/invoices/InvoiceStatusBadge';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function InvoicesIssued() {
   const navigate = useNavigate();
-  const { data: invoices, isLoading } = useInvoicesIssued();
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
+  const { data: invoices, isLoading } = useInvoicesIssued({ page, pageSize });
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -62,6 +64,31 @@ export default function InvoicesIssued() {
               </div>
             )}
           </div>
+          {invoices && invoices.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t border-border bg-muted/30">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Página {page + 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => p + 1)}
+                disabled={!invoices || invoices.length < pageSize}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

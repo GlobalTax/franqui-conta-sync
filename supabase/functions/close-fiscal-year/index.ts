@@ -52,6 +52,19 @@ Deno.serve(async (req) => {
       `[close-fiscal-year] Starting closure: ${fiscalYearId} at ${closingDate}`
     );
 
+    // Get fiscal year details for closing_periods
+    const { data: fiscalYear, error: fyError } = await supabase
+      .from('fiscal_years')
+      .select('year, start_date, end_date')
+      .eq('id', fiscalYearId)
+      .single();
+
+    if (fyError || !fiscalYear) {
+      throw new Error(`Error al obtener ejercicio fiscal: ${fyError?.message || 'No encontrado'}`);
+    }
+
+    console.log(`[close-fiscal-year] Fiscal year: ${fiscalYear.year} (${fiscalYear.start_date} to ${fiscalYear.end_date})`);
+
     // ========================================================================
     // STEP 1: Calculate P&L (Profit & Loss)
     // ========================================================================
@@ -394,12 +407,86 @@ Deno.serve(async (req) => {
 
     console.log(`[close-fiscal-year] ✅ Fiscal year closed successfully`);
 
+    // ========================================================================
+    // STEP 5: Create closing_periods records (monthly + annual)
+    // ========================================================================
+
+    console.log(`[close-fiscal-year] Creating closing_periods...`);
+
+    // Calculate all months in fiscal year
+    const startDate = new Date(fiscalYear.start_date);
+    const endDate = new Date(closingDate);
+    const months: Array<{ year: number; month: number }> = [];
+
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      months.push({
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() + 1,
+      });
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+
+    console.log(`[close-fiscal-year] Months to close: ${months.length}`);
+
+    // Insert monthly closing periods
+    const monthlyPeriods = months.map(({ year, month }) => ({
+      centro_code: centroCode,
+      period_type: 'monthly',
+      period_year: year,
+      period_month: month,
+      status: 'closed',
+      closing_date: closingDate,
+      closing_entry_id: closingEntry.id,
+      closed_by: user.id,
+      notes: `Cierre automático - Migración ejercicio ${fiscalYear.year}`,
+    }));
+
+    const { error: monthlyError } = await supabase
+      .from('closing_periods')
+      .insert(monthlyPeriods);
+
+    if (monthlyError) {
+      console.error('[close-fiscal-year] Error creating monthly closings:', monthlyError);
+      throw new Error(`Error al crear cierres mensuales: ${monthlyError.message}`);
+    }
+
+    console.log(`[close-fiscal-year] ✅ ${months.length} monthly closings created`);
+
+    // Insert annual closing period
+    const { error: annualError } = await supabase
+      .from('closing_periods')
+      .insert({
+        centro_code: centroCode,
+        period_type: 'annual',
+        period_year: fiscalYear.year,
+        period_month: null,
+        status: 'closed',
+        closing_date: closingDate,
+        closing_entry_id: closingEntry.id,
+        regularization_entry_id: regularizationEntry.id,
+        closed_by: user.id,
+        notes: `Cierre anual - Migración ejercicio ${fiscalYear.year}`,
+      });
+
+    if (annualError) {
+      console.error('[close-fiscal-year] Error creating annual closing:', annualError);
+      throw new Error(`Error al crear cierre anual: ${annualError.message}`);
+    }
+
+    console.log(`[close-fiscal-year] ✅ Annual closing created`);
+
     return new Response(
       JSON.stringify({
         success: true,
         regularization_entry_id: regularizationEntry.id,
         closing_entry_id: closingEntry.id,
         result_amount: Math.round(result * 100) / 100,
+        periods_closed: {
+          monthly: months.length,
+          annual: 1,
+          total: months.length + 1,
+        },
         message:
           result > 0
             ? `Beneficio de ${result.toFixed(2)}€`

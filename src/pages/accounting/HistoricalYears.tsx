@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowRight, Trash2, RotateCcw, FileText, Loader2 } from "lucide-react";
+import { Plus, ArrowRight, Trash2, RotateCcw, FileText, Loader2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { SectionHeader } from "@/components/common/SectionHeader";
 
@@ -211,6 +211,7 @@ export default function HistoricalYears() {
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Asientos</TableHead>
                   <TableHead>Fecha Cierre</TableHead>
+                  <TableHead></TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -231,6 +232,17 @@ export default function HistoricalYears() {
                         {fy.closing_date
                           ? new Date(fy.closing_date).toLocaleDateString('es-ES')
                           : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/contabilidad/ejercicios/${fy.id}/dashboard`)}
+                          className="gap-2"
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          Dashboard
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">

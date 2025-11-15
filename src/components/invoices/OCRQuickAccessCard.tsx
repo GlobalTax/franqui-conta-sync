@@ -1,13 +1,15 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Scan, Upload, Inbox, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function OCRQuickAccessCard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Query para contar facturas pendientes en inbox
   const { data: pendingCount } = useQuery({
@@ -20,7 +22,33 @@ export function OCRQuickAccessCard() {
       return count || 0;
     },
     refetchOnWindowFocus: true,
+    refetchInterval: false, // ✅ Sin polling, usamos Realtime
   });
+
+  // ✅ REALTIME: Escuchar cambios en facturas recibidas
+  useEffect(() => {
+    const channel = supabase
+      .channel('ocr-pending-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'invoices_received',
+          filter: 'status=eq.pending_ocr', // Solo facturas pendientes
+        },
+        (payload) => {
+          console.log('📥 Factura pendiente OCR actualizada:', payload);
+          // Invalidar contador para refetch
+          queryClient.invalidateQueries({ queryKey: ['ocr-pending-count'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   return (
     <Card className="relative overflow-hidden group hover:border-primary/50 transition-all">

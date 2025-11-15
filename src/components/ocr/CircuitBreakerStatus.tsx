@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,6 +67,8 @@ function ErrorTypeBadge({ errorType }: { errorType: ErrorType }) {
 }
 
 export function CircuitBreakerStatus() {
+  const queryClient = useQueryClient();
+
   const { data: states, isLoading } = useQuery({
     queryKey: ['circuit-breaker-status'],
     queryFn: async () => {
@@ -78,8 +81,32 @@ export function CircuitBreakerStatus() {
       return data as CircuitBreakerState[];
     },
     refetchOnWindowFocus: true,
-    refetchInterval: 2 * 60 * 1000, // Solo cada 2 min si tiene foco
+    refetchInterval: false, // ✅ Eliminado polling, usamos Realtime
   });
+
+  // ✅ REALTIME: Escuchar cambios en circuit breaker
+  useEffect(() => {
+    const channel = supabase
+      .channel('circuit-breaker-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'ocr_circuit_breaker',
+        },
+        (payload) => {
+          console.log('🔄 Circuit breaker actualizado:', payload);
+          // Invalidar cache para refetch automático
+          queryClient.invalidateQueries({ queryKey: ['circuit-breaker-status'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   if (isLoading) {
     return (

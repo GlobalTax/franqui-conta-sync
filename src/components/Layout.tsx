@@ -31,7 +31,6 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
-import { OCRFloatingButton } from "@/components/layout/OCRFloatingButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -88,6 +87,7 @@ const Layout = () => {
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Building2, label: "Mi Empresa", path: "/mi-empresa/mis-datos" },
+    { icon: Sparkles, label: "Digitalización", path: "/digitalizacion", highlight: true },
     { icon: FileText, label: "Fact. Recibidas", path: "/invoices" },
     { icon: FileText, label: "Fact. Emitidas", path: "/facturas/emitidas" },
     { icon: Building2, label: "Proveedores", path: "/proveedores" },
@@ -109,14 +109,6 @@ const Layout = () => {
     { icon: FileText, label: "Facturas Expedidas", path: "/iva/expedidas" },
     { icon: Receipt, label: "Facturas Recibidas", path: "/iva/recibidas" },
     { icon: FileSpreadsheet, label: "Modelo 303", path: "/iva/modelo-303" },
-  ];
-
-  const digitizationItems = [
-    { icon: Sparkles, label: "Nueva Factura OCR", path: "/invoices/new-received", highlight: true },
-    { icon: Upload, label: "Carga Masiva", path: "/invoices/bulk-upload", highlight: true },
-    { icon: Inbox, label: "Inbox OCR", path: "/digitalizacion/inbox" },
-    { icon: Search, label: "OCR Depura", path: "/digitalizacion/depura" },
-    { icon: Trash2, label: "Papelera", path: "/digitalizacion/papelera" },
   ];
 
   const reportItems = [
@@ -210,33 +202,7 @@ const Layout = () => {
               Principal
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(0, 5).map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
-                  activeClassName="bg-primary/10 text-primary font-medium"
-                >
-                  <item.icon className="h-4 w-4" strokeWidth={2} />
-                  <span className="text-sm">{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          </div>
-
-          {/* Digitalización Section */}
-          <div>
-            <div className="flex items-center justify-between mb-2 px-2">
-              <h3 className="text-xs font-medium text-muted-foreground">
-                Digitalización OCR
-              </h3>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                AI
-              </Badge>
-            </div>
-            <div className="space-y-0.5">
-              {digitizationItems.map((item) => (
+              {navItems.slice(0, 4).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -261,7 +227,7 @@ const Layout = () => {
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(5, 15).map((item) => (
+              {navItems.slice(4, 17).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -441,9 +407,6 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
-
-      {/* Floating Action Button */}
-      <OCRFloatingButton />
     </div>
   );
 };

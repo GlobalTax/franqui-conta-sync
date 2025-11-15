@@ -240,20 +240,20 @@ export async function getSuppliers(organizationId: string, active = true) {
   return { data: (data as unknown) as Supplier[] | null, error };
 }
 
-// Journal Entries
+// Journal Entries (ahora en accounting_entries)
 export async function getJournalEntries(
   organizationId: string,
   periodId?: string,
   status?: string
 ) {
   let query = supabase
-    .from("journal_entries" as any)
+    .from("accounting_entries" as any)
     .select("*")
     .eq("organization_id", organizationId)
     .order("entry_date", { ascending: false });
   
   if (periodId) {
-    query = query.eq("period_id", periodId);
+    query = query.eq("fiscal_year_id", periodId);
   }
   
   if (status) {
@@ -264,14 +264,13 @@ export async function getJournalEntries(
   return { data: (data as unknown) as JournalEntry[] | null, error };
 }
 
-// Periods
+// Periods (ahora en fiscal_years)
 export async function getPeriods(organizationId: string, isClosed?: boolean) {
   let query = supabase
-    .from("periods" as any)
+    .from("fiscal_years" as any)
     .select("*")
     .eq("organization_id", organizationId)
-    .order("year", { ascending: false })
-    .order("month", { ascending: false });
+    .order("year", { ascending: false });
   
   if (isClosed !== undefined) {
     query = query.eq("is_closed", isClosed);

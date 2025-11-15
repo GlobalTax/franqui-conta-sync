@@ -9,9 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
  * Calcula el hash SHA-256 de un asiento contable
  */
 export async function calculateEntryHash(entryId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('calculate_entry_hash', {
+  const { data, error } = await supabase.rpc('calculate_entry_hash' as any, {
     entry_id: entryId
-  });
+  }) as { data: string; error: any };
 
   if (error) throw new Error(`Error calculando hash: ${error.message}`);
   return data;
@@ -29,10 +29,10 @@ export async function validateEntryChain(
   total_entries: number;
   message: string;
 }> {
-  const { data, error } = await supabase.rpc('validate_entry_chain', {
+  const { data, error } = await supabase.rpc('validate_entry_chain' as any, {
     centro_code_param: centroCode,
     fiscal_year_id_param: fiscalYearId
-  });
+  }) as { data: any[]; error: any };
 
   if (error) throw new Error(`Error validando cadena: ${error.message}`);
   return data[0];
@@ -45,10 +45,10 @@ export async function lockEntry(
   entryId: string,
   reason?: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('lock_accounting_entry', {
+  const { data, error } = await supabase.rpc('lock_accounting_entry' as any, {
     entry_id_param: entryId,
     reason_param: reason || 'Asiento bloqueado para cumplimiento normativo'
-  });
+  }) as { data: boolean; error: any };
 
   if (error) throw new Error(`Error bloqueando asiento: ${error.message}`);
   return data;
@@ -59,7 +59,7 @@ export async function lockEntry(
  */
 export async function getEntryAuditLog(entryId: string) {
   const { data, error } = await supabase
-    .from('accounting_entry_audit_log')
+    .from('accounting_entry_audit_log' as any)
     .select('*')
     .eq('entry_id', entryId)
     .order('timestamp', { ascending: false });
@@ -79,11 +79,11 @@ export async function logIncident(incident: {
   technical_details?: Record<string, any>;
 }) {
   const { data, error } = await supabase
-    .from('accounting_incident_log')
+    .from('accounting_incident_log' as any)
     .insert([{
       ...incident,
       user_id: (await supabase.auth.getUser()).data.user?.id
-    }])
+    }] as any)
     .select()
     .single();
 
@@ -96,7 +96,7 @@ export async function logIncident(incident: {
  */
 export async function getUnresolvedIncidents() {
   const { data, error } = await supabase
-    .from('accounting_incident_log')
+    .from('accounting_incident_log' as any)
     .select('*')
     .eq('resolved', false)
     .order('incident_date', { ascending: false });

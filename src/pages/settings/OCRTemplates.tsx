@@ -3,7 +3,7 @@
 // Gestión de templates OCR configurables por proveedor
 // ============================================================================
 
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -13,10 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TemplateBuilder } from '@/components/ocr/TemplateBuilder';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, FileText, Eye, Edit, Trash2, Zap, BarChart3 } from 'lucide-react';
+import { Plus, FileText, Eye, Edit, Trash2, Zap, BarChart3, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Lazy load del template builder pesado
+const TemplateBuilder = lazy(() => import('@/components/ocr/TemplateBuilder').then(m => ({ default: m.TemplateBuilder })));
 
 export default function OCRTemplates() {
   const navigate = useNavigate();
@@ -252,16 +254,25 @@ export default function OCRTemplates() {
           </DialogHeader>
           
           {selectedSupplierData && (
-            <TemplateBuilder
-              supplierId={selectedSupplier}
-              supplierName={selectedSupplierData.name}
-              pdfUrl={samplePdfUrl}
-              existingTemplate={selectedTemplate}
-              onSave={() => {
-                setShowBuilder(false);
-                refetchTemplates();
-              }}
-            />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center space-y-3">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                  <p className="text-muted-foreground">Cargando constructor de template...</p>
+                </div>
+              </div>
+            }>
+              <TemplateBuilder
+                supplierId={selectedSupplier}
+                supplierName={selectedSupplierData.name}
+                pdfUrl={samplePdfUrl}
+                existingTemplate={selectedTemplate}
+                onSave={() => {
+                  setShowBuilder(false);
+                  refetchTemplates();
+                }}
+              />
+            </Suspense>
           )}
         </DialogContent>
       </Dialog>

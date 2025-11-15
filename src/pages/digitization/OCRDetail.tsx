@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useInvoice } from '@/hooks/useInvoice';
@@ -6,10 +7,13 @@ import { usePostInvoice } from '@/hooks/usePostInvoice';
 import { normalizeInvoiceForFrontend } from '@/lib/fiscal/normalize-frontend';
 import { mapAP } from '@/lib/accounting/composers/map-ap';
 import { validatePosting } from '@/lib/accounting/composers/validate-posting';
-import { PDFViewer } from '@/components/digitization/PDFViewer';
 import { InvoiceForm } from '@/components/digitization/InvoiceForm';
-import { JournalPreview } from '@/components/digitization/JournalPreview';
 import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load componentes pesados
+const PDFViewer = lazy(() => import('@/components/digitization/PDFViewer').then(m => ({ default: m.PDFViewer })));
+const JournalPreview = lazy(() => import('@/components/digitization/JournalPreview').then(m => ({ default: m.JournalPreview })));
 
 export default function OCRDetail() {
   const { id } = useParams<{ id: string }>();
@@ -61,17 +65,27 @@ export default function OCRDetail() {
   return (
     <div className="grid grid-cols-12 gap-4 p-6 h-screen">
       <div className="col-span-7 h-full">
-        <PDFViewer filePath={invoice.file_path} />
+        <Suspense fallback={
+          <div className="h-full flex items-center justify-center bg-muted rounded-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        }>
+          <PDFViewer filePath={invoice.file_path} />
+        </Suspense>
       </div>
       
       <div className="col-span-5 h-full overflow-y-auto space-y-4">
         <InvoiceForm data={normalized} invoiceId={id!} />
         
-        <JournalPreview 
-          preview={validation.post_preview} 
-          issues={validation.blocking_issues}
-          mapping={mapping}
-        />
+        <Suspense fallback={
+          <Skeleton className="h-64 w-full" />
+        }>
+          <JournalPreview 
+            preview={validation.post_preview} 
+            issues={validation.blocking_issues}
+            mapping={mapping}
+          />
+        </Suspense>
         
         <div className="flex gap-2 justify-end pt-4 border-t">
           <Button 

@@ -1,5 +1,8 @@
-import { InvoicePDFPreview } from "../InvoicePDFPreview";
-import { FileCheck } from "lucide-react";
+import { lazy, Suspense } from "react";
+import { FileCheck, Loader2 } from "lucide-react";
+
+// Lazy load del visor PDF
+const InvoicePDFPreview = lazy(() => import("../InvoicePDFPreview").then(m => ({ default: m.InvoicePDFPreview })));
 
 interface InvoiceReviewPDFSectionProps {
   documentPath: string | null;
@@ -12,7 +15,13 @@ export function InvoiceReviewPDFSection({ documentPath }: InvoiceReviewPDFSectio
         <FileCheck className="h-5 w-5 text-primary" />
         Documento
       </h3>
-      <InvoicePDFPreview documentPath={documentPath} />
+      <Suspense fallback={
+        <div className="h-96 flex items-center justify-center bg-muted rounded-lg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }>
+        <InvoicePDFPreview documentPath={documentPath} />
+      </Suspense>
     </section>
   );
 }

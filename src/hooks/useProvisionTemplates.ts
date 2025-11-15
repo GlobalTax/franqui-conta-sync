@@ -35,7 +35,7 @@ export const useProvisionTemplates = () => {
       const { data, error } = await supabase
         .from("provision_templates")
         .select("*")
-        .eq("centro_code", selectedView.id)
+        .eq("centro_code", selectedView.code || selectedView.id)
         .eq("is_active", true)
         .order("template_name", { ascending: true });
 

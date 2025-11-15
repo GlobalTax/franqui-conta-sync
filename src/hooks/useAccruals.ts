@@ -49,7 +49,7 @@ export const useAccruals = () => {
       const { data, error } = await supabase
         .from("accruals")
         .select("*")
-        .eq("centro_code", selectedView.id)
+        .eq("centro_code", selectedView.code || selectedView.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

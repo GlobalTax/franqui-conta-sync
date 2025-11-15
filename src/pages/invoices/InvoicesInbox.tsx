@@ -67,17 +67,24 @@ const transformInvoice = (inv: InvoiceReceived) => ({
   ocr_merge_notes: inv.ocr_merge_notes,
 });
 
-export default function InvoicesInbox() {
+interface InvoicesInboxProps {
+  view?: 'inbox' | 'depura' | 'papelera';
+}
+
+export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   
-  // Determinar tab activo basado en la ruta
+  // Determinar tab activo basado en el prop view o la ruta (para retrocompatibilidad)
   const activeTab = useMemo(() => {
+    if (view === 'depura') return 'depura';
+    if (view === 'papelera') return 'papelera';
+    // Fallback a ruta para retrocompatibilidad
     if (location.pathname.includes('/depura')) return 'depura';
     if (location.pathname.includes('/papelera')) return 'papelera';
     return 'recibidos';
-  }, [location.pathname]);
+  }, [view, location.pathname]);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     status?: string;

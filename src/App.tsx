@@ -60,6 +60,7 @@ const OCRMetrics = lazy(() => import("@/pages/analytics/OCRMetrics"));
 const OCRCacheMetrics = lazy(() => import("@/pages/analytics/OCRCacheMetrics"));
 const SaltEdgeConnections = lazy(() => import("@/pages/treasury/SaltEdgeConnections"));
 const OCRInbox = lazy(() => import("@/pages/digitization/OCRInbox"));
+const Digitization = lazy(() => import("@/pages/Digitization"));
 const OCRDetail = lazy(() => import("@/pages/digitization/OCRDetail"));
 const HistoricalImport = lazy(() => import("@/pages/accounting/HistoricalImport"));
 const HistoricalYears = lazy(() => import("@/pages/accounting/HistoricalYears"));
@@ -140,16 +141,23 @@ const App = () => {
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/invoices/received" element={<Navigate to="/invoices/inbox" replace />} />
             <Route path="/invoices/issued" element={<Navigate to="/invoices?tab=emitidas" replace />} />
-            <Route path="/digitalizacion/inbox" element={<InvoicesInbox />} />
+            {/* === DIGITALIZACIÓN === */}
+            <Route path="/digitalizacion" element={<Digitization />} />
+            
+            {/* Rutas legacy con redirects */}
+            <Route path="/digitalizacion/inbox" element={<Navigate to="/digitalizacion?tab=inbox" replace />} />
+            <Route path="/digitalizacion/depura" element={<Navigate to="/digitalizacion?tab=depura" replace />} />
+            <Route path="/digitalizacion/papelera" element={<Navigate to="/digitalizacion?tab=papelera" replace />} />
+            <Route path="/invoices/new-received" element={<Navigate to="/digitalizacion?tab=nueva" replace />} />
+            <Route path="/invoices/bulk-upload" element={<Navigate to="/digitalizacion?tab=carga" replace />} />
+            
+            {/* OCR legacy routes */}
               <Route path="/digitalizacion/inbox-v2" element={<OCRInbox />} />
               <Route path="/digitalizacion/factura/:id" element={<OCRDetail />} />
-            <Route path="/digitalizacion/depura" element={<InvoicesInbox />} />
-            <Route path="/digitalizacion/papelera" element={<InvoicesInbox />} />
+            
             {/* Mantener ruta legacy por compatibilidad */}
-            <Route path="/invoices/inbox" element={<InvoicesInbox />} />
-            <Route path="/invoices/new-received" element={<InvoiceDetailEditor />} />
+            <Route path="/invoices/inbox" element={<Navigate to="/digitalizacion?tab=inbox" replace />} />
             <Route path="/invoices/received/:id/edit" element={<InvoiceDetailEditor />} />
-            <Route path="/invoices/bulk-upload" element={<BulkInvoiceUpload />} />
             <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<Navigate to="/invoices/new-received" replace />} />

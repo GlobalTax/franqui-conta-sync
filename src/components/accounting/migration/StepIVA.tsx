@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
-import { useSupabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { IVACSVValidator } from "@/components/accounting/IVACSVValidator";
 
 interface StepIVAProps {
@@ -88,7 +88,6 @@ interface IVAImportPanelProps {
 function IVAImportPanel({ type, config, completed, count, onComplete }: IVAImportPanelProps) {
   const [showValidator, setShowValidator] = useState(false);
   const [importing, setImporting] = useState(false);
-  const supabase = useSupabase();
 
   const handleValidated = async (rows: any[]) => {
     setImporting(true);

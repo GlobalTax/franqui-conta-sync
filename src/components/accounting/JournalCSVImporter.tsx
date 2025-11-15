@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { CheckCircle2, AlertTriangle, Download, AlertCircle } from "lucide-react";
 import { useCreateAccountingEntry } from "@/hooks/useAccountingEntries";
-import { useSupabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { NewAccountingEntryFormData, MovementType } from "@/types/accounting-entries";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,6 @@ export function JournalCSVImporter({
   const [validAccounts, setValidAccounts] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const createEntry = useCreateAccountingEntry();
-  const supabase = useSupabase();
 
   const grouped = useMemo(() => {
     const byKey = new Map<string, ParsedRow[]>();
@@ -179,7 +178,7 @@ export function JournalCSVImporter({
         .eq('centro_code', centroCode)
         .in('code', uniqueAccounts);
       
-      const validCodes = new Set(accounts?.map(a => a.code) || []);
+      const validCodes = new Set<string>(accounts?.map(a => a.code) || []);
       setValidAccounts(validCodes);
 
       parsed.forEach((row, idx) => {
@@ -247,13 +246,15 @@ export function JournalCSVImporter({
         }
 
         const formData: NewAccountingEntryFormData = {
-          centro_code: centroCode,
           entry_date: g.entry_date,
           description: g.description,
-          transactions,
+          transactions: transactions.map(t => ({
+            ...t,
+            description: t.description || ''
+          })),
         };
 
-        await createEntry.mutateAsync(formData);
+        await createEntry.mutateAsync({ centroCode, formData });
         successCount++;
       }
 

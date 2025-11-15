@@ -8,11 +8,13 @@ import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
+import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 
 interface StepAperturaProps {
   config: FiscalYearConfig;
   completed: boolean;
   entryId?: string;
+  migrationRunId?: string;
   onComplete: (entryId: string, date: string) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -24,7 +26,7 @@ type AperturaRow = {
   saldo_acreedor?: string | number;
 };
 
-export function StepApertura({ config, completed, entryId, onComplete, onNext, onPrev }: StepAperturaProps) {
+export function StepApertura({ config, completed, entryId, migrationRunId, onComplete, onNext, onPrev }: StepAperturaProps) {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<AperturaRow[]>([]);
   const [importing, setImporting] = useState(false);
@@ -67,7 +69,14 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
     setImporting(true);
     setErrors([]);
 
+    // Initialize logger
+    const logger = migrationRunId 
+      ? createMigrationLogger('apertura', migrationRunId, config.centroCode, config.fiscalYearId)
+      : null;
+
     try {
+      await logger?.start(`Iniciando importación de saldo de apertura`, { totalCuentas: rows.length });
+
       const transactions: any[] = [];
       let lineNumber = 1;
 
@@ -96,6 +105,8 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
         }
       }
 
+      await logger?.progress(`Procesando transacciones`, transactions.length, transactions.length, { cuentas: rows.length });
+
       const totalDebit = transactions
         .filter(t => t.movement_type === 'debit')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -105,8 +116,12 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
         .reduce((sum, t) => sum + t.amount, 0);
 
       if (Math.abs(totalDebit - totalCredit) > 0.01) {
-        throw new Error(`Asiento descuadrado: Debe=${totalDebit.toFixed(2)} Haber=${totalCredit.toFixed(2)}`);
+        const error = `Asiento descuadrado: Debe=${totalDebit.toFixed(2)} Haber=${totalCredit.toFixed(2)}`;
+        await logger?.error(error, undefined, { totalDebit, totalCredit, difference: Math.abs(totalDebit - totalCredit) });
+        throw new Error(error);
       }
+
+      await logger?.validation(`Balance validado correctamente`, true, { totalDebit, totalCredit });
 
       // Get next entry number
       const { data: nextNumber, error: numberError } = await supabase.rpc('get_next_entry_number', {
@@ -116,7 +131,10 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
         p_serie: 'MIGRACION',
       });
 
-      if (numberError) throw numberError;
+      if (numberError) {
+        await logger?.error('Error al obtener número de asiento', numberError.message);
+        throw numberError;
+      }
 
       // Create opening entry
       const { data: entry, error: entryError } = await supabase
@@ -135,7 +153,10 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
         .select()
         .single();
 
-      if (entryError) throw entryError;
+      if (entryError) {
+        await logger?.error('Error al crear asiento de apertura', entryError.message);
+        throw entryError;
+      }
 
       // Insert transactions
       const transactionsWithEntry = transactions.map(t => ({
@@ -147,12 +168,24 @@ export function StepApertura({ config, completed, entryId, onComplete, onNext, o
         .from('accounting_transactions')
         .insert(transactionsWithEntry);
 
-      if (txError) throw txError;
+      if (txError) {
+        await logger?.error('Error al insertar transacciones', txError.message);
+        throw txError;
+      }
+
+      await logger?.success(`Asiento de apertura creado exitosamente`, {
+        entryId: entry.id,
+        entryNumber: nextNumber,
+        totalTransactions: transactions.length,
+        totalDebit,
+        totalCredit,
+      });
 
       toast.success(`✅ Asiento de apertura creado con ${transactions.length} líneas`);
       onComplete(entry.id, config.startDate);
     } catch (error: any) {
       console.error('Import error:', error);
+      await logger?.error('Error en importación de apertura', error);
       setErrors([error.message || 'Error desconocido']);
       toast.error(error.message || 'Error al importar');
     } finally {

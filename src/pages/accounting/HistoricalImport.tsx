@@ -9,6 +9,7 @@ import { StepDiario } from "@/components/accounting/migration/StepDiario";
 import { StepIVA } from "@/components/accounting/migration/StepIVA";
 import { StepBancos } from "@/components/accounting/migration/StepBancos";
 import { StepCierre } from "@/components/accounting/migration/StepCierre";
+import { LogsViewer } from "@/components/accounting/migration/LogsViewer";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { 
   Tooltip, 
@@ -252,6 +253,7 @@ export default function HistoricalImport() {
               config={migration.state.fiscalYear}
               completed={migration.state.apertura.completed}
               entryId={migration.state.apertura.entryId}
+              migrationRunId={migration.state.migrationRunId}
               onComplete={migration.markAperturaComplete}
               onNext={migration.nextStep}
               onPrev={migration.prevStep}
@@ -307,6 +309,18 @@ export default function HistoricalImport() {
             />
           )}
         </div>
+
+        {/* Logs Viewer - Always visible */}
+        {migration.state.migrationRunId && (
+          <div className="mt-8">
+            <LogsViewer
+              migrationRunId={migration.state.migrationRunId}
+              fiscalYearId={migration.state.fiscalYear.fiscalYearId}
+              autoRefresh={migration.state.step < 6}
+              maxHeight="500px"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

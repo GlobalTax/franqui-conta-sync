@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { MigrationState } from "@/hooks/useHistoricalMigration";
+import { ErrorExportDialog, type ValidationError } from "./ErrorExportDialog";
 
 interface StepCierreProps {
   state: MigrationState;
@@ -18,6 +19,8 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
   const [closing, setClosing] = useState(false);
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   const handleValidate = async () => {
     setValidating(true);
@@ -35,16 +38,29 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
       if (error) throw error;
 
       setValidationResult(data);
+      setValidationErrors([...(data.errors || []), ...(data.warnings || [])]);
       
-      if (data.valid) {
-        toast.success("✅ Validación exitosa");
+      if (data.errors && data.errors.length > 0) {
+        toast.error(`❌ ${data.errors.length} errores encontrados`);
+        setShowErrorDialog(true);
+      } else if (data.warnings && data.warnings.length > 0) {
+        toast.warning(`⚠️ ${data.warnings.length} advertencias`);
+        setShowErrorDialog(true);
       } else {
-        toast.warning("⚠️ Se encontraron advertencias");
+        toast.success("✅ Validación exitosa - No hay errores");
       }
     } catch (error: any) {
       console.error('Validation error:', error);
       toast.error("Error al validar");
-      setValidationResult({ valid: false, errors: [error.message] });
+      setValidationResult({ valid: false, errors: [], warnings: [] });
+      setValidationErrors([{
+        error_type: 'missing_data',
+        severity: 'error',
+        entity_type: 'journal_entry',
+        message: error.message,
+        suggestion: 'Contactar soporte técnico',
+      }]);
+      setShowErrorDialog(true);
     } finally {
       setValidating(false);
     }
@@ -188,6 +204,17 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
           </Alert>
         )}
 
+        {validationErrors.length > 0 && (
+          <Button 
+            variant="outline" 
+            onClick={() => setShowErrorDialog(true)}
+            className="gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Ver detalles ({validationErrors.length})
+          </Button>
+        )}
+
         <div className="flex gap-3">
           <Button variant="outline" onClick={onPrev}>← Atrás</Button>
           <Button 
@@ -206,6 +233,13 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
             Cerrar Ejercicio
           </Button>
         </div>
+
+        <ErrorExportDialog
+          open={showErrorDialog}
+          onOpenChange={setShowErrorDialog}
+          errors={validationErrors.filter(e => e.severity === 'error')}
+          warnings={validationErrors.filter(e => e.severity === 'warning')}
+        />
       </CardContent>
     </Card>
   );

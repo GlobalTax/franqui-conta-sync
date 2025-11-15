@@ -60,6 +60,8 @@ const SaltEdgeConnections = lazy(() => import("@/pages/treasury/SaltEdgeConnecti
 const OCRInbox = lazy(() => import("@/pages/digitization/OCRInbox"));
 const OCRDetail = lazy(() => import("@/pages/digitization/OCRDetail"));
 const HistoricalImport = lazy(() => import("@/pages/accounting/HistoricalImport"));
+const FixedAssets = lazy(() => import("@/pages/accounting/FixedAssets"));
+const AssetsRegister = lazy(() => import("@/pages/reports/AssetsRegister"));
 
 /**
  * React Query Configuration

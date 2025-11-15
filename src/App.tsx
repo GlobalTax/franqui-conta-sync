@@ -62,6 +62,7 @@ const OCRDetail = lazy(() => import("@/pages/digitization/OCRDetail"));
 const HistoricalImport = lazy(() => import("@/pages/accounting/HistoricalImport"));
 const FixedAssets = lazy(() => import("@/pages/accounting/FixedAssets"));
 const AssetsRegister = lazy(() => import("@/pages/reports/AssetsRegister"));
+const Accruals = lazy(() => import("@/pages/accounting/Accruals"));
 
 /**
  * React Query Configuration
@@ -161,6 +162,9 @@ const App = () => {
               <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
               <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
               <Route path="/contabilidad/migracion-historica" element={<HistoricalImport />} />
+              <Route path="/contabilidad/activos-fijos" element={<FixedAssets />} />
+              <Route path="/contabilidad/periodificaciones" element={<Accruals />} />
+              <Route path="/reportes/libro-bienes" element={<AssetsRegister />} />
               <Route path="/reportes/balance" element={<BalanceSheet />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />
               <Route path="/reportes/diario" element={<JournalBook />} />

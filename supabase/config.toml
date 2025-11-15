@@ -47,3 +47,18 @@ verify_jwt = false
 
 [functions.get-ap-mapping]
 verify_jwt = false
+
+[functions.calculate-depreciation]
+verify_jwt = true
+
+[functions.post-depreciation-entry]
+verify_jwt = true
+
+[functions.generate-accrual-entries]
+verify_jwt = true
+
+[functions.post-accrual-entry]
+verify_jwt = true
+
+[functions.validate-migration]
+verify_jwt = true

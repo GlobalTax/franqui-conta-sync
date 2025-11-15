@@ -388,6 +388,133 @@ export type Database = {
           },
         ]
       }
+      accrual_entries: {
+        Row: {
+          accounting_entry_id: string | null
+          accrual_id: string
+          amount: number
+          created_at: string
+          id: string
+          period_date: string
+          period_month: number
+          period_year: number
+          status: string
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          accrual_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          period_date: string
+          period_month: number
+          period_year: number
+          status?: string
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          accrual_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          period_date?: string
+          period_month?: number
+          period_year?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accrual_entries_accounting_entry_id_fkey"
+            columns: ["accounting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accrual_entries_accrual_id_fkey"
+            columns: ["accrual_id"]
+            isOneToOne: false
+            referencedRelation: "accruals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accruals: {
+        Row: {
+          account_code: string
+          accrual_type: string
+          centro_code: string
+          counterpart_account: string
+          created_at: string
+          created_by: string | null
+          description: string
+          end_date: string
+          frequency: string
+          id: string
+          invoice_id: string | null
+          start_date: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          accrual_type: string
+          centro_code: string
+          counterpart_account: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          end_date: string
+          frequency: string
+          id?: string
+          invoice_id?: string | null
+          start_date: string
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          accrual_type?: string
+          centro_code?: string
+          counterpart_account?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          end_date?: string
+          frequency?: string
+          id?: string
+          invoice_id?: string | null
+          start_date?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accruals_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "accruals_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "accruals_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_notifications: {
         Row: {
           alert_id: string | null

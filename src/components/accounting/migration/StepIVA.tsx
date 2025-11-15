@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
 import { supabase } from "@/integrations/supabase/client";
 import { IVACSVValidator } from "@/components/accounting/IVACSVValidator";
+import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 
 interface StepIVAProps {
   config: FiscalYearConfig;
@@ -15,13 +16,14 @@ interface StepIVAProps {
   emitidasCount: number;
   recibidasCompleted: boolean;
   recibidasCount: number;
+  migrationRunId?: string;
   onEmitidasComplete: (count: number) => void;
   onRecibidasComplete: (count: number) => void;
   onNext: () => void;
   onPrev: () => void;
 }
 
-export function StepIVA({ config, emitidasCompleted, emitidasCount, recibidasCompleted, recibidasCount, onEmitidasComplete, onRecibidasComplete, onNext, onPrev }: StepIVAProps) {
+export function StepIVA({ config, emitidasCompleted, emitidasCount, recibidasCompleted, recibidasCount, migrationRunId, onEmitidasComplete, onRecibidasComplete, onNext, onPrev }: StepIVAProps) {
   const [activeTab, setActiveTab] = useState<'emitidas' | 'recibidas'>('emitidas');
   const allCompleted = emitidasCompleted && recibidasCompleted;
 
@@ -62,10 +64,24 @@ export function StepIVA({ config, emitidasCompleted, emitidasCount, recibidasCom
             <TabsTrigger value="recibidas">Recibidas {recibidasCompleted && <CheckCircle2 className="h-4 w-4 ml-2" />}</TabsTrigger>
           </TabsList>
           <TabsContent value="emitidas">
-            <IVAImportPanel type="emitidas" config={config} completed={emitidasCompleted} count={emitidasCount} onComplete={onEmitidasComplete} />
+            <IVAImportPanel 
+              type="emitidas" 
+              config={config} 
+              completed={emitidasCompleted} 
+              count={emitidasCount} 
+              migrationRunId={migrationRunId}
+              onComplete={onEmitidasComplete} 
+            />
           </TabsContent>
           <TabsContent value="recibidas">
-            <IVAImportPanel type="recibidas" config={config} completed={recibidasCompleted} count={recibidasCount} onComplete={onRecibidasComplete} />
+            <IVAImportPanel 
+              type="recibidas" 
+              config={config} 
+              completed={recibidasCompleted} 
+              count={recibidasCount} 
+              migrationRunId={migrationRunId}
+              onComplete={onRecibidasComplete} 
+            />
           </TabsContent>
         </Tabs>
         <div className="flex gap-3">
@@ -82,23 +98,42 @@ interface IVAImportPanelProps {
   config: FiscalYearConfig;
   completed: boolean;
   count: number;
+  migrationRunId?: string;
   onComplete: (count: number) => void;
 }
 
-function IVAImportPanel({ type, config, completed, count, onComplete }: IVAImportPanelProps) {
+function IVAImportPanel({ type, config, completed, count, migrationRunId, onComplete }: IVAImportPanelProps) {
   const [showValidator, setShowValidator] = useState(false);
   const [importing, setImporting] = useState(false);
 
   const handleValidated = async (rows: any[]) => {
     setImporting(true);
+    
+    const logger = migrationRunId 
+      ? createMigrationLogger(type === 'emitidas' ? 'iva_emitidas' : 'iva_recibidas', migrationRunId, config.centroCode, config.fiscalYearId)
+      : null;
+
     try {
+      await logger?.start(`Iniciando importación de facturas ${type}`, { totalFacturas: rows.length });
+
       const { data, error } = await supabase.functions.invoke('import-iva-historical', {
         body: { centroCode: config.centroCode, fiscalYear: config.year, type, rows }
       });
-      if (error) throw error;
+      
+      if (error) {
+        await logger?.error(`Error al importar facturas ${type}`, error.message);
+        throw error;
+      }
+
+      await logger?.success(`Facturas ${type} importadas exitosamente`, {
+        count: data.count,
+        fiscalYear: config.year,
+      });
+
       toast.success(`${data.count} facturas importadas`);
       onComplete(data.count);
     } catch (error: any) {
+      await logger?.error(`Error en importación de IVA ${type}`, error);
       toast.error(error.message || 'Error al importar');
     } finally {
       setImporting(false);

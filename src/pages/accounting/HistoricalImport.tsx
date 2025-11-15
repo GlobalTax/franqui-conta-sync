@@ -267,6 +267,7 @@ export default function HistoricalImport() {
               entriesCount={migration.state.diario.entriesCount}
               totalDebit={migration.state.diario.totalDebit}
               totalCredit={migration.state.diario.totalCredit}
+              migrationRunId={migration.state.migrationRunId}
               onComplete={migration.markDiarioComplete}
               onNext={migration.nextStep}
               onPrev={migration.prevStep}
@@ -280,6 +281,7 @@ export default function HistoricalImport() {
               emitidasCount={migration.state.iva.emitidas.count}
               recibidasCompleted={migration.state.iva.recibidas.completed}
               recibidasCount={migration.state.iva.recibidas.count}
+              migrationRunId={migration.state.migrationRunId}
               onEmitidasComplete={migration.markIVAEmitidasComplete}
               onRecibidasComplete={migration.markIVARecibidasComplete}
               onNext={migration.nextStep}
@@ -293,6 +295,7 @@ export default function HistoricalImport() {
               completed={migration.state.bancos.completed}
               movements={migration.state.bancos.movements}
               skipped={migration.state.bancos.skipped}
+              migrationRunId={migration.state.migrationRunId}
               onComplete={migration.markBancosComplete}
               onSkip={migration.skipBancos}
               onNext={migration.nextStep}

@@ -10,12 +10,14 @@ import { Norma43Parser } from "@/domain/banking/services/Norma43Parser";
 import type { Norma43ParseResult } from "@/domain/banking/services/Norma43Parser";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 
 interface StepBancosProps {
   config: FiscalYearConfig;
   completed: boolean;
   movements: number;
   skipped: boolean;
+  migrationRunId?: string;
   onComplete: (movements: number) => void;
   onSkip: () => void;
   onNext: () => void;
@@ -27,6 +29,7 @@ export function StepBancos({
   completed, 
   movements, 
   skipped,
+  migrationRunId,
   onComplete, 
   onSkip, 
   onNext, 
@@ -69,7 +72,17 @@ export function StepBancos({
     if (!file || !preview || !fileContent) return;
     
     setImporting(true);
+    
+    const logger = migrationRunId 
+      ? createMigrationLogger('bancos', migrationRunId, config.centroCode, config.fiscalYearId)
+      : null;
+
     try {
+      await logger?.start(`Iniciando importación de movimientos bancarios`, {
+        totalMovimientos: preview.transactions.length,
+        cuenta: preview.header.accountNumber,
+      });
+
       const { data, error } = await supabase.functions.invoke('import-norma43-migration', {
         body: {
           centroCode: config.centroCode,
@@ -80,12 +93,23 @@ export function StepBancos({
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        await logger?.error('Error al importar Norma 43', error.message);
+        throw error;
+      }
       
       if (!data.success) {
+        await logger?.error('Error en importación bancaria', data.error);
         toast.error(data.error || 'Error al importar movimientos');
         return;
       }
+
+      await logger?.success(`Movimientos bancarios importados exitosamente`, {
+        movements_imported: data.movements_imported,
+        account_number: data.account_number,
+        total_credits: data.total_credits,
+        total_debits: data.total_debits,
+      });
       
       toast.success(
         `✅ ${data.movements_imported} movimientos importados\n` +
@@ -99,13 +123,19 @@ export function StepBancos({
       setPreview(null);
     } catch (error: any) {
       console.error('Error importing Norma 43:', error);
+      await logger?.error('Error en importación bancaria', error);
       toast.error(`Error al importar: ${error.message}`);
     } finally {
       setImporting(false);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    const logger = migrationRunId 
+      ? createMigrationLogger('bancos', migrationRunId, config.centroCode, config.fiscalYearId)
+      : null;
+    
+    await logger?.warning('Paso de movimientos bancarios omitido', { reason: 'Usuario decidió omitir' });
     onSkip();
   };
 

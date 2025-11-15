@@ -103,6 +103,15 @@ export default function AccountingDashboard() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => navigate('/contabilidad/periodificaciones')}
+              className="gap-2"
+            >
+              <Activity className="h-4 w-4" />
+              Periodificaciones
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => navigate('/contabilidad/migracion-historica')}
               className="gap-2"
             >

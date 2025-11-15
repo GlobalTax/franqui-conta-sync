@@ -3,13 +3,16 @@
 // Shows statistics about OCR engine usage and performance
 // ============================================================================
 
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Cpu, TrendingUp, DollarSign } from 'lucide-react';
 
 export function OCREngineMetrics() {
+  const queryClient = useQueryClient();
+
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['ocr-engine-metrics'],
     queryFn: async () => {
@@ -40,7 +43,32 @@ export function OCREngineMetrics() {
       };
     },
     refetchOnWindowFocus: true,
+    refetchInterval: false, // ✅ Sin polling, usamos Realtime
   });
+
+  // ✅ REALTIME: Escuchar nuevos logs de procesamiento OCR
+  useEffect(() => {
+    const channel = supabase
+      .channel('ocr-processing-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT', // Solo nuevos procesamientos
+          schema: 'public',
+          table: 'ocr_processing_log',
+        },
+        (payload) => {
+          console.log('📊 Nuevo procesamiento OCR:', payload.new);
+          // Invalidar métricas para recalcular
+          queryClient.invalidateQueries({ queryKey: ['ocr-engine-metrics'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   if (isLoading || !metrics) {
     return null;

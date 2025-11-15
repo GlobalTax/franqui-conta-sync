@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import Layout from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
+import { registerServiceWorker } from "@/lib/register-sw";
 
 // Lazy load all page components
 const Login = lazy(() => import("@/pages/Login"));
@@ -107,6 +108,17 @@ const App = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // ✅ FASE 4.3: Registrar Service Worker en producción
+  useEffect(() => {
+    // Solo en producción (build final, no en dev)
+    if (import.meta.env.PROD) {
+      console.log('🚀 Registrando Service Worker...');
+      registerServiceWorker();
+    } else {
+      console.log('ℹ️ Service Worker deshabilitado en desarrollo');
+    }
   }, []);
 
   if (loading) {

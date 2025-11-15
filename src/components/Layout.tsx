@@ -97,6 +97,7 @@ const Layout = () => {
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },
+    { icon: Upload, label: "Ejercicios Históricos", path: "/contabilidad/ejercicios-historicos" },
     { icon: Layers, label: "Activos Fijos", path: "/contabilidad/activos-fijos" },
     { icon: Zap, label: "Periodificaciones", path: "/contabilidad/periodificaciones" },
     { icon: Receipt, label: "Provisiones", path: "/contabilidad/provisiones" },

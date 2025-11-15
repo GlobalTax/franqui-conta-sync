@@ -4482,6 +4482,190 @@ export type Database = {
         }
         Relationships: []
       }
+      provision_templates: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          created_by: string | null
+          default_amount: number | null
+          description: string | null
+          expense_account: string
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          provision_account: string
+          supplier_name: string | null
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          created_by?: string | null
+          default_amount?: number | null
+          description?: string | null
+          expense_account: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          provision_account?: string
+          supplier_name?: string | null
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          default_amount?: number | null
+          description?: string | null
+          expense_account?: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          provision_account?: string
+          supplier_name?: string | null
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provision_templates_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "provision_templates_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      provisions: {
+        Row: {
+          accounting_entry_id: string | null
+          amount: number
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          centro_code: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          expense_account: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          period_month: number
+          period_year: number
+          provision_account: string
+          provision_date: string
+          provision_number: string
+          reversal_entry_id: string | null
+          status: string
+          supplier_name: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          amount: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          centro_code: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          expense_account: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          period_month: number
+          period_year: number
+          provision_account?: string
+          provision_date: string
+          provision_number: string
+          reversal_entry_id?: string | null
+          status?: string
+          supplier_name: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          amount?: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          centro_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          expense_account?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          provision_account?: string
+          provision_date?: string
+          provision_number?: string
+          reversal_entry_id?: string | null
+          status?: string
+          supplier_name?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provisions_accounting_entry_id_fkey"
+            columns: ["accounting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisions_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "provisions_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+          {
+            foreignKeyName: "provisions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisions_reversal_entry_id_fkey"
+            columns: ["reversal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "provision_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receipts: {
         Row: {
           amount: number | null

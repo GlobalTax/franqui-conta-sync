@@ -62,6 +62,7 @@ const OCRDetail = lazy(() => import("@/pages/digitization/OCRDetail"));
 const HistoricalImport = lazy(() => import("@/pages/accounting/HistoricalImport"));
 const FixedAssets = lazy(() => import("@/pages/accounting/FixedAssets"));
 const AssetsRegister = lazy(() => import("@/pages/reports/AssetsRegister"));
+const Provisions = lazy(() => import("@/pages/accounting/Provisions"));
 const Accruals = lazy(() => import("@/pages/accounting/Accruals"));
 
 /**
@@ -164,6 +165,7 @@ const App = () => {
               <Route path="/contabilidad/migracion-historica" element={<HistoricalImport />} />
               <Route path="/contabilidad/activos-fijos" element={<FixedAssets />} />
               <Route path="/contabilidad/periodificaciones" element={<Accruals />} />
+              <Route path="/contabilidad/provisiones" element={<Provisions />} />
               <Route path="/reportes/libro-bienes" element={<AssetsRegister />} />
               <Route path="/reportes/balance" element={<BalanceSheet />} />
               <Route path="/reportes/mayor" element={<GeneralLedger />} />

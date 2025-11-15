@@ -112,6 +112,15 @@ export default function AccountingDashboard() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => navigate('/contabilidad/provisiones')}
+              className="gap-2"
+            >
+              <FileArchive className="h-4 w-4" />
+              Provisiones
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => navigate('/contabilidad/migracion-historica')}
               className="gap-2"
             >

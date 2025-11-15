@@ -60,5 +60,11 @@ verify_jwt = true
 [functions.post-accrual-entry]
 verify_jwt = true
 
+[functions.post-provision-entry]
+verify_jwt = true
+
+[functions.cancel-provision-entry]
+verify_jwt = true
+
 [functions.validate-migration]
 verify_jwt = true

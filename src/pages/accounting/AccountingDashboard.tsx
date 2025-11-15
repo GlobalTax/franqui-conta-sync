@@ -13,6 +13,7 @@ import {
   Activity,
   Scale,
   Percent,
+  FileArchive,
 } from "lucide-react";
 import {
   useAccountingKPIs,
@@ -30,9 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function AccountingDashboard() {
   const { selectedView } = useView();
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
 
@@ -95,22 +99,33 @@ export default function AccountingDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Ejercicio
-            </Label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-28 h-8 border-0 bg-transparent font-medium">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={y.toString()}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/contabilidad/migracion-historica')}
+              className="gap-2"
+            >
+              <FileArchive className="h-4 w-4" />
+              Migrar Ejercicio Histórico
+            </Button>
+            <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
+              <Label className="text-xs font-medium text-muted-foreground">
+                Ejercicio
+              </Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-28 h-8 border-0 bg-transparent font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y.toString()}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

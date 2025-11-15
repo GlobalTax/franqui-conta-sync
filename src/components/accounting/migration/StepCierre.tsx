@@ -20,6 +20,7 @@ import { ErrorExportDialog, type ValidationError } from "./ErrorExportDialog";
 import { AdvancedValidationsPanel } from "./AdvancedValidationsPanel";
 import { useAdvancedValidations } from "@/hooks/useAdvancedValidations";
 import { createMigrationLogger } from "@/lib/migration/migrationLogger";
+import { MigrationSummaryExport } from "./MigrationSummaryExport";
 
 interface StepCierreProps {
   state: MigrationState;
@@ -180,42 +181,52 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
 
   if (state.cierre.completed) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            ¡Migración Completada!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Ejercicio {state.fiscalYear.year} cerrado</AlertTitle>
-            <AlertDescription>
-              El ejercicio histórico ha sido importado y cerrado exitosamente.
-            </AlertDescription>
-          </Alert>
+      <div className="space-y-6">
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-900">
+              <CheckCircle2 className="h-5 w-5" />
+              ¡Migración Completada!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>Ejercicio {state.fiscalYear.year} cerrado</AlertTitle>
+              <AlertDescription>
+                El ejercicio histórico ha sido importado y cerrado exitosamente.
+              </AlertDescription>
+            </Alert>
 
-          <div className="bg-muted rounded-lg p-4 space-y-2">
-            <h4 className="font-semibold text-sm">Resumen de la migración:</h4>
-            <ul className="space-y-1 text-sm">
-              <li>✅ Asiento de apertura: {state.apertura.entryId}</li>
-              <li>✅ Asientos contables: {state.diario.entriesCount}</li>
-              <li>✅ Facturas emitidas: {state.iva.emitidas.count}</li>
-              <li>✅ Facturas recibidas: {state.iva.recibidas.count}</li>
-              <li>✅ Movimientos bancarios: {state.bancos.skipped ? 'Omitido' : state.bancos.movements}</li>
-              <li>✅ Ejercicio cerrado: {new Date(state.cierre.closedAt!).toLocaleString('es-ES')}</li>
-            </ul>
-          </div>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <h4 className="font-semibold text-sm">Resumen de la migración:</h4>
+              <ul className="space-y-1 text-sm">
+                <li>✅ Asiento de apertura: {state.apertura.entryId}</li>
+                <li>✅ Asientos contables: {state.diario.entriesCount}</li>
+                <li>✅ Facturas emitidas: {state.iva.emitidas.count}</li>
+                <li>✅ Facturas recibidas: {state.iva.recibidas.count}</li>
+                <li>✅ Movimientos bancarios: {state.bancos.skipped ? 'Omitido' : state.bancos.movements}</li>
+                <li>✅ Ejercicio cerrado: {new Date(state.cierre.closedAt!).toLocaleString('es-ES')}</li>
+              </ul>
+            </div>
 
-          <div className="flex gap-3">
-            <Button onClick={onReset}>Nueva Migración</Button>
-            <Button variant="outline" onClick={() => window.location.href = '/contabilidad/dashboard'}>
-              Ir al Dashboard
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex gap-3">
+              <Button onClick={onReset}>Nueva Migración</Button>
+              <Button variant="outline" onClick={() => window.location.href = '/contabilidad/dashboard'}>
+                Ir al Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Export Section */}
+        {state.fiscalYear.fiscalYearId && (
+          <MigrationSummaryExport 
+            fiscalYearId={state.fiscalYear.fiscalYearId}
+            centroCode={state.fiscalYear.centroCode}
+          />
+        )}
+      </div>
     );
   }
 

@@ -13,6 +13,7 @@ export interface FiscalYearConfig {
 export interface MigrationState {
   step: MigrationStep;
   fiscalYear: FiscalYearConfig;
+  migrationRunId?: string; // ID del migration_run para tracking
   apertura: {
     completed: boolean;
     entryId?: string;
@@ -85,6 +86,10 @@ export function useHistoricalMigration() {
 
   const setFiscalYear = (config: FiscalYearConfig) => {
     setState(s => ({ ...s, fiscalYear: config }));
+  };
+
+  const setMigrationRunId = (id: string) => {
+    setState(s => ({ ...s, migrationRunId: id }));
   };
 
   const nextStep = () => {
@@ -180,6 +185,7 @@ export function useHistoricalMigration() {
   return {
     state,
     setFiscalYear,
+    setMigrationRunId,
     nextStep,
     prevStep,
     goToStep,

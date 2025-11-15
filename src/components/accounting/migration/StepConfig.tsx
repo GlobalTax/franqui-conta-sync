@@ -9,14 +9,16 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useView } from "@/contexts/ViewContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
+import { createMigrationRun } from "@/lib/migration/migrationTracking";
 
 interface StepConfigProps {
   config: FiscalYearConfig;
   onConfigChange: (config: FiscalYearConfig) => void;
+  onMigrationRunCreated: (runId: string) => void;
   onNext: () => void;
 }
 
-export function StepConfig({ config, onConfigChange, onNext }: StepConfigProps) {
+export function StepConfig({ config, onConfigChange, onMigrationRunCreated, onNext }: StepConfigProps) {
   const { selectedView } = useView();
   const [checking, setChecking] = useState(false);
   const [validation, setValidation] = useState<{ valid: boolean; message?: string } | null>(null);

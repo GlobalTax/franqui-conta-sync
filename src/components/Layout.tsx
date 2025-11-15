@@ -97,6 +97,8 @@ const Layout = () => {
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
     { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },
+    { icon: Zap, label: "Periodificaciones", path: "/contabilidad/periodificaciones" },
+    { icon: Receipt, label: "Provisiones", path: "/contabilidad/provisiones" },
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 
@@ -256,7 +258,7 @@ const Layout = () => {
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(5, 10).map((item) => (
+              {navItems.slice(5, 12).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

@@ -100,6 +100,7 @@ const Layout = () => {
     { icon: Layers, label: "Activos Fijos", path: "/contabilidad/activos-fijos" },
     { icon: Zap, label: "Periodificaciones", path: "/contabilidad/periodificaciones" },
     { icon: Receipt, label: "Provisiones", path: "/contabilidad/provisiones" },
+    { icon: Database, label: "Asiento Existencias", path: "/contabilidad/existencias" },
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 
@@ -259,7 +260,7 @@ const Layout = () => {
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(5, 14).map((item) => (
+              {navItems.slice(5, 15).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

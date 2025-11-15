@@ -242,6 +242,7 @@ export default function HistoricalImport() {
             <StepConfig
               config={migration.state.fiscalYear}
               onConfigChange={migration.setFiscalYear}
+              onMigrationRunCreated={migration.setMigrationRunId}
               onNext={migration.nextStep}
             />
           )}

@@ -151,18 +151,46 @@ function IVAImportPanel({ type, config, completed, count, onComplete }: IVAImpor
 
     setImporting(true);
     try {
-      // This is a placeholder - actual import logic would go through
-      // the existing IVA import hooks from useImportRun
-      toast.info("Importación de IVA: funcionalidad en desarrollo");
-      
-      // Simulate success
-      setTimeout(() => {
-        onComplete(rows.length);
-        toast.success(`${rows.length} facturas importadas`);
-        setImporting(false);
-      }, 1000);
+      // Call the import-iva-historical edge function
+      const { data, error } = await supabase.functions.invoke('import-iva-historical', {
+        body: {
+          centroCode: config.centroCode,
+          fiscalYear: config.year,
+          invoiceType: type,
+          rows: rows.map((r: any) => ({
+            fecha: r.fecha || r.date || '',
+            numero: r.numero || r.number || '',
+            nif: r.nif || r.tax_id || '',
+            nombre: r.nombre || r.name || '',
+            base: parseFloat(r.base || r.subtotal || '0'),
+            tipo: parseFloat(r.tipo || r.tax_rate || '0'),
+            cuota: parseFloat(r.cuota || r.tax_amount || '0'),
+            total: parseFloat(r.total || r.total_amount || '0'),
+          })),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        onComplete(data.count);
+        toast.success(
+          `${data.count} facturas importadas\nBase: ${data.total_base.toFixed(2)}€ | IVA: ${data.total_cuota.toFixed(2)}€`
+        );
+        
+        if (data.errors && data.errors.length > 0) {
+          toast.warning(`${data.errors.length} advertencias detectadas`, {
+            description: 'Revisa la consola para más detalles',
+          });
+          console.warn('Import warnings:', data.errors);
+        }
+      } else {
+        throw new Error(data.message || 'Error en la importación');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Error al importar IVA');
+      console.error('IVA import error:', error);
+    } finally {
       setImporting(false);
     }
   };

@@ -58,16 +58,28 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
 
     setClosing(true);
     try {
-      const { error } = await supabase
-        .from('fiscal_years')
-        .update({ status: 'closed' })
-        .eq('id', state.fiscalYear.fiscalYearId);
+      // Call close-fiscal-year edge function
+      const { data, error } = await supabase.functions.invoke('close-fiscal-year', {
+        body: {
+          centroCode: state.fiscalYear.centroCode,
+          fiscalYearId: state.fiscalYear.fiscalYearId,
+          closingDate: state.fiscalYear.endDate,
+        },
+      });
 
       if (error) throw error;
 
-      const closedAt = new Date().toISOString();
-      onComplete(closedAt);
-      toast.success(`✅ Ejercicio ${state.fiscalYear.year} cerrado exitosamente`);
+      if (data.success) {
+        const closedAt = new Date().toISOString();
+        onComplete(closedAt);
+        
+        toast.success(
+          `✅ Ejercicio ${state.fiscalYear.year} cerrado exitosamente\n${data.message}`,
+          { duration: 5000 }
+        );
+      } else {
+        throw new Error(data.error || 'Error al cerrar el ejercicio');
+      }
     } catch (error: any) {
       console.error('Closing error:', error);
       toast.error(error.message || "Error al cerrar el ejercicio");

@@ -71,3 +71,9 @@ verify_jwt = true
 
 [functions.validate-migration]
 verify_jwt = true
+
+[functions.import-iva-historical]
+verify_jwt = true
+
+[functions.close-fiscal-year]
+verify_jwt = true

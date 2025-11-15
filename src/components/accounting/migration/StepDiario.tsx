@@ -106,6 +106,7 @@ ${config.startDate},Asiento ejemplo,4700000,0,1000.00,Proveedor XYZ`}
         open={showImporter}
         onOpenChange={setShowImporter}
         centroCode={config.centroCode}
+        onImportComplete={handleImportSuccess}
       />
     </>
   );

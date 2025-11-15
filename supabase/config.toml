@@ -1,5 +1,8 @@
 project_id = "srwnjnrhxzcpftmbbyib"
 
+[functions.import-norma43-migration]
+verify_jwt = true
+
 [functions.post-inventory-closure]
 verify_jwt = true
 

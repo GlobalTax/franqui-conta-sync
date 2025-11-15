@@ -9,6 +9,7 @@ import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
 import { Norma43Parser } from "@/domain/banking/services/Norma43Parser";
 import type { Norma43ParseResult } from "@/domain/banking/services/Norma43Parser";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StepBancosProps {
   config: FiscalYearConfig;
@@ -65,20 +66,41 @@ export function StepBancos({
   });
 
   const handleImport = async () => {
-    if (!preview) return;
-
+    if (!file || !preview || !fileContent) return;
+    
     setImporting(true);
     try {
-      toast.info("Importación de Norma 43: funcionalidad en desarrollo");
+      const { data, error } = await supabase.functions.invoke('import-norma43-migration', {
+        body: {
+          centroCode: config.centroCode,
+          fiscalYearId: config.fiscalYearId,
+          fiscalYearStart: config.startDate,
+          fiscalYearEnd: config.endDate,
+          fileContent: fileContent,
+        }
+      });
       
-      // Simulate success - in real implementation, call edge function
-      setTimeout(() => {
-        onComplete(preview.transactions.length);
-        toast.success(`${preview.transactions.length} movimientos importados`);
-        setImporting(false);
-      }, 1500);
+      if (error) throw error;
+      
+      if (!data.success) {
+        toast.error(data.error || 'Error al importar movimientos');
+        return;
+      }
+      
+      toast.success(
+        `✅ ${data.movements_imported} movimientos importados\n` +
+        `Cuenta: ${data.account_number}\n` +
+        `Ingresos: ${data.total_credits.toFixed(2)}€ | Gastos: ${data.total_debits.toFixed(2)}€`
+      );
+      
+      onComplete(data.movements_imported);
+      setFile(null);
+      setFileContent(null);
+      setPreview(null);
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Error importing Norma 43:', error);
+      toast.error(`Error al importar: ${error.message}`);
+    } finally {
       setImporting(false);
     }
   };

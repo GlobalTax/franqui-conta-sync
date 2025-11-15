@@ -6402,6 +6402,26 @@ export type Database = {
         Args: { p_centro_code: string; p_quarter: number; p_year: number }
         Returns: Json
       }
+      get_account_balances_by_group: {
+        Args: {
+          p_account_group: string
+          p_centro_code: string
+          p_fiscal_year_id: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+        }[]
+      }
+      get_all_account_balances: {
+        Args: { p_centro_code: string; p_fiscal_year_id: string }
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+        }[]
+      }
       get_centros: {
         Args: never
         Returns: {

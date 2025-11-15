@@ -23,9 +23,10 @@ interface JournalCSVImporterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   centroCode: string;
+  onImportComplete?: (count: number, totalDebit: number, totalCredit: number) => void;
 }
 
-export function JournalCSVImporter({ open, onOpenChange, centroCode }: JournalCSVImporterProps) {
+export function JournalCSVImporter({ open, onOpenChange, centroCode, onImportComplete }: JournalCSVImporterProps) {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -192,7 +193,26 @@ export function JournalCSVImporter({ open, onOpenChange, centroCode }: JournalCS
         );
         console.error("Asientos fallidos:", results.failed);
       } else {
+        // Calculate totals for callback
+        let totalDebit = 0;
+        let totalCredit = 0;
+        
+        for (const group of grouped) {
+          for (const item of group.items) {
+            const d = parseFloat(item.debit?.toString().replace(',', '.') || '0');
+            const c = parseFloat(item.credit?.toString().replace(',', '.') || '0');
+            totalDebit += d;
+            totalCredit += c;
+          }
+        }
+        
         toast.success(`Importación finalizada: ${results.success.length} asientos creados.`);
+        
+        // Invoke callback if provided
+        if (onImportComplete) {
+          onImportComplete(results.success.length, totalDebit, totalCredit);
+        }
+        
         onOpenChange(false);
         setFile(null);
         setRows([]);

@@ -18,11 +18,17 @@ import {
 } from "@/components/ui/select";
 import { useView } from "@/contexts/ViewContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
+import { useState, useEffect } from "react";
+import { FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const accrualSchema = z.object({
   accrual_type: z.enum(["income", "expense"]),
-  account_code: z.string().min(1, "Cuenta requerida"),
-  counterpart_account: z.string().min(1, "Contrapartida requerida"),
+  invoice_id: z.string().optional(),
+  account_code: z.string().optional(),
+  counterpart_account: z.string().optional(),
   total_amount: z.number().positive("Debe ser mayor a 0"),
   start_date: z.string().min(1, "Fecha inicio requerida"),
   end_date: z.string().min(1, "Fecha fin requerida"),
@@ -40,6 +46,17 @@ interface AccrualFormProps {
 
 export function AccrualForm({ onSubmit, onCancel, isSubmitting }: AccrualFormProps) {
   const { selectedView } = useView();
+  const [inputMode, setInputMode] = useState<"invoice" | "manual">("invoice");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>("");
+
+  // Obtener facturas aprobadas del centro actual
+  const { data: invoicesData } = useInvoicesReceived({ 
+    status: "approved",
+    limit: 100 
+  });
+
+  const invoices = invoicesData?.data || [];
+
   const {
     register,
     handleSubmit,
@@ -56,14 +73,46 @@ export function AccrualForm({ onSubmit, onCancel, isSubmitting }: AccrualFormPro
 
   const accrualType = watch("accrual_type");
 
+  // Cuando se selecciona una factura, autocompletar datos
+  useEffect(() => {
+    if (inputMode === "invoice" && selectedInvoiceId) {
+      const invoice = invoices.find(inv => inv.id === selectedInvoiceId);
+      if (invoice) {
+        // Autocompletar importe total
+        setValue("total_amount", invoice.total || 0);
+        
+        // Autocompletar descripción
+        const desc = `Periodificación de factura ${invoice.invoice_number || ''} - ${invoice.supplier?.name || ''}`;
+        setValue("description", desc);
+
+        // Sugerir fecha inicio = fecha factura
+        if (invoice.invoice_date) {
+          setValue("start_date", invoice.invoice_date);
+        }
+
+        // Guardar invoice_id
+        setValue("invoice_id", invoice.id);
+      }
+    }
+  }, [selectedInvoiceId, inputMode, invoices, setValue]);
+
   const onFormSubmit = async (data: AccrualFormData) => {
     if (!selectedView) return;
 
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Usuario no autenticado");
 
+    // Establecer valores por defecto para cuentas si no se proporcionan
+    const account_code = data.account_code || 
+      (data.accrual_type === "expense" ? "6210000" : "7050000");
+    
+    const counterpart_account = data.counterpart_account || 
+      (data.accrual_type === "expense" ? "4800000" : "4850000");
+
     await onSubmit({
       ...data,
+      account_code,
+      counterpart_account,
       centro_code: selectedView.code || selectedView.id,
       created_by: user.user.id,
     });
@@ -71,6 +120,55 @@ export function AccrualForm({ onSubmit, onCancel, isSubmitting }: AccrualFormPro
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+      {/* Modo de entrada */}
+      <div className="space-y-3">
+        <Label>Origen de la periodificación</Label>
+        <RadioGroup value={inputMode} onValueChange={(val) => setInputMode(val as "invoice" | "manual")}>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="invoice" id="invoice" />
+            <Label htmlFor="invoice" className="font-normal cursor-pointer">
+              Desde factura/recibo contabilizado
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="manual" id="manual" />
+            <Label htmlFor="manual" className="font-normal cursor-pointer">
+              Entrada manual
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* Selector de factura */}
+      {inputMode === "invoice" && (
+        <div className="space-y-2">
+          <Label htmlFor="invoice_select">Seleccionar factura aprobada</Label>
+          <Select value={selectedInvoiceId} onValueChange={setSelectedInvoiceId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Buscar factura..." />
+            </SelectTrigger>
+            <SelectContent>
+              {invoices.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground">
+                  No hay facturas aprobadas disponibles
+                </div>
+              ) : (
+                invoices.map((inv) => (
+                  <SelectItem key={inv.id} value={inv.id}>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span>
+                        {inv.invoice_number} - {inv.supplier?.name || 'Sin proveedor'} - €{inv.total?.toFixed(2)}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Tipo de periodificación */}
       <div className="space-y-2">
         <Label>Tipo de periodificación</Label>
@@ -88,26 +186,35 @@ export function AccrualForm({ onSubmit, onCancel, isSubmitting }: AccrualFormPro
         </Select>
       </div>
 
-      {/* Cuenta contable */}
+      {/* Cuenta contable - Opcional, con sugerencias */}
       <div className="space-y-2">
-        <Label htmlFor="account_code">
-          Cuenta contable ({accrualType === "expense" ? "Gasto" : "Ingreso"})
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="account_code">
+            Cuenta contable ({accrualType === "expense" ? "Gasto" : "Ingreso"})
+          </Label>
+          <Badge variant="secondary" className="text-xs">Opcional</Badge>
+        </div>
         <Input
           id="account_code"
-          placeholder={accrualType === "expense" ? "6XXXXXX" : "7XXXXXX"}
+          placeholder={accrualType === "expense" ? "6XXXXXX (ej: 6210000)" : "7XXXXXX (ej: 7050000)"}
           {...register("account_code")}
         />
         {errors.account_code && (
           <p className="text-sm text-destructive">{errors.account_code.message}</p>
         )}
+        <p className="text-xs text-muted-foreground">
+          Se sugiere una cuenta según el tipo de gasto/ingreso
+        </p>
       </div>
 
       {/* Contrapartida */}
       <div className="space-y-2">
-        <Label htmlFor="counterpart_account">
-          Contrapartida ({accrualType === "expense" ? "480" : "485"})
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="counterpart_account">
+            Contrapartida ({accrualType === "expense" ? "480" : "485"})
+          </Label>
+          <Badge variant="secondary" className="text-xs">Opcional</Badge>
+        </div>
         <Input
           id="counterpart_account"
           placeholder={accrualType === "expense" ? "4800000" : "4850000"}

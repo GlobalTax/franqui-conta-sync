@@ -8,10 +8,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { OCRFilters } from "@/components/digitization/OCRFilters";
 import { OCRTable } from "@/components/digitization/OCRTable";
 import { OCRBottomBar } from "@/components/digitization/OCRBottomBar";
-import { BulkUploadDropzone } from "@/components/digitization/BulkUploadDropzone";
 import { useInvoicesReceived } from "@/hooks/useInvoicesReceived";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Inbox, Upload } from "lucide-react";
+import { Inbox } from "lucide-react";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
 
 export interface OCRFiltersState {
@@ -38,7 +37,6 @@ export default function OCRInbox() {
   });
 
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
-  const [showUploadZone, setShowUploadZone] = useState(false);
 
   // Fetch invoices
   const { data: invoicesResult, isLoading, refetch } = useInvoicesReceived({
@@ -75,13 +73,6 @@ export default function OCRInbox() {
     setSelectedInvoiceIds(ids);
   };
 
-  const handleFilesUploaded = async (files: File[]) => {
-    console.log('Files uploaded:', files.length);
-    // Refresh list after upload
-    await refetch();
-    setShowUploadZone(false);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
@@ -91,23 +82,9 @@ export default function OCRInbox() {
         ]}
         title="Inbox OCR"
         subtitle="Bandeja de procesamiento automático de facturas"
-        actions={
-          <button
-            onClick={() => setShowUploadZone(!showUploadZone)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            {showUploadZone ? 'Cerrar Upload' : 'Subir Facturas'}
-          </button>
-        }
       />
 
       <div className="container mx-auto p-6 space-y-6">
-        {/* Upload Zone */}
-        {showUploadZone && (
-          <BulkUploadDropzone onUploaded={handleFilesUploaded} />
-        )}
-
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <aside className="w-64 flex-shrink-0">

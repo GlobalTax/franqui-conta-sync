@@ -21,12 +21,6 @@ verify_jwt = false
 [functions.sync-orquest-services]
 verify_jwt = true
 
-[functions.invoice-ocr]
-verify_jwt = true
-
-[functions.invoice-ocr-test]
-verify_jwt = true
-
 [functions.search-company-data]
 verify_jwt = true
 

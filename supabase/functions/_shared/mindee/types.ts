@@ -73,6 +73,18 @@ export interface MindeeDocument {
       name: string;
       version: string;
     };
+    pages?: Array<{
+      id: number;
+      orientation: { value: number | null };
+      prediction: Partial<MindeePrediction>;
+      extras?: {
+        full_text_ocr?: {
+          content: string;
+          language: string;
+        };
+        cropper?: any;
+      };
+    }>;
   };
 }
 

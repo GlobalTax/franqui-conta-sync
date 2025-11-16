@@ -1,71 +1,80 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { convertPdfToPngClient } from '@/lib/pdf-converter';
 
 interface ReprocessParams {
   invoiceId: string;
-  provider: 'openai' | 'mindee';
-  supplierHint?: string | null;
 }
 
 export function useReprocessInvoice() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async ({ invoiceId, provider, supplierHint }: ReprocessParams) => {
-      // Get invoice file path to convert PDF if needed
-      const { data: invoice } = await supabase
+    mutationFn: async ({ invoiceId }: ReprocessParams) => {
+      // Get invoice file path and centro code
+      const { data: invoice, error: fetchError } = await supabase
         .from('invoices_received')
-        .select('file_path, file_name')
+        .select('file_path, centro_code')
         .eq('id', invoiceId)
         .single();
 
-      let imageDataUrl: string | undefined;
+      if (fetchError || !invoice) {
+        throw new Error('No se pudo recuperar la factura');
+      }
 
-      // If it's a PDF, try to convert it on the client
-      if (invoice?.file_path?.toLowerCase().endsWith('.pdf')) {
-        try {
-          // Download the PDF from storage
-          const { data: fileData } = await supabase.storage
-            .from('invoice-documents')
-            .download(invoice.file_path);
+      console.log('[Reprocess] Using Mindee OCR for reprocessing:', invoiceId);
 
-          if (fileData) {
-            console.log('[Reprocess] Converting PDF to PNG...');
-            imageDataUrl = await convertPdfToPngClient(fileData as File);
-            console.log('[Reprocess] ✓ PDF converted');
-          }
-        } catch (conversionError) {
-          console.warn('[Reprocess] PDF conversion failed, will use server-side:', conversionError);
+      // Call Mindee OCR edge function
+      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+        body: {
+          invoice_id: invoiceId,
+          documentPath: invoice.file_path,
+          centroCode: invoice.centro_code
         }
-      }
-
-      const requestBody: any = {
-        invoiceId,
-        provider,
-        reprocess: true,
-        supplierHint
-      };
-
-      if (imageDataUrl) {
-        requestBody.imageDataUrl = imageDataUrl;
-      }
-
-      const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-        body: requestBody
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Reprocess] Mindee OCR error:', error);
+        throw error;
+      }
+
+      console.log('[Reprocess] Mindee OCR success:', {
+        confidence: data?.mindee_metadata?.confidence,
+        fallbackUsed: data?.mindee_metadata?.fallback_used,
+        cost: data?.mindee_metadata?.cost_euros
+      });
+
       return data;
     },
-    onSuccess: (_, variables) => {
-      toast.success('Factura reprocesada correctamente');
+    onSuccess: (data, variables) => {
+      const mindeeConfidence = data?.mindee_metadata?.confidence || 0;
+      const fallbackUsed = data?.mindee_metadata?.fallback_used || false;
+      const cost = data?.mindee_metadata?.cost_euros || 0;
+
+      if (fallbackUsed) {
+        toast.warning(
+          `Factura reprocesada con parsers de respaldo • Confianza: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`,
+          { description: 'Se recomienda revisión manual' }
+        );
+      } else if (mindeeConfidence < 70) {
+        toast.warning(
+          `Factura reprocesada • Confianza baja: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`,
+          { description: 'Revisar datos extraídos' }
+        );
+      } else {
+        toast.success(
+          `Factura reprocesada correctamente • Confianza: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`
+        );
+      }
+
       queryClient.invalidateQueries({ queryKey: ['invoice', variables.invoiceId] });
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
     },
     onError: (error) => {
       console.error('Error reprocessing invoice:', error);
-      toast.error('Error al reprocesar la factura');
+      toast.error('Error al reprocesar la factura', {
+        description: error instanceof Error ? error.message : 'Error desconocido'
+      });
     },
   });
 

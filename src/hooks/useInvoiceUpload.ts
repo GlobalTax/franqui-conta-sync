@@ -1,10 +1,10 @@
 /**
- * Hook for uploading invoices with OCR processing
+ * Hook for uploading invoices with Mindee OCR processing
  * 
  * Features:
  * - File upload to Supabase Storage
  * - SHA-256 hash calculation for deduplication
- * - Automatic OCR processing via existing edge function
+ * - Automatic OCR processing via Mindee
  * - Progress tracking and error handling
  * - Integration with workflow (normalize + AP mapping + GL entry)
  */
@@ -13,7 +13,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
-import { convertPdfToPngClient } from '@/lib/pdf-converter';
 import { autoDetectCentro } from '@/lib/centro-detection';
 
 interface UploadParams {
@@ -21,7 +20,6 @@ interface UploadParams {
   centroCode: string;
   companyId?: string;
   supplierId?: string;
-  preferredEngine?: 'openai' | 'mindee';
   supplierHint?: string | null;
   autoDetectCentro?: boolean;
 }
@@ -46,7 +44,7 @@ export const useInvoiceUpload = () => {
   };
 
   const uploadInvoice = async (params: UploadParams): Promise<UploadResult> => {
-    const { file, centroCode, supplierId, preferredEngine = 'openai', supplierHint = null, autoDetectCentro: shouldAutoDetect = false } = params;
+    const { file, centroCode, supplierId, supplierHint = null, autoDetectCentro: shouldAutoDetect = false } = params;
 
     if (!file.type.includes('pdf')) {
       throw new Error('Solo se permiten archivos PDF');
@@ -120,160 +118,100 @@ export const useInvoiceUpload = () => {
           supplier_id: supplierId || null,
           status: 'pending',
           uploaded_at: new Date().toISOString(),
-          // Campos requeridos con valores por defecto (serán actualizados por OCR)
-          invoice_number: 'PENDING',
+          // Valores por defecto para evitar errores de campos no nullables
+          invoice_number: `PENDING-${Date.now()}`,
           invoice_date: new Date().toISOString().split('T')[0],
-          total: 0
+          subtotal: 0,
+          tax_total: 0,
+          total: 0,
         })
-        .select('id, file_path, status')
+        .select()
         .single();
 
       if (insertError) {
-        throw new Error(`Error al guardar factura: ${insertError.message}`);
+        console.error('[useInvoiceUpload] Insert error:', insertError);
+        throw new Error(`Error al crear registro: ${insertError.message}`);
       }
 
-      setProgress(80);
-
-      // 6. Convert PDF to PNG on client side for OCR
-      let imageDataUrl: string | undefined;
-      try {
-        console.log('[Upload] Converting PDF to PNG for OCR...');
-        imageDataUrl = await convertPdfToPngClient(file);
-        console.log('[Upload] ✓ PDF converted to PNG');
-      } catch (conversionError) {
-        console.warn('[Upload] PDF conversion failed, will try server-side:', conversionError);
-        // Continue without imageDataUrl - server will attempt conversion
+      if (!invoice) {
+        throw new Error('No se pudo crear el registro de la factura');
       }
 
-      // 7. Get supplier VAT ID if supplier is known
-      let supplierVatId: string | null = null;
-      if (supplierId) {
-        const { data: supplier } = await supabase
-          .from('suppliers')
-          .select('tax_id')
-          .eq('id', supplierId)
-          .maybeSingle();
-        
-        if (supplier?.tax_id) {
-          supplierVatId = supplier.tax_id;
-          console.log('[Upload] Supplier VAT ID found:', supplierVatId);
+      setProgress(70);
+
+      // 6. Procesar con Mindee OCR (nativo de PDFs)
+      console.log('[useInvoiceUpload] Iniciando Mindee OCR...');
+      
+      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
+        body: {
+          invoice_id: invoice.id,
+          documentPath: filePath,
+          centroCode: centroCode
         }
-      }
-
-      // 8. Trigger OCR processing using webhook mode (async) - forzado a OpenAI
-      const ocrRequestBody: any = {
-        invoice_id: invoice.id,
-        useWebhook: true,
-        supplierHint
-      };
-
-      if (imageDataUrl) {
-        ocrRequestBody.imageDataUrl = imageDataUrl;
-        console.log('[Upload] Including imageDataUrl in OCR request');
-      }
-
-      if (supplierVatId) {
-        ocrRequestBody.supplierVatId = supplierVatId;
-        console.log('[Upload] Including supplierVatId for template detection');
-      }
-
-      const ocrResponse = await supabase.functions.invoke('invoice-ocr', {
-        body: ocrRequestBody
       });
 
-      if (ocrResponse.error) {
-        console.error('Error al iniciar OCR:', ocrResponse.error);
-        toast.error('Factura guardada pero OCR falló. Reintente manualmente.');
-      } else if (ocrResponse.data?.status === 'processing') {
-        // Webhook mode: Poll for completion
-        const jobId = ocrResponse.data.job_id;
-        console.log('OCR job enqueued (async)', { jobId, invoiceId: invoice.id });
+      setProgress(90);
+
+      if (ocrError) {
+        console.error('[useInvoiceUpload] Mindee OCR error:', ocrError);
         
-        toast.success('Factura subida. Procesando OCR en segundo plano...');
-        
-        // Poll invoice status every 2 seconds
-        const pollInterval = setInterval(async () => {
-          const { data: updatedInvoice, error: pollError } = await supabase
-            .from('invoices_received')
-            .select('status, ocr_engine')
-            .eq('id', invoice.id)
-            .single();
-          
-          if (pollError) {
-            console.error('Poll error:', pollError);
-            clearInterval(pollInterval);
-            return;
-          }
-          
-          if (updatedInvoice?.status !== 'processing' && updatedInvoice?.status !== 'pending') {
-            clearInterval(pollInterval);
-            
-            if (updatedInvoice.status === 'processed_ok' || updatedInvoice.status === 'approved') {
-              toast.success(`✅ OCR completado: ${updatedInvoice.ocr_engine || 'openai'}`);
-            } else if (updatedInvoice.status === 'needs_review') {
-              toast.warning('OCR completado pero requiere revisión manual');
-            } else {
-              toast.error('OCR falló. Revise la factura manualmente.');
-            }
-          }
-        }, 2000);
-        
-        // Stop polling after 60 seconds (fallback)
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          console.log('Polling timeout reached');
-        }, 60000);
-      } else if (ocrResponse.data?.success) {
-        // Synchronous mode (fallback)
-        console.log('OCR completed (sync):', ocrResponse.data);
-        
-        // Auto-detect centro if enabled
-        if (shouldAutoDetect && ocrResponse.data.rawText) {
-          const detection = autoDetectCentro(ocrResponse.data.rawText, ocrResponse.data.json);
-          if (detection.centroCode && detection.confidence === 'high') {
-            await supabase
-              .from('invoices_received')
-              .update({ centro_code: detection.centroCode })
-              .eq('id', invoice.id);
-            
-            toast.success(
-              `OCR completado: ${ocrResponse.data.engine} · Centro detectado: ${detection.centroCode}`
-            );
-          } else {
-            toast.success(
-              `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
-            );
-          }
-        } else {
-          toast.success(
-            `OCR completado: ${ocrResponse.data.engine} (${Math.round(ocrResponse.data.confidence * 100)}% confianza)`
-          );
-        }
+        // Actualizar estado como error pero no fallar completamente
+        await supabase
+          .from('invoices_received')
+          .update({ 
+            status: 'ocr_error',
+            approval_status: 'ocr_error'
+          })
+          .eq('id', invoice.id);
+
+        toast.warning('Factura subida pero OCR falló', {
+          description: 'Puedes reprocesar la factura desde el detalle'
+        });
+
+        return {
+          id: invoice.id,
+          file_path: filePath,
+          status: 'ocr_error'
+        };
       }
 
       setProgress(100);
-      setIsUploading(false);
 
-      toast.success('Factura subida correctamente. Procesando OCR...');
+      const mindeeConfidence = ocrData?.mindee_metadata?.confidence || 0;
+      const fallbackUsed = ocrData?.mindee_metadata?.fallback_used || false;
+
+      if (fallbackUsed) {
+        toast.warning('Factura procesada con parsers de respaldo', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}% - Se recomienda revisión manual`
+        });
+      } else if (mindeeConfidence < 70) {
+        toast.warning('Factura procesada con confianza baja', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}% - Revisar datos extraídos`
+        });
+      } else {
+        toast.success('Factura procesada correctamente', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}%`
+        });
+      }
 
       return {
         id: invoice.id,
-        file_path: invoice.file_path,
-        status: invoice.status,
-        isDuplicate: false
+        file_path: filePath,
+        status: 'processed'
       };
 
-    } catch (error: any) {
+    } catch (error) {
+      console.error('[useInvoiceUpload] Error:', error);
+      throw error;
+    } finally {
       setIsUploading(false);
       setProgress(0);
-      toast.error(`Error: ${error.message}`);
-      throw error;
     }
   };
 
   return {
     uploadInvoice,
     isUploading,
-    progress
+    progress,
   };
 };

@@ -230,28 +230,15 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
-      // Convert PDF to PNG for OCR
-      let imageDataUrl: string | undefined;
-      try {
-        console.log(`[Bulk] Converting PDF ${fileItem.file.name} to PNG...`);
-        imageDataUrl = await convertPdfToPngClient(fileItem.file);
-        console.log(`[Bulk] ✓ PDF converted (${Math.round(imageDataUrl.length / 1024)}KB)`);
-      } catch (conversionError) {
-        console.warn(`[Bulk] PDF conversion failed for ${fileItem.file.name}, will try server-side:`, conversionError);
-      }
-
-      // Trigger OCR processing - forzado a OpenAI
-      const ocrRequestBody: any = {
-        invoice_id: invoice.id,
-        supplierHint: null
-      };
-
-      if (imageDataUrl) {
-        ocrRequestBody.imageDataUrl = imageDataUrl;
-      }
-
-      const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('invoice-ocr', {
-        body: ocrRequestBody
+      // 4. CALL MINDEE OCR (reemplaza invoice-ocr legacy)
+      console.log('[BulkUpload] Invocando Mindee OCR...');
+      
+      const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
+        body: {
+          invoice_id: invoice.id,
+          documentPath: path,
+          centroCode: centroCode,
+        }
       });
 
       if (ocrError) throw ocrError;
@@ -260,52 +247,37 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         f.id === fileItem.id ? { ...f, progress: 80, ocrStatus: 'processing' } : f
       ));
 
-      // Update invoice with OCR results
-      const ocrData = ocrResult.data || ocrResult.normalized;
-      const finalStatus = ocrResult.status || (ocrResult.confidence >= 0.7 ? 'processed_ok' : 'needs_review');
+      // 5. PROCESS MINDEE RESULT
+      console.log('[BulkUpload] Procesando resultado Mindee...');
+      
+      if (!ocrResult?.success) {
+        throw new Error(ocrResult?.error || 'Error en procesamiento Mindee');
+      }
 
-      const { error: updateError } = await supabase
-        .from('invoices_received')
-        .update({
-          invoice_number: ocrData.invoice_number || `PENDING-${Date.now()}`,
-          invoice_date: ocrData.issue_date || new Date().toISOString().split('T')[0],
-          due_date: ocrData.due_date,
-          subtotal: ocrData.totals?.total ? ocrData.totals.total / (1 + (ocrData.totals?.vat_21 || 0) / 100) : 0,
-          tax_total: ocrData.totals?.vat_21 || ocrData.totals?.vat_10 || 0,
-          total: ocrData.totals?.total || 0,
-          status: finalStatus, // Estados: pending | processing | processed_ok | needs_review | error
-          ocr_confidence: ocrResult.confidence || 0,
-          ocr_engine: 'openai',
-          ocr_payload: ocrResult, // Guardar payload completo
-          ocr_processing_time_ms: ocrResult.processingTimeMs,
-          ocr_ms_openai: ocrResult.msOpenai,
-          ocr_pages: ocrResult.pages || 1,
-          ocr_tokens_in: ocrResult.tokensIn,
-          ocr_tokens_out: ocrResult.tokensOut,
-          ocr_cost_estimate_eur: ocrResult.costEstimateEur,
-          ocr_confidence_notes: ocrResult.validation?.warnings || [],
-          ocr_merge_notes: ocrResult.merge_notes || [],
-          ocr_extracted_data: ocrData,
-        })
-        .eq('id', invoice.id);
+      console.log('[BulkUpload] ✓ OCR completado:', {
+        mindeeDocId: ocrResult.mindee_document_id,
+        confidence: ocrResult.mindee_confidence,
+        cost: ocrResult.mindee_cost_euros,
+        engine: ocrResult.ocr_engine,
+        fallbackUsed: ocrResult.ocr_fallback_used,
+        needsReview: ocrResult.needs_manual_review,
+      });
 
-      if (updateError) throw updateError;
-
-      // Final status
-      const uiStatus = finalStatus === 'processed_ok' ? 'processed' : 'needs_review';
+      // Update UI status
+      const uiStatus = ocrResult.needs_manual_review ? 'needs_review' : 'processed';
 
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id 
           ? { 
               ...f, 
-              progress: 100, 
+              progress: 100,
               status: uiStatus,
               ocrStatus: 'completed',
-              ocrConfidence: ocrResult.confidence,
-              ocrEngine: ocrResult.ocr_engine || 'openai',
-              ocrCostEur: ocrResult.costEstimateEur || 0,
-              processingTimeMs: ocrResult.processingTimeMs || 0,
-              processedAt: new Date()
+              ocrConfidence: ocrResult.mindee_confidence,
+              ocrEngine: ocrResult.ocr_engine,
+              ocrCostEur: ocrResult.mindee_cost_euros,
+              processingTimeMs: ocrResult.mindee_processing_time ? ocrResult.mindee_processing_time * 1000 : undefined,
+              processedAt: new Date(),
             } 
           : f
       ));

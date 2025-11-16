@@ -35,26 +35,10 @@ export const useOCRRetry = () => {
 
   const { mutate: retryOCR, isPending: isRetrying } = useMutation({
     mutationFn: async ({ invoiceId, attemptCount = 0 }: { invoiceId: string; attemptCount?: number }) => {
-      // Check circuit breaker status first
-      const { data: cbState } = await supabase
-        .from('ocr_circuit_breaker')
-        .select('state, next_retry_at')
-        .eq('engine', 'openai')
-        .single();
-
-      if (cbState?.state === 'open') {
-        const retryAt = cbState.next_retry_at ? new Date(cbState.next_retry_at) : null;
-        const timeUntilRetry = retryAt ? Math.ceil((retryAt.getTime() - Date.now()) / 1000) : 30;
-        
-        throw new Error(
-          `Motor OCR temporalmente no disponible. Reintentará en ~${timeUntilRetry}s automáticamente.`
-        );
-      }
-
       // Get invoice details
       const { data: invoice, error: fetchError } = await supabase
         .from('invoices_received')
-        .select('file_path')
+        .select('file_path, centro_code')
         .eq('id', invoiceId)
         .single();
 
@@ -62,29 +46,45 @@ export const useOCRRetry = () => {
         throw new Error('No se pudo recuperar la factura');
       }
 
-      // Trigger OCR reprocessing
-      const { data, error } = await supabase.functions.invoke('invoice-ocr', {
+      console.log('[useOCRRetry] Retrying with Mindee:', { invoiceId, attemptCount });
+
+      // Trigger Mindee OCR reprocessing
+      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
         body: {
           invoice_id: invoiceId,
-          useWebhook: false, // Synchronous for retries
-        },
+          documentPath: invoice.file_path,
+          centroCode: invoice.centro_code
+        }
       });
 
       if (error) {
-        // Check if it's a rate limit or circuit breaker issue
+        // Check if it's a rate limit issue
         if (error.message?.includes('429') || error.message?.includes('rate limit')) {
           throw new Error('Límite de tasa excedido. Reintentando en 1 minuto...');
-        }
-        if (error.message?.includes('circuit breaker')) {
-          throw new Error('Motor OCR temporalmente no disponible');
         }
         throw error;
       }
 
       return { data, attemptCount };
     },
-    onSuccess: ({ attemptCount }, { invoiceId }) => {
-      toast.success('OCR reprocesado exitosamente');
+    onSuccess: ({ data, attemptCount }, { invoiceId }) => {
+      const mindeeConfidence = data?.mindee_metadata?.confidence || 0;
+      const fallbackUsed = data?.mindee_metadata?.fallback_used || false;
+
+      if (fallbackUsed) {
+        toast.warning('OCR reprocesado con parsers de respaldo', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}% - Se recomienda revisión manual`
+        });
+      } else if (mindeeConfidence < 70) {
+        toast.warning('OCR reprocesado con confianza baja', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}% - Revisar datos extraídos`
+        });
+      } else {
+        toast.success('OCR reprocesado exitosamente', {
+          description: `Confianza: ${Math.round(mindeeConfidence)}%`
+        });
+      }
+
       setRetryStates(prev => {
         const newMap = new Map(prev);
         newMap.delete(invoiceId);

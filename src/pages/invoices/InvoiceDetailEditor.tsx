@@ -1102,8 +1102,6 @@ export default function InvoiceDetailEditor() {
                   onRetryWithDifferentEngine={handleRetryWithDifferentEngine}
                   orchestratorLogs={orchestratorLogs}
                   processingTimeMs={processingTimeMs}
-                  selectedOcrEngine="openai"
-                  onOcrEngineChange={() => {}}
                 />
 
                   {/* Badge Stripper + Ver cambios */}
@@ -1370,8 +1368,6 @@ export default function InvoiceDetailEditor() {
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      selectedOcrEngine="openai"
-                      onOcrEngineChange={() => {}}
                     />
 
                     {/* Badge Stripper + Ver cambios */}

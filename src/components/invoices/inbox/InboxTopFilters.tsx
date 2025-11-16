@@ -153,7 +153,7 @@ export function InboxTopFilters({
                 <SelectItem value="openai">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500" />
-                    OpenAI
+                    OpenAI (Legacy)
                   </span>
                 </SelectItem>
                 <SelectItem value="mindee">

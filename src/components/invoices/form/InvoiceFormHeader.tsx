@@ -14,7 +14,6 @@ import { useCentres } from '@/hooks/useCentres';
 import { OCRDebugBadge } from '@/components/invoices/OCRDebugBadge';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useView } from '@/contexts/ViewContext';
-import { OCREngineSelector } from '@/components/invoices/OCREngineSelector';
 import type { DocumentAnalysis } from '@/hooks/useDocumentAnalyzer';
 
 interface InvoiceFormHeaderProps {
@@ -29,9 +28,6 @@ interface InvoiceFormHeaderProps {
   onRetryWithDifferentEngine?: () => void;
   orchestratorLogs?: any[];
   processingTimeMs?: number;
-  selectedOcrEngine?: 'openai';
-  onOcrEngineChange?: (engine: 'openai') => void;
-  documentAnalysis?: DocumentAnalysis | null;
 }
 
 export function InvoiceFormHeader({ 
@@ -45,10 +41,7 @@ export function InvoiceFormHeader({
   onGoToUpload,
   onRetryWithDifferentEngine,
   orchestratorLogs,
-  processingTimeMs,
-  selectedOcrEngine = 'openai',
-  onOcrEngineChange,
-  documentAnalysis
+  processingTimeMs
 }: InvoiceFormHeaderProps) {
   const { data: centres = [], isLoading: centresLoading } = useCentres();
   const { currentMembership, memberships } = useOrganization();
@@ -123,19 +116,8 @@ export function InvoiceFormHeader({
             )}
           />
 
-{/* Motor OCR + Selector + Acción */}
+{/* Motor OCR + Acción */}
 <div className="space-y-3">
-  {/* Selector de motor OCR */}
-  {!ocrEngine && onOcrEngineChange && (
-    <OCREngineSelector
-      value={selectedOcrEngine}
-      onChange={onOcrEngineChange}
-      estimatedPages={documentAnalysis?.pages || 1}
-      analysis={documentAnalysis || undefined}
-      onUseRecommended={undefined}
-    />
-  )}
-
   {/* Botón de acción */}
   <div className="flex items-center justify-between">
     <label className="uppercase text-xs font-bold text-primary block">
@@ -149,7 +131,7 @@ export function InvoiceFormHeader({
         disabled={isProcessing}
       >
         {isProcessing && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-        Procesar con OpenAI
+        Procesar con OCR
       </Button>
     ) : !hasDocument ? (
       <Button
@@ -166,7 +148,7 @@ export function InvoiceFormHeader({
   {isProcessing && (
     <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
       <Loader2 className="h-3 w-3 animate-spin" />
-      Procesando con OpenAI GPT-4o...
+      Procesando con Mindee...
     </div>
   )}
 
@@ -185,8 +167,8 @@ export function InvoiceFormHeader({
     <div className="flex items-center gap-2">
       <Badge variant="secondary" className="gap-2">
         <Sparkles className="h-3 w-3" />
-        {ocrEngine === 'openai' && 'OpenAI GPT-4o'}
-        {ocrEngine === 'openai' && 'OpenAI GPT-4o'}
+        {ocrEngine === 'mindee' && 'Mindee Invoice API'}
+        {ocrEngine === 'openai' && 'OpenAI (Legacy)'}
         {ocrEngine === 'merged' && 'Multi-Motor'}
         {ocrEngine === 'manual' && 'Manual'}
         {ocrEngine === 'google_vision' && 'Google Vision'}

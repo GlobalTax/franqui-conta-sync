@@ -28,7 +28,6 @@ interface RejectInvoiceParams {
 
 interface ReprocessOCRParams {
   invoiceId: string;
-  engine: 'openai' | 'mindee';
 }
 
 interface PostInvoiceParams {
@@ -102,29 +101,32 @@ export function useInvoiceActions() {
   // ==========================================================================
   const reprocessOCRMutation = useMutation({
     mutationFn: async (params: ReprocessOCRParams) => {
+      // Obtener file_path y centro_code de la factura
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices_received')
+        .select('file_path, centro_code')
+        .eq('id', params.invoiceId)
+        .single();
+
+      if (invoiceError) throw invoiceError;
+      if (!invoice?.file_path) throw new Error('No se encontró el archivo de la factura');
+
       const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
         body: {
           invoice_id: params.invoiceId,
-          engine: params.engine || 'mindee'
+          documentPath: invoice.file_path,
+          centroCode: invoice.centro_code
         }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
       queryClient.invalidateQueries({ queryKey: ['ocr-processing-logs'] });
       queryClient.invalidateQueries({ queryKey: ['digitization-metrics'] });
       
-      const engineLabel = variables.engine === 'openai' ? 'OpenAI Vision' : 'Mindee';
-      
-      if (data?.confidence) {
-        toast.success(`OCR reprocesado con éxito (${engineLabel})`, {
-          description: `Confianza: ${Math.round(data.confidence * 100)}%`
-        });
-      } else {
-        toast.success(`OCR reprocesado con éxito (${engineLabel})`);
-      }
+      toast.success('Factura reprocesada con Mindee correctamente');
     },
     onError: (error: any) => {
       console.error('Error reprocessing OCR:', error);

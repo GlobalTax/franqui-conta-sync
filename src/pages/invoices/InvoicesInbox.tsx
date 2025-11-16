@@ -287,8 +287,7 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
     if (!invoiceToReprocess) return;
     
     await invoiceActions.reprocessOCR({
-      invoiceId: invoiceToReprocess,
-      engine: 'openai'
+      invoiceId: invoiceToReprocess
     });
     
     setReprocessDialogOpen(false);

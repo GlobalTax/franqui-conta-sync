@@ -37,8 +37,7 @@ export function ReprocessOCRDialog({
 
     try {
       await actions.reprocessOCR({
-        invoiceId: invoice.id,
-        engine: 'openai'
+        invoiceId: invoice.id
       });
       onOpenChange(false);
       onComplete?.();

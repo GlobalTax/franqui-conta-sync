@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Inbox, Sparkles, Upload, Search, Trash2 } from 'lucide-react';
+import { Inbox, Sparkles, Upload, Search, Trash2, CheckCircle2 } from 'lucide-react';
 
 interface DigitizationTabsProps {
   children: {
@@ -11,6 +11,7 @@ interface DigitizationTabsProps {
     carga: ReactNode;
     depura: ReactNode;
     papelera: ReactNode;
+    validacion: ReactNode;
   };
   counts?: {
     inbox?: number;
@@ -25,7 +26,7 @@ export function DigitizationTabs({ children, counts }: DigitizationTabsProps) {
 
   return (
     <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab })}>
-      <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+      <TabsList className="grid w-full grid-cols-6 h-auto p-1">
         <TabsTrigger
           value="inbox"
           className="flex items-center gap-2 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -80,6 +81,14 @@ export function DigitizationTabs({ children, counts }: DigitizationTabsProps) {
             </Badge>
           )}
         </TabsTrigger>
+
+        <TabsTrigger
+          value="validacion"
+          className="flex items-center gap-2 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          <span className="font-medium">Validación</span>
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="inbox" className="mt-6">
@@ -100,6 +109,10 @@ export function DigitizationTabs({ children, counts }: DigitizationTabsProps) {
 
       <TabsContent value="papelera" className="mt-6">
         {children.papelera}
+      </TabsContent>
+
+      <TabsContent value="validacion" className="mt-6">
+        {children.validacion}
       </TabsContent>
     </Tabs>
   );

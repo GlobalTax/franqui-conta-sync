@@ -8,6 +8,9 @@ import { Session } from "@supabase/supabase-js";
 import Layout from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { useGlobalShortcuts } from "@/lib/shortcuts/ShortcutManager";
+import { ShortcutHelpDialog } from "@/components/shortcuts/ShortcutHelpDialog";
+import { CommandPalette } from "@/components/command/CommandPalette";
 
 // Lazy load all page components
 const Login = lazy(() => import("@/pages/Login"));
@@ -96,6 +99,9 @@ const queryClient = new QueryClient({
 const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 🔥 Activar shortcuts globales
+  useGlobalShortcuts();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -227,6 +233,10 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        
+        {/* 🔥 Sprint 3: Keyboard Shortcuts & Command Palette */}
+        <ShortcutHelpDialog />
+        <CommandPalette />
       </BrowserRouter>
     </QueryClientProvider>
   );

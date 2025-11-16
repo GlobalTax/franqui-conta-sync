@@ -83,3 +83,6 @@ verify_jwt = true
 
 [functions.rollback-migration]
 verify_jwt = true
+
+[functions.record-correction]
+verify_jwt = true

@@ -47,6 +47,7 @@ import {
 } from '@/hooks/useInvoiceOCR';
 import { useAPLearning } from '@/hooks/useAPLearning';
 import { useInvoiceStripper } from '@/hooks/useInvoiceStripper';
+import { useRecordCorrection } from '@/hooks/useRecordCorrection';
 import { stripAndNormalize, type NormalizationChange } from '@/lib/fiscal-normalizer';
 import { validateInvoiceForPosting } from '@/lib/invoice-validation';
 import { validateAccountingBalance } from '@/lib/invoice-calculator';
@@ -132,6 +133,7 @@ export default function InvoiceDetailEditor() {
   const processOCR = useProcessInvoiceOCR();
   const logOCR = useLogOCRProcessing();
   const apLearning = useAPLearning();
+  const recordCorrection = useRecordCorrection();
 
   // Hooks
   const { data: invoicesData } = useInvoicesReceived({});
@@ -564,6 +566,83 @@ export default function InvoiceDetailEditor() {
     toast.success("Sugerencia de factura aplicada");
   };
 
+  // 🧠 Detectar correcciones de cuentas para Learning System
+  const detectAccountCorrections = async (invoiceId: string) => {
+    // Obtener los datos de la factura desde la DB
+    if (!invoice?.ocr_extracted_data?.ap_mapping_result) {
+      console.log('[Learning] No AP mapping data available, skipping');
+      return;
+    }
+
+    const apMappingResult = invoice.ocr_extracted_data.ap_mapping_result;
+    const originalExpenseAccount = apMappingResult.invoice_level?.account_suggestion;
+    const originalTaxAccount = apMappingResult.invoice_level?.tax_account || '4720001';
+    const originalAPAccount = apMappingResult.invoice_level?.ap_account || '4000000';
+    const originalConfidence = apMappingResult.invoice_level?.confidence_score || 0;
+
+    if (!originalExpenseAccount) {
+      console.log('[Learning] No original expense account suggestion, skipping');
+      return;
+    }
+
+    // Obtener cuenta final del primer tax_line (que contiene la cuenta de gasto)
+    const taxLines = form.getValues('tax_lines') || [];
+    if (taxLines.length === 0) {
+      console.log('[Learning] No tax lines available, skipping');
+      return;
+    }
+
+    const finalExpenseAccount = taxLines[0]?.account_code;
+    if (!finalExpenseAccount) {
+      console.log('[Learning] No final expense account, skipping');
+      return;
+    }
+
+    // Si hay diferencia, registrar corrección
+    if (originalExpenseAccount !== finalExpenseAccount) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('[Learning] No authenticated user');
+          return;
+        }
+
+        const invoiceData = form.getValues();
+        
+        console.log('[Learning] Account correction detected:', {
+          original: originalExpenseAccount,
+          corrected: finalExpenseAccount,
+          invoice_id: invoiceId
+        });
+
+        await recordCorrection.mutateAsync({
+          invoice_id: invoiceId,
+          supplier_id: invoiceData.supplier_id || '',
+          supplier_vat: invoiceData.supplier_tax_id || '',
+          invoice_description: invoiceData.notes || invoiceData.invoice_number || '',
+          invoice_total: invoiceData.total || 0,
+          
+          original_expense_account: originalExpenseAccount,
+          original_tax_account: originalTaxAccount,
+          original_ap_account: originalAPAccount,
+          original_confidence: originalConfidence,
+          
+          corrected_expense_account: finalExpenseAccount,
+          corrected_tax_account: originalTaxAccount,
+          corrected_ap_account: originalAPAccount,
+          
+          corrected_by: user.id,
+          correction_reason: 'Manual correction from invoice editor',
+        });
+
+        console.log('[Learning] ✅ Correction recorded successfully');
+      } catch (error) {
+        console.error('[Learning] Error recording correction:', error);
+        // No bloqueamos el guardado si falla el learning
+      }
+    }
+  };
+
   // Handlers
   const handleSaveDraft = async (data: InvoiceFormData) => {
     try {
@@ -589,6 +668,10 @@ export default function InvoiceDetailEditor() {
             notes: data.notes
           }
         });
+        
+        // 🧠 Detectar y registrar correcciones para Learning System
+        await detectAccountCorrections(id);
+        
         toast.success('Factura actualizada correctamente');
       } else {
         const newInvoice = await createInvoice.mutateAsync({
@@ -731,6 +814,9 @@ export default function InvoiceDetailEditor() {
             notes: data.notes
           }
         });
+        
+        // 🧠 Detectar y registrar correcciones para Learning System
+        await detectAccountCorrections(invoiceId!);
       }
       
       // 2. Validar con InvoiceEntryValidator

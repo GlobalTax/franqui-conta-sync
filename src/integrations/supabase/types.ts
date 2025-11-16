@@ -3177,9 +3177,12 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          discount: number | null
           id: string
           invoice_id: string | null
+          product_code: string | null
           quantity: number | null
+          tax_amount: number | null
           tax_rate: number | null
           total_price: number | null
           unit_price: number | null
@@ -3187,9 +3190,12 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          discount?: number | null
           id?: string
           invoice_id?: string | null
+          product_code?: string | null
           quantity?: number | null
+          tax_amount?: number | null
           tax_rate?: number | null
           total_price?: number | null
           unit_price?: number | null
@@ -3197,9 +3203,12 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          discount?: number | null
           id?: string
           invoice_id?: string | null
+          product_code?: string | null
           quantity?: number | null
+          tax_amount?: number | null
           tax_rate?: number | null
           total_price?: number | null
           unit_price?: number | null
@@ -3325,15 +3334,31 @@ export type Database = {
         Row: {
           created_at: string | null
           currency: string | null
+          customer_address: string | null
+          customer_code: string | null
+          customer_name: string | null
+          customer_tax_id: string | null
+          due_date: string | null
           file_name: string
           file_path: string
+          iban: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          operation_date: string | null
+          payment_method: string | null
+          payment_terms: string | null
           raw_data: Json | null
           status: string | null
+          subtotal: number | null
+          supplier_address: string | null
+          supplier_email: string | null
           supplier_name: string | null
+          supplier_phone: string | null
           supplier_tax_id: string | null
+          supplier_website: string | null
+          tax_amount: number | null
+          tax_percentage: number | null
           total_amount: number | null
           updated_at: string | null
           user_id: string | null
@@ -3341,15 +3366,31 @@ export type Database = {
         Insert: {
           created_at?: string | null
           currency?: string | null
+          customer_address?: string | null
+          customer_code?: string | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
+          due_date?: string | null
           file_name: string
           file_path: string
+          iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          operation_date?: string | null
+          payment_method?: string | null
+          payment_terms?: string | null
           raw_data?: Json | null
           status?: string | null
+          subtotal?: number | null
+          supplier_address?: string | null
+          supplier_email?: string | null
           supplier_name?: string | null
+          supplier_phone?: string | null
           supplier_tax_id?: string | null
+          supplier_website?: string | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_amount?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -3357,15 +3398,31 @@ export type Database = {
         Update: {
           created_at?: string | null
           currency?: string | null
+          customer_address?: string | null
+          customer_code?: string | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
+          due_date?: string | null
           file_name?: string
           file_path?: string
+          iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          operation_date?: string | null
+          payment_method?: string | null
+          payment_terms?: string | null
           raw_data?: Json | null
           status?: string | null
+          subtotal?: number | null
+          supplier_address?: string | null
+          supplier_email?: string | null
           supplier_name?: string | null
+          supplier_phone?: string | null
           supplier_tax_id?: string | null
+          supplier_website?: string | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_amount?: number | null
           updated_at?: string | null
           user_id?: string | null

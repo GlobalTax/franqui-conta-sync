@@ -1,6 +1,9 @@
 import { PageHeader } from "@/components/layout/PageHeader";
-import { AutoPostingMetricsCard } from "@/components/digitization/AutoPostingMetricsCard";
-import { TrendingUp } from "lucide-react";
+import { OCRMetricsCards } from "@/components/digitization/OCRMetricsCards";
+import { AutoPostingEvolutionChart } from "@/components/digitization/AutoPostingEvolutionChart";
+import { AccountAccuracyChart } from "@/components/digitization/AccountAccuracyChart";
+import { TopCorrectedSuppliersChart } from "@/components/digitization/TopCorrectedSuppliersChart";
+import { LearningPatternsTable } from "@/components/digitization/LearningPatternsTable";
 
 export default function DigitizationDashboard() {
   return (
@@ -14,21 +17,26 @@ export default function DigitizationDashboard() {
       />
       
       <p className="text-muted-foreground">
-        Métricas de auto-posting y sistema de aprendizaje
+        Métricas completas de auto-posting, aprendizaje automático y OCR
       </p>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <AutoPostingMetricsCard />
-        
-        {/* Placeholder para futuras métricas */}
-        <div className="col-span-2 flex items-center justify-center border-2 border-dashed border-border rounded-lg p-12">
-          <div className="text-center space-y-2">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              Más métricas próximamente
-            </p>
-          </div>
+      {/* Row 1: OCR Metrics Cards */}
+      <OCRMetricsCards />
+
+      {/* Row 2: Evolution Chart + Account Accuracy */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AutoPostingEvolutionChart />
         </div>
+        <div className="lg:col-span-1">
+          <AccountAccuracyChart />
+        </div>
+      </div>
+
+      {/* Row 3: Top Suppliers + Learning Patterns */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TopCorrectedSuppliersChart />
+        <LearningPatternsTable />
       </div>
     </div>
   );

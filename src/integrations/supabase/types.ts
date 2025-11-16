@@ -1014,6 +1014,116 @@ export type Database = {
         }
         Relationships: []
       }
+      api_integration_keys: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          created_by: string | null
+          enabled: boolean | null
+          expires_at: string | null
+          id: string
+          key_hash: string
+          key_value: string
+          last_used: string | null
+          name: string
+          permissions: string[]
+          rate_limit: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          created_by?: string | null
+          enabled?: boolean | null
+          expires_at?: string | null
+          id?: string
+          key_hash: string
+          key_value: string
+          last_used?: string | null
+          name: string
+          permissions: string[]
+          rate_limit?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          enabled?: boolean | null
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          key_value?: string
+          last_used?: string | null
+          name?: string
+          permissions?: string[]
+          rate_limit?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_integration_keys_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "api_integration_keys_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      api_key_usage: {
+        Row: {
+          api_key_id: string | null
+          created_at: string | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          ip_address: unknown
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_usage_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_integration_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_key_usage_logs: {
         Row: {
           api_key_id: string
@@ -1319,6 +1429,50 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          audit_log_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          audit_log_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          severity: string
+          title: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          audit_log_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_alerts_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -2413,6 +2567,132 @@ export type Database = {
           },
         ]
       }
+      email_imported_invoices: {
+        Row: {
+          attachment_name: string | null
+          created_at: string | null
+          email_subject: string | null
+          error_message: string | null
+          id: string
+          integration_id: string | null
+          invoice_id: string | null
+          processing_status: string | null
+          received_date: string | null
+          sender_email: string | null
+        }
+        Insert: {
+          attachment_name?: string | null
+          created_at?: string | null
+          email_subject?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          invoice_id?: string | null
+          processing_status?: string | null
+          received_date?: string | null
+          sender_email?: string | null
+        }
+        Update: {
+          attachment_name?: string | null
+          created_at?: string | null
+          email_subject?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          invoice_id?: string | null
+          processing_status?: string | null
+          received_date?: string | null
+          sender_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_imported_invoices_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "email_integration"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_imported_invoices_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_integration: {
+        Row: {
+          auto_process: boolean | null
+          centro_code: string
+          created_at: string | null
+          email_address: string
+          enabled: boolean | null
+          error_folder: string | null
+          folder_name: string | null
+          id: string
+          imap_host: string | null
+          imap_port: number | null
+          last_sync: string | null
+          password_encrypted: string | null
+          processed_folder: string | null
+          provider: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          auto_process?: boolean | null
+          centro_code: string
+          created_at?: string | null
+          email_address: string
+          enabled?: boolean | null
+          error_folder?: string | null
+          folder_name?: string | null
+          id?: string
+          imap_host?: string | null
+          imap_port?: number | null
+          last_sync?: string | null
+          password_encrypted?: string | null
+          processed_folder?: string | null
+          provider: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          auto_process?: boolean | null
+          centro_code?: string
+          created_at?: string | null
+          email_address?: string
+          enabled?: boolean | null
+          error_folder?: string | null
+          folder_name?: string | null
+          id?: string
+          imap_host?: string | null
+          imap_port?: number | null
+          last_sync?: string | null
+          password_encrypted?: string | null
+          processed_folder?: string | null
+          provider?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_integration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "email_integration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
       employees: {
         Row: {
           apellidos: string
@@ -2531,6 +2811,113 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      face_configuration: {
+        Row: {
+          accounting_office: string | null
+          centro_code: string
+          certificate_password_encrypted: string | null
+          certificate_path: string | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          nif: string
+          organism_code: string | null
+          processing_unit: string | null
+          test_mode: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          accounting_office?: string | null
+          centro_code: string
+          certificate_password_encrypted?: string | null
+          certificate_path?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          nif: string
+          organism_code?: string | null
+          processing_unit?: string | null
+          test_mode?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          accounting_office?: string | null
+          centro_code?: string
+          certificate_password_encrypted?: string | null
+          certificate_path?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          nif?: string
+          organism_code?: string | null
+          processing_unit?: string | null
+          test_mode?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_configuration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "face_configuration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      face_submissions: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          response_xml: string | null
+          status: string | null
+          submission_date: string | null
+          submission_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          response_xml?: string | null
+          status?: string | null
+          submission_date?: string | null
+          submission_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          response_xml?: string | null
+          status?: string | null
+          submission_date?: string | null
+          submission_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_submissions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       facturae_xml_files: {
         Row: {
@@ -6180,6 +6567,116 @@ export type Database = {
         }
         Relationships: []
       }
+      ticketbai_configuration: {
+        Row: {
+          centro_code: string
+          certificate_password_encrypted: string | null
+          certificate_path: string | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          region: string
+          software_license: string
+          software_name: string
+          software_version: string
+          test_mode: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          centro_code: string
+          certificate_password_encrypted?: string | null
+          certificate_path?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          region: string
+          software_license: string
+          software_name?: string
+          software_version?: string
+          test_mode?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          centro_code?: string
+          certificate_password_encrypted?: string | null
+          certificate_path?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          region?: string
+          software_license?: string
+          software_name?: string
+          software_version?: string
+          test_mode?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticketbai_configuration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "ticketbai_configuration_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      ticketbai_submissions: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          qr_code: string | null
+          signature: string | null
+          status: string | null
+          submission_date: string | null
+          tbai_identifier: string | null
+          updated_at: string | null
+          xml_content: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          qr_code?: string | null
+          signature?: string | null
+          status?: string | null
+          submission_date?: string | null
+          tbai_identifier?: string | null
+          updated_at?: string | null
+          xml_content?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          qr_code?: string | null
+          signature?: string | null
+          status?: string | null
+          submission_date?: string | null
+          tbai_identifier?: string | null
+          updated_at?: string | null
+          xml_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticketbai_submissions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_received"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_centre_permissions: {
         Row: {
           centro: string
@@ -6335,6 +6832,113 @@ export type Database = {
           verified?: boolean | null
         }
         Relationships: []
+      }
+      webhook_deliveries: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          delivered: boolean | null
+          event_type: string
+          id: string
+          next_retry: string | null
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          response_time_ms: number | null
+          webhook_id: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          delivered?: boolean | null
+          event_type: string
+          id?: string
+          next_retry?: string | null
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          webhook_id?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          delivered?: boolean | null
+          event_type?: string
+          id?: string
+          next_retry?: string | null
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          centro_code: string
+          created_at: string | null
+          enabled: boolean | null
+          events: string[]
+          id: string
+          name: string
+          retry_count: number | null
+          secret: string
+          timeout_seconds: number | null
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          centro_code: string
+          created_at?: string | null
+          enabled?: boolean | null
+          events: string[]
+          id?: string
+          name: string
+          retry_count?: number | null
+          secret: string
+          timeout_seconds?: number | null
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          centro_code?: string
+          created_at?: string | null
+          enabled?: boolean | null
+          events?: string[]
+          id?: string
+          name?: string
+          retry_count?: number | null
+          secret?: string
+          timeout_seconds?: number | null
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhooks_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "webhooks_centro_code_fkey"
+            columns: ["centro_code"]
+            isOneToOne: false
+            referencedRelation: "v_user_memberships"
+            referencedColumns: ["restaurant_code"]
+          },
+        ]
       }
     }
     Views: {
@@ -6899,6 +7503,21 @@ export type Database = {
         Args: { p_entry_id: string; p_motivo: string; p_user_id: string }
         Returns: Json
       }
+      detect_critical_changes: {
+        Args: never
+        Returns: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at: string
+          field_changed: string
+          log_id: string
+          new_value: string
+          old_value: string
+          row_id: string
+          severity: string
+          table_name: string
+          user_email: string
+        }[]
+      }
       detect_dq_issues: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -6921,6 +7540,16 @@ export type Database = {
           api_key: string
           key_id: string
           key_prefix: string
+        }[]
+      }
+      generate_balance_sheet: {
+        Args: { p_centro_code?: string; p_date: string }
+        Returns: {
+          account_code: string
+          account_name: string
+          account_type: string
+          balance: number
+          level: number
         }[]
       }
       generate_closing_entries: {
@@ -6955,6 +7584,37 @@ export type Database = {
         Args: { p_centro_code: string; p_quarter: number; p_year: number }
         Returns: Json
       }
+      generate_profit_loss: {
+        Args: {
+          p_centro_code?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          account_type: string
+          amount: number
+          level: number
+        }[]
+      }
+      generate_trial_balance: {
+        Args: {
+          p_centro_code?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          closing_credit: number
+          closing_debit: number
+          opening_credit: number
+          opening_debit: number
+          period_credit: number
+          period_debit: number
+        }[]
+      }
       get_account_balances_by_group: {
         Args: {
           p_account_group: string
@@ -6973,6 +7633,18 @@ export type Database = {
           account_code: string
           account_name: string
           balance: number
+        }[]
+      }
+      get_audit_history: {
+        Args: { p_limit?: number; p_row_id: string; p_table_name: string }
+        Returns: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at: string
+          diff: Json
+          id: string
+          new_data: Json
+          old_data: Json
+          user_email: string
         }[]
       }
       get_auto_posting_metrics: {

@@ -3183,6 +3183,7 @@ export type Database = {
           product_code: string | null
           quantity: number | null
           tax_amount: number | null
+          tax_code: string | null
           tax_rate: number | null
           total_price: number | null
           unit_price: number | null
@@ -3196,6 +3197,7 @@ export type Database = {
           product_code?: string | null
           quantity?: number | null
           tax_amount?: number | null
+          tax_code?: string | null
           tax_rate?: number | null
           total_price?: number | null
           unit_price?: number | null
@@ -3209,6 +3211,7 @@ export type Database = {
           product_code?: string | null
           quantity?: number | null
           tax_amount?: number | null
+          tax_code?: string | null
           tax_rate?: number | null
           total_price?: number | null
           unit_price?: number | null
@@ -3329,6 +3332,47 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      invoice_tax_breakdown: {
+        Row: {
+          created_at: string | null
+          id: string
+          invoice_id: string
+          tax_amount: number | null
+          tax_base: number | null
+          tax_code: string
+          tax_description: string | null
+          tax_rate: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invoice_id: string
+          tax_amount?: number | null
+          tax_base?: number | null
+          tax_code: string
+          tax_description?: string | null
+          tax_rate?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invoice_id?: string
+          tax_amount?: number | null
+          tax_base?: number | null
+          tax_code?: string
+          tax_description?: string | null
+          tax_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_tax_breakdown_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices: {
         Row: {

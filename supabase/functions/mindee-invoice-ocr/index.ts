@@ -6,7 +6,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { extractWithMindee } from '../_shared/mindee/client.ts';
-import { adaptMindeeToStandard, extractMindeeMetadata } from '../_shared/mindee/adapter.ts';
+import { adaptMindeeToStandard, extractMindeeMetadataWithFallbacks } from '../_shared/mindee/adapter.ts';
 import { calculateMindeeCoste } from '../_shared/mindee/cost-calculator.ts';
 import { normalizeBackend } from '../_shared/fiscal/normalize-backend.ts';
 import { validateInvoiceEntry } from '../_shared/gl/validator.ts';
@@ -136,9 +136,12 @@ serve(async (req) => {
       );
     }
 
-    // 3. Adapt to internal format
+    // 3. Adapt to internal format (con parsers críticos)
     console.log('[Mindee OCR] Adaptando datos extraídos...');
     const extracted = adaptMindeeToStandard(mindeeResult.data);
+    
+    // Detectar si se usaron fallbacks
+    const fallbackUsed = extracted.confidence_notes?.some(note => note.includes('⚠️')) || false;
 
     // 4. Normalize & Validate
     console.log('[Mindee OCR] Normalizando datos fiscales...');
@@ -149,6 +152,7 @@ serve(async (req) => {
       errorsCount: normalized.validation.errors.length,
       warningsCount: normalized.validation.warnings.length,
       autofixCount: normalized.autofix_applied.length,
+      fallbackUsed,
     });
 
     // 5. Check if supplier requires manual review
@@ -164,31 +168,48 @@ serve(async (req) => {
       console.log('[Mindee OCR] ⚠️ Proveedor requiere revisión manual:', supplier.name);
     }
 
-    // Calculate costs
+    // Calculate costs and metadata
     const mindeeCost = calculateMindeeCoste(mindeeResult.data);
-    const mindeeMetadata = extractMindeeMetadata(mindeeResult.data);
+    const mindeeMetadata = extractMindeeMetadataWithFallbacks(
+      mindeeResult.data,
+      fallbackUsed
+    );
 
-    // 6. Update invoice in database
+    // 6. Update invoice in database (columnas nuevas)
     console.log('[Mindee OCR] Actualizando factura en DB...');
     
     const { error: updateError } = await supabase
       .from('invoices_received')
       .update({
+        // Columnas Mindee específicas
         mindee_document_id: mindeeMetadata.mindee_document_id,
         mindee_confidence: mindeeMetadata.mindee_confidence,
+        mindee_processing_time: mindeeMetadata.mindee_processing_time,
         mindee_raw_response: mindeeResult.data,
-        mindee_processing_time_ms: mindeeResult.processing_time_ms,
-        mindee_cost_eur: mindeeCost,
-        ocr_provider: 'mindee',
+        mindee_cost_euros: mindeeCost,
+        mindee_pages: mindeeMetadata.mindee_pages,
+        
+        // Engine y fallback
+        ocr_engine: 'mindee',
+        ocr_fallback_used: mindeeMetadata.ocr_fallback_used,
+        field_confidence_scores: mindeeMetadata.field_confidence_scores,
+        
+        // Datos extraídos (legacy columns para compatibilidad)
         ocr_payload: normalized.normalized,
         ocr_confidence: mindeeMetadata.mindee_confidence,
+        
+        // Status de aprobación
         approval_status: needsManualReview ? 'ocr_review' : 'pending',
+        
+        // Datos básicos de factura
         supplier_tax_id: extracted.issuer.vat_id,
         supplier_name: extracted.issuer.name,
         invoice_number: extracted.invoice_number,
         invoice_date: extracted.issue_date,
         total: extracted.totals.total,
         currency: extracted.totals.currency,
+        
+        // Validaciones
         validation_errors: normalized.validation.errors.length > 0 
           ? normalized.validation.errors 
           : null,
@@ -212,7 +233,7 @@ serve(async (req) => {
       );
     }
 
-    // 7. Log processing
+    // 7. Log processing (con info de fallbacks)
     await supabase
       .from('ocr_processing_log')
       .insert({
@@ -227,6 +248,11 @@ serve(async (req) => {
           ? normalized.validation.errors 
           : null,
         cost_eur: mindeeCost,
+        metadata: {
+          fallback_used: fallbackUsed,
+          field_confidence_scores: mindeeMetadata.field_confidence_scores,
+          needs_manual_review: needsManualReview,
+        },
       });
 
     const totalTime = Date.now() - requestStartTime;
@@ -238,6 +264,7 @@ serve(async (req) => {
       cost: `${mindeeCost}€`,
       totalTime: `${totalTime}ms`,
       needsManualReview,
+      fallbackUsed,
     });
 
     // Return success response
@@ -247,8 +274,11 @@ serve(async (req) => {
         invoice_id,
         mindee_document_id: mindeeMetadata.mindee_document_id,
         mindee_confidence: mindeeMetadata.mindee_confidence,
-        mindee_processing_time_ms: mindeeResult.processing_time_ms,
-        mindee_cost_eur: mindeeCost,
+        mindee_processing_time: mindeeMetadata.mindee_processing_time,
+        mindee_cost_euros: mindeeCost,
+        mindee_pages: mindeeMetadata.mindee_pages,
+        ocr_engine: 'mindee',
+        ocr_fallback_used: fallbackUsed,
         ocr_payload: normalized.normalized,
         approval_status: needsManualReview ? 'ocr_review' : 'pending',
         validation: {
@@ -259,6 +289,7 @@ serve(async (req) => {
         autofix_applied: normalized.autofix_applied,
         needs_manual_review: needsManualReview,
         supplier_name: supplier?.name || extracted.issuer.name,
+        field_confidence_scores: mindeeMetadata.field_confidence_scores,
       }),
       {
         status: 200,

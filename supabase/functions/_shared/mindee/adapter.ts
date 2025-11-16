@@ -4,6 +4,14 @@
 
 import type { MindeeAPIResponse, MindeePrediction, MindeeTax } from './types.ts';
 import type { EnhancedInvoiceData } from '../ocr/types.ts';
+import {
+  parseEuropeanNumber,
+  extractCustomerDataFromRawText,
+  extractTaxBreakdownFromText,
+  calculateFieldConfidence,
+  validateTotals,
+  type TaxBreakdown,
+} from './parsers.ts';
 
 /**
  * Extrae la base imponible de un tipo de IVA específico
@@ -76,6 +84,7 @@ function normalizeSpanishVAT(registrations: Array<{ value: string; type: string 
 
 /**
  * Convierte respuesta de Mindee a formato interno EnhancedInvoiceData
+ * Integra parsers críticos europeos y fallbacks OCR
  */
 export function adaptMindeeToStandard(
   mindeeResponse: MindeeAPIResponse
@@ -89,34 +98,144 @@ export function adaptMindeeToStandard(
     totalAmount: prediction.total_amount.value,
   });
 
+  // === CRITICAL PARSERS INTEGRATION ===
+  
+  // Flags de fallback
+  let fallbackFlags = {
+    europeanNumbers: false,
+    customerFromOCR: false,
+    taxBreakdownFromOCR: false,
+  };
+
   // Extraer NIF/CIF del proveedor
   const supplierVatId = normalizeSpanishVAT(
     prediction.supplier_company_registrations || []
   );
 
-  // Extraer NIF/CIF del cliente (receptor)
-  const customerVatId = normalizeSpanishVAT(
+  // PARSER 2: Customer data con fallback OCR
+  let customerVatId = normalizeSpanishVAT(
     prediction.customer_company_registrations || []
   );
+  let customerName = prediction.customer_name.value || null;
 
-  // Calcular bases y cuotas de IVA
-  const base_10 = extractVATBase(prediction, 10);
-  const vat_10 = extractVATAmount(prediction, 10);
-  const base_21 = extractVATBase(prediction, 21);
-  const vat_21 = extractVATAmount(prediction, 21);
+  // Fallback si Mindee no detectó customer
+  if (!customerVatId && supplierVatId) {
+    const customerFromOCR = extractCustomerDataFromRawText(mindeeResponse, supplierVatId);
+    if (customerFromOCR.taxId) {
+      customerVatId = customerFromOCR.taxId;
+      customerName = customerFromOCR.name || customerName;
+      fallbackFlags.customerFromOCR = true;
+      
+      console.log('[Mindee Adapter] ⚠️ Usando customer desde OCR fallback:', {
+        taxId: customerVatId,
+        name: customerName,
+        confidence: customerFromOCR.confidence,
+      });
+    }
+  }
 
-  // Extraer otros impuestos
-  const other_taxes = extractOtherTaxes(prediction);
+  // PARSER 1: Corregir números europeos en totales
+  let rawTotal = prediction.total_amount.value || 0;
+  let rawNet = prediction.total_net?.value || 0;
+  let rawTax = prediction.total_tax?.value || 0;
 
-  // Adaptar líneas de detalle
+  const correctedTotal = parseEuropeanNumber(rawTotal);
+  const correctedNet = parseEuropeanNumber(rawNet);
+  const correctedTax = parseEuropeanNumber(rawTax);
+
+  if (correctedTotal !== rawTotal || correctedNet !== rawNet || correctedTax !== rawTax) {
+    fallbackFlags.europeanNumbers = true;
+    console.log('[Mindee Adapter] ⚠️ Números europeos corregidos:', {
+      total: { raw: rawTotal, corrected: correctedTotal },
+      net: { raw: rawNet, corrected: correctedNet },
+      tax: { raw: rawTax, corrected: correctedTax },
+    });
+  }
+
+  // PARSER 3: Tax breakdown con fallback OCR
+  let base_10 = parseEuropeanNumber(extractVATBase(prediction, 10));
+  let vat_10 = parseEuropeanNumber(extractVATAmount(prediction, 10));
+  let base_21 = parseEuropeanNumber(extractVATBase(prediction, 21));
+  let vat_21 = parseEuropeanNumber(extractVATAmount(prediction, 21));
+  let other_taxes = extractOtherTaxes(prediction);
+
+  // Fallback si Mindee no detectó IVA correctamente
+  if (!base_10 && !base_21 && prediction.taxes.length === 0) {
+    const rawText = mindeeResponse?.document?.inference?.pages?.[0]?.extras?.full_text_ocr?.content || '';
+    
+    if (rawText) {
+      const taxBreakdowns = extractTaxBreakdownFromText(rawText);
+      
+      if (taxBreakdowns.length > 0) {
+        fallbackFlags.taxBreakdownFromOCR = true;
+        
+        console.log('[Mindee Adapter] ⚠️ Usando tax breakdown desde OCR fallback:', {
+          linesFound: taxBreakdowns.length,
+        });
+
+        // Mapear a estructura other_taxes
+        other_taxes = taxBreakdowns.map(b => ({
+          type: `${b.tax_code} ${b.tax_rate}%`,
+          base: b.tax_base,
+          quota: b.tax_amount,
+        }));
+
+        // Separar IVA 10% y 21%
+        const iva10 = taxBreakdowns.find(b => Math.abs(b.tax_rate - 10) < 0.01);
+        const iva21 = taxBreakdowns.find(b => Math.abs(b.tax_rate - 21) < 0.01);
+        
+        if (iva10) {
+          base_10 = iva10.tax_base;
+          vat_10 = iva10.tax_amount;
+          // Remover de other_taxes
+          other_taxes = other_taxes.filter(t => !t.type.includes('10'));
+        }
+        
+        if (iva21) {
+          base_21 = iva21.tax_base;
+          vat_21 = iva21.tax_amount;
+          // Remover de other_taxes
+          other_taxes = other_taxes.filter(t => !t.type.includes('21'));
+        }
+      }
+    }
+  }
+
+  // Adaptar líneas de detalle (con parser europeo)
   const lines = prediction.line_items?.map((item, idx) => ({
     description: item.description || `Línea ${idx + 1}`,
-    quantity: item.quantity || 1,
-    unit_price: item.unit_price || 0,
-    amount: item.total_amount || 0,
+    quantity: parseEuropeanNumber(item.quantity) || 1,
+    unit_price: parseEuropeanNumber(item.unit_price) || 0,
+    amount: parseEuropeanNumber(item.total_amount) || 0,
     tax_rate: item.tax_rate || null,
-    tax_amount: item.tax_amount || null,
+    tax_amount: parseEuropeanNumber(item.tax_amount) || null,
   })) || [];
+
+  // Validar totales
+  const totalFromLines = lines.reduce((sum, line) => sum + line.amount, 0);
+  const totalFromTax = (base_10 || 0) + (vat_10 || 0) + (base_21 || 0) + (vat_21 || 0) +
+    other_taxes.reduce((sum, t) => sum + t.base + t.quota, 0);
+  
+  const totalValidation = validateTotals(correctedTotal || 0, totalFromTax);
+
+  // Construir confidence notes
+  const confidenceNotes: string[] = [
+    `Mindee confidence: ${prediction.confidence.toFixed(2)}%`,
+    supplierVatId ? 'VAT ID proveedor extraído' : '⚠️ VAT ID proveedor no encontrado',
+  ];
+
+  if (fallbackFlags.europeanNumbers) {
+    confidenceNotes.push('⚠️ Parser europeo aplicado a números');
+  }
+  if (fallbackFlags.customerFromOCR) {
+    confidenceNotes.push('⚠️ Customer extraído desde OCR raw text');
+  }
+  if (fallbackFlags.taxBreakdownFromOCR) {
+    confidenceNotes.push('⚠️ Tax breakdown extraído desde OCR raw text');
+  }
+  if (!totalValidation.isValid) {
+    confidenceNotes.push(`⚠️ Discrepancia en total: ${totalValidation.discrepancy.toFixed(2)}€`);
+  }
 
   // Construir objeto EnhancedInvoiceData
   const adapted: EnhancedInvoiceData = {
@@ -132,18 +251,18 @@ export function adaptMindeeToStandard(
     },
     
     receiver: {
-      name: prediction.customer_name.value || null,
+      name: customerName,
       vat_id: customerVatId,
       address: prediction.customer_address.value || null,
     },
     
     totals: {
       currency: prediction.currency.value || 'EUR',
-      total: prediction.total_amount.value || 0,
-      base_10,
-      vat_10,
-      base_21,
-      vat_21,
+      total: correctedTotal || 0,
+      base_10: base_10 ?? null,
+      vat_10: vat_10 ?? null,
+      base_21: base_21 ?? null,
+      vat_21: vat_21 ?? null,
       other_taxes,
     },
     
@@ -152,27 +271,60 @@ export function adaptMindeeToStandard(
     centre_hint: null,
     payment_method: null,
     
-    confidence_notes: [
-      `Mindee confidence: ${prediction.confidence.toFixed(2)}%`,
-      supplierVatId ? 'VAT ID extraído correctamente' : 'VAT ID no encontrado',
-    ],
+    confidence_notes: confidenceNotes,
     confidence_score: prediction.confidence,
-    discrepancies: [],
+    discrepancies: !totalValidation.isValid ? [
+      `Total discrepancy: ${totalValidation.discrepancy.toFixed(2)}€`
+    ] : [],
     proposed_fix: null,
   };
 
   console.log('[Mindee Adapter] ✓ Adaptación completada:', {
     invoiceNumber: adapted.invoice_number,
     supplierVatId: adapted.issuer.vat_id,
+    customerVatId: adapted.receiver.vat_id,
     total: adapted.totals.total,
     base_10: adapted.totals.base_10,
     vat_10: adapted.totals.vat_10,
     base_21: adapted.totals.base_21,
     vat_21: adapted.totals.vat_21,
     linesCount: adapted.lines.length,
+    fallbacks: fallbackFlags,
+    totalValidation: totalValidation.isValid ? 'OK' : `⚠️ ${totalValidation.discrepancy.toFixed(2)}€`,
   });
 
   return adapted;
+}
+
+/**
+ * Extrae metadata adicional de Mindee para BD
+ * Incluye flags de fallback
+ */
+export function extractMindeeMetadataWithFallbacks(
+  mindeeResponse: MindeeAPIResponse,
+  fallbackUsed: boolean
+) {
+  return {
+    ...extractMindeeMetadata(mindeeResponse),
+    ocr_fallback_used: fallbackUsed,
+    field_confidence_scores: {
+      invoice_number: calculateFieldConfidence(
+        mindeeResponse.document.inference.prediction.invoice_number.value,
+        mindeeResponse.document.inference.prediction.invoice_number.confidence * 100,
+        false
+      ),
+      total_amount: calculateFieldConfidence(
+        mindeeResponse.document.inference.prediction.total_amount.value,
+        mindeeResponse.document.inference.prediction.total_amount.confidence * 100,
+        fallbackUsed
+      ),
+      supplier_name: calculateFieldConfidence(
+        mindeeResponse.document.inference.prediction.supplier_name.value,
+        mindeeResponse.document.inference.prediction.supplier_name.confidence * 100,
+        false
+      ),
+    },
+  };
 }
 
 /**

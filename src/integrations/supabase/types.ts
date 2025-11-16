@@ -3604,12 +3604,19 @@ export type Database = {
           document_path: string | null
           due_date: string | null
           entry_id: string | null
+          field_confidence_scores: Json | null
           file_name: string | null
           file_path: string | null
           id: string
           invoice_date: string
           invoice_number: string
           manual_review_reason: string | null
+          mindee_confidence: number | null
+          mindee_cost_euros: number | null
+          mindee_document_id: string | null
+          mindee_pages: number | null
+          mindee_processing_time: number | null
+          mindee_raw_response: Json | null
           notes: string | null
           ocr_confidence: number | null
           ocr_confidence_notes: string[] | null
@@ -3617,6 +3624,7 @@ export type Database = {
           ocr_engine: string | null
           ocr_engine_used: string | null
           ocr_extracted_data: Json | null
+          ocr_fallback_used: boolean | null
           ocr_ms_openai: number | null
           ocr_pages: number | null
           ocr_payload: Json | null
@@ -3661,12 +3669,19 @@ export type Database = {
           document_path?: string | null
           due_date?: string | null
           entry_id?: string | null
+          field_confidence_scores?: Json | null
           file_name?: string | null
           file_path?: string | null
           id?: string
           invoice_date: string
           invoice_number: string
           manual_review_reason?: string | null
+          mindee_confidence?: number | null
+          mindee_cost_euros?: number | null
+          mindee_document_id?: string | null
+          mindee_pages?: number | null
+          mindee_processing_time?: number | null
+          mindee_raw_response?: Json | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
@@ -3674,6 +3689,7 @@ export type Database = {
           ocr_engine?: string | null
           ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
+          ocr_fallback_used?: boolean | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
@@ -3718,12 +3734,19 @@ export type Database = {
           document_path?: string | null
           due_date?: string | null
           entry_id?: string | null
+          field_confidence_scores?: Json | null
           file_name?: string | null
           file_path?: string | null
           id?: string
           invoice_date?: string
           invoice_number?: string
           manual_review_reason?: string | null
+          mindee_confidence?: number | null
+          mindee_cost_euros?: number | null
+          mindee_document_id?: string | null
+          mindee_pages?: number | null
+          mindee_processing_time?: number | null
+          mindee_raw_response?: Json | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
@@ -3731,6 +3754,7 @@ export type Database = {
           ocr_engine?: string | null
           ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
+          ocr_fallback_used?: boolean | null
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
@@ -5912,6 +5936,7 @@ export type Database = {
           payment_terms: number | null
           phone: string | null
           postal_code: string | null
+          requires_manual_review: boolean | null
           successful_posts_count: number | null
           tax_id: string
           updated_at: string | null
@@ -5935,6 +5960,7 @@ export type Database = {
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
+          requires_manual_review?: boolean | null
           successful_posts_count?: number | null
           tax_id: string
           updated_at?: string | null
@@ -5958,6 +5984,7 @@ export type Database = {
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
+          requires_manual_review?: boolean | null
           successful_posts_count?: number | null
           tax_id?: string
           updated_at?: string | null
@@ -6421,6 +6448,19 @@ export type Database = {
         Row: {
           metric: string | null
           value: string | null
+        }
+        Relationships: []
+      }
+      v_mindee_metrics: {
+        Row: {
+          avg_confidence: number | null
+          avg_processing_time: number | null
+          date: string | null
+          total_cost: number | null
+          total_fallbacks: number | null
+          total_mindee: number | null
+          total_needs_review: number | null
+          total_openai: number | null
         }
         Relationships: []
       }

@@ -8,9 +8,9 @@ import { Session } from "@supabase/supabase-js";
 import Layout from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
 import { registerServiceWorker } from "@/lib/register-sw";
-import { useGlobalShortcuts } from "@/lib/shortcuts/ShortcutManager";
 import { ShortcutHelpDialog } from "@/components/shortcuts/ShortcutHelpDialog";
 import { CommandPalette } from "@/components/command/CommandPalette";
+import { GlobalShortcutsWrapper } from "@/components/shortcuts/GlobalShortcutsWrapper";
 
 // Lazy load all page components
 const Login = lazy(() => import("@/pages/Login"));
@@ -100,9 +100,6 @@ const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Activar shortcuts globales
-  useGlobalShortcuts();
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -143,6 +140,9 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        {/* 🔥 Activar shortcuts globales dentro del Router */}
+        <GlobalShortcutsWrapper />
+        
         <Suspense fallback={
           <div className="flex min-h-screen items-center justify-center">
             <div className="text-center">

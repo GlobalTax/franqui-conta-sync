@@ -1,6 +1,7 @@
 import { CheckCircle, XCircle, Building2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ShortcutHint } from '@/components/shortcuts/ShortcutHint';
 
 interface InboxBulkActionsProps {
   count: number;
@@ -25,35 +26,41 @@ export function InboxBulkActions({
         </span>
         
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onApprove}
-            className="gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            Aprobar Todas
-          </Button>
+          <ShortcutHint keys="A" description="Aprobar todas">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onApprove}
+              className="gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Aprobar Todas
+            </Button>
+          </ShortcutHint>
           
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onReject}
-            className="gap-2"
-          >
-            <XCircle className="h-4 w-4" />
-            Rechazar
-          </Button>
+          <ShortcutHint keys="R" description="Rechazar">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onReject}
+              className="gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Rechazar
+            </Button>
+          </ShortcutHint>
           
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onAssignCentre}
-            className="gap-2"
-          >
-            <Building2 className="h-4 w-4" />
-            Asignar Centro
-          </Button>
+          <ShortcutHint keys="I" description="Asignar centro">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssignCentre}
+              className="gap-2"
+            >
+              <Building2 className="h-4 w-4" />
+              Asignar Centro
+            </Button>
+          </ShortcutHint>
         </div>
 
         <Button

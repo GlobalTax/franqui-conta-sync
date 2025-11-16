@@ -138,6 +138,22 @@ export function useGlobalShortcuts() {
     description: 'Focus Search',
     scopes: ['global']
   });
+
+  // ============================================================================
+  // THEME TOGGLE
+  // ============================================================================
+
+  useHotkeys('meta+t,ctrl+t', (e) => {
+    e.preventDefault();
+    // Trigger theme toggle
+    const themeButton = document.querySelector('[data-theme-toggle]') as HTMLButtonElement;
+    if (themeButton) {
+      themeButton.click();
+    }
+  }, { 
+    description: 'Toggle Theme',
+    scopes: ['global']
+  });
 }
 
 /**
@@ -247,6 +263,7 @@ export const SHORTCUTS_LIST: ShortcutAction[] = [
   { keys: 'n → a', description: 'Nuevo Asiento Contable', category: 'actions', action: () => {} },
   { keys: 'n → u', description: 'Upload Masivo', category: 'actions', action: () => {} },
   { keys: 'n → s', description: 'Nuevo Proveedor', category: 'actions', action: () => {} },
+  { keys: '⌘+T', description: 'Cambiar Tema (Light/Dark)', category: 'actions', action: () => {} },
 
   // Selection
   { keys: 'j', description: 'Seleccionar Siguiente', category: 'selection', action: () => {} },

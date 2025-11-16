@@ -2,7 +2,7 @@
 // COMMAND PALETTE - Universal search and actions (Cmd+K)
 // ============================================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import {
@@ -31,9 +31,11 @@ import {
   BookOpen,
   Home,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 interface CommandItem {
   id: string;
@@ -45,10 +47,39 @@ interface CommandItem {
   category: 'navigation' | 'actions' | 'invoices' | 'suppliers' | 'accounts' | 'recent';
 }
 
+// Cache for search results
+const searchCache = new Map<string, CommandItem[]>();
+
+// Recent commands (stored in localStorage)
+const RECENT_COMMANDS_KEY = 'commandPaletteRecent';
+const MAX_RECENT = 5;
+
+function getRecentCommands(): string[] {
+  try {
+    const stored = localStorage.getItem(RECENT_COMMANDS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addRecentCommand(commandId: string) {
+  try {
+    const recent = getRecentCommands();
+    const filtered = recent.filter(id => id !== commandId);
+    const updated = [commandId, ...filtered].slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_COMMANDS_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignore errors
+  }
+}
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [dynamicItems, setDynamicItems] = useState<CommandItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recentIds, setRecentIds] = useState<string[]>([]);
   const navigate = useNavigate();
 
   // Toggle with Cmd+K
@@ -66,6 +97,21 @@ export function CommandPalette() {
   }, {
     enabled: open
   });
+
+  // Load recent commands when opening
+  useEffect(() => {
+    if (open) {
+      setRecentIds(getRecentCommands());
+    }
+  }, [open]);
+
+  // Handler to execute command and save to recents
+  const handleSelectCommand = useCallback((command: CommandItem) => {
+    command.onSelect();
+    addRecentCommand(command.id);
+    setOpen(false);
+    setSearch('');
+  }, []);
 
   // ============================================================================
   // STATIC COMMANDS (Navigation + Actions)
@@ -231,10 +277,19 @@ export function CommandPalette() {
   useEffect(() => {
     if (search.length < 2) {
       setDynamicItems([]);
+      setIsLoading(false);
       return;
     }
 
-    const searchDynamic = async () => {
+    // Check cache first
+    if (searchCache.has(search)) {
+      setDynamicItems(searchCache.get(search)!);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const timeoutId = setTimeout(async () => {
       const searchTerm = search.toLowerCase();
       const items: CommandItem[] = [];
 
@@ -303,31 +358,43 @@ export function CommandPalette() {
           });
         }
 
+        // Save to cache
+        searchCache.set(search, items);
         setDynamicItems(items);
       } catch (error) {
         console.error('[CommandPalette] Search error:', error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }, 300);
 
-    const debounce = setTimeout(searchDynamic, 300);
-    return () => clearTimeout(debounce);
+    return () => clearTimeout(timeoutId);
   }, [search, navigate]);
 
   // ============================================================================
   // FILTER & GROUP COMMANDS
   // ============================================================================
 
-  const allCommands = [...staticCommands, ...dynamicItems];
+  const allCommands = useMemo(() => [...staticCommands, ...dynamicItems], [dynamicItems]);
+
+  // Recent commands
+  const recentCommands = useMemo(() => {
+    if (recentIds.length === 0) return [];
+    return recentIds
+      .map(id => allCommands.find(cmd => cmd.id === id))
+      .filter(Boolean) as CommandItem[];
+  }, [recentIds, allCommands]);
 
   const commandsByCategory = useMemo(() => {
     return {
+      recent: recentCommands,
       navigation: allCommands.filter(c => c.category === 'navigation'),
       actions: allCommands.filter(c => c.category === 'actions'),
       invoices: allCommands.filter(c => c.category === 'invoices'),
       suppliers: allCommands.filter(c => c.category === 'suppliers'),
       accounts: allCommands.filter(c => c.category === 'accounts'),
     };
-  }, [allCommands]);
+  }, [allCommands, recentCommands]);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
@@ -341,22 +408,23 @@ export function CommandPalette() {
           <div className="flex flex-col items-center gap-2 py-6">
             <Search className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No se encontraron resultados para "{search}"
+              {isLoading ? 'Buscando...' : `No se encontraron resultados para "${search}"`}
             </p>
           </div>
         </CommandEmpty>
 
-        {/* Navigation */}
-        {commandsByCategory.navigation.length > 0 && (
-          <CommandGroup heading="Navegación">
-            {commandsByCategory.navigation.map((item) => (
+        {/* Recent Commands */}
+        {!search && commandsByCategory.recent.length > 0 && (
+          <CommandGroup heading={
+            <div className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              Recientes
+            </div>
+          }>
+            {commandsByCategory.recent.map((item) => (
               <CommandItem
                 key={item.id}
-                onSelect={() => {
-                  item.onSelect();
-                  setOpen(false);
-                  setSearch('');
-                }}
+                onSelect={() => handleSelectCommand(item)}
               >
                 <span className="mr-2">{item.icon}</span>
                 <div className="flex flex-col">
@@ -372,6 +440,38 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        {commandsByCategory.navigation.length > 0 && (
+          <>
+            {!search && commandsByCategory.recent.length > 0 && <CommandSeparator />}
+            <CommandGroup heading="Navegación">
+              {commandsByCategory.navigation.map((item) => (
+                <CommandItem
+                  key={item.id}
+                  onSelect={() => handleSelectCommand(item)}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  <div className="flex flex-col">
+                    <span>{item.label}</span>
+                    {item.description && (
+                      <span className="text-xs text-muted-foreground">
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
         {/* Actions */}
         {commandsByCategory.actions.length > 0 && (
           <>
@@ -380,11 +480,7 @@ export function CommandPalette() {
               {commandsByCategory.actions.map((item) => (
                 <CommandItem
                   key={item.id}
-                  onSelect={() => {
-                    item.onSelect();
-                    setOpen(false);
-                    setSearch('');
-                  }}
+                  onSelect={() => handleSelectCommand(item)}
                 >
                   <span className="mr-2">{item.icon}</span>
                   <div className="flex flex-col">
@@ -409,11 +505,7 @@ export function CommandPalette() {
               {commandsByCategory.invoices.map((item) => (
                 <CommandItem
                   key={item.id}
-                  onSelect={() => {
-                    item.onSelect();
-                    setOpen(false);
-                    setSearch('');
-                  }}
+                  onSelect={() => handleSelectCommand(item)}
                 >
                   <span className="mr-2">{item.icon}</span>
                   <div className="flex flex-col">
@@ -438,11 +530,7 @@ export function CommandPalette() {
               {commandsByCategory.suppliers.map((item) => (
                 <CommandItem
                   key={item.id}
-                  onSelect={() => {
-                    item.onSelect();
-                    setOpen(false);
-                    setSearch('');
-                  }}
+                  onSelect={() => handleSelectCommand(item)}
                 >
                   <span className="mr-2">{item.icon}</span>
                   <div className="flex flex-col">
@@ -467,11 +555,7 @@ export function CommandPalette() {
               {commandsByCategory.accounts.map((item) => (
                 <CommandItem
                   key={item.id}
-                  onSelect={() => {
-                    item.onSelect();
-                    setOpen(false);
-                    setSearch('');
-                  }}
+                  onSelect={() => handleSelectCommand(item)}
                 >
                   <span className="mr-2">{item.icon}</span>
                   <span>{item.label}</span>

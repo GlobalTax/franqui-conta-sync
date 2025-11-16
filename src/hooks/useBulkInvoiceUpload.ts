@@ -211,10 +211,19 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           uploaded_at: new Date().toISOString(),
           approval_status: 'pending',
         })
-        .select()
+        .select('*')
         .single();
 
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) {
+        console.error('[BulkUpload] Error creando invoice:', invoiceError);
+        throw invoiceError;
+      }
+
+      if (!invoice || !invoice.id) {
+        throw new Error('No se recibió ID de factura después de la inserción');
+      }
+
+      console.log('[BulkUpload] Invoice creado:', invoice.id);
 
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id 
@@ -230,7 +239,16 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
       ));
 
       // 4. CALL MINDEE OCR (reemplaza invoice-ocr legacy)
-      console.log('[BulkUpload] Invocando Mindee OCR...');
+      console.log('[BulkUpload] Invocando Mindee OCR...', {
+        invoiceId: invoice?.id,
+        path,
+        centroCode
+      });
+
+      // Validate invoice ID before calling OCR
+      if (!invoice?.id) {
+        throw new Error('No se pudo crear el registro de factura (ID vacío)');
+      }
       
       const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
         body: {

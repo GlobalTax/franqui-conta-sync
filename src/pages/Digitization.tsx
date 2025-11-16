@@ -2,6 +2,7 @@ import { DigitizationTabs } from '@/components/digitization/DigitizationTabs';
 import InvoicesInbox from '@/pages/invoices/InvoicesInbox';
 import InvoiceDetailEditor from '@/pages/invoices/InvoiceDetailEditor';
 import BulkInvoiceUpload from '@/pages/invoices/BulkInvoiceUpload';
+import MigrationValidationChecklist from '@/pages/digitalizacion/MigrationValidationChecklist';
 import { useInvoicesReceived } from '@/hooks/useInvoicesReceived';
 import { useMemo } from 'react';
 
@@ -50,6 +51,7 @@ export default function Digitization() {
             carga: <BulkInvoiceUpload />,
             depura: <InvoicesInbox view="depura" />,
             papelera: <InvoicesInbox view="papelera" />,
+            validacion: <MigrationValidationChecklist />,
           }}
         </DigitizationTabs>
       </div>

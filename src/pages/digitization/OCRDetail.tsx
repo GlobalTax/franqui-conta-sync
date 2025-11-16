@@ -8,7 +8,9 @@ import { normalizeInvoiceForFrontend } from '@/lib/fiscal/normalize-frontend';
 import { mapAP } from '@/lib/accounting/composers/map-ap';
 import { validatePosting } from '@/lib/accounting/composers/validate-posting';
 import { InvoiceForm } from '@/components/digitization/InvoiceForm';
-import { Loader2 } from 'lucide-react';
+import { MindeeMetricsCard } from '@/components/invoices/MindeeMetricsCard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load componentes pesados
@@ -75,7 +77,34 @@ export default function OCRDetail() {
       </div>
       
       <div className="col-span-5 h-full overflow-y-auto space-y-4">
+        {/* Alert de revisión manual si aplica */}
+        {(invoice.approval_status === 'ocr_review' || invoice.ocr_fallback_used) && (
+          <Alert className="border-orange-500/50 bg-orange-500/10">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertTitle className="text-orange-900 dark:text-orange-100">
+              Revisión Manual Requerida
+            </AlertTitle>
+            <AlertDescription className="text-orange-800 dark:text-orange-200">
+              {invoice.approval_status === 'ocr_review' 
+                ? 'Esta factura es de un proveedor crítico o tiene confianza baja.'
+                : 'Se utilizaron parsers de respaldo para extraer datos.'
+              } Por favor, revisar antes de aprobar.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <InvoiceForm data={normalized} invoiceId={id!} />
+        
+        {/* Métricas de Mindee */}
+        <MindeeMetricsCard
+          mindeeDocumentId={invoice.mindee_document_id}
+          mindeeConfidence={invoice.mindee_confidence}
+          mindeeCostEuros={invoice.mindee_cost_euros}
+          mindeeProcessingTime={invoice.mindee_processing_time}
+          mindeePages={invoice.mindee_pages}
+          ocrFallbackUsed={invoice.ocr_fallback_used || false}
+          fieldConfidenceScores={invoice.field_confidence_scores as Record<string, number> | null}
+        />
         
         <Suspense fallback={
           <Skeleton className="h-64 w-full" />

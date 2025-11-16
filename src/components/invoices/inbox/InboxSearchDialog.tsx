@@ -20,6 +20,10 @@ interface Invoice {
   status: string;
   centro_code?: string;
   accounting_entry_id?: string;
+  ocr_engine?: string | null;
+  ocr_confidence?: number | null;
+  mindee_confidence?: number | null;
+  ocr_fallback_used?: boolean | null;
 }
 
 interface InboxSearchDialogProps {
@@ -79,6 +83,10 @@ export function InboxSearchDialog({
                     <InboxStatusBadge 
                       status={invoice.status} 
                       hasEntry={!!invoice.accounting_entry_id}
+                      ocrEngine={invoice.ocr_engine}
+                      ocrConfidence={invoice.ocr_confidence}
+                      mindeeConfidence={invoice.mindee_confidence}
+                      ocrFallbackUsed={invoice.ocr_fallback_used}
                     />
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">

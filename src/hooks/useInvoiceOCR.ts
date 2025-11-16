@@ -1,14 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { convertPdfToPngClient } from "@/lib/pdf-converter";
 
 interface OCRRequest {
+  invoice_id: string;
   documentPath: string;
   centroCode: string;
-  engine?: 'openai';
   supplierHint?: string | null;
-  imageDataUrl?: string; // Optional: client-provided PNG for PDFs
 }
 
 export interface OCRInvoiceData {
@@ -112,7 +110,7 @@ export interface InvoiceEntryValidationResult {
 export interface OCRResponse {
   success: boolean;
   ocr_engine?: "openai" | "mindee" | "merged" | "manual_review";
-  status?: "processed_ok" | "needs_review" | "posted"; // ⭐ Estado final del documento
+  status?: "processed_ok" | "needs_review" | "posted";
   merge_notes?: string[];
   orchestrator_logs?: Array<{
     timestamp: number;
@@ -121,7 +119,7 @@ export interface OCRResponse {
     decision?: string;
     reason?: string;
     metrics?: any;
-  }>; // ⭐ NUEVO: Timeline de decisiones del orchestrator
+  }>;
   confidence: number;
   data: OCRInvoiceData;
   normalized: OCRInvoiceData;
@@ -146,7 +144,7 @@ export interface OCRResponse {
       diff_taxes: number;
       diff_total: number;
     };
-  }; // ⭐ FASE 2: Validación contable avanzada
+  };
   ap_mapping: APMappingResult;
   entry_validation?: InvoiceEntryValidationResult;
   rawText?: string;
@@ -159,7 +157,16 @@ export interface OCRResponse {
     ms_openai?: number;
     ms_mindee?: number;
     processing_time_ms?: number;
-  }; // ⭐ NUEVO: Métricas detalladas de OCR
+  };
+  mindee_metadata?: {
+    document_id: string;
+    confidence: number;
+    cost_euros: number;
+    processing_time_ms: number;
+    pages: number;
+    fallback_used: boolean;
+  };
+  field_confidence_scores?: Record<string, number>;
   warnings?: string[];
   error?: string;
 }
@@ -172,62 +179,22 @@ export interface OCRValidationResult {
 
 export const useProcessInvoiceOCR = () => {
   return useMutation({
-    mutationFn: async ({ documentPath, centroCode, engine = 'openai', supplierHint, imageDataUrl }: OCRRequest): Promise<OCRResponse> => {
+    mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRResponse> => {
       console.log('[useProcessInvoiceOCR] ========================================');
-      console.log('[useProcessInvoiceOCR] Starting mutation...');
+      console.log('[useProcessInvoiceOCR] Starting Mindee OCR mutation...');
+      console.log('[useProcessInvoiceOCR] invoice_id:', invoice_id);
       console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
       console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
-      console.log('[useProcessInvoiceOCR] engine:', engine);
       console.log('[useProcessInvoiceOCR] supplierHint:', supplierHint);
-      console.log('[useProcessInvoiceOCR] hasImageDataUrl:', !!imageDataUrl);
-
-      let finalImageDataUrl = imageDataUrl;
-
-      // If no imageDataUrl provided and document is PDF, download and convert
-      if (!imageDataUrl && documentPath.toLowerCase().endsWith('.pdf')) {
-        console.log('[useProcessInvoiceOCR] PDF detected without imageDataUrl - downloading from storage...');
-        
-        try {
-          // Download PDF from storage
-          const { data: fileData, error: downloadError } = await supabase.storage
-            .from('invoice-documents')
-            .download(documentPath);
-
-          if (downloadError) {
-            console.error('[useProcessInvoiceOCR] Error downloading PDF:', downloadError);
-            throw new Error(`Failed to download PDF: ${downloadError.message}`);
-          }
-
-          console.log('[useProcessInvoiceOCR] PDF downloaded, converting to PNG...');
-
-          // Convert PDF to PNG
-          const file = new File([fileData], documentPath, { type: 'application/pdf' });
-          finalImageDataUrl = await convertPdfToPngClient(file);
-
-          console.log('[useProcessInvoiceOCR] ✓ PDF converted to PNG, imageDataUrl size:', finalImageDataUrl.length, 'bytes');
-        } catch (conversionError) {
-          console.error('[useProcessInvoiceOCR] PDF conversion failed:', conversionError);
-          toast.error('Error al convertir PDF a imagen');
-          throw conversionError;
+      
+      console.log('[useProcessInvoiceOCR] Invoking mindee-invoice-ocr edge function...');
+      
+      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+        body: {
+          invoice_id,
+          documentPath,
+          centroCode
         }
-      }
-
-      const body: any = {
-        documentPath,
-        centroCode,
-        engine,
-        supplierHint
-      };
-
-      if (finalImageDataUrl) {
-        body.imageDataUrl = finalImageDataUrl;
-        console.log('[useProcessInvoiceOCR] Including imageDataUrl in request');
-      }
-      
-      console.log('[useProcessInvoiceOCR] Invoking supabase.functions.invoke...');
-      
-      const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-        body
       });
 
       console.log('[useProcessInvoiceOCR] Response received');
@@ -237,7 +204,7 @@ export const useProcessInvoiceOCR = () => {
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
         console.error('[useProcessInvoiceOCR] Error details:', JSON.stringify(error, null, 2));
-        throw new Error(error.message || 'Error al procesar OCR');
+        throw new Error(error.message || 'Error al procesar OCR con Mindee');
       }
 
       if (!data.success) {
@@ -249,9 +216,28 @@ export const useProcessInvoiceOCR = () => {
       return data as OCRResponse;
     },
     onError: (error: any) => {
-      console.error('[useProcessInvoiceOCR] ❌ Mutation error:', error);
-      console.error('[useProcessInvoiceOCR] Error stack:', error.stack);
-      toast.error(`Error al procesar el documento: ${error.message}`);
+      console.error('[useProcessInvoiceOCR] Mutation error handler:', error);
+      toast.error(`Error al procesar el documento con Mindee: ${error.message}`);
+    },
+    onSuccess: (data) => {
+      const mindeeConfidence = data.mindee_metadata?.confidence || 0;
+      const fallbackUsed = data.mindee_metadata?.fallback_used || false;
+
+      if (fallbackUsed) {
+        toast.warning(
+          `Documento procesado con parsers de respaldo • Confianza: ${Math.round(mindeeConfidence)}%`,
+          { description: 'Se recomienda revisión manual' }
+        );
+      } else if (mindeeConfidence < 70) {
+        toast.warning(
+          `Documento procesado con confianza baja: ${Math.round(mindeeConfidence)}%`,
+          { description: 'Revisar datos extraídos' }
+        );
+      } else {
+        toast.success(
+          `Documento procesado correctamente • Confianza: ${Math.round(mindeeConfidence)}%`
+        );
+      }
     }
   });
 };

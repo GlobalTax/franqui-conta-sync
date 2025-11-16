@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
-import { convertPdfToPngClient } from '@/lib/pdf-converter';
 
 export interface UploadFileItem {
   id: string;

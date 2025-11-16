@@ -6,15 +6,30 @@ import { Plus, Search, Building2, Mail, Phone, MapPin } from "lucide-react";
 import { useSuppliers, useDeleteSupplier } from "@/hooks/useSuppliers";
 import { Badge } from "@/components/ui/badge";
 import { SupplierFormDialog } from "@/components/suppliers/SupplierFormDialog";
+import { useListNavigationShortcuts } from "@/lib/shortcuts/ShortcutManager";
 import type { Supplier } from "@/hooks/useSuppliers";
 
 const Suppliers = () => {
   const [search, setSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const { data: suppliers, isLoading } = useSuppliers({ search, active: true });
   const deleteSupplier = useDeleteSupplier();
+
+  const handleOpenDialogForNav = (supplier?: Supplier) => {
+    setEditingSupplier(supplier || null);
+    setShowDialog(true);
+  };
+
+  // 🎹 Navegación por teclado j/k
+  useListNavigationShortcuts(
+    suppliers || [],
+    selectedIndex,
+    setSelectedIndex,
+    handleOpenDialogForNav
+  );
 
   const handleOpenDialog = (supplier?: Supplier) => {
     setEditingSupplier(supplier || null);
@@ -87,10 +102,14 @@ const Suppliers = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {suppliers.map((supplier) => (
+                {suppliers.map((supplier, idx) => (
                   <div
                     key={supplier.id}
-                    className="rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors"
+                    className={`rounded-lg border border-border p-4 transition-colors ${
+                      idx === selectedIndex
+                        ? 'bg-accent border-primary ring-2 ring-primary/20'
+                        : 'hover:bg-accent/50'
+                    }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">

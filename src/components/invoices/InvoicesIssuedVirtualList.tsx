@@ -23,6 +23,7 @@ interface InvoicesIssuedVirtualListProps {
   currentPage: number;
   totalInPage: number;
   onNearEnd?: () => void;
+  selectedIndex?: number;
 }
 
 export function InvoicesIssuedVirtualList({ 
@@ -30,7 +31,8 @@ export function InvoicesIssuedVirtualList({
   onInvoiceClick,
   currentPage,
   totalInPage,
-  onNearEnd
+  onNearEnd,
+  selectedIndex = -1,
 }: InvoicesIssuedVirtualListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   
@@ -97,8 +99,13 @@ export function InvoicesIssuedVirtualList({
                 paddingBottom: '8px',
               }}
             >
-              <Card 
-                className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+              <Card
+                key={invoice.id}
+                className={`p-4 transition-all cursor-pointer ${
+                  virtualRow.index === selectedIndex
+                    ? 'border-primary bg-accent ring-2 ring-primary/20 shadow-md'
+                    : 'hover:shadow-md'
+                }`}
                 onClick={() => onInvoiceClick(invoice)}
               >
                 <div className="flex items-center justify-between">

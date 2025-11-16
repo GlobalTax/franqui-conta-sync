@@ -22,6 +22,7 @@ import { DataTablePro } from "@/components/common/DataTablePro";
 import { TableSummary } from "@/components/common/TableSummary";
 import { PaginationAdvanced } from "@/components/common/PaginationAdvanced";
 import { TableActions } from "@/components/common/TableActions";
+import { useListNavigationShortcuts, useBulkActionShortcuts } from "@/lib/shortcuts/ShortcutManager";
 import { toast } from "sonner";
 
 const Invoices = () => {
@@ -33,6 +34,7 @@ const Invoices = () => {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -43,6 +45,22 @@ const Invoices = () => {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedInvoiceForApproval, setSelectedInvoiceForApproval] = useState<any>(null);
   const [approvalLevel, setApprovalLevel] = useState<'manager' | 'accounting'>('accounting');
+
+  // 🎹 Navegación por teclado j/k
+  useListNavigationShortcuts(
+    invoicesReceived,
+    selectedIndex,
+    setSelectedIndex,
+    (invoice) => navigate(`/invoices/${invoice.id}`)
+  );
+
+  // 🎹 Acciones bulk a+a
+  useBulkActionShortcuts(
+    selectedIds,
+    selectedIds.length > 0 ? () => {
+      toast.info('Aprobación bulk en desarrollo');
+    } : undefined
+  );
 
   const submitForApprovalMutation = useSubmitForApproval();
   const generateHashMutation = useGenerateInvoiceHash();

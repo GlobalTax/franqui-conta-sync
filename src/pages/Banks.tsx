@@ -10,6 +10,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { useReconciliationRules, useCreateReconciliationRule, useDeleteReconciliationRule, useToggleRuleActive } from "@/hooks/useReconciliationRules";
 import { useAutoMatchTransactions } from "@/hooks/useBankReconciliation";
+import { useListNavigationShortcuts } from "@/lib/shortcuts/ShortcutManager";
 import { BankAccountSelector } from "@/components/treasury/BankAccountSelector";
 import { BankTransactionImporter } from "@/components/treasury/BankTransactionImporter";
 import { BankReconciliationPanel } from "@/components/treasury/BankReconciliationPanel";
@@ -27,6 +28,7 @@ const Banks = () => {
   const [showImporter, setShowImporter] = useState(false);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [activeTab, setActiveTab] = useState("transactions");
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const { accounts, isLoading: loadingAccounts } = useBankAccounts(selectedCentro);
   const { transactions, isLoading: loadingTransactions } = useBankTransactions({
@@ -49,6 +51,14 @@ const Banks = () => {
   const totalExpenses = transactions
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  // 🎹 Navegación por teclado j/k en transacciones
+  useListNavigationShortcuts(
+    transactions,
+    selectedIndex,
+    setSelectedIndex,
+    (txn) => console.log('Opening transaction:', txn)
+  );
 
   const handleSuggestMatches = () => {
     if (selectedAccount && selectedCentro) {

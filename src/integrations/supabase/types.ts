@@ -723,6 +723,68 @@ export type Database = {
           },
         ]
       }
+      ap_learned_patterns: {
+        Row: {
+          amount_range_max: number | null
+          amount_range_min: number | null
+          confidence_score: number | null
+          created_at: string | null
+          created_from_corrections: number | null
+          description_keywords: string[] | null
+          id: string
+          is_active: boolean | null
+          last_seen_at: string | null
+          learned_ap_account: string
+          learned_expense_account: string
+          learned_tax_account: string
+          occurrence_count: number | null
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_range_max?: number | null
+          amount_range_min?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
+          created_from_corrections?: number | null
+          description_keywords?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          learned_ap_account: string
+          learned_expense_account: string
+          learned_tax_account: string
+          occurrence_count?: number | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_range_max?: number | null
+          amount_range_min?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
+          created_from_corrections?: number | null
+          description_keywords?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          learned_ap_account?: string
+          learned_expense_account?: string
+          learned_tax_account?: string
+          occurrence_count?: number | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_learned_patterns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_learning_corrections: {
         Row: {
           centro_code: string | null
@@ -3111,6 +3173,47 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_id: string | null
+          quantity: number | null
+          tax_rate: number | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          quantity?: number | null
+          tax_rate?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          quantity?: number | null
+          tax_rate?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           account_code: string | null
@@ -3215,6 +3318,57 @@ export type Database = {
           series?: string
           updated_at?: string | null
           year?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          file_name: string
+          file_path: string
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          raw_data: Json | null
+          status: string | null
+          supplier_name: string | null
+          supplier_tax_id: string | null
+          total_amount: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          raw_data?: Json | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          raw_data?: Json | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_tax_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3329,6 +3483,10 @@ export type Database = {
       invoices_received: {
         Row: {
           approval_status: string | null
+          auto_post_confidence: number | null
+          auto_post_criteria: Json | null
+          auto_post_evaluated_at: string | null
+          auto_posted: boolean | null
           centro_code: string
           created_at: string | null
           created_by: string | null
@@ -3341,6 +3499,7 @@ export type Database = {
           id: string
           invoice_date: string
           invoice_number: string
+          manual_review_reason: string | null
           notes: string | null
           ocr_confidence: number | null
           ocr_confidence_notes: string[] | null
@@ -3381,6 +3540,10 @@ export type Database = {
         }
         Insert: {
           approval_status?: string | null
+          auto_post_confidence?: number | null
+          auto_post_criteria?: Json | null
+          auto_post_evaluated_at?: string | null
+          auto_posted?: boolean | null
           centro_code: string
           created_at?: string | null
           created_by?: string | null
@@ -3393,6 +3556,7 @@ export type Database = {
           id?: string
           invoice_date: string
           invoice_number: string
+          manual_review_reason?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
@@ -3433,6 +3597,10 @@ export type Database = {
         }
         Update: {
           approval_status?: string | null
+          auto_post_confidence?: number | null
+          auto_post_criteria?: Json | null
+          auto_post_evaluated_at?: string | null
+          auto_posted?: boolean | null
           centro_code?: string
           created_at?: string | null
           created_by?: string | null
@@ -3445,6 +3613,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number?: string
+          manual_review_reason?: string | null
           notes?: string | null
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
@@ -5617,6 +5786,7 @@ export type Database = {
         Row: {
           active: boolean | null
           address: string | null
+          avg_invoice_amount: number | null
           city: string | null
           commercial_name: string | null
           country: string | null
@@ -5624,17 +5794,22 @@ export type Database = {
           default_account_code: string | null
           email: string | null
           id: string
+          invoice_count: number | null
+          is_trusted: boolean | null
+          last_successful_post_at: string | null
           name: string
           notes: string | null
           payment_terms: number | null
           phone: string | null
           postal_code: string | null
+          successful_posts_count: number | null
           tax_id: string
           updated_at: string | null
         }
         Insert: {
           active?: boolean | null
           address?: string | null
+          avg_invoice_amount?: number | null
           city?: string | null
           commercial_name?: string | null
           country?: string | null
@@ -5642,17 +5817,22 @@ export type Database = {
           default_account_code?: string | null
           email?: string | null
           id?: string
+          invoice_count?: number | null
+          is_trusted?: boolean | null
+          last_successful_post_at?: string | null
           name: string
           notes?: string | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
+          successful_posts_count?: number | null
           tax_id: string
           updated_at?: string | null
         }
         Update: {
           active?: boolean | null
           address?: string | null
+          avg_invoice_amount?: number | null
           city?: string | null
           commercial_name?: string | null
           country?: string | null
@@ -5660,11 +5840,15 @@ export type Database = {
           default_account_code?: string | null
           email?: string | null
           id?: string
+          invoice_count?: number | null
+          is_trusted?: boolean | null
+          last_successful_post_at?: string | null
           name?: string
           notes?: string | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
+          successful_posts_count?: number | null
           tax_id?: string
           updated_at?: string | null
         }
@@ -6112,6 +6296,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_auto_posting_metrics: {
+        Row: {
+          auto_post_rate_percent: number | null
+          auto_posted_count: number | null
+          avg_confidence: number | null
+          date: string | null
+          manual_review_count: number | null
+          total_invoices: number | null
+        }
+        Relationships: []
+      }
       v_companies_reconstruction_report: {
         Row: {
           metric: string | null
@@ -6213,6 +6408,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_suggested_ap_rules: {
+        Row: {
+          already_has_rule: number | null
+          confidence_score: number | null
+          created_from_corrections: number | null
+          last_seen_at: string | null
+          learned_ap_account: string | null
+          learned_expense_account: string | null
+          learned_tax_account: string | null
+          occurrence_count: number | null
+          pattern_id: string | null
+          supplier_name: string | null
+          supplier_vat: string | null
+        }
+        Relationships: []
       }
       v_user_centres: {
         Row: {
@@ -6612,6 +6823,17 @@ export type Database = {
           account_code: string
           account_name: string
           balance: number
+        }[]
+      }
+      get_auto_posting_metrics: {
+        Args: never
+        Returns: {
+          auto_post_rate_percent: number
+          auto_posted_count: number
+          avg_confidence: number
+          date: string
+          manual_review_count: number
+          total_invoices: number
         }[]
       }
       get_centros: {
@@ -7093,6 +7315,10 @@ export type Database = {
           company_id: string
           period_month: string
         }[]
+      }
+      update_supplier_trust_score: {
+        Args: { p_supplier_id: string }
+        Returns: undefined
       }
       upsert_company_with_addresses: {
         Args: {

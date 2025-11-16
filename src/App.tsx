@@ -74,6 +74,7 @@ const AssetsRegister = lazy(() => import("@/pages/reports/AssetsRegister"));
 const Provisions = lazy(() => import("@/pages/accounting/Provisions"));
 const Accruals = lazy(() => import("@/pages/accounting/Accruals"));
 const InventoryClosures = lazy(() => import("@/pages/accounting/InventoryClosures"));
+const ComplianceDashboard = lazy(() => import("@/pages/compliance/ComplianceDashboard"));
 
 /**
  * React Query Configuration
@@ -213,6 +214,10 @@ const App = () => {
               <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
               <Route path="/iva/modelo-303" element={<Modelo303 />} />
               <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
+              
+              {/* Auditoría & Compliance */}
+              <Route path="/auditoria" element={<ComplianceDashboard />} />
+              
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="/admin/centros/:id" element={<AdminRoute><CentreDetail /></AdminRoute>} />

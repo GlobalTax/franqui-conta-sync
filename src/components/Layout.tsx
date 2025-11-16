@@ -103,6 +103,7 @@ const Layout = () => {
     { icon: Zap, label: "Periodificaciones", path: "/contabilidad/periodificaciones" },
     { icon: Receipt, label: "Provisiones", path: "/contabilidad/provisiones" },
     { icon: Database, label: "Asiento Existencias", path: "/contabilidad/existencias" },
+    { icon: Shield, label: "Auditoría & Compliance", path: "/auditoria" },
     ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
   ];
 

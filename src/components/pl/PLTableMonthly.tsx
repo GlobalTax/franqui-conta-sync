@@ -112,13 +112,7 @@ export const PLTableMonthly = ({
                   ${rubric.level === 0 ? 'font-bold text-base bg-primary/5' : ''}
                   ${rubric.level === 1 ? 'font-semibold bg-muted/30' : ''}
                   ${rubric.is_total ? 'font-bold bg-accent/10 border-t-2' : ''}
-                  ${!rubric.is_total && onRubricClick ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''}
                 `}
-                onClick={() => {
-                  if (!rubric.is_total && onRubricClick) {
-                    onRubricClick(rubric.rubric_code, rubric.rubric_name, 1);
-                  }
-                }}
               >
                 <TableCell 
                   className="sticky left-0 z-10 bg-background border-r"
@@ -139,7 +133,17 @@ export const PLTableMonthly = ({
                     
                     return (
                       <>
-                        <TableCell key={`${monthIdx}-curr`} className="text-right font-mono text-sm">
+                        <TableCell 
+                          key={`${monthIdx}-curr`} 
+                          className={`text-right font-mono text-sm ${
+                            !rubric.is_total && onRubricClick ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''
+                          }`}
+                          onClick={() => {
+                            if (!rubric.is_total && onRubricClick) {
+                              onRubricClick(rubric.rubric_code, rubric.rubric_name, monthIdx + 1);
+                            }
+                          }}
+                        >
                           {currentAmount.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </TableCell>
                         <TableCell key={`${monthIdx}-prev`} className="text-right font-mono text-sm text-muted-foreground">
@@ -159,7 +163,17 @@ export const PLTableMonthly = ({
                     );
                   } else {
                     return (
-                      <TableCell key={monthIdx} className="text-right font-mono text-sm">
+                      <TableCell 
+                        key={monthIdx} 
+                        className={`text-right font-mono text-sm ${
+                          !rubric.is_total && onRubricClick ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''
+                        }`}
+                        onClick={() => {
+                          if (!rubric.is_total && onRubricClick) {
+                            onRubricClick(rubric.rubric_code, rubric.rubric_name, monthIdx + 1);
+                          }
+                        }}
+                      >
                         {currentAmount.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </TableCell>
                     );

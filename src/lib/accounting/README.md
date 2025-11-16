@@ -2,6 +2,49 @@
 
 Sistema modular para mapeo automático de cuentas PGC (Plan General Contable Español).
 
+## 🔗 Integración con OCR Mindee
+
+El sistema de mapeo contable se alimenta de datos extraídos automáticamente por **Mindee Invoice API**:
+
+**Flujo completo:**
+```
+PDF Upload → Mindee OCR → Extracción + Fallback → Mapeo AP → Posting
+```
+
+**Ejemplo de integración:**
+
+```typescript
+// 1. Edge Function mindee-invoice-ocr procesa el PDF
+const extractedData = await processMindeeOCR(invoiceId);
+
+// 2. Datos normalizados se guardan en invoices_received
+await updateInvoice(invoiceId, {
+  issuer_name: extractedData.supplier_name,
+  issuer_vat_id: extractedData.supplier_vat,
+  total_amount: extractedData.total_amount,
+  // ... otros campos
+});
+
+// 3. Sistema de mapeo AP asigna cuentas automáticamente
+const mapping = mapAP({
+  issuer: { name: extractedData.supplier_name },
+  lines: extractedData.line_items,
+  centre_id: centroCode
+});
+
+// 4. Resultado: Cuentas PGC asignadas listas para posting
+console.log(mapping.account_suggestion); // 6000000 (Compras alimentación)
+console.log(mapping.tax_account);        // 4720000 (IVA soportado)
+console.log(mapping.ap_account);         // 4100000 (Acreedores)
+```
+
+**Parsers de fallback activos:**
+- Números europeos: "1.234,56" se convierte a 1234.56
+- NIF/CIF: Extracción desde texto raw si Mindee falla
+- IVA: Desglose 10%/21% desde texto estructurado
+
+---
+
 ## 🏗️ Arquitectura
 
 ```

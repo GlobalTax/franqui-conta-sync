@@ -195,11 +195,13 @@ Una vez ejecutada la migración SQL:
 - Tests unitarios para `fiscal-normalizer.ts`
 - Tests de integración para flujo OCR completo
 
-### **Fase 6: Métricas Avanzadas**
-- Gráficos temporales (evolución mensual)
-- Desglose por proveedor (top errores OCR)
-- Comparativa motores (OpenAI vs Mindee)
-- ROI calculator (ahorro tiempo/€)
+### **Fase 6: Métricas Avanzadas (Mindee)**
+- ✅ Gráficos temporales (evolución mensual)
+- ✅ Desglose por proveedor (top errores OCR)
+- ✅ Métricas Mindee integradas en UI
+- ✅ Confianza promedio por proveedor
+- ✅ Coste acumulado de procesamiento OCR
+- 🔄 ROI calculator (ahorro tiempo/€) - En desarrollo
 
 ### **Fase 7: Catálogos Geográficos**
 - Página `/admin/catalogos-geo`
@@ -238,3 +240,20 @@ Una vez ejecutada la migración SQL:
 **Tiempo estimado ejecución SQL:** 2-3 minutos
 
 **Documentación generada:** 2025-01-11
+
+---
+
+## 🤖 Estado de OCR Mindee
+
+**Motor actual:** Mindee Invoice API (exclusivo desde Enero 2025)
+
+**Migración completada:**
+- ❌ OpenAI GPT-4 Vision → Descontinuado
+- ✅ Mindee Invoice API → Activo y operativo
+- ✅ Parsers de fallback europeos → Implementados
+- ✅ Detección de proveedores críticos → Activa (Havi)
+
+**Facturas históricas OpenAI:**
+- Siguen visibles con badge "OpenAI (Legacy)"
+- Datos históricos se mantienen para análisis
+- Filtros permiten comparación de calidad OCR

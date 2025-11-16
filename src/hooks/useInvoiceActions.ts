@@ -98,12 +98,15 @@ export function useInvoiceActions() {
   });
 
   // ==========================================================================
-  // REPROCESAR OCR
+  // REPROCESAR OCR - Usando Mindee
   // ==========================================================================
   const reprocessOCRMutation = useMutation({
     mutationFn: async (params: ReprocessOCRParams) => {
-      const { data, error } = await supabase.functions.invoke('ocr-reprocess', {
-        body: params
+      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+        body: {
+          invoice_id: params.invoiceId,
+          engine: params.engine || 'mindee'
+        }
       });
       if (error) throw error;
       return data;

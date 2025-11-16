@@ -128,7 +128,6 @@ const Layout = () => {
   ];
 
   const configurationItems = [
-    { icon: Layers, label: "Templates OCR", path: "/configuracion/ocr-templates" },
     { icon: Sparkles, label: "AP Learning", path: "/configuracion/ap-learning" },
   ];
 

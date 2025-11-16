@@ -60,6 +60,7 @@ import { NavLink } from "./NavLink";
 import { useState } from "react";
 import { logger } from "@/lib/logger";
 import CompactOrgSelector from "@/components/filters/CompactOrgSelector";
+import { CommandPaletteButton } from "@/components/layout/CommandPaletteButton";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -395,7 +396,19 @@ const Layout = () => {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between gap-4">
-          <CompactOrgSelector />
+          <div className="flex items-center gap-4">
+            <CompactOrgSelector />
+            <CommandPaletteButton onClick={() => {
+              // El CommandPalette se activa automáticamente con Cmd+K
+              // Este botón es solo visual indicator
+              const event = new KeyboardEvent('keydown', {
+                key: 'k',
+                metaKey: true,
+                bubbles: true
+              });
+              document.dispatchEvent(event);
+            }} />
+          </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <NotificationBell />

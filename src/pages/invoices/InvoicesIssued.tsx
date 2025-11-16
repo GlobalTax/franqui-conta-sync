@@ -15,6 +15,7 @@ import { useInvoicesIssued } from "@/hooks/useInvoicesIssued";
 import { InvoicesIssuedVirtualList } from "@/components/invoices/InvoicesIssuedVirtualList";
 import { InvoiceQueries } from "@/infrastructure/persistence/supabase/queries/InvoiceQueries";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useListNavigationShortcuts } from "@/lib/shortcuts/ShortcutManager";
 
 export default function InvoicesIssued() {
   const navigate = useNavigate();
@@ -22,8 +23,17 @@ export default function InvoicesIssued() {
   const { currentMembership } = useOrganization();
   const [page, setPage] = useState(0);
   const [isPrefetching, setIsPrefetching] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const pageSize = 50;
   const { data: invoices = [], isLoading } = useInvoicesIssued({ page, pageSize });
+
+  // 🎹 Navegación por teclado j/k
+  useListNavigationShortcuts(
+    invoices,
+    selectedIndex,
+    setSelectedIndex,
+    (invoice) => navigate(`/facturas/emitidas/${invoice.id}`)
+  );
 
   const prefetchNextPage = async () => {
     if (isPrefetching || invoices.length < pageSize) return;
@@ -93,6 +103,7 @@ export default function InvoicesIssued() {
               currentPage={page}
               totalInPage={invoices.length}
               onNearEnd={prefetchNextPage}
+              selectedIndex={selectedIndex}
             />
           )}
           

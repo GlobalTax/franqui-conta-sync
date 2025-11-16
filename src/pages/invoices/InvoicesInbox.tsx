@@ -24,6 +24,7 @@ import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useListNavigationShortcuts, useBulkActionShortcuts } from '@/lib/shortcuts/ShortcutManager';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -99,6 +100,7 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
     data_quality?: 'with_ocr' | 'without_ocr' | 'errors' | null;
   }>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [compactView, setCompactView] = useState(false);
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
@@ -146,6 +148,28 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
     onNew: () => navigate('/invoices/new-received'),
     enabled: true,
   });
+
+  // 🎹 Navegación por teclado j/k
+  useListNavigationShortcuts(
+    invoices,
+    selectedIndex,
+    setSelectedIndex,
+    (invoice) => {
+      setSelectedInvoiceId(invoice.id);
+      setSidebarOpen(true);
+    }
+  );
+
+  // 🎹 Acciones bulk a+a / a+r
+  useBulkActionShortcuts(
+    selectedIds,
+    selectedIds.length > 0 ? () => {
+      bulkApprove({ invoiceIds: selectedIds });
+    } : undefined,
+    selectedIds.length > 0 ? () => {
+      toast.info('Función de rechazo bulk en desarrollo');
+    } : undefined
+  );
 
   const handleRowClick = (invoice: any) => {
     setSelectedInvoiceId(invoice.id);

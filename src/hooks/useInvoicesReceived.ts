@@ -22,7 +22,7 @@ export interface InvoiceReceived {
   payment_transaction_id: string | null;
   ocr_confidence: number | null;
   // Campos OCR detallados
-  ocr_engine: 'openai' | 'merged' | 'manual_review' | null;
+  ocr_engine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
   ocr_ms_openai: number | null;
   ocr_pages: number | null;
   ocr_tokens_in: number | null;
@@ -42,6 +42,15 @@ export interface InvoiceReceived {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  
+  // Campos Mindee
+  mindee_document_id?: string | null;
+  mindee_confidence?: number | null;
+  mindee_cost_euros?: number | null;
+  mindee_processing_time?: number | null;
+  mindee_pages?: number | null;
+  ocr_fallback_used?: boolean | null;
+  field_confidence_scores?: Record<string, number> | null;
   
   // 🔴 Sprint 3: Nuevos campos críticos
   invoice_type?: 'received' | 'issued';

@@ -35,7 +35,14 @@ export function useInvoice(id: string) {
           notes,
           created_at,
           updated_at,
-          created_by
+          created_by,
+          mindee_document_id,
+          mindee_confidence,
+          mindee_cost_euros,
+          mindee_processing_time,
+          mindee_pages,
+          ocr_fallback_used,
+          field_confidence_scores
         `)
         .eq('id', id)
         .single();

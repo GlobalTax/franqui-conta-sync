@@ -59,6 +59,10 @@ interface Invoice {
   posted: boolean;
   file_size_kb?: number;
   page_count?: number;
+  
+  // Campos Mindee
+  mindee_confidence?: number | null;
+  ocr_fallback_used?: boolean | null;
 }
 
 interface InvoiceInboxTableProps {
@@ -311,6 +315,8 @@ export function InvoiceInboxTable({
                   ocrEngine={invoice.ocr_engine}
                   ocrConfidence={invoice.ocr_confidence}
                   approvalStatus={invoice.status}
+                  mindeeConfidence={invoice.mindee_confidence}
+                  ocrFallbackUsed={invoice.ocr_fallback_used}
                 />
               </TableCell>
               

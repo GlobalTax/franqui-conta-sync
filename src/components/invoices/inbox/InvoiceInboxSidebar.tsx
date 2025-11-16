@@ -120,6 +120,11 @@ export function InvoiceInboxSidebar({
                 <InboxStatusBadge
                   status={invoice.approval_status || invoice.status}
                   hasEntry={!!invoice.entry_id}
+                  ocrEngine={invoice.ocr_engine}
+                  ocrConfidence={invoice.ocr_confidence}
+                  approvalStatus={invoice.approval_status}
+                  mindeeConfidence={invoice.mindee_confidence}
+                  ocrFallbackUsed={invoice.ocr_fallback_used}
                 />
               </div>
             </SheetHeader>

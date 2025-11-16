@@ -198,6 +198,8 @@ export function getInvoiceState(invoice: {
   ocr_confidence?: number | null;
   accounting_entry_id?: string | null;
   approval_status?: string;
+  mindee_confidence?: number | null;
+  ocr_fallback_used?: boolean;
 }): InvoiceStatus {
   // Si está contabilizado, siempre es 'posted'
   if (invoice.accounting_entry_id) return 'posted';
@@ -208,12 +210,23 @@ export function getInvoiceState(invoice: {
     if (invoice.approval_status === 'approved_manager') return 'approved_manager';
     if (invoice.approval_status === 'rejected') return 'rejected';
     if (invoice.approval_status === 'pending_approval') return 'pending_approval';
+    if (invoice.approval_status === 'ocr_review') return 'needs_review';
   }
+  
+  // Si se usaron parsers de fallback de Mindee, requiere revisión
+  if (invoice.ocr_fallback_used) return 'needs_review';
+  
+  // Usar mindee_confidence (escala 0-100) si está disponible, sino usar ocr_confidence legacy (0-1)
+  const confidence = invoice.mindee_confidence !== null && invoice.mindee_confidence !== undefined
+    ? invoice.mindee_confidence
+    : (invoice.ocr_confidence !== null && invoice.ocr_confidence !== undefined
+      ? invoice.ocr_confidence * 100
+      : null);
   
   // Lógica basada en OCR
   if (!invoice.ocr_engine) return 'draft';
-  if (invoice.ocr_confidence === null || invoice.ocr_confidence === undefined) return 'error_ocr';
-  if (invoice.ocr_confidence < 0.7) return 'needs_review';
+  if (confidence === null) return 'error_ocr';
+  if (confidence < 70) return 'needs_review';
   
   // Si tiene status definido, usarlo
   if (invoice.status) {

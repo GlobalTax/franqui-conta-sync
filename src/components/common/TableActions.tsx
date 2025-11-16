@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Mail, Trash2, Plus, Download } from "lucide-react";
+import { ShortcutHint } from "@/components/shortcuts/ShortcutHint";
 
 interface TableActionsProps {
   selectedCount?: number;
@@ -62,23 +63,27 @@ export const TableActions = ({
       ))}
 
       {onNew && (
-        <Button 
-          size="sm"
-          onClick={onNew}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo
-        </Button>
+        <ShortcutHint keys="N" description="Nuevo">
+          <Button 
+            size="sm"
+            onClick={onNew}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo
+          </Button>
+        </ShortcutHint>
       )}
 
       {onExport && (
-        <Button 
-          size="sm"
-          onClick={onExport}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
-        </Button>
+        <ShortcutHint keys="⌘+E" description="Exportar">
+          <Button 
+            size="sm"
+            onClick={onExport}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </ShortcutHint>
       )}
     </div>
   );

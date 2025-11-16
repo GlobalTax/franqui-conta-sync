@@ -400,9 +400,16 @@ export default function InvoiceDetailEditor() {
 
     console.log('[OCR] Invocando edge function con:', { invoice_id: id, documentPath: effectivePath, centroCode });
 
+    // Validación estricta: no invocar OCR sin ID de factura
+    if (!id) {
+      console.error('[OCR] ❌ No hay invoice_id; evita llamada al OCR');
+      toast.error('No se pudo determinar el ID de la factura. Guarda la factura antes de procesar el OCR.');
+      return;
+    }
+
     try {
       const result = await processOCR.mutateAsync({
-        invoice_id: id || '',
+        invoice_id: id,
         documentPath: effectivePath,
         centroCode
       });

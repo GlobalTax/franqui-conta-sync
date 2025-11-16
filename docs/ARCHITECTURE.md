@@ -36,7 +36,7 @@ graph TB
     
     subgraph "🗄️ External Services"
         M[(Supabase PostgreSQL<br/>Database)]
-        N[Edge Functions<br/>invoice-ocr, search-company-data]
+        N[Edge Functions<br/>mindee-invoice-ocr, post-invoice, search-company-data]
     end
     
     A --> B
@@ -59,6 +59,33 @@ graph TB
     style I fill:#e8f5e9
     style M fill:#fce4ec
 ```
+
+---
+
+## 🤖 Sistema de OCR con Mindee
+
+FranquiConta utiliza **Mindee Invoice API** para extracción automática de datos de facturas:
+
+**Flujo de procesamiento:**
+1. Usuario sube PDF de factura
+2. Edge function `mindee-invoice-ocr` procesa el documento
+3. Mindee extrae campos estructurados (NIF, total, IVA, fecha, etc.)
+4. Si confidence < 100%, se activan **parsers de fallback**:
+   - `parseEuropeanNumber()`: Convierte "1.234,56" → 1234.56
+   - `extractCustomerDataFromRawText()`: Busca NIF/CIF en texto raw
+   - `extractTaxBreakdownFromText()`: Extrae bases IVA 10%/21%
+5. Datos se guardan en `invoices_received` con métricas Mindee
+6. Sistema de mapeo AP asigna cuentas PGC automáticamente
+
+**Proveedores críticos:**
+- Havi Logistics → Requiere revisión manual obligatoria (`approval_status = 'ocr_review'`)
+
+**Métricas almacenadas:**
+- `mindee_confidence`: Confianza global (0-100%)
+- `mindee_cost_euros`: Coste de procesamiento
+- `mindee_processing_time`: Tiempo en ms
+- `ocr_fallback_used`: Booleano si se usaron parsers de respaldo
+- `field_confidence_scores`: JSONB con confianza por campo
 
 ---
 

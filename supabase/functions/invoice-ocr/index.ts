@@ -303,6 +303,36 @@ serve(async (req) => {
     console.log(`[Metrics] Tokens: ${tokens.tokens_in}/${tokens.tokens_out}`);
 
     // ============================================================================
+    // AUTO-POSTING EVALUATION
+    // ============================================================================
+    
+    let autoPostingEval: any = null;
+    let autoPosted = false;
+    
+    try {
+      console.log('[AUTO-POST] Evaluating...');
+      
+      const { evaluateAutoPosting, executeAutoPost } = await import("../_shared/automation/auto-posting-engine.ts");
+      
+      autoPostingEval = await evaluateAutoPosting(
+        invoiceId!,
+        normalizedResponse.normalized,
+        apMapping.invoice_level.confidence_score,
+        supabase
+      );
+      
+      if (autoPostingEval.can_auto_post) {
+        const autoPostResult = await executeAutoPost(invoiceId!, supabase);
+        if (autoPostResult.success) {
+          autoPosted = true;
+          console.log('[AUTO-POST] ✅ Auto-posted');
+        }
+      }
+    } catch (evalError) {
+      console.error('[AUTO-POST] Error:', evalError);
+    }
+    
+    // ============================================================================
     // SAVE OCR LOG
     // ============================================================================
     

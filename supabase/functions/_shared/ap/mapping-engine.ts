@@ -111,6 +111,33 @@ export async function apMapperEngine(
     matched_rule_name: null
   };
   
+  // NUEVO: Aplicar patrones aprendidos PRIMERO
+  if (supplierData?.id) {
+    try {
+      const { applyLearnedPatterns } = await import("../automation/learning-engine.ts");
+      const learnedPattern = await applyLearnedPatterns(
+        supplierData.id,
+        normalizedData.totals?.total || 0,
+        supabase
+      );
+      
+      if (learnedPattern) {
+        invoiceSuggestion = {
+          ...invoiceSuggestion,
+          account_suggestion: learnedPattern.account_suggestion,
+          tax_account: learnedPattern.tax_account,
+          ap_account: learnedPattern.ap_account,
+          confidence_score: learnedPattern.confidence_score,
+          rationale: learnedPattern.rationale,
+          matched_rule_name: 'Machine Learning',
+        };
+        console.log('[AP Mapper] Applied learned pattern:', learnedPattern);
+      }
+    } catch (err) {
+      console.error('[AP Mapper] Learning pattern error:', err);
+    }
+  }
+  
   // Check supplier default account
   if (supplierData?.default_account_code) {
     invoiceSuggestion = {

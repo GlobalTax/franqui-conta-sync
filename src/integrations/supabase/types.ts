@@ -3339,16 +3339,19 @@ export type Database = {
           customer_name: string | null
           customer_tax_id: string | null
           due_date: string | null
+          extraction_method: string | null
           file_name: string
           file_path: string
           iban: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          needs_review: boolean | null
           operation_date: string | null
           payment_method: string | null
           payment_terms: string | null
           raw_data: Json | null
+          review_notes: string | null
           status: string | null
           subtotal: number | null
           supplier_address: string | null
@@ -3371,16 +3374,19 @@ export type Database = {
           customer_name?: string | null
           customer_tax_id?: string | null
           due_date?: string | null
+          extraction_method?: string | null
           file_name: string
           file_path: string
           iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          needs_review?: boolean | null
           operation_date?: string | null
           payment_method?: string | null
           payment_terms?: string | null
           raw_data?: Json | null
+          review_notes?: string | null
           status?: string | null
           subtotal?: number | null
           supplier_address?: string | null
@@ -3403,16 +3409,19 @@ export type Database = {
           customer_name?: string | null
           customer_tax_id?: string | null
           due_date?: string | null
+          extraction_method?: string | null
           file_name?: string
           file_path?: string
           iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          needs_review?: boolean | null
           operation_date?: string | null
           payment_method?: string | null
           payment_terms?: string | null
           raw_data?: Json | null
+          review_notes?: string | null
           status?: string | null
           subtotal?: number | null
           supplier_address?: string | null

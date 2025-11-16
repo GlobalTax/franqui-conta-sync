@@ -398,13 +398,13 @@ export default function InvoiceDetailEditor() {
       centroCode = 'temp';
     }
 
-    console.log('[OCR] Invocando edge function con:', { documentPath: effectivePath, centroCode, engine });
+    console.log('[OCR] Invocando edge function con:', { invoice_id: id, documentPath: effectivePath, centroCode });
 
     try {
       const result = await processOCR.mutateAsync({
+        invoice_id: id || '',
         documentPath: effectivePath,
-        centroCode,
-        engine
+        centroCode
       });
       
       console.log('[OCR] Resultado recibido:', result);

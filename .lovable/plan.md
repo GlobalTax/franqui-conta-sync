@@ -1,87 +1,157 @@
 
+## Qué está pasando realmente
 
-# Plan: Rebuild Digitization Module OCR Integration
+Sí sé cuál es el problema actual.
 
-## Root Cause Analysis
+El error ya no está en Claude ni en el parseo OCR. El flujo se rompe antes, en la creación automática del borrador desde `Nueva Factura`.
 
-The module is broken because of a **response format mismatch** between the Claude edge function and what the frontend expects. There are also extensive legacy references to Mindee/OpenAI/Google Vision that create confusion.
+### Evidencia encontrada
+En consola aparece:
 
-### Critical Issues Found
+```text
+[OCR] No hay ID, creando borrador automático...
+[OCR] ❌ Error creando borrador:
+column "row_id" is of type uuid but expression is of type text
+```
 
-1. **Response format mismatch (MAIN BUG)**: The `claude-invoice-ocr` edge function returns a flat response:
-   ```
-   { success, invoice_id, ocr_engine, ocr_confidence, ocr_cost_euros, ... }
-   ```
-   But `InvoiceDetailEditor.tsx` (line 446-554) expects `OCRResponse` with:
-   ```
-   { confidence, data, normalized, ap_mapping, entry_validation, orchestrator_logs, processingTimeMs, ocr_metrics, ... }
-   ```
-   Result: OCR runs but **no data is populated into the form**.
+Eso significa que:
 
-2. **Engine state confusion**: `InvoiceDetailEditor` initializes `ocrEngine` as `"google_vision"` (line 124), persists `"openai"` in localStorage (lines 199-213), and uses `engine: 'openai'` in all button handlers. But the actual engine is Claude.
+1. `handleProcessOCR()` intenta insertar un borrador en `invoices_received`
+2. esa inserción dispara lógica secundaria de auditoría/trigger
+3. esa lógica intenta escribir en `audit_logs.row_id`
+4. `row_id` es `uuid`, pero se le está pasando un valor tratado como `text`
+5. por eso el insert falla y nunca llega a ejecutarse `claude-invoice-ocr`
 
-3. **OCRDetail.tsx still uses Mindee**: Shows `MindeeMetricsCard` (line 99-107), button says "Reprocesar con Mindee" (line 128).
+## Archivos implicados
 
-4. **Dead OCR types**: `OCRResponse` interface in `useInvoiceOCR.ts` has `mindee_metadata`, `ms_mindee`, engine types `"openai" | "mindee" | "merged"` -- none of which exist anymore.
+### Confirmados
+- `src/pages/invoices/InvoiceDetailEditor.tsx`
+- `src/components/invoices/InvoicePDFUploader.tsx`
 
-5. **1574-line monolith**: `InvoiceDetailEditor.tsx` is extremely bloated with duplicated mobile/desktop layouts, dead code, and mixed concerns.
+### Probables en backend/db
+- migraciones donde exista lógica de auditoría sobre `invoices_received`
+- definición de `audit_logs` / función RPC o trigger que escriba `row_id`
 
-## Plan
+## Problemas de diseño detectados
 
-### Phase 1: Fix the Claude Edge Function Response
-**File**: `supabase/functions/claude-invoice-ocr/index.ts`
+### 1. El borrador se crea tarde y en el sitio equivocado
+Ahora se crea dentro de `handleProcessOCR()`. Eso hace que:
+- subir PDF
+- lanzar OCR
+- crear borrador
+- y ejecutar triggers
 
-Expand the response to include the fields the frontend needs:
-- Return `confidence` (0-1 scale), `data` (raw extracted), `normalized` (after fiscal pipeline)
-- Return `ap_mapping` stub (invoice_level + line_level) 
-- Return `processingTimeMs`, `ocr_metrics` (tokens, cost, pages)
-- Return `validation` with ok/errors/warnings
-- Remove legacy Mindee response structure
+ocurra todo mezclado en un mismo paso, dificultando control y errores.
 
-### Phase 2: Clean Up Frontend Types & Hook
-**File**: `src/hooks/useInvoiceOCR.ts`
+### 2. El uploader sigue usando `invoiceId={id}` y no `effectiveId`
+En `InvoiceDetailEditor.tsx`, tanto en desktop como mobile:
+- `InvoicePDFUploader` recibe `invoiceId={id}`
+- pero cuando la factura es nueva, `id` no existe
+- aunque luego se cree `createdInvoiceId`, el uploader no queda alineado con ese ID efectivo
 
-- Remove all Mindee/OpenAI references from `OCRResponse` interface
-- Update engine type to `"claude"`
-- Clean up `useProcessInvoiceOCR` logging to say "Claude" not "OpenAI"
-- Remove `mindee_metadata` from `OCRResponse`
+### 3. El flujo “Nueva factura” y “Carga masiva” no están unificados
+La carga masiva ya crea primero el registro y luego llama al OCR.
+La pantalla nueva intenta hacerlo “al vuelo”, con más riesgo de estados rotos.
 
-### Phase 3: Fix InvoiceDetailEditor OCR Flow
-**File**: `src/pages/invoices/InvoiceDetailEditor.tsx`
+## Plan de corrección
 
-- Change `ocrEngine` default from `"google_vision"` to `"claude"`
-- Remove all localStorage engine persistence (no engine switching needed)
-- Remove `selectedEngine` state (always Claude)
-- Remove `handleRetryWithDifferentEngine` (dead code)
-- Update all `engine: 'openai'` references to remove engine parameter
-- Fix response mapping in `handleProcessOCR` to match new Claude response format
+### Fase 1 — Rehacer el alta nueva para que cree el borrador antes del OCR
+Mover la creación del registro borrador al momento correcto del flujo:
 
-### Phase 4: Fix OCRDetail.tsx 
-**File**: `src/pages/digitization/OCRDetail.tsx`
+- al terminar la subida del PDF
+- o en una función dedicada `ensureDraftInvoice()`
+- antes de intentar OCR
 
-- Replace `MindeeMetricsCard` with Claude metrics (confidence, cost, tokens)
-- Change button text from "Reprocesar con Mindee" to "Reprocesar con Claude"
+El objetivo es:
+```text
+Subir PDF → crear borrador válido → guardar createdInvoiceId → actualizar document_path → lanzar OCR con ID real
+```
 
-### Phase 5: Clean Up Engine Indicator
-**File**: `src/components/invoices/OCREngineIndicator.tsx` (if exists)
+### Fase 2 — Corregir el payload del borrador
+Alinear el insert mínimo del borrador con el esquema real de `invoices_received`, usando los mismos campos válidos que ya funcionan en carga masiva.
 
-- Update to show "Claude Vision" as the engine
-- Remove OpenAI/Mindee/Google Vision display logic
+Revisaré y ajustaré especialmente:
+- `invoice_number`
+- `invoice_date`
+- `total`
+- `status`
+- `approval_status`
+- `file_path`
+- `document_path`
+- `uploaded_by`
+- `uploaded_at`
+- `created_by`
 
-## Files to Modify
+La idea es dejar un insert mínimo, consistente y auditable.
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/claude-invoice-ocr/index.ts` | Expand response to include `data`, `normalized`, `confidence` (0-1), `ap_mapping` stub, `processingTimeMs`, `ocr_metrics` |
-| `src/hooks/useInvoiceOCR.ts` | Clean types, remove Mindee/OpenAI references, fix engine type |
-| `src/pages/invoices/InvoiceDetailEditor.tsx` | Remove engine switching, fix response mapping, default to `"claude"` |
-| `src/pages/digitization/OCRDetail.tsx` | Replace MindeeMetricsCard, fix button text |
+### Fase 3 — Corregir el origen del error UUID/text
+Localizar la lógica exacta que escribe en `audit_logs.row_id` y corregirla para que use UUID real, no texto.
 
-## Expected Outcome
+Haré una de estas dos correcciones según lo que exista en la DB:
+- castear correctamente a `uuid`
+- o dejar de enviar valores textuales/temporales como `row_id`
 
-After these changes:
-1. Upload PDF in "Nueva" tab -> Claude processes -> form auto-populates with extracted data
-2. All UI consistently shows "Claude" as the OCR engine
-3. No dead references to Mindee/OpenAI/Google Vision
-4. Response format between edge function and frontend is aligned
+Sin arreglar esto, cualquier inserción nueva seguirá rompiéndose.
 
+### Fase 4 — Hacer que el uploader use siempre el ID efectivo
+Actualizar `InvoiceDetailEditor.tsx` para pasar:
+- `invoiceId={effectiveId}`
+
+en lugar de:
+- `invoiceId={id}`
+
+tanto en desktop como en mobile.
+
+Así, cuando ya exista `createdInvoiceId`, el uploader podrá actualizar correctamente `document_path` sobre el mismo registro.
+
+### Fase 5 — Unificar el flujo con el patrón de carga masiva
+Tomar como referencia el patrón funcional de `useBulkInvoiceUpload.ts`:
+
+```text
+1. subir archivo
+2. crear registro en invoices_received
+3. guardar id
+4. invocar claude-invoice-ocr
+```
+
+y reutilizar esa lógica conceptual para `Nueva Factura`, evitando dos implementaciones distintas del mismo proceso.
+
+### Fase 6 — Endurecer el manejo de errores en UI
+Si falla la creación del borrador:
+- mostrar toast específico del motivo real
+- no dejar la pantalla en estado ambiguo
+- no mostrar “OCR procesado” si nunca se invocó la edge function
+
+## Resultado esperado tras el arreglo
+
+```text
+Nueva Factura
+  ↓
+Subida del PDF
+  ↓
+Creación correcta del borrador en invoices_received
+  ↓
+Asignación de createdInvoiceId
+  ↓
+Invocación de claude-invoice-ocr con invoice_id real
+  ↓
+Relleno automático del formulario
+```
+
+## Cambios previstos
+
+| Archivo | Cambio |
+|---|---|
+| `src/pages/invoices/InvoiceDetailEditor.tsx` | Rehacer flujo de alta nueva, creación temprana del borrador, usar `effectiveId`, lanzar OCR solo con ID real |
+| `src/components/invoices/InvoicePDFUploader.tsx` | Mantenerlo alineado con `effectiveId` y evitar estados inconsistentes |
+| SQL / trigger / función de auditoría relacionada | Corregir incompatibilidad `audit_logs.row_id (uuid)` vs valor textual |
+
+## Nota importante
+Ahora mismo el problema principal no es “Claude no lee”, sino este:
+
+```text
+la factura nueva ni siquiera consigue insertarse correctamente en invoices_received
+porque una auditoría/trigger rompe el insert con un mismatch uuid/text
+```
+
+Hasta corregir eso, el OCR seguirá pareciendo que “no funciona” aunque el motor esté bien.

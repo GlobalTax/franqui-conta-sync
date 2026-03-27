@@ -346,7 +346,7 @@ export default function InvoiceDetailEditor() {
 
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
-  const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' }) => {
+  const handleProcessOCR = async (opts?: { path?: string; centro?: string }) => {
     console.log('[OCR] ========================================');
     console.log('[OCR] Iniciando procesamiento OCR...');
     

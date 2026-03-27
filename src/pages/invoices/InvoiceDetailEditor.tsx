@@ -413,7 +413,7 @@ export default function InvoiceDetailEditor() {
             centro_code: centroCode,
             file_path: effectivePath,
             status: 'draft',
-            approval_status: 'pending',
+            approval_status: 'draft',
             invoice_number: '',
             invoice_date: new Date().toISOString().split('T')[0],
             subtotal: 0,

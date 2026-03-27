@@ -11,7 +11,6 @@ export function useReprocessInvoice() {
 
   const mutation = useMutation({
     mutationFn: async ({ invoiceId }: ReprocessParams) => {
-      // Get invoice file path and centro code
       const { data: invoice, error: fetchError } = await supabase
         .from('invoices_received')
         .select('file_path, centro_code')
@@ -22,10 +21,9 @@ export function useReprocessInvoice() {
         throw new Error('No se pudo recuperar la factura');
       }
 
-      console.log('[Reprocess] Using Mindee OCR for reprocessing:', invoiceId);
+      console.log('[Reprocess] Using Claude Vision OCR:', invoiceId);
 
-      // Call Mindee OCR edge function
-      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: invoiceId,
           documentPath: invoice.file_path,
@@ -34,36 +32,36 @@ export function useReprocessInvoice() {
       });
 
       if (error) {
-        console.error('[Reprocess] Mindee OCR error:', error);
+        console.error('[Reprocess] Claude OCR error:', error);
         throw error;
       }
 
-      console.log('[Reprocess] Mindee OCR success:', {
-        confidence: data?.mindee_metadata?.confidence,
-        fallbackUsed: data?.mindee_metadata?.fallback_used,
-        cost: data?.mindee_metadata?.cost_euros
+      console.log('[Reprocess] Claude OCR success:', {
+        confidence: data?.ocr_confidence,
+        cost: data?.ocr_cost_euros,
+        needsReview: data?.needs_manual_review
       });
 
       return data;
     },
     onSuccess: (data, variables) => {
-      const mindeeConfidence = data?.mindee_metadata?.confidence || 0;
-      const fallbackUsed = data?.mindee_metadata?.fallback_used || false;
-      const cost = data?.mindee_metadata?.cost_euros || 0;
+      const confidence = data?.ocr_confidence || 0;
+      const needsReview = data?.needs_manual_review || false;
+      const cost = data?.ocr_cost_euros || 0;
 
-      if (fallbackUsed) {
+      if (needsReview) {
         toast.warning(
-          `Factura reprocesada con parsers de respaldo • Confianza: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`,
+          `Factura reprocesada - Requiere revisión • Confianza: ${Math.round(confidence)}% • €${cost.toFixed(4)}`,
           { description: 'Se recomienda revisión manual' }
         );
-      } else if (mindeeConfidence < 70) {
+      } else if (confidence < 70) {
         toast.warning(
-          `Factura reprocesada • Confianza baja: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`,
+          `Factura reprocesada • Confianza baja: ${Math.round(confidence)}% • €${cost.toFixed(4)}`,
           { description: 'Revisar datos extraídos' }
         );
       } else {
         toast.success(
-          `Factura reprocesada correctamente • Confianza: ${Math.round(mindeeConfidence)}% • €${cost.toFixed(4)}`
+          `Factura reprocesada correctamente • Confianza: ${Math.round(confidence)}% • €${cost.toFixed(4)}`
         );
       }
 

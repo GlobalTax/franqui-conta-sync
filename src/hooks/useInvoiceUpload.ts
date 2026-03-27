@@ -139,10 +139,10 @@ export const useInvoiceUpload = () => {
 
       setProgress(70);
 
-      // 6. Procesar con Mindee OCR (nativo de PDFs)
-      console.log('[useInvoiceUpload] Iniciando Mindee OCR...');
+      // 6. Procesar con Claude Vision OCR
+      console.log('[useInvoiceUpload] Iniciando Claude Vision OCR...');
       
-      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: invoice.id,
           documentPath: filePath,
@@ -153,9 +153,8 @@ export const useInvoiceUpload = () => {
       setProgress(90);
 
       if (ocrError) {
-        console.error('[useInvoiceUpload] Mindee OCR error:', ocrError);
+        console.error('[useInvoiceUpload] Claude OCR error:', ocrError);
         
-        // Actualizar estado como error pero no fallar completamente
         await supabase
           .from('invoices_received')
           .update({ 
@@ -177,20 +176,20 @@ export const useInvoiceUpload = () => {
 
       setProgress(100);
 
-      const mindeeConfidence = ocrData?.mindee_metadata?.confidence || 0;
-      const fallbackUsed = ocrData?.mindee_metadata?.fallback_used || false;
+      const confidence = ocrData?.ocr_confidence || 0;
+      const needsReview = ocrData?.needs_manual_review || false;
 
-      if (fallbackUsed) {
-        toast.warning('Factura procesada con parsers de respaldo', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}% - Se recomienda revisión manual`
+      if (needsReview) {
+        toast.warning('Factura procesada - Requiere revisión', {
+          description: `Confianza: ${Math.round(confidence)}% - Se recomienda revisión manual`
         });
-      } else if (mindeeConfidence < 70) {
+      } else if (confidence < 70) {
         toast.warning('Factura procesada con confianza baja', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}% - Revisar datos extraídos`
+          description: `Confianza: ${Math.round(confidence)}% - Revisar datos extraídos`
         });
       } else {
         toast.success('Factura procesada correctamente', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}%`
+          description: `Confianza: ${Math.round(confidence)}%`
         });
       }
 

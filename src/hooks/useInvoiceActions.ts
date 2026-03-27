@@ -97,11 +97,10 @@ export function useInvoiceActions() {
   });
 
   // ==========================================================================
-  // REPROCESAR OCR - Usando Mindee
+  // REPROCESAR OCR - Usando Claude Vision
   // ==========================================================================
   const reprocessOCRMutation = useMutation({
     mutationFn: async (params: ReprocessOCRParams) => {
-      // Obtener file_path y centro_code de la factura
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices_received')
         .select('file_path, centro_code')
@@ -111,7 +110,7 @@ export function useInvoiceActions() {
       if (invoiceError) throw invoiceError;
       if (!invoice?.file_path) throw new Error('No se encontró el archivo de la factura');
 
-      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: params.invoiceId,
           documentPath: invoice.file_path,
@@ -126,7 +125,7 @@ export function useInvoiceActions() {
       queryClient.invalidateQueries({ queryKey: ['ocr-processing-logs'] });
       queryClient.invalidateQueries({ queryKey: ['digitization-metrics'] });
       
-      toast.success('Factura reprocesada con Mindee correctamente');
+      toast.success('Factura reprocesada con Claude correctamente');
     },
     onError: (error: any) => {
       console.error('Error reprocessing OCR:', error);

@@ -43,7 +43,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
   const completedFiles = files.filter(f => f.status === 'processed' || f.status === 'needs_review');
   const totalCost = completedFiles.reduce((sum, f) => sum + (f.ocrCostEur || 0), 0);
   const totalTime = completedFiles.reduce((sum, f) => sum + (f.processingTimeMs || 0), 0);
-  const mindeeFallbacks = completedFiles.filter(f => f.ocrEngine === 'mindee').length;
+  
   
   const stats: BulkUploadStats = {
     total: files.length,

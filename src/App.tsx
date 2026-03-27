@@ -231,6 +231,7 @@ const App = () => {
             <Route path="/analytics/ocr" element={<OCRMetrics />} />
             <Route path="/analytics/ocr-cache" element={<OCRCacheMetrics />} />
               <Route path="/style-guide" element={<StyleGuide />} />
+              <Route path="/ai-assistant" element={<AIAssistant />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

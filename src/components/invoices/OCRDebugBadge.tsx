@@ -98,23 +98,17 @@ export function OCRDebugBadge({
         <div className="p-4 border-b bg-muted/30">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-semibold text-sm flex items-center gap-2">
-              🔍 OCR Orchestrator Timeline
+              🔍 OCR Claude Vision Timeline
             </h4>
             <div className="flex items-center gap-2">
-              {engine === 'openai' && (
+              {engine === 'claude' && (
                 <Badge variant="secondary" className="gap-1">
-                  <Zap className="h-3 w-3 text-green-600" />
-                  OpenAI
+                  <Zap className="h-3 w-3 text-purple-600" />
+                  Claude Vision
                 </Badge>
               )}
-              {engine === 'mindee' && (
-                <Badge variant="secondary" className="gap-1">
-                  <Shield className="h-3 w-3 text-blue-600" />
-                  Mindee
-                </Badge>
-              )}
-              {engine === 'merged' && (
-                <Badge variant="secondary">🔀 Multi-Motor</Badge>
+              {engine === 'manual_review' && (
+                <Badge variant="secondary">👤 Manual</Badge>
               )}
             </div>
           </div>

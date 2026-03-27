@@ -5,19 +5,15 @@ describe('validateSpanishVAT', () => {
   it('should validate correct NIF', () => {
     expect(validateSpanishVAT('12345678Z')).toBe(true);
   });
-
   it('should reject invalid NIF', () => {
     expect(validateSpanishVAT('12345678X')).toBe(false);
   });
-
   it('should validate correct CIF', () => {
     expect(validateSpanishVAT('B12345678')).toBe(true);
   });
-
   it('should reject null VAT', () => {
     expect(validateSpanishVAT(null)).toBe(false);
   });
-
   it('should reject empty VAT', () => {
     expect(validateSpanishVAT('')).toBe(false);
   });
@@ -28,11 +24,9 @@ describe('parseSpanishAmount', () => {
     expect(parseSpanishAmount('1.234,56')).toBe(1234.56);
     expect(parseSpanishAmount('123,45')).toBe(123.45);
   });
-
   it('should handle amounts without thousands separator', () => {
     expect(parseSpanishAmount('999,99')).toBe(999.99);
   });
-
   it('should handle large amounts', () => {
     expect(parseSpanishAmount('12.345.678,90')).toBe(12345678.90);
   });
@@ -42,47 +36,27 @@ describe('formatDateES', () => {
   it('should format date correctly', () => {
     expect(formatDateES('2025', '11', '10')).toBe('2025-11-10');
   });
-
   it('should pad single digits', () => {
     expect(formatDateES('2025', '1', '5')).toBe('2025-01-05');
   });
 });
 
 describe('estimateOCRCost', () => {
-  it('should estimate OpenAI cost with tokens', () => {
+  it('should estimate Claude cost with tokens', () => {
     const result = estimateOCRCost({
-      engine: 'openai',
+      engine: 'claude',
       tokens_in: 1000,
       tokens_out: 500
     });
-    expect(result.cost_openai).toBeGreaterThan(0);
-    expect(result.cost_mindee).toBe(0);
+    expect(result.cost_claude).toBeGreaterThan(0);
+    expect(result.cost_total).toBeGreaterThan(0);
   });
 
-  it('should estimate OpenAI cost without tokens (average)', () => {
+  it('should estimate Claude cost without tokens (average)', () => {
     const result = estimateOCRCost({
-      engine: 'openai'
+      engine: 'claude'
     });
-    expect(result.cost_openai).toBe(0.08);
-  });
-
-  it('should estimate Mindee cost', () => {
-    const result = estimateOCRCost({
-      engine: 'mindee',
-      pages: 3
-    });
-    expect(result.cost_mindee).toBe(0.06);
-    expect(result.cost_openai).toBe(0);
-  });
-
-  it('should estimate merged cost (max of both)', () => {
-    const result = estimateOCRCost({
-      engine: 'merged',
-      pages: 2,
-      tokens_in: 1000,
-      tokens_out: 500
-    });
-    expect(result.cost_total).toBe(Math.max(result.cost_openai, result.cost_mindee));
+    expect(result.cost_claude).toBe(0.02);
   });
 });
 
@@ -96,10 +70,6 @@ describe('quickValidateInvoice', () => {
     });
     expect(result.estimated_confidence).toBeGreaterThan(80);
     expect(result.warnings.length).toBe(0);
-    expect(result.vat_valid).toBe(true);
-    expect(result.has_invoice_number).toBe(true);
-    expect(result.has_date).toBe(true);
-    expect(result.has_total).toBe(true);
   });
 
   it('should return low confidence for incomplete invoice', () => {

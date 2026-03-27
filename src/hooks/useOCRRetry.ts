@@ -67,20 +67,20 @@ export const useOCRRetry = () => {
       return { data, attemptCount };
     },
     onSuccess: ({ data, attemptCount }, { invoiceId }) => {
-      const mindeeConfidence = data?.mindee_metadata?.confidence || 0;
-      const fallbackUsed = data?.mindee_metadata?.fallback_used || false;
+      const confidence = data?.ocr_confidence || 0;
+      const needsReview = data?.needs_manual_review || false;
 
-      if (fallbackUsed) {
-        toast.warning('OCR reprocesado con parsers de respaldo', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}% - Se recomienda revisión manual`
+      if (needsReview) {
+        toast.warning('OCR reprocesado - Requiere revisión', {
+          description: `Confianza: ${Math.round(confidence)}% - Se recomienda revisión manual`
         });
-      } else if (mindeeConfidence < 70) {
+      } else if (confidence < 70) {
         toast.warning('OCR reprocesado con confianza baja', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}% - Revisar datos extraídos`
+          description: `Confianza: ${Math.round(confidence)}% - Revisar datos extraídos`
         });
       } else {
         toast.success('OCR reprocesado exitosamente', {
-          description: `Confianza: ${Math.round(mindeeConfidence)}%`
+          description: `Confianza: ${Math.round(confidence)}%`
         });
       }
 

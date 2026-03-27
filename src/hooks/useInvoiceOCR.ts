@@ -217,25 +217,25 @@ export const useProcessInvoiceOCR = () => {
     },
     onError: (error: any) => {
       console.error('[useProcessInvoiceOCR] Mutation error handler:', error);
-      toast.error(`Error al procesar el documento con Mindee: ${error.message}`);
+      toast.error(`Error al procesar el documento con Claude: ${error.message}`);
     },
     onSuccess: (data) => {
-      const mindeeConfidence = data.mindee_metadata?.confidence || 0;
-      const fallbackUsed = data.mindee_metadata?.fallback_used || false;
+      const confidence = data.ocr_confidence || data.mindee_metadata?.confidence || 0;
+      const needsReview = data.needs_manual_review || false;
 
-      if (fallbackUsed) {
+      if (needsReview) {
         toast.warning(
-          `Documento procesado con parsers de respaldo • Confianza: ${Math.round(mindeeConfidence)}%`,
+          `Documento procesado - Requiere revisión • Confianza: ${Math.round(confidence)}%`,
           { description: 'Se recomienda revisión manual' }
         );
-      } else if (mindeeConfidence < 70) {
+      } else if (confidence < 70) {
         toast.warning(
-          `Documento procesado con confianza baja: ${Math.round(mindeeConfidence)}%`,
+          `Documento procesado con confianza baja: ${Math.round(confidence)}%`,
           { description: 'Revisar datos extraídos' }
         );
       } else {
         toast.success(
-          `Documento procesado correctamente • Confianza: ${Math.round(mindeeConfidence)}%`
+          `Documento procesado correctamente • Confianza: ${Math.round(confidence)}%`
         );
       }
     }

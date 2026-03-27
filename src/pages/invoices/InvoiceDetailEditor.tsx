@@ -105,6 +105,10 @@ type InvoiceFormData = z.infer<typeof invoiceFormSchema>;
 export default function InvoiceDetailEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Estado para ID creado automáticamente (borrador pre-OCR)
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+  const effectiveId = id || createdInvoiceId;
   const isEditMode = !!id;
   
   // Estado local para document_path

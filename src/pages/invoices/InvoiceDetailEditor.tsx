@@ -985,7 +985,7 @@ export default function InvoiceDetailEditor() {
                 ) : (
                   <div className="h-full flex items-center justify-center p-6" id="pdf-uploader">
                     <InvoicePDFUploader
-                      invoiceId={id}
+                      invoiceId={effectiveId}
                       invoiceType="received"
                       centroCode={form.watch('centro_code') || 'temp'}
                       currentPath={documentPath}
@@ -1229,9 +1229,9 @@ export default function InvoiceDetailEditor() {
                     setError={form.setError}
                   />
                   
-                  <InvoiceAdvancedOptionsSection
+                    <InvoiceAdvancedOptionsSection
                     control={form.control}
-                    invoiceId={id}
+                    invoiceId={effectiveId}
                     ocrData={ocrData}
                   />
 
@@ -1303,7 +1303,7 @@ export default function InvoiceDetailEditor() {
                   ) : (
                     <div id="pdf-uploader">
                       <InvoicePDFUploader
-                        invoiceId={id}
+                        invoiceId={effectiveId}
                         invoiceType="received"
                         centroCode={form.watch('centro_code') || 'temp'}
                         currentPath={documentPath}
@@ -1497,7 +1497,7 @@ export default function InvoiceDetailEditor() {
                     
                     <InvoiceAdvancedOptionsSection
                       control={form.control}
-                      invoiceId={id}
+                      invoiceId={effectiveId}
                       ocrData={ocrData}
                     />
 

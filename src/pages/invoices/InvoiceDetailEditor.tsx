@@ -789,9 +789,9 @@ export default function InvoiceDetailEditor() {
       }
       
       // 1. Guardar factura primero
-      let invoiceId = id;
+      let invoiceId = effectiveId;
       
-      if (!isEditMode) {
+      if (!isEditMode && !createdInvoiceId) {
         const newInvoice = await createInvoice.mutateAsync({
           centro_code: data.centro_code,
           supplier_id: data.supplier_id,

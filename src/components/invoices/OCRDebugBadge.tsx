@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { useState } from 'react';
-import { Code, Zap, Shield, Clock } from 'lucide-react';
+import { Code, Zap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {

@@ -78,65 +78,40 @@ export function formatDateES(year: string, month: string, day: string): string {
 // ============================================================================
 
 interface CostEstimate {
-  engine: 'openai' | 'mindee' | 'merged';
-  cost_openai: number;
-  cost_mindee: number;
+  engine: 'claude';
+  cost_claude: number;
   cost_total: number;
 }
 
 /**
- * NOTA: Tarifas actuales (2025):
- * - OpenAI GPT-4o-mini: $2.50/1M in + $10/1M out (€0.08 promedio/factura)
- * - Mindee: €0.02/página
- * 
- * Para GPT-4o específico: $5/1M in + $15/1M out (~2x coste)
- * Si necesitas calcular solo GPT-4o, multiplica los resultados por ~2x
+ * Tarifas Claude Vision (2025):
+ * - Claude claude-sonnet-4-20250514: $3/1M input + $15/1M output (~€0.01-0.03/factura)
  */
-
 export function estimateOCRCost(params: {
-  engine: 'openai' | 'mindee' | 'merged';
+  engine: 'claude';
   pages?: number;
   tokens_in?: number;
   tokens_out?: number;
 }): CostEstimate {
-  const { engine, pages = 1, tokens_in = 0, tokens_out = 0 } = params;
+  const { tokens_in = 0, tokens_out = 0 } = params;
   
-  // Tarifas 2025 (según cost-calculator.ts)
   const RATES = {
-    openai: {
-      per_token_in: 0.0025 / 1000,   // $2.50/1M tokens input
-      per_token_out: 0.01 / 1000,    // $10/1M tokens output
-      avg_invoice: 0.08              // ~€0.08 promedio por factura
-    },
-    mindee: {
-      per_page: 0.02                 // €0.02 por página
-    }
+    per_token_in: 0.003 / 1000,
+    per_token_out: 0.015 / 1000,
+    avg_invoice: 0.02
   };
 
-  let cost_openai = 0;
-  let cost_mindee = 0;
-
-  if (engine === 'openai' || engine === 'merged') {
-    if (tokens_in > 0 || tokens_out > 0) {
-      cost_openai = (tokens_in * RATES.openai.per_token_in) + (tokens_out * RATES.openai.per_token_out);
-    } else {
-      cost_openai = RATES.openai.avg_invoice;
-    }
+  let cost_claude = 0;
+  if (tokens_in > 0 || tokens_out > 0) {
+    cost_claude = (tokens_in * RATES.per_token_in) + (tokens_out * RATES.per_token_out);
+  } else {
+    cost_claude = RATES.avg_invoice;
   }
-
-  if (engine === 'mindee' || engine === 'merged') {
-    cost_mindee = pages * RATES.mindee.per_page;
-  }
-
-  const cost_total = engine === 'merged' 
-    ? Math.max(cost_openai, cost_mindee)
-    : cost_openai + cost_mindee;
 
   return {
-    engine,
-    cost_openai,
-    cost_mindee,
-    cost_total
+    engine: 'claude',
+    cost_claude,
+    cost_total: cost_claude
   };
 }
 

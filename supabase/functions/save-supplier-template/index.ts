@@ -18,7 +18,7 @@ interface RequestBody {
   document_type?: 'invoice' | 'ticket' | 'credit_note';
   field_mappings: Record<string, any>;
   extraction_strategy?: 'coordinates' | 'regex' | 'ocr_fallback';
-  preferred_ocr_engine?: 'template' | 'openai' | 'mindee';
+  preferred_ocr_engine?: 'template' | 'claude';
   confidence_threshold?: number;
   is_active?: boolean;
 }

@@ -698,7 +698,7 @@ export default function InvoiceDetailEditor() {
 
       if ((isEditMode || createdInvoiceId) && effectiveId) {
         await updateInvoice.mutateAsync({ 
-          id, 
+          id: effectiveId, 
           data: {
             centro_code: data.centro_code,
             invoice_number: data.invoice_number,

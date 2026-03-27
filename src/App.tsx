@@ -24,6 +24,7 @@ const ChartOfAccounts = lazy(() => import("@/pages/ChartOfAccounts"));
 const ProfitAndLoss = lazy(() => import("@/pages/ProfitAndLoss"));
 const ProfitAndLossConsolidated = lazy(() => import("@/pages/ProfitAndLossConsolidated"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const AIAssistant = lazy(() => import("@/pages/AIAssistant"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const CentreDetail = lazy(() => import("@/pages/admin/CentreDetail"));
 const CompanyDetail = lazy(() => import("@/pages/admin/CompanyDetail"));
@@ -230,6 +231,7 @@ const App = () => {
             <Route path="/analytics/ocr" element={<OCRMetrics />} />
             <Route path="/analytics/ocr-cache" element={<OCRCacheMetrics />} />
               <Route path="/style-guide" element={<StyleGuide />} />
+              <Route path="/ai-assistant" element={<AIAssistant />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -295,6 +295,27 @@ const Layout = () => {
             </DropdownMenu>
           </div>
 
+          {/* IA Assistant */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Inteligencia Artificial
+            </h3>
+            <div className="space-y-0.5">
+              <NavLink
+                to="/ai-assistant"
+                end
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group bg-primary/5 border border-primary/20"
+                activeClassName="bg-primary/10 text-primary font-medium"
+              >
+                <Sparkles className="h-4 w-4 text-primary" strokeWidth={2} />
+                <span className="text-sm font-medium">Asistente Claude</span>
+                <Badge className="ml-auto bg-primary/20 text-primary border-0 text-[10px] px-1.5 py-0">
+                  IA
+                </Badge>
+              </NavLink>
+            </div>
+          </div>
+
           {/* Analytics Section */}
           <div>
             <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">

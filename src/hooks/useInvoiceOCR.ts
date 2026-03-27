@@ -204,7 +204,7 @@ export const useProcessInvoiceOCR = () => {
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
         console.error('[useProcessInvoiceOCR] Error details:', JSON.stringify(error, null, 2));
-        throw new Error(error.message || 'Error al procesar OCR con Mindee');
+        throw new Error(error.message || 'Error al procesar OCR con Claude');
       }
 
       if (!data.success) {

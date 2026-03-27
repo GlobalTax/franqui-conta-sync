@@ -145,7 +145,7 @@ export interface InvoiceFilters {
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
-  ocrEngine?: 'openai' | 'mindee' | 'merged' | 'manual_review';
+  ocrEngine?: 'claude' | 'manual_review';
   page?: number;
   limit?: number;
 }

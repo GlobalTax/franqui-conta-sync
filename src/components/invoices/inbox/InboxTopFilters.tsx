@@ -150,22 +150,10 @@ export function InboxTopFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="openai">
+                <SelectItem value="claude">
                   <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    OpenAI (Legacy)
-                  </span>
-                </SelectItem>
-                <SelectItem value="mindee">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    Mindee
-                  </span>
-                </SelectItem>
-                <SelectItem value="merged">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                    Fusionado
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    Claude Vision
                   </span>
                 </SelectItem>
                 <SelectItem value="manual_review">

@@ -137,7 +137,6 @@ export const useInvoicesReceived = (filters?: {
         ocr_confidence: inv.ocrConfidence,
         // Campos OCR
         ocr_engine: inv.ocrEngine,
-        ocr_ms_openai: inv.ocrMsOpenai,
         ocr_pages: inv.ocrPages,
         ocr_tokens_in: inv.ocrTokensIn,
         ocr_tokens_out: inv.ocrTokensOut,

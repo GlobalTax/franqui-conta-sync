@@ -712,7 +712,7 @@ export default function InvoiceDetailEditor() {
         });
         
         // 🧠 Detectar y registrar correcciones para Learning System
-        await detectAccountCorrections(id);
+        await detectAccountCorrections(effectiveId);
         
         toast.success('Factura actualizada correctamente');
       } else {

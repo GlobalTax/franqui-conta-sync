@@ -22,6 +22,7 @@ export interface InvoiceReceived {
   paymentTransactionId: string | null;
   ocrConfidence: number | null;
   // Campos OCR detallados
+  ocrEngine: 'claude' | 'manual_review' | null;
   ocrProcessingTimeMs: number | null;
   ocrPages: number | null;
   ocrTokensIn: number | null;

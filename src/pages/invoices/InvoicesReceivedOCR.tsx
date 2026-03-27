@@ -376,7 +376,6 @@ export default function InvoicesReceivedOCR() {
                             ocrEngine={invoice.ocr_engine}
                             ocrConfidence={invoice.ocr_confidence}
                             approvalStatus={invoice.approval_status}
-                            mindeeConfidence={invoice.mindee_confidence}
                             ocrFallbackUsed={invoice.ocr_fallback_used}
                           />
                         </TableCell>

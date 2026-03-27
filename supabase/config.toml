@@ -81,5 +81,5 @@ verify_jwt = true
 [functions.record-correction]
 verify_jwt = true
 
-[functions.mindee-invoice-ocr]
+[functions.claude-invoice-ocr]
 verify_jwt = true

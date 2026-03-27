@@ -724,7 +724,7 @@ export default function InvoiceDetailEditor() {
           await logOCR.mutateAsync({
             invoiceId: newInvoice.id,
             documentPath: documentPath!,
-            ocrProvider: 'google-vision',
+            ocrProvider: 'claude',
             rawResponse: rawOCRResponse,
             extractedData: ocrData,
             confidence: ocrConfidence,
@@ -801,7 +801,7 @@ export default function InvoiceDetailEditor() {
           await logOCR.mutateAsync({
             invoiceId: newInvoice.id,
             documentPath: documentPath!,
-            ocrProvider: 'google-vision',
+            ocrProvider: 'claude',
             rawResponse: rawOCRResponse,
             extractedData: ocrData,
             confidence: ocrConfidence,

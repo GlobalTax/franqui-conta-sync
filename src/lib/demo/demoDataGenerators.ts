@@ -170,7 +170,7 @@ export async function generateInvoices(
             status,
             ocr_processed: true,
             ocr_confidence: generateOCRConfidence(),
-            ocr_engine: 'google-vision',
+            ocr_engine: 'claude',
           })
           .select()
           .single();

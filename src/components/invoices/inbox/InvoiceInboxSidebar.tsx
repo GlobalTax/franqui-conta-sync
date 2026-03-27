@@ -57,8 +57,6 @@ export function InvoiceInboxSidebar({
           lines:invoices_received_lines(*),
           ocr_processing_log(
             engine,
-            ms_openai,
-            ms_mindee,
             pages,
             tokens_in,
             tokens_out,
@@ -123,7 +121,6 @@ export function InvoiceInboxSidebar({
                   ocrEngine={invoice.ocr_engine}
                   ocrConfidence={invoice.ocr_confidence}
                   approvalStatus={invoice.approval_status}
-                  mindeeConfidence={invoice.mindee_confidence}
                   ocrFallbackUsed={invoice.ocr_fallback_used}
                 />
               </div>
@@ -134,7 +131,7 @@ export function InvoiceInboxSidebar({
               <div className="px-6 py-4 bg-muted/30 border-y">
                 <OCRConfidenceAlert
                   notes={[]}
-                  engine="openai"
+                  engine="claude"
                   confidence={invoice.ocr_confidence}
                 />
               </div>
@@ -203,22 +200,12 @@ export function InvoiceInboxSidebar({
                         />
                       </div>
 
-                      {/* Tiempos de procesamiento */}
-                      {(ocrLog.ms_openai || ocrLog.ms_mindee) && (
+                      {/* Tiempo de procesamiento */}
+                      {ocrLog.processing_time_ms && (
                         <div className="text-xs space-y-1 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2">
-                          <div className="flex items-center justify-between">
-                            <span>⏱️ OpenAI:</span>
-                            <span className="font-mono">{ocrLog.ms_openai || 0}ms</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>⏱️ Mindee:</span>
-                            <span className="font-mono">{ocrLog.ms_mindee || 0}ms</span>
-                          </div>
                           <div className="flex items-center justify-between font-semibold">
-                            <span>Total:</span>
-                            <span className="font-mono">
-                              {(ocrLog.ms_openai || 0) + (ocrLog.ms_mindee || 0)}ms
-                            </span>
+                            <span>⏱️ Claude Vision:</span>
+                            <span className="font-mono">{ocrLog.processing_time_ms}ms</span>
                           </div>
                         </div>
                       )}

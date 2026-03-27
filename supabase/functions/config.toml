@@ -4,5 +4,3 @@ verify_jwt = false
 [functions.claude-assistant]
 verify_jwt = false
 
-[functions.claude-invoice-ocr]
-verify_jwt = false

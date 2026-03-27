@@ -22,14 +22,12 @@ export interface InvoiceReceived {
   paymentTransactionId: string | null;
   ocrConfidence: number | null;
   // Campos OCR detallados
-  ocrEngine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
-  ocrMsOpenai: number | null;
-  ocrMsMindee: number | null;
+  ocrEngine: 'claude' | 'manual_review' | null;
+  ocrProcessingTimeMs: number | null;
   ocrPages: number | null;
   ocrTokensIn: number | null;
   ocrTokensOut: number | null;
   ocrCostEstimateEur: number | null;
-  ocrProcessingTimeMs: number | null;
   ocrConfidenceNotes: string[] | null;
   ocrMergeNotes: string[] | null;
   ocrExtractedData: any | null;
@@ -146,7 +144,7 @@ export interface InvoiceFilters {
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
-  ocrEngine?: 'openai' | 'mindee' | 'merged' | 'manual_review';
+  ocrEngine?: 'claude' | 'manual_review';
   page?: number;
   limit?: number;
 }

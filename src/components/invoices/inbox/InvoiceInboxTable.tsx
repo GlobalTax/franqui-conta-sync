@@ -48,7 +48,7 @@ interface Invoice {
   iva_percentage?: number;
   document_type?: 'invoice' | 'receipt' | 'delivery_note' | 'credit_note';
   document_path?: string;
-  ocr_engine?: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  ocr_engine?: 'claude' | 'manual_review' | null;
   ocr_confidence?: number;
   processing_time_ms?: number;
   
@@ -60,8 +60,6 @@ interface Invoice {
   file_size_kb?: number;
   page_count?: number;
   
-  // Campos Mindee
-  mindee_confidence?: number | null;
   ocr_fallback_used?: boolean | null;
 }
 
@@ -315,8 +313,7 @@ export function InvoiceInboxTable({
                   ocrEngine={invoice.ocr_engine}
                   ocrConfidence={invoice.ocr_confidence}
                   approvalStatus={invoice.status}
-                  mindeeConfidence={invoice.mindee_confidence}
-                  ocrFallbackUsed={invoice.ocr_fallback_used}
+                  ocrFallbackUsed={invoice.ocr_fallback_used ?? false}
                 />
               </TableCell>
               

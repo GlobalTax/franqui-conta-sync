@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
-export type OCREngine = 'openai';
+export type OCREngine = 'claude';
 export type CircuitState = 'closed' | 'open' | 'half_open';
 
 export interface CircuitBreakerState {

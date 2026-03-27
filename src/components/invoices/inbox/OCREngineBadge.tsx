@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Brain, Cpu, GitMerge, User } from 'lucide-react';
+import { Brain, User } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/tooltip';
 
 interface OCREngineBadgeProps {
-  engine: 'openai' | 'mindee' | 'merged' | 'manual_review' | null;
+  engine: 'claude' | 'manual_review' | string | null;
   confidence?: number;
   processingTime?: number;
   className?: string;
@@ -22,24 +22,12 @@ export function OCREngineBadge({
 }: OCREngineBadgeProps) {
   if (!engine) return <Badge variant="outline" className={className}>Sin OCR</Badge>;
 
-  const engineConfig = {
-    openai: {
-      label: 'OpenAI',
+  const engineConfig: Record<string, { label: string; icon: typeof Brain; dot: string; className: string }> = {
+    claude: {
+      label: 'Claude Vision',
       icon: Brain,
-      dot: 'bg-green-500',
-      className: 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950 dark:text-green-300',
-    },
-    mindee: {
-      label: 'Mindee',
-      icon: Cpu,
-      dot: 'bg-blue-500',
-      className: 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    },
-    merged: {
-      label: 'Fusionado',
-      icon: GitMerge,
-      dot: 'bg-yellow-500',
-      className: 'border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+      dot: 'bg-purple-500',
+      className: 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950 dark:text-purple-300',
     },
     manual_review: {
       label: 'Manual',
@@ -49,7 +37,7 @@ export function OCREngineBadge({
     },
   };
 
-  const config = engineConfig[engine];
+  const config = engineConfig[engine] || engineConfig.claude;
   const Icon = config.icon;
 
   const tooltipContent = (

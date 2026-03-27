@@ -1,5 +1,5 @@
 // ============================================================================
-// OCR TYPES - Shared interfaces for all OCR modules
+// OCR TYPES - Shared interfaces for Claude Vision OCR
 // ============================================================================
 
 export type DocumentType = 'invoice' | 'credit_note' | 'ticket';
@@ -46,7 +46,7 @@ export interface EnhancedInvoiceData {
     what: string;
     why: string;
   } | null;
-  validation_errors?: string[]; // Auto-validation errors from OpenAI prompt
+  validation_errors?: string[];
 }
 
 export type InvoiceStatus = "processed_ok" | "needs_review" | "posted";
@@ -66,10 +66,9 @@ export interface OrchestratorLog {
   data?: any;
 }
 
-export interface OpenAIExtractionResult {
+export interface ClaudeExtractionResult {
   data: EnhancedInvoiceData;
   confidence_score: number;
-  confidence_by_field: Record<string, number>;
   raw_response: any;
   usage?: {
     tokens_in: number;
@@ -77,24 +76,4 @@ export interface OpenAIExtractionResult {
     total_tokens: number;
     estimated_cost_eur: number;
   };
-}
-
-export interface OrchestratorResult {
-  ocr_engine: "openai" | "manual_review" | "template";
-  final_invoice_json: EnhancedInvoiceData;
-  confidence_final: number;
-  status: InvoiceStatus;
-  template_id?: string;
-  template_name?: string;
-  merge_notes: string[];
-  orchestrator_logs: OrchestratorLog[];
-  raw_responses: {
-    openai?: OpenAIExtractionResult;
-    template?: any;
-  };
-  timing: {
-    ms_openai: number;
-    ms_template?: number;
-  };
-  pdf_converted?: boolean;
 }

@@ -220,8 +220,8 @@ export const useProcessInvoiceOCR = () => {
       toast.error(`Error al procesar el documento con Claude: ${error.message}`);
     },
     onSuccess: (data) => {
-      const confidence = data.ocr_confidence || data.mindee_metadata?.confidence || 0;
-      const needsReview = data.needs_manual_review || false;
+      const confidence = data.confidence || 0;
+      const needsReview = data.status === 'needs_review';
 
       if (needsReview) {
         toast.warning(

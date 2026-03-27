@@ -313,7 +313,7 @@ export function InvoiceInboxTable({
                   ocrEngine={invoice.ocr_engine}
                   ocrConfidence={invoice.ocr_confidence}
                   approvalStatus={invoice.status}
-                  mindeeConfidence={invoice.mindee_confidence}
+                  ocrFallbackUsed={invoice.ocr_fallback_used}
                   ocrFallbackUsed={invoice.ocr_fallback_used}
                 />
               </TableCell>

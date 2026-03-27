@@ -12,8 +12,7 @@ interface InboxStatusBadgeProps {
   approvalStatus?: string;
   className?: string;
   showIcon?: boolean;
-  mindeeConfidence?: number | null;
-  ocrFallbackUsed?: boolean;
+  ocrConfidence?: number | null;
   showTooltip?: boolean;
 }
 

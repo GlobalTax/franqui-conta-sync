@@ -370,7 +370,7 @@ export default function InvoiceDetailEditor() {
     // Claude is the only engine
     
     console.log('[OCR] documentPath (effective):', effectivePath);
-    console.log('[OCR] motor seleccionado:', engine);
+    console.log('[OCR] motor: Claude Vision');
     
     if (!effectivePath) {
       console.error('[OCR] ❌ No hay documentPath');

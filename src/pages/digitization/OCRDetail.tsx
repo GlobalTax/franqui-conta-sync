@@ -100,10 +100,6 @@ export default function OCRDetail() {
           ocrEngine="claude"
           mergeNotes={[]}
           confidence={(invoice.ocr_confidence || 0) / 100}
-          metrics={{
-            cost_estimate_eur: invoice.ocr_cost_eur || undefined,
-            processing_time_ms: invoice.ocr_processing_time || undefined,
-          }}
         />
         
         <Suspense fallback={

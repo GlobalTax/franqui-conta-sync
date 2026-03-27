@@ -367,7 +367,7 @@ export default function InvoiceDetailEditor() {
     console.log('[OCR] ✅ User authenticated');
     
     const effectivePath = opts?.path ?? documentPath;
-    const engine = opts?.engine ?? selectedEngine;
+    // Claude is the only engine
     
     console.log('[OCR] documentPath (effective):', effectivePath);
     console.log('[OCR] motor seleccionado:', engine);

@@ -55,7 +55,6 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
     errors: files.filter(f => f.status === 'error').length,
     totalCostEur: totalCost,
     avgProcessingTimeMs: completedFiles.length > 0 ? Math.round(totalTime / completedFiles.length) : 0,
-    mindeeFallbackCount: mindeeFallbacks,
   };
 
   // Validate file

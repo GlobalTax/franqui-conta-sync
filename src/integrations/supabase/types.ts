@@ -22,6 +22,7 @@ export type Database = {
           horas_ausencia: number
           id: string
           motivo: string | null
+          service_id: string | null
           tipo: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           horas_ausencia: number
           id?: string
           motivo?: string | null
+          service_id?: string | null
           tipo: string
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           horas_ausencia?: number
           id?: string
           motivo?: string | null
+          service_id?: string | null
           tipo?: string
         }
         Relationships: [

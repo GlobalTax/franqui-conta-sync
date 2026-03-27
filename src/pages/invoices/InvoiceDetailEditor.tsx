@@ -481,7 +481,7 @@ export default function InvoiceDetailEditor() {
       setOcrWarnings(result.warnings || []);
       setApMapping(result.ap_mapping);
       setEntryValidation(result.entry_validation || null);
-      setOcrEngine(result.ocr_engine || "google_vision");
+      setOcrEngine((result.ocr_engine as "claude" | "manual_review") || "claude");
       setMergeNotes(result.merge_notes || []);
       setOcrProcessed(true);
 

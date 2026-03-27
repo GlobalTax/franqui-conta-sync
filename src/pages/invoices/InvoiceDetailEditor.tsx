@@ -126,7 +126,7 @@ export default function InvoiceDetailEditor() {
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<'openai'>('openai');
+  // Claude is the only engine now
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
   

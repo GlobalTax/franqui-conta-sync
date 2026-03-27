@@ -195,22 +195,10 @@ export default function InvoiceDetailEditor() {
   // Stripper Hook (después de form)
   const { stripperState, applyStripper, getFieldChange } = useInvoiceStripper(form);
 
-  // Persistir preferencia de motor OCR en localStorage (forzar OpenAI)
+  // Cleanup legacy localStorage
   useEffect(() => {
-    const savedEngine = localStorage.getItem('preferred_ocr_engine') as 'openai' | 'mindee' | null;
-    // Forzar OpenAI siempre, ignorar Mindee
-    if (savedEngine === 'mindee') {
-      localStorage.setItem('preferred_ocr_engine', 'openai');
-      setSelectedEngine('openai');
-    } else if (savedEngine === 'openai') {
-      setSelectedEngine('openai');
-    }
+    localStorage.removeItem('preferred_ocr_engine');
   }, []);
-
-  useEffect(() => {
-    // Siempre guardar 'openai' en localStorage
-    localStorage.setItem('preferred_ocr_engine', 'openai');
-  }, [selectedEngine]);
 
   // Auto-seleccionar centro basándose en ViewContext o restaurante del usuario
   useEffect(() => {

@@ -455,7 +455,7 @@ export default function InvoiceDetailEditor() {
         console.log('Engine usado:', result.ocr_engine);
         console.log('Confianza final:', `${Math.round(result.confidence * 100)}%`);
         console.log('Tiempo total:', `${result.processingTimeMs}ms`);
-        console.log('OpenAI:', `${result.ocr_metrics.ms_openai}ms`);
+        console.log('Claude:', `${result.ocr_metrics.processing_time_ms}ms`);
         console.log('Páginas:', result.ocr_metrics.pages);
         console.log('Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
         console.groupEnd();

@@ -84,8 +84,7 @@ export function InboxSearchDialog({
                       hasEntry={!!invoice.accounting_entry_id}
                       ocrEngine={invoice.ocr_engine}
                       ocrConfidence={invoice.ocr_confidence}
-                      mindeeConfidence={invoice.mindee_confidence}
-                      ocrFallbackUsed={invoice.ocr_fallback_used}
+                      ocrFallbackUsed={invoice.ocr_fallback_used ?? false}
                     />
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">

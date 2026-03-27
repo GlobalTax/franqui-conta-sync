@@ -12,7 +12,7 @@ interface InboxStatusBadgeProps {
   approvalStatus?: string;
   className?: string;
   showIcon?: boolean;
-  ocrConfidence?: number | null;
+  ocrFallbackUsed?: boolean;
   showTooltip?: boolean;
 }
 
@@ -24,7 +24,6 @@ export function InboxStatusBadge({
   approvalStatus,
   className,
   showIcon = true,
-  mindeeConfidence,
   ocrFallbackUsed = false,
   showTooltip = true
 }: InboxStatusBadgeProps) {
@@ -34,7 +33,6 @@ export function InboxStatusBadge({
     ocr_confidence: ocrConfidence,
     accounting_entry_id: hasEntry ? 'dummy' : null,
     approval_status: approvalStatus,
-    mindee_confidence: mindeeConfidence,
     ocr_fallback_used: ocrFallbackUsed
   });
   
@@ -65,8 +63,7 @@ export function InboxStatusBadge({
     </Badge>
   );
   
-  // Si hay métricas de Mindee, mostrar tooltip
-  if (showTooltip && (mindeeConfidence !== null && mindeeConfidence !== undefined || ocrFallbackUsed)) {
+  if (showTooltip && (ocrConfidence !== null && ocrConfidence !== undefined || ocrFallbackUsed)) {
     return (
       <TooltipProvider>
         <Tooltip>
@@ -75,8 +72,8 @@ export function InboxStatusBadge({
           </TooltipTrigger>
           <TooltipContent>
             <div className="space-y-1 text-sm">
-              {mindeeConfidence !== null && mindeeConfidence !== undefined && (
-                <p>Confianza: {Math.round(mindeeConfidence)}%</p>
+              {ocrConfidence !== null && ocrConfidence !== undefined && (
+                <p>Confianza: {Math.round(ocrConfidence)}%</p>
               )}
               {ocrFallbackUsed && (
                 <p className="text-orange-600 flex items-center gap-1">

@@ -562,9 +562,9 @@ export default function InvoiceDetailEditor() {
       
       // Solo auto-trigger OCR si está en modo automático
       if (entryMode === 'auto-ocr') {
-        console.log('[Upload] Auto-trigger OCR en 300ms con OpenAI');
+        console.log('[Upload] Auto-trigger OCR en 300ms con Claude Vision');
         setTimeout(() => {
-          handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
+          handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp' });
         }, 300);
       } else {
         console.log('[Upload] Modo manual - OCR no se ejecutará automáticamente');
@@ -575,12 +575,12 @@ export default function InvoiceDetailEditor() {
     }
   };
 
-  // Handler para reintentar con motor diferente (deshabilitado - solo OpenAI)
+  // Handler para reintentar OCR con Claude
   const handleRetryWithDifferentEngine = () => {
-    console.log('[OCR] Reintento con OpenAI (Mindee deshabilitado)');
-    toast.info('Reprocesando con OpenAI...');
+    console.log('[OCR] Reprocesando con Claude Vision');
+    toast.info('Reprocesando con Claude Vision...');
     setTimeout(() => {
-      handleProcessOCR({ engine: 'openai' });
+      handleProcessOCR();
     }, 300);
   };
 

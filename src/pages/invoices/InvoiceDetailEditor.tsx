@@ -1229,9 +1229,9 @@ export default function InvoiceDetailEditor() {
                     setError={form.setError}
                   />
                   
-                  <InvoiceAdvancedOptionsSection
+                    <InvoiceAdvancedOptionsSection
                     control={form.control}
-                    invoiceId={id}
+                    invoiceId={effectiveId}
                     ocrData={ocrData}
                   />
 

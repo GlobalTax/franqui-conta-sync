@@ -253,7 +253,7 @@ serve(async (req) => {
         ocr_cost_eur: costEUR,
         validation_errors: validation.errors.length > 0 ? validation.errors : null,
         autofix_applied: autofix_applied.length > 0 ? autofix_applied : null,
-        confidence_notes: normalized.confidence_notes,
+        ocr_confidence_notes: normalized.confidence_notes,
       })
       .eq('id', invoice_id);
 

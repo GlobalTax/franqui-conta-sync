@@ -3990,11 +3990,19 @@ export type Database = {
           auto_post_criteria: Json | null
           auto_post_evaluated_at: string | null
           auto_posted: boolean | null
+          autofix_applied: string[] | null
+          base_imponible_10: number | null
+          base_imponible_21: number | null
           centro_code: string
           created_at: string | null
           created_by: string | null
+          cuota_iva_10: number | null
+          cuota_iva_21: number | null
+          customer_name: string | null
+          customer_tax_id: string | null
           document_hash: string | null
           document_path: string | null
+          document_type: string | null
           due_date: string | null
           entry_id: string | null
           field_confidence_scores: Json | null
@@ -4014,6 +4022,7 @@ export type Database = {
           ocr_confidence: number | null
           ocr_confidence_notes: string[] | null
           ocr_cost_estimate_eur: number | null
+          ocr_cost_eur: number | null
           ocr_engine: string | null
           ocr_engine_used: string | null
           ocr_extracted_data: Json | null
@@ -4021,7 +4030,9 @@ export type Database = {
           ocr_ms_openai: number | null
           ocr_pages: number | null
           ocr_payload: Json | null
+          ocr_processed_at: string | null
           ocr_processing_time_ms: number | null
+          ocr_raw_response: Json | null
           ocr_template_id: string | null
           ocr_template_name: string | null
           ocr_tokens_in: number | null
@@ -4045,6 +4056,7 @@ export type Database = {
           updated_at: string | null
           uploaded_at: string | null
           uploaded_by: string | null
+          validation_errors: Json | null
           verifactu_hash: string | null
           verifactu_verified: boolean | null
           verifactu_verified_at: string | null
@@ -4055,11 +4067,19 @@ export type Database = {
           auto_post_criteria?: Json | null
           auto_post_evaluated_at?: string | null
           auto_posted?: boolean | null
+          autofix_applied?: string[] | null
+          base_imponible_10?: number | null
+          base_imponible_21?: number | null
           centro_code: string
           created_at?: string | null
           created_by?: string | null
+          cuota_iva_10?: number | null
+          cuota_iva_21?: number | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
           document_hash?: string | null
           document_path?: string | null
+          document_type?: string | null
           due_date?: string | null
           entry_id?: string | null
           field_confidence_scores?: Json | null
@@ -4079,6 +4099,7 @@ export type Database = {
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
+          ocr_cost_eur?: number | null
           ocr_engine?: string | null
           ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
@@ -4086,7 +4107,9 @@ export type Database = {
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
+          ocr_processed_at?: string | null
           ocr_processing_time_ms?: number | null
+          ocr_raw_response?: Json | null
           ocr_template_id?: string | null
           ocr_template_name?: string | null
           ocr_tokens_in?: number | null
@@ -4110,6 +4133,7 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          validation_errors?: Json | null
           verifactu_hash?: string | null
           verifactu_verified?: boolean | null
           verifactu_verified_at?: string | null
@@ -4120,11 +4144,19 @@ export type Database = {
           auto_post_criteria?: Json | null
           auto_post_evaluated_at?: string | null
           auto_posted?: boolean | null
+          autofix_applied?: string[] | null
+          base_imponible_10?: number | null
+          base_imponible_21?: number | null
           centro_code?: string
           created_at?: string | null
           created_by?: string | null
+          cuota_iva_10?: number | null
+          cuota_iva_21?: number | null
+          customer_name?: string | null
+          customer_tax_id?: string | null
           document_hash?: string | null
           document_path?: string | null
+          document_type?: string | null
           due_date?: string | null
           entry_id?: string | null
           field_confidence_scores?: Json | null
@@ -4144,6 +4176,7 @@ export type Database = {
           ocr_confidence?: number | null
           ocr_confidence_notes?: string[] | null
           ocr_cost_estimate_eur?: number | null
+          ocr_cost_eur?: number | null
           ocr_engine?: string | null
           ocr_engine_used?: string | null
           ocr_extracted_data?: Json | null
@@ -4151,7 +4184,9 @@ export type Database = {
           ocr_ms_openai?: number | null
           ocr_pages?: number | null
           ocr_payload?: Json | null
+          ocr_processed_at?: string | null
           ocr_processing_time_ms?: number | null
+          ocr_raw_response?: Json | null
           ocr_template_id?: string | null
           ocr_template_name?: string | null
           ocr_tokens_in?: number | null
@@ -4175,6 +4210,7 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          validation_errors?: Json | null
           verifactu_hash?: string | null
           verifactu_verified?: boolean | null
           verifactu_verified_at?: string | null

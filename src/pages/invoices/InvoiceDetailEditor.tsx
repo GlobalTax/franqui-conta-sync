@@ -1016,7 +1016,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -1057,7 +1057,7 @@ export default function InvoiceDetailEditor() {
                       <span>Modo manual activado</span>
                     </div>
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       variant="outline"
                       className="w-full"
@@ -1093,7 +1093,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={() => handleProcessOCR({ engine: 'openai' })}
+                  onClick={() => handleProcessOCR()}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -1125,7 +1125,7 @@ export default function InvoiceDetailEditor() {
                   isEditMode={isEditMode}
                   ocrEngine={ocrEngine}
                   ocrConfidence={ocrConfidence}
-                  onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                  onProcessOCR={() => handleProcessOCR()}
                   isProcessing={processOCR.isPending}
                   hasDocument={!!documentPath}
                   onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -1324,7 +1324,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -1363,7 +1363,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={() => handleProcessOCR({ engine: 'openai' })}
+                    onClick={() => handleProcessOCR()}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -1394,7 +1394,7 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
-                      onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                      onProcessOCR={() => handleProcessOCR()}
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}

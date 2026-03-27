@@ -14,6 +14,10 @@ export interface OCRInvoiceData {
   issuer: {
     name: string;
     vat_id: string | null;
+    tax_id?: string | null;
+    nif?: string | null;
+    legal_name?: string | null;
+    company_name?: string | null;
   };
   receiver: {
     name: string | null;
@@ -109,7 +113,7 @@ export interface InvoiceEntryValidationResult {
 
 export interface OCRResponse {
   success: boolean;
-  ocr_engine?: "openai" | "mindee" | "merged" | "manual_review";
+  ocr_engine?: "claude";
   status?: "processed_ok" | "needs_review" | "posted";
   merge_notes?: string[];
   orchestrator_logs?: Array<{
@@ -154,17 +158,7 @@ export interface OCRResponse {
     tokens_in: number;
     tokens_out: number;
     cost_estimate_eur: number;
-    ms_openai?: number;
-    ms_mindee?: number;
     processing_time_ms?: number;
-  };
-  mindee_metadata?: {
-    document_id: string;
-    confidence: number;
-    cost_euros: number;
-    processing_time_ms: number;
-    pages: number;
-    fallback_used: boolean;
   };
   field_confidence_scores?: Record<string, number>;
   warnings?: string[];
@@ -181,13 +175,10 @@ export const useProcessInvoiceOCR = () => {
   return useMutation({
     mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRResponse> => {
       console.log('[useProcessInvoiceOCR] ========================================');
-      console.log('[useProcessInvoiceOCR] Starting Claude Vision OCR mutation...');
+      console.log('[useProcessInvoiceOCR] Starting Claude Vision OCR...');
       console.log('[useProcessInvoiceOCR] invoice_id:', invoice_id);
       console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
       console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
-      console.log('[useProcessInvoiceOCR] supplierHint:', supplierHint);
-      
-      console.log('[useProcessInvoiceOCR] Invoking claude-invoice-ocr edge function...');
       
       const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
@@ -199,11 +190,9 @@ export const useProcessInvoiceOCR = () => {
 
       console.log('[useProcessInvoiceOCR] Response received');
       console.log('[useProcessInvoiceOCR] data:', data);
-      console.log('[useProcessInvoiceOCR] error:', error);
 
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
-        console.error('[useProcessInvoiceOCR] Error details:', JSON.stringify(error, null, 2));
         throw new Error(error.message || 'Error al procesar OCR con Claude');
       }
 
@@ -212,11 +201,11 @@ export const useProcessInvoiceOCR = () => {
         throw new Error(data.error || 'Error desconocido en OCR');
       }
 
-      console.log('[useProcessInvoiceOCR] OCR success! Returning data...');
+      console.log('[useProcessInvoiceOCR] ✅ OCR success');
       return data as OCRResponse;
     },
     onError: (error: any) => {
-      console.error('[useProcessInvoiceOCR] Mutation error handler:', error);
+      console.error('[useProcessInvoiceOCR] Mutation error:', error);
       toast.error(`Error al procesar el documento con Claude: ${error.message}`);
     },
     onSuccess: (data) => {
@@ -225,17 +214,17 @@ export const useProcessInvoiceOCR = () => {
 
       if (needsReview) {
         toast.warning(
-          `Documento procesado - Requiere revisión • Confianza: ${Math.round(confidence)}%`,
+          `Documento procesado - Requiere revisión • Confianza: ${Math.round(confidence * 100)}%`,
           { description: 'Se recomienda revisión manual' }
         );
-      } else if (confidence < 70) {
+      } else if (confidence < 0.7) {
         toast.warning(
-          `Documento procesado con confianza baja: ${Math.round(confidence)}%`,
+          `Documento procesado con confianza baja: ${Math.round(confidence * 100)}%`,
           { description: 'Revisar datos extraídos' }
         );
       } else {
         toast.success(
-          `Documento procesado correctamente • Confianza: ${Math.round(confidence)}%`
+          `Documento procesado correctamente • Confianza: ${Math.round(confidence * 100)}%`
         );
       }
     }
@@ -260,8 +249,6 @@ export const useLogOCRProcessing = () => {
       tokensOut?: number;
       pages?: number;
       costEstimateEur?: number;
-      msOpenai?: number;
-      msMindee?: number;
       userCorrections?: any;
       orchestratorLogs?: any[];
     }) => {
@@ -286,8 +273,6 @@ export const useLogOCRProcessing = () => {
           tokens_out: logData.tokensOut,
           pages: logData.pages,
           cost_estimate_eur: logData.costEstimateEur,
-          ms_openai: logData.msOpenai,
-          ms_mindee: logData.msMindee,
           user_corrections: logData.userCorrections,
           created_by: user?.id
         });
@@ -317,42 +302,19 @@ export const getConfidenceLevel = (confidence: number): {
   label: string;
 } => {
   if (confidence >= 0.9) {
-    return {
-      level: 'high',
-      color: 'text-green-600 bg-green-50 border-green-200',
-      label: 'Alta confianza'
-    };
+    return { level: 'high', color: 'text-green-600 bg-green-50 border-green-200', label: 'Alta confianza' };
   } else if (confidence >= 0.7) {
-    return {
-      level: 'medium',
-      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      label: 'Confianza media'
-    };
+    return { level: 'medium', color: 'text-yellow-600 bg-yellow-50 border-yellow-200', label: 'Confianza media' };
   } else if (confidence >= 0.5) {
-    return {
-      level: 'low',
-      color: 'text-orange-600 bg-orange-50 border-orange-200',
-      label: 'Baja confianza'
-    };
+    return { level: 'low', color: 'text-orange-600 bg-orange-50 border-orange-200', label: 'Baja confianza' };
   } else {
-    return {
-      level: 'very-low',
-      color: 'text-red-600 bg-red-50 border-red-200',
-      label: 'Muy baja confianza'
-    };
+    return { level: 'very-low', color: 'text-red-600 bg-red-50 border-red-200', label: 'Muy baja confianza' };
   }
 };
 
 export const getFieldConfidenceColor = (hasValue: boolean, confidence: number): string => {
-  if (!hasValue) {
-    return 'border-red-500 bg-red-50';
-  }
-  
-  if (confidence >= 0.8) {
-    return 'border-green-500 bg-green-50';
-  } else if (confidence >= 0.5) {
-    return 'border-yellow-500 bg-yellow-50';
-  } else {
-    return 'border-orange-500 bg-orange-50';
-  }
+  if (!hasValue) return 'border-red-500 bg-red-50';
+  if (confidence >= 0.8) return 'border-green-500 bg-green-50';
+  if (confidence >= 0.5) return 'border-yellow-500 bg-yellow-50';
+  return 'border-orange-500 bg-orange-50';
 };

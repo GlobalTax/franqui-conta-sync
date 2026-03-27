@@ -121,12 +121,12 @@ export default function InvoiceDetailEditor() {
   const [rawOCRResponse, setRawOCRResponse] = useState<OCRResponse | null>(null);
   const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
   const [entryValidation, setEntryValidation] = useState<InvoiceEntryValidationResult | null>(null);
-  const [ocrEngine, setOcrEngine] = useState<"openai" | "mindee" | "merged" | "manual_review" | "google_vision">("google_vision");
+  const [ocrEngine, setOcrEngine] = useState<"claude" | "manual_review">("claude");
   const [mergeNotes, setMergeNotes] = useState<string[]>([]);
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<'openai'>('openai');
+  // Claude is the only engine now
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
   
@@ -195,22 +195,10 @@ export default function InvoiceDetailEditor() {
   // Stripper Hook (después de form)
   const { stripperState, applyStripper, getFieldChange } = useInvoiceStripper(form);
 
-  // Persistir preferencia de motor OCR en localStorage (forzar OpenAI)
+  // Cleanup legacy localStorage
   useEffect(() => {
-    const savedEngine = localStorage.getItem('preferred_ocr_engine') as 'openai' | 'mindee' | null;
-    // Forzar OpenAI siempre, ignorar Mindee
-    if (savedEngine === 'mindee') {
-      localStorage.setItem('preferred_ocr_engine', 'openai');
-      setSelectedEngine('openai');
-    } else if (savedEngine === 'openai') {
-      setSelectedEngine('openai');
-    }
+    localStorage.removeItem('preferred_ocr_engine');
   }, []);
-
-  useEffect(() => {
-    // Siempre guardar 'openai' en localStorage
-    localStorage.setItem('preferred_ocr_engine', 'openai');
-  }, [selectedEngine]);
 
   // Auto-seleccionar centro basándose en ViewContext o restaurante del usuario
   useEffect(() => {
@@ -358,7 +346,7 @@ export default function InvoiceDetailEditor() {
 
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
-  const handleProcessOCR = async (opts?: { path?: string; centro?: string; engine?: 'openai' }) => {
+  const handleProcessOCR = async (opts?: { path?: string; centro?: string }) => {
     console.log('[OCR] ========================================');
     console.log('[OCR] Iniciando procesamiento OCR...');
     
@@ -379,10 +367,10 @@ export default function InvoiceDetailEditor() {
     console.log('[OCR] ✅ User authenticated');
     
     const effectivePath = opts?.path ?? documentPath;
-    const engine = opts?.engine ?? selectedEngine;
+    // Claude is the only engine
     
     console.log('[OCR] documentPath (effective):', effectivePath);
-    console.log('[OCR] motor seleccionado:', engine);
+    console.log('[OCR] motor: Claude Vision');
     
     if (!effectivePath) {
       console.error('[OCR] ❌ No hay documentPath');
@@ -467,7 +455,7 @@ export default function InvoiceDetailEditor() {
         console.log('Engine usado:', result.ocr_engine);
         console.log('Confianza final:', `${Math.round(result.confidence * 100)}%`);
         console.log('Tiempo total:', `${result.processingTimeMs}ms`);
-        console.log('OpenAI:', `${result.ocr_metrics.ms_openai}ms`);
+        console.log('Claude:', `${result.ocr_metrics.processing_time_ms}ms`);
         console.log('Páginas:', result.ocr_metrics.pages);
         console.log('Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
         console.groupEnd();
@@ -493,7 +481,7 @@ export default function InvoiceDetailEditor() {
       setOcrWarnings(result.warnings || []);
       setApMapping(result.ap_mapping);
       setEntryValidation(result.entry_validation || null);
-      setOcrEngine(result.ocr_engine || "google_vision");
+      setOcrEngine((result.ocr_engine as "claude" | "manual_review") || "claude");
       setMergeNotes(result.merge_notes || []);
       setOcrProcessed(true);
 
@@ -574,9 +562,9 @@ export default function InvoiceDetailEditor() {
       
       // Solo auto-trigger OCR si está en modo automático
       if (entryMode === 'auto-ocr') {
-        console.log('[Upload] Auto-trigger OCR en 300ms con OpenAI');
+        console.log('[Upload] Auto-trigger OCR en 300ms con Claude Vision');
         setTimeout(() => {
-          handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp', engine: 'openai' });
+          handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp' });
         }, 300);
       } else {
         console.log('[Upload] Modo manual - OCR no se ejecutará automáticamente');
@@ -587,12 +575,12 @@ export default function InvoiceDetailEditor() {
     }
   };
 
-  // Handler para reintentar con motor diferente (deshabilitado - solo OpenAI)
+  // Handler para reintentar OCR con Claude
   const handleRetryWithDifferentEngine = () => {
-    console.log('[OCR] Reintento con OpenAI (Mindee deshabilitado)');
-    toast.info('Reprocesando con OpenAI...');
+    console.log('[OCR] Reprocesando con Claude Vision');
+    toast.info('Reprocesando con Claude Vision...');
     setTimeout(() => {
-      handleProcessOCR({ engine: 'openai' });
+      handleProcessOCR();
     }, 300);
   };
 
@@ -1028,7 +1016,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-lg py-7 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 relative overflow-hidden group"
@@ -1069,7 +1057,7 @@ export default function InvoiceDetailEditor() {
                       <span>Modo manual activado</span>
                     </div>
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       variant="outline"
                       className="w-full"
@@ -1105,7 +1093,7 @@ export default function InvoiceDetailEditor() {
                 
                 {/* Botón RE-PROCESAR si ya fue procesado */}
                 <Button
-                  onClick={() => handleProcessOCR({ engine: 'openai' })}
+                  onClick={() => handleProcessOCR()}
                   disabled={processOCR.isPending}
                   variant="outline"
                   size="sm"
@@ -1137,7 +1125,7 @@ export default function InvoiceDetailEditor() {
                   isEditMode={isEditMode}
                   ocrEngine={ocrEngine}
                   ocrConfidence={ocrConfidence}
-                  onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                  onProcessOCR={() => handleProcessOCR()}
                   isProcessing={processOCR.isPending}
                   hasDocument={!!documentPath}
                   onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -1336,7 +1324,7 @@ export default function InvoiceDetailEditor() {
                     </div>
                     
                     <Button
-                      onClick={() => handleProcessOCR({ engine: 'openai' })}
+                      onClick={() => handleProcessOCR()}
                       disabled={processOCR.isPending}
                       size="lg"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 shadow-md hover:shadow-xl transition-all"
@@ -1375,7 +1363,7 @@ export default function InvoiceDetailEditor() {
                   
                   {/* Botón RE-PROCESAR si ya fue procesado */}
                   <Button
-                    onClick={() => handleProcessOCR({ engine: 'openai' })}
+                    onClick={() => handleProcessOCR()}
                     disabled={processOCR.isPending}
                     variant="outline"
                     size="sm"
@@ -1406,7 +1394,7 @@ export default function InvoiceDetailEditor() {
                       isEditMode={isEditMode}
                       ocrEngine={ocrEngine}
                       ocrConfidence={ocrConfidence}
-                      onProcessOCR={() => handleProcessOCR({ engine: 'openai' })}
+                      onProcessOCR={() => handleProcessOCR()}
                       isProcessing={processOCR.isPending}
                       hasDocument={!!documentPath}
                       onGoToUpload={() => document.getElementById('pdf-uploader')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}

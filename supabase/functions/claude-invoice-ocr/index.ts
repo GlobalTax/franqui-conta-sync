@@ -100,10 +100,16 @@ serve(async (req) => {
       throw new Error(`Error descargando PDF: ${downloadError?.message || 'archivo no encontrado'}`);
     }
 
-    // 2. Convert to base64
+    // 2. Convert to base64 (chunked to avoid stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const fileSizeKB = Math.round(arrayBuffer.byteLength / 1024);
+    const bytes = new Uint8Array(arrayBuffer);
+    const fileSizeKB = Math.round(bytes.byteLength / 1024);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
     console.log(`[claude-ocr] PDF convertido a base64: ${fileSizeKB}KB`);
 
     // 3. Determine media type

@@ -896,13 +896,13 @@ export default function InvoiceDetailEditor() {
   };
 
   const handleIgnore = async () => {
-    if (!id) return;
+    if (!effectiveId) return;
     
     if (!confirm('¿Marcar esta factura como ignorada?')) return;
     
     try {
       await updateInvoice.mutateAsync({
-        id,
+        id: effectiveId,
         data: { status: 'rejected' }
       });
       

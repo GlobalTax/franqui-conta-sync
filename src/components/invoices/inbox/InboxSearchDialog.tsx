@@ -22,7 +22,6 @@ interface Invoice {
   accounting_entry_id?: string;
   ocr_engine?: string | null;
   ocr_confidence?: number | null;
-  mindee_confidence?: number | null;
   ocr_fallback_used?: boolean | null;
 }
 

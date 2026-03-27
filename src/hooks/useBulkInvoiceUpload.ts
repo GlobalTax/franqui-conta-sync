@@ -238,19 +238,18 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
-      // 4. CALL MINDEE OCR (reemplaza invoice-ocr legacy)
-      console.log('[BulkUpload] Invocando Mindee OCR...', {
+      // 4. CALL CLAUDE VISION OCR
+      console.log('[BulkUpload] Invocando Claude Vision OCR...', {
         invoiceId: invoice?.id,
         path,
         centroCode
       });
 
-      // Validate invoice ID before calling OCR
       if (!invoice?.id) {
         throw new Error('No se pudo crear el registro de factura (ID vacío)');
       }
       
-      const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data: ocrResult, error: ocrError } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: invoice.id,
           documentPath: path,
@@ -264,23 +263,19 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         f.id === fileItem.id ? { ...f, progress: 80, ocrStatus: 'processing' } : f
       ));
 
-      // 5. PROCESS MINDEE RESULT
-      console.log('[BulkUpload] Procesando resultado Mindee...');
-      
+      // 5. PROCESS CLAUDE RESULT
       if (!ocrResult?.success) {
-        throw new Error(ocrResult?.error || 'Error en procesamiento Mindee');
+        throw new Error(ocrResult?.error || 'Error en procesamiento Claude OCR');
       }
 
       console.log('[BulkUpload] ✓ OCR completado:', {
-        mindeeDocId: ocrResult.mindee_document_id,
-        confidence: ocrResult.mindee_confidence,
-        cost: ocrResult.mindee_cost_euros,
+        confidence: ocrResult.ocr_confidence,
+        cost: ocrResult.ocr_cost_euros,
         engine: ocrResult.ocr_engine,
-        fallbackUsed: ocrResult.ocr_fallback_used,
+        timeMs: ocrResult.ocr_processing_time_ms,
         needsReview: ocrResult.needs_manual_review,
       });
 
-      // Update UI status
       const uiStatus = ocrResult.needs_manual_review ? 'needs_review' : 'processed';
 
       setFiles(prev => prev.map(f => 
@@ -290,10 +285,10 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
               progress: 100,
               status: uiStatus,
               ocrStatus: 'completed',
-              ocrConfidence: ocrResult.mindee_confidence,
+              ocrConfidence: ocrResult.ocr_confidence,
               ocrEngine: ocrResult.ocr_engine,
-              ocrCostEur: ocrResult.mindee_cost_euros,
-              processingTimeMs: ocrResult.mindee_processing_time ? ocrResult.mindee_processing_time * 1000 : undefined,
+              ocrCostEur: ocrResult.ocr_cost_euros,
+              processingTimeMs: ocrResult.ocr_processing_time_ms,
               processedAt: new Date(),
             } 
           : f

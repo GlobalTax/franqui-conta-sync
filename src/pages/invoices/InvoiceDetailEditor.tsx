@@ -985,7 +985,7 @@ export default function InvoiceDetailEditor() {
                 ) : (
                   <div className="h-full flex items-center justify-center p-6" id="pdf-uploader">
                     <InvoicePDFUploader
-                      invoiceId={id}
+                      invoiceId={effectiveId}
                       invoiceType="received"
                       centroCode={form.watch('centro_code') || 'temp'}
                       currentPath={documentPath}

@@ -1303,7 +1303,7 @@ export default function InvoiceDetailEditor() {
                   ) : (
                     <div id="pdf-uploader">
                       <InvoicePDFUploader
-                        invoiceId={id}
+                        invoiceId={effectiveId}
                         invoiceType="received"
                         centroCode={form.watch('centro_code') || 'temp'}
                         currentPath={documentPath}

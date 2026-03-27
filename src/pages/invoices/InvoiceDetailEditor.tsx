@@ -1497,7 +1497,7 @@ export default function InvoiceDetailEditor() {
                     
                     <InvoiceAdvancedOptionsSection
                       control={form.control}
-                      invoiceId={id}
+                      invoiceId={effectiveId}
                       ocrData={ocrData}
                     />
 

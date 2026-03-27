@@ -121,7 +121,7 @@ export default function InvoiceDetailEditor() {
   const [rawOCRResponse, setRawOCRResponse] = useState<OCRResponse | null>(null);
   const [apMapping, setApMapping] = useState<APMappingResult | null>(null);
   const [entryValidation, setEntryValidation] = useState<InvoiceEntryValidationResult | null>(null);
-  const [ocrEngine, setOcrEngine] = useState<"openai" | "mindee" | "merged" | "manual_review" | "google_vision">("google_vision");
+  const [ocrEngine, setOcrEngine] = useState<"claude" | "manual_review">("claude");
   const [mergeNotes, setMergeNotes] = useState<string[]>([]);
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);

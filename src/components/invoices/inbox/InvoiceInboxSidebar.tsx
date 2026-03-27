@@ -132,7 +132,7 @@ export function InvoiceInboxSidebar({
               <div className="px-6 py-4 bg-muted/30 border-y">
                 <OCRConfidenceAlert
                   notes={[]}
-                  engine="openai"
+                  engine="claude"
                   confidence={invoice.ocr_confidence}
                 />
               </div>

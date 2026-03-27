@@ -402,18 +402,49 @@ export default function InvoiceDetailEditor() {
       centroCode = 'temp';
     }
 
-    console.log('[OCR] Invocando edge function con:', { invoice_id: id, documentPath: effectivePath, centroCode });
+    // Auto-crear borrador si no hay ID
+    let invoiceIdForOCR = effectiveId;
+    if (!invoiceIdForOCR) {
+      console.log('[OCR] No hay ID, creando borrador automático...');
+      try {
+        const { data: draft, error: draftError } = await supabase
+          .from('invoices_received')
+          .insert({
+            centro_code: centroCode,
+            file_path: effectivePath,
+            status: 'draft',
+            approval_status: 'pending',
+            invoice_number: '',
+            invoice_date: new Date().toISOString().split('T')[0],
+            subtotal: 0,
+            tax_total: 0,
+            total: 0,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
 
-    // Validación estricta: no invocar OCR sin ID de factura
-    if (!id) {
-      console.error('[OCR] ❌ No hay invoice_id; evita llamada al OCR');
-      toast.error('No se pudo determinar el ID de la factura. Guarda la factura antes de procesar el OCR.');
-      return;
+        if (draftError || !draft) {
+          console.error('[OCR] ❌ Error creando borrador:', draftError);
+          toast.error('Error creando borrador de factura');
+          return;
+        }
+
+        invoiceIdForOCR = draft.id;
+        setCreatedInvoiceId(draft.id);
+        console.log('[OCR] ✅ Borrador creado con ID:', draft.id);
+      } catch (err) {
+        console.error('[OCR] ❌ Error inesperado creando borrador:', err);
+        toast.error('Error creando borrador de factura');
+        return;
+      }
     }
+
+    console.log('[OCR] Invocando edge function con:', { invoice_id: invoiceIdForOCR, documentPath: effectivePath, centroCode });
 
     try {
       const result = await processOCR.mutateAsync({
-        invoice_id: id,
+        invoice_id: invoiceIdForOCR,
         documentPath: effectivePath,
         centroCode
       });

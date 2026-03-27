@@ -117,13 +117,13 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export default function AIAssistant() {
   const [mode, setMode] = useState<AssistantMode>("chat");
   const [input, setInput] = useState("");
-  const { selectedCentro } = useView();
+  const { selectedView } = useView();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { messages, isLoading, sendMessage, clearMessages } = useClaudeAssistant({
     mode,
     context: {
-      centro_code: selectedCentro || undefined,
+      centro_code: selectedView?.code || undefined,
       timestamp: new Date().toISOString(),
     },
   });

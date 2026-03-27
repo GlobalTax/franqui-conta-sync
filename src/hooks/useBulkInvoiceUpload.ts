@@ -30,7 +30,6 @@ export interface BulkUploadStats {
   errors: number;
   totalCostEur: number;
   avgProcessingTimeMs: number;
-  mindeeFallbackCount: number;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB

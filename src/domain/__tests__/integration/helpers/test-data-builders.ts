@@ -40,12 +40,10 @@ export function createTestInvoiceReceived(overrides?: Partial<InvoiceReceived>):
     ocrConfidence: null,
     // Campos OCR
     ocrEngine: null,
-    ocrProcessingTimeMs: null,
     ocrPages: null,
     ocrTokensIn: null,
     ocrTokensOut: null,
     ocrCostEstimateEur: null,
-    ocrProcessingTimeMs: null,
     ocrConfidenceNotes: null,
     ocrMergeNotes: null,
     ocrExtractedData: null,

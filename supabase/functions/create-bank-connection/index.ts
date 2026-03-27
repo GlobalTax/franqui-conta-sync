@@ -44,28 +44,80 @@ serve(async (req) => {
 
     console.log(`Creating Salt Edge connection for centro ${centroCode}, provider ${providerCode}`);
 
-    // Salt Edge credentials
     const SALT_EDGE_APP_ID = Deno.env.get('SALT_EDGE_APP_ID');
     const SALT_EDGE_SECRET = Deno.env.get('SALT_EDGE_SECRET');
-    const SALT_EDGE_BASE_URL = Deno.env.get('SALT_EDGE_BASE_URL') || 'https://www.saltedge.com/api/v6';
+    const SALT_EDGE_BASE_URL = Deno.env.get('SALT_EDGE_BASE_URL') || 'https://www.saltedge.com/api/v5';
 
     if (!SALT_EDGE_APP_ID || !SALT_EDGE_SECRET) {
       throw new Error('Salt Edge credentials not configured');
     }
 
-    // Create or get customer
-    const customerId = `franquiconta_${centroCode}_${user.id}`;
+    const saltEdgeHeaders = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'App-id': SALT_EDGE_APP_ID,
+      'Secret': SALT_EDGE_SECRET,
+    };
 
-    // Generate connect session URL
+    // Step 1: Create or find customer
+    const customerIdentifier = `franquiconta_${centroCode}_${user.id}`;
+    
+    // Try to create customer (Salt Edge returns existing one if identifier matches)
+    const customerPayload = {
+      data: {
+        identifier: customerIdentifier,
+      }
+    };
+
+    console.log('Creating/finding Salt Edge customer:', customerIdentifier);
+
+    const customerResponse = await fetch(`${SALT_EDGE_BASE_URL}/customers`, {
+      method: 'POST',
+      headers: saltEdgeHeaders,
+      body: JSON.stringify(customerPayload),
+    });
+
+    let customerId: string;
+
+    if (customerResponse.ok) {
+      const customerResult = await customerResponse.json();
+      customerId = customerResult.data?.id;
+      console.log('Customer created/found:', customerId);
+    } else {
+      const customerError = await customerResponse.text();
+      console.error('Customer creation error:', customerError);
+      
+      // If customer already exists, try to list and find it
+      if (customerError.includes('already exists') || customerResponse.status === 409) {
+        const listResponse = await fetch(
+          `${SALT_EDGE_BASE_URL}/customers?identifier=${encodeURIComponent(customerIdentifier)}`,
+          { headers: saltEdgeHeaders }
+        );
+        if (!listResponse.ok) {
+          const listError = await listResponse.text();
+          throw new Error(`Failed to find existing customer: ${listError}`);
+        }
+        const listResult = await listResponse.json();
+        customerId = listResult.data?.[0]?.id;
+        if (!customerId) {
+          throw new Error('Customer exists but could not be retrieved');
+        }
+        console.log('Found existing customer:', customerId);
+      } else {
+        throw new Error(`Salt Edge customer error: ${customerResponse.status} - ${customerError}`);
+      }
+    }
+
+    // Step 2: Create connect session with the real customer ID
     const connectPayload = {
       data: {
         customer_id: customerId,
         consent: {
           scopes: ['account_details', 'transactions_details'],
-          from_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
+          from_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         },
         attempt: {
-          return_to: returnUrl || `${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'functions.supabase.co')}/salt-edge-webhook`,
+          return_to: returnUrl || `${Deno.env.get('SUPABASE_URL')}/functions/v1/salt-edge-webhook`,
           fetch_scopes: ['accounts', 'transactions'],
         },
         provider_code: providerCode,
@@ -73,19 +125,11 @@ serve(async (req) => {
       }
     };
 
-    const expireAt = Math.floor(Date.now() / 1000) + 60;
-    const signature = await generateSignature('POST', '/api/v6/connect_sessions/create', expireAt, connectPayload);
+    console.log('Creating connect session for customer:', customerId);
 
     const response = await fetch(`${SALT_EDGE_BASE_URL}/connect_sessions/create`, {
       method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'App-id': SALT_EDGE_APP_ID,
-        'Secret': SALT_EDGE_SECRET,
-        'Signature': signature,
-        'Expires-at': expireAt.toString(),
-      },
+      headers: saltEdgeHeaders,
       body: JSON.stringify(connectPayload),
     });
 
@@ -125,32 +169,3 @@ serve(async (req) => {
     );
   }
 });
-
-async function generateSignature(
-  method: string,
-  path: string,
-  expiresAt: number,
-  body?: any
-): Promise<string> {
-  const SALT_EDGE_SECRET = Deno.env.get('SALT_EDGE_SECRET') || '';
-  const bodyString = body ? JSON.stringify(body) : '';
-  const message = `${expiresAt}|${method}|${path}|${bodyString}`;
-
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(SALT_EDGE_SECRET);
-  const messageData = encoder.encode(message);
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, messageData);
-  const hashArray = Array.from(new Uint8Array(signature));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  return hashHex;
-}

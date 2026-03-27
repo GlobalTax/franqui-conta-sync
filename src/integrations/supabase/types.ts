@@ -3769,6 +3769,7 @@ export type Database = {
           customer_code: string | null
           customer_name: string | null
           customer_tax_id: string | null
+          document_hash: string | null
           due_date: string | null
           extraction_method: string | null
           file_name: string
@@ -3804,6 +3805,7 @@ export type Database = {
           customer_code?: string | null
           customer_name?: string | null
           customer_tax_id?: string | null
+          document_hash?: string | null
           due_date?: string | null
           extraction_method?: string | null
           file_name: string
@@ -3839,6 +3841,7 @@ export type Database = {
           customer_code?: string | null
           customer_name?: string | null
           customer_tax_id?: string | null
+          document_hash?: string | null
           due_date?: string | null
           extraction_method?: string | null
           file_name?: string

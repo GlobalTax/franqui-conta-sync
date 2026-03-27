@@ -57,8 +57,6 @@ export function InvoiceInboxSidebar({
           lines:invoices_received_lines(*),
           ocr_processing_log(
             engine,
-            ms_openai,
-            ms_mindee,
             pages,
             tokens_in,
             tokens_out,

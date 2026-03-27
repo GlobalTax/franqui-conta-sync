@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Sparkles, Eye, Layers, AlertTriangle } from "lucide-react";
+import { Sparkles, AlertTriangle } from "lucide-react";
 
 interface Props {
-  ocrEngine: "openai" | "mindee" | "merged" | "manual_review" | "google_vision";
+  ocrEngine: "claude" | "manual_review";
   mergeNotes: string[];
   confidence: number;
   metrics?: {
@@ -11,33 +11,17 @@ interface Props {
     tokens_in?: number;
     tokens_out?: number;
     cost_estimate_eur?: number;
-    ms_openai?: number;
-    ms_mindee?: number;
+    processing_time_ms?: number;
   };
 }
 
 export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics }: Props) {
   
   const engineConfig = {
-    openai: {
-      label: 'OpenAI Vision',
+    claude: {
+      label: 'Claude Vision',
       icon: Sparkles,
       color: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700'
-    },
-    mindee: {
-      label: 'Mindee',
-      icon: Eye,
-      color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
-    },
-    merged: {
-      label: 'Fusión Inteligente',
-      icon: Layers,
-      color: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700'
-    },
-    google_vision: {
-      label: 'Google Vision',
-      icon: Eye,
-      color: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
     },
     manual_review: {
       label: 'Revisión Manual Requerida',
@@ -46,7 +30,7 @@ export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics 
     }
   };
 
-  const config = engineConfig[ocrEngine];
+  const config = engineConfig[ocrEngine] || engineConfig.claude;
   const Icon = config.icon;
 
   const getConfidenceBadge = () => {
@@ -100,14 +84,10 @@ export function OCREngineIndicator({ ocrEngine, mergeNotes, confidence, metrics 
                 <span className="font-medium">€{metrics.cost_estimate_eur.toFixed(4)}</span>
               </div>
             )}
-            {(metrics.ms_openai || metrics.ms_mindee) && (
+            {metrics.processing_time_ms && (
               <div className="flex justify-between">
                 <span className="opacity-70">Tiempo:</span>
-                <span className="font-medium">
-                  {metrics.ms_openai ? `${metrics.ms_openai}ms` : ''}
-                  {metrics.ms_openai && metrics.ms_mindee ? ' / ' : ''}
-                  {metrics.ms_mindee ? `${metrics.ms_mindee}ms` : ''}
-                </span>
+                <span className="font-medium">{metrics.processing_time_ms}ms</span>
               </div>
             )}
           </div>

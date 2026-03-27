@@ -139,10 +139,10 @@ export const useInvoiceUpload = () => {
 
       setProgress(70);
 
-      // 6. Procesar con Mindee OCR (nativo de PDFs)
-      console.log('[useInvoiceUpload] Iniciando Mindee OCR...');
+      // 6. Procesar con Claude Vision OCR
+      console.log('[useInvoiceUpload] Iniciando Claude Vision OCR...');
       
-      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: invoice.id,
           documentPath: filePath,

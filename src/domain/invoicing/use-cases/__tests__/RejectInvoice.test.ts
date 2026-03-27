@@ -32,8 +32,7 @@ describe('RejectInvoiceUseCase', () => {
     ocrConfidence: null,
     // Campos OCR
     ocrEngine: null,
-    ocrMsOpenai: null,
-    ocrMsMindee: null,
+    ocrProcessingTimeMs: null,
     ocrPages: null,
     ocrTokensIn: null,
     ocrTokensOut: null,

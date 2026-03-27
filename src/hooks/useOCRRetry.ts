@@ -46,10 +46,9 @@ export const useOCRRetry = () => {
         throw new Error('No se pudo recuperar la factura');
       }
 
-      console.log('[useOCRRetry] Retrying with Mindee:', { invoiceId, attemptCount });
+      console.log('[useOCRRetry] Retrying with Claude Vision:', { invoiceId, attemptCount });
 
-      // Trigger Mindee OCR reprocessing
-      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id: invoiceId,
           documentPath: invoice.file_path,

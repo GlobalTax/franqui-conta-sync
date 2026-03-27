@@ -190,13 +190,8 @@ export const BulkInvoiceUploader = ({ centroCode }: BulkInvoiceUploaderProps) =>
                 <div className="text-xs text-muted-foreground mt-1">Tiempo medio</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-primary">
-                  {stats.mindeeFallbackCount > 0 
-                    ? `${Math.round((stats.mindeeFallbackCount / (stats.completed + stats.needsReview)) * 100)}%`
-                    : '0%'
-                  }
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">Fallback Mindee</div>
+                <div className="text-lg font-bold text-primary">Claude</div>
+                <div className="text-xs text-muted-foreground mt-1">Motor OCR</div>
               </div>
             </div>
           )}

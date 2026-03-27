@@ -8,7 +8,7 @@ import { normalizeInvoiceForFrontend } from '@/lib/fiscal/normalize-frontend';
 import { mapAP } from '@/lib/accounting/composers/map-ap';
 import { validatePosting } from '@/lib/accounting/composers/validate-posting';
 import { InvoiceForm } from '@/components/digitization/InvoiceForm';
-import { MindeeMetricsCard } from '@/components/invoices/MindeeMetricsCard';
+import { OCREngineIndicator } from '@/components/invoices/OCREngineIndicator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,7 +58,7 @@ export default function OCRDetail() {
       entryDate: normalized.issue_date || new Date().toISOString().split('T')[0],
       description: `Factura ${normalized.invoice_number || 'S/N'} - ${normalized.issuer?.name || 'Proveedor'}`,
       centreCode: mapping.centre_id || 'DEFAULT',
-      fiscalYearId: '2025', // TODO: Get from context or user selection
+      fiscalYearId: '2025',
       preview: validation.post_preview,
     });
     navigate('/digitalizacion/inbox-v2');
@@ -95,15 +95,15 @@ export default function OCRDetail() {
         
         <InvoiceForm data={normalized} invoiceId={id!} />
         
-        {/* Métricas de Mindee */}
-        <MindeeMetricsCard
-          mindeeDocumentId={invoice.mindee_document_id}
-          mindeeConfidence={invoice.mindee_confidence}
-          mindeeCostEuros={invoice.mindee_cost_euros}
-          mindeeProcessingTime={invoice.mindee_processing_time}
-          mindeePages={invoice.mindee_pages}
-          ocrFallbackUsed={invoice.ocr_fallback_used || false}
-          fieldConfidenceScores={invoice.field_confidence_scores as Record<string, number> | null}
+        {/* Métricas de Claude OCR */}
+        <OCREngineIndicator
+          ocrEngine="claude"
+          mergeNotes={[]}
+          confidence={(invoice.ocr_confidence || 0) / 100}
+          metrics={{
+            cost_estimate_eur: invoice.ocr_cost_eur || undefined,
+            processing_time_ms: invoice.ocr_processing_time || undefined,
+          }}
         />
         
         <Suspense fallback={
@@ -123,7 +123,7 @@ export default function OCRDetail() {
             disabled={isReprocessing}
           >
             {isReprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Reprocesar con Mindee
+            Reprocesar con Claude
           </Button>
           <Button 
             disabled={!validation.ready_to_post || isPosting}

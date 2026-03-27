@@ -181,15 +181,15 @@ export const useProcessInvoiceOCR = () => {
   return useMutation({
     mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRResponse> => {
       console.log('[useProcessInvoiceOCR] ========================================');
-      console.log('[useProcessInvoiceOCR] Starting Mindee OCR mutation...');
+      console.log('[useProcessInvoiceOCR] Starting Claude Vision OCR mutation...');
       console.log('[useProcessInvoiceOCR] invoice_id:', invoice_id);
       console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
       console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
       console.log('[useProcessInvoiceOCR] supplierHint:', supplierHint);
       
-      console.log('[useProcessInvoiceOCR] Invoking mindee-invoice-ocr edge function...');
+      console.log('[useProcessInvoiceOCR] Invoking claude-invoice-ocr edge function...');
       
-      const { data, error } = await supabase.functions.invoke('mindee-invoice-ocr', {
+      const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
           invoice_id,
           documentPath,

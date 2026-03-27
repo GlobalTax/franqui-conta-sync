@@ -32,6 +32,7 @@ describe('ApproveInvoiceUseCase', () => {
     ocrConfidence: null,
     // Campos OCR
     ocrEngine: null,
+    ocrProcessingTimeMs: null,
     ocrPages: null,
     ocrTokensIn: null,
     ocrTokensOut: null,

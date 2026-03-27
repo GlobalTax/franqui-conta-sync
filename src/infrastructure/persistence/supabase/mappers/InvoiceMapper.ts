@@ -36,6 +36,7 @@ export class InvoiceMapper {
       ocrConfidence: dbInvoice.ocr_confidence,
       // Campos OCR desde ocr_processing_log
       ocrEngine: ocrLog?.engine || null,
+      ocrProcessingTimeMs: ocrLog?.processing_time_ms || null,
       ocrPages: ocrLog?.pages || null,
       ocrTokensIn: ocrLog?.tokens_in || null,
       ocrTokensOut: ocrLog?.tokens_out || null,

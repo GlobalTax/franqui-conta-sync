@@ -72,6 +72,7 @@ export class CreateInvoiceReceivedUseCase {
       ocrConfidence: null,
       // Campos OCR (null al crear manualmente)
       ocrEngine: null,
+      ocrProcessingTimeMs: null,
       ocrPages: null,
       ocrTokensIn: null,
       ocrTokensOut: null,

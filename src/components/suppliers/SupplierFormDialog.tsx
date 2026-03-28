@@ -163,7 +163,7 @@ export function SupplierFormDialog({
       } else {
         setFormData({
           tax_id: initialTaxId || '',
-          name: '',
+          name: initialName || '',
           commercial_name: '',
           email: '',
           phone: '',

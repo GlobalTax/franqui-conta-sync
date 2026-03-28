@@ -41,7 +41,7 @@ const CHECKLIST_DATA: ChecklistCategory[] = [
     id: 'configuracion', name: 'Configuración y Secrets', icon: '🔐',
     items: [
       { id: 'anthropic-key', label: 'ANTHROPIC_API_KEY configurada en Supabase', description: 'Secret necesario para edge function', critical: true },
-      { id: 'config-clean', label: 'config.toml solo con claude-invoice-ocr', description: 'Sin referencias a Mindee/OpenAI legacy' },
+      { id: 'config-clean', label: 'config.toml solo con claude-invoice-ocr', description: 'Sin referencias legacy' },
       { id: 'rls-policies', label: 'RLS policies correctas en invoices_received', description: 'Permisos de lectura/escritura configurados' },
     ]
   },
@@ -50,7 +50,7 @@ const CHECKLIST_DATA: ChecklistCategory[] = [
     items: [
       { id: 'npm-build', label: 'npm run build sin errores TypeScript', description: 'Compilación exitosa', critical: true },
       { id: 'edge-deployed', label: 'Edge function desplegada correctamente', description: 'claude-invoice-ocr accesible' },
-      { id: 'no-broken-refs', label: 'No hay referencias rotas a Mindee/OpenAI', description: 'Cero imports legacy' },
+      { id: 'no-broken-refs', label: 'No hay referencias rotas legacy', description: 'Solo Claude Vision' },
     ]
   }
 ];

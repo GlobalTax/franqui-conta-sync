@@ -146,8 +146,6 @@ export default function OCRMetrics() {
 
   // KPIs adicionales desde invoicesData
   const totalFiltered = invoicesData?.length || 0;
-  const mindeeFallback = metrics?.find(m => m.engine === 'mindee')?.total_invocations || 0;
-  const fallbackRate = totalInvoices > 0 ? (mindeeFallback / totalInvoices) * 100 : 0;
   
   const needsReviewCount = invoicesData?.filter(inv => inv.approval_status === 'needs_review').length || 0;
   const needsReviewRate = totalFiltered > 0 ? (needsReviewCount / totalFiltered) * 100 : 0;
@@ -190,18 +188,16 @@ export default function OCRMetrics() {
     .sort((a: any, b: any) => b.count - a.count)
     .slice(0, 10) || [];
 
-  const COLORS = {
-    openai: 'hsl(var(--chart-1))',
-    mindee: 'hsl(var(--chart-2))',
-    merged: 'hsl(var(--chart-3))'
+  const COLORS: Record<string, string> = {
+    claude: 'hsl(var(--chart-1))',
   };
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard OCR Híbrido</h1>
-          <p className="text-muted-foreground mt-1">Control de OpenAI + Mindee · Costes · Confianza · Auto-posting</p>
+          <h1 className="text-3xl font-bold">Dashboard OCR Claude Vision</h1>
+          <p className="text-muted-foreground mt-1">Costes · Confianza · Auto-posting · Claude Vision</p>
         </div>
         <Button 
           variant="outline" 
@@ -259,9 +255,7 @@ export default function OCRMetrics() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="openai">OpenAI</SelectItem>
-                  <SelectItem value="mindee">Mindee</SelectItem>
-                  <SelectItem value="merged">Merged</SelectItem>
+                  <SelectItem value="claude">Claude Vision</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -357,13 +351,13 @@ export default function OCRMetrics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fallback Mindee</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">Motor OCR</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{fallbackRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-purple-600">Claude</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mindeeFallback} facturas
+              Vision AI
             </p>
           </CardContent>
         </Card>

@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 import type { InvoiceReceived } from '@/domain/invoicing/types';
@@ -21,7 +21,7 @@ interface ReprocessOCRDialogProps {
 }
 
 /**
- * Diálogo para re-procesar OCR con Mindee
+ * Diálogo para re-procesar OCR con Claude Vision
  */
 export function ReprocessOCRDialog({
   open,
@@ -52,7 +52,7 @@ export function ReprocessOCRDialog({
       <DialogHeader>
           <DialogTitle>Re-procesar OCR</DialogTitle>
           <DialogDescription>
-            Reprocesar la factura con Mindee. El resultado anterior se sobrescribirá.
+            Reprocesar la factura con Claude Vision. El resultado anterior se sobrescribirá.
           </DialogDescription>
         </DialogHeader>
 
@@ -61,22 +61,22 @@ export function ReprocessOCRDialog({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>Motor actual:</strong> {invoice.ocrEngine || 'Desconocido'}
+              <strong>Motor actual:</strong> {invoice.ocrEngine || 'Claude Vision'}
               <br />
               <strong>Confianza actual:</strong> {invoice.ocrConfidence ? `${Math.round(invoice.ocrConfidence * 100)}%` : 'N/A'}
             </AlertDescription>
           </Alert>
 
-          {/* Información sobre Mindee */}
+          {/* Información sobre Claude Vision */}
           <Alert>
-            <Info className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              <strong>Mindee Invoice API</strong>
+              <strong>Claude Vision OCR</strong>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Especializado en facturas europeas</li>
-                <li>Mayor precisión en NIFs, fechas e importes</li>
-                <li>Datos procesados en UE (GDPR)</li>
-                <li>Ideal para facturas estructuradas</li>
+                <li>Extracción avanzada con IA multimodal</li>
+                <li>Desglose automático IVA 10% / 21%</li>
+                <li>Normalización fiscal PGC integrada</li>
+                <li>Coste ~€0.01 por factura</li>
               </ul>
             </AlertDescription>
           </Alert>
@@ -87,7 +87,7 @@ export function ReprocessOCRDialog({
             Cancelar
           </Button>
           <Button onClick={handleReprocess} disabled={actions.isReprocessing}>
-            {actions.isReprocessing ? 'Procesando...' : 'Re-procesar'}
+            {actions.isReprocessing ? 'Procesando...' : 'Re-procesar con Claude'}
           </Button>
         </DialogFooter>
       </DialogContent>

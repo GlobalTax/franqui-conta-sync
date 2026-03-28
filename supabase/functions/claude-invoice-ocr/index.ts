@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
 
@@ -13,6 +14,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+const MAX_PDF_PAGES_FOR_CLAUDE = 5;
 
 const EXTRACTION_PROMPT = `Eres un experto en contabilidad española (PGC) especializado en extracción de datos de facturas.
 
@@ -64,6 +67,46 @@ Responde SOLO con un JSON válido con esta estructura exacta (sin markdown, sin 
   "validation_errors": []
 }`;
 
+const encodeBase64Chunked = (bytes: Uint8Array): string => {
+  let binary = '';
+  const chunkSize = 8192;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary);
+};
+
+const buildClaudePdfPayload = async (bytes: Uint8Array) => {
+  const pdfDoc = await PDFDocument.load(bytes);
+  const totalPages = pdfDoc.getPageCount();
+
+  if (totalPages <= MAX_PDF_PAGES_FOR_CLAUDE) {
+    return {
+      bytes,
+      totalPages,
+      pagesSent: totalPages,
+      truncated: false,
+    };
+  }
+
+  const truncatedPdf = await PDFDocument.create();
+  const pageIndexes = Array.from(
+    { length: MAX_PDF_PAGES_FOR_CLAUDE },
+    (_, index) => index,
+  );
+  const copiedPages = await truncatedPdf.copyPages(pdfDoc, pageIndexes);
+  copiedPages.forEach((page) => truncatedPdf.addPage(page));
+
+  return {
+    bytes: await truncatedPdf.save(),
+    totalPages,
+    pagesSent: MAX_PDF_PAGES_FOR_CLAUDE,
+    truncated: true,
+  };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -100,7 +143,7 @@ serve(async (req) => {
       throw new Error(`Error descargando PDF: ${downloadError?.message || 'archivo no encontrado'}`);
     }
 
-    // 2. Convert to base64 (chunked to avoid stack overflow)
+    // 2. Prepare binary payload for Claude
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const fileSizeKB = Math.round(bytes.byteLength / 1024);
@@ -111,17 +154,24 @@ serve(async (req) => {
       throw new Error(`Archivo demasiado grande (${fileSizeMB.toFixed(1)}MB). Máximo 25MB.`);
     }
     
-    let binary = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-    }
-    const base64 = btoa(binary);
-    console.log(`[claude-ocr] Archivo convertido a base64: ${fileSizeKB}KB (${fileSizeMB.toFixed(1)}MB)`);
-
     // 3. Determine media type
     const isPDF = documentPath.toLowerCase().endsWith('.pdf');
     const mediaType = isPDF ? 'application/pdf' : 'image/jpeg';
+    const pdfPayload = isPDF ? await buildClaudePdfPayload(bytes) : null;
+    const bytesForClaude = pdfPayload?.bytes ?? bytes;
+    const pagesSent = pdfPayload?.pagesSent ?? 1;
+    const totalPages = pdfPayload?.totalPages ?? 1;
+    const base64 = encodeBase64Chunked(bytesForClaude);
+
+    console.log(
+      `[claude-ocr] Archivo preparado para Claude: ${Math.round(bytesForClaude.byteLength / 1024)}KB | páginas enviadas ${pagesSent}/${totalPages}`,
+    );
+
+    if (pdfPayload?.truncated) {
+      console.warn(
+        `[claude-ocr] PDF truncado para OCR: ${totalPages} páginas totales, enviando primeras ${pagesSent}`,
+      );
+    }
 
     // 4. Call Claude Vision API
     console.log(`[claude-ocr] Invocando Claude Vision para invoice ${invoice_id}...`);
@@ -148,7 +198,6 @@ serve(async (req) => {
                   media_type: 'application/pdf' as const,
                   data: base64,
                 },
-                // Limit to first 5 pages to stay under token limits
                 cache_control: undefined,
               }] : [{
                 type: 'image' as const,
@@ -332,9 +381,9 @@ serve(async (req) => {
       tokens_in: inputTokens,
       tokens_out: outputTokens,
       cost_estimate_eur: costEUR,
-      processing_time_ms: processingTimeMs,
-      confidence: confidenceScore / 100, // Store as 0-1
-      pages: 1,
+       processing_time_ms: processingTimeMs,
+       confidence: confidenceScore / 100, // Store as 0-1
+       pages: pagesSent,
     }).then(({ error }) => {
       if (error) console.warn('[claude-ocr] Error logging OCR:', error.message);
     });
@@ -422,7 +471,7 @@ serve(async (req) => {
         ],
         processingTimeMs: processingTimeMs,
         ocr_metrics: {
-          pages: 1,
+          pages: pagesSent,
           tokens_in: inputTokens,
           tokens_out: outputTokens,
           cost_estimate_eur: costEUR,

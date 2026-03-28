@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle, Clock, Activity } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Activity, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -11,7 +11,7 @@ type CircuitState = 'closed' | 'open' | 'half_open';
 type ErrorType = 'auth' | 'rate_limit' | 'timeout' | 'server_error' | null;
 
 interface CircuitBreakerState {
-  engine: 'openai' | 'mindee';
+  engine: string;
   state: CircuitState;
   failure_count: number;
   last_failure_at: string | null;
@@ -81,23 +81,21 @@ export function CircuitBreakerStatus() {
       return data as CircuitBreakerState[];
     },
     refetchOnWindowFocus: true,
-    refetchInterval: false, // ✅ Eliminado polling, usamos Realtime
+    refetchInterval: false,
   });
 
-  // ✅ REALTIME: Escuchar cambios en circuit breaker
+  // Realtime: Escuchar cambios en circuit breaker
   useEffect(() => {
     const channel = supabase
       .channel('circuit-breaker-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'ocr_circuit_breaker',
         },
-        (payload) => {
-          console.log('🔄 Circuit breaker actualizado:', payload);
-          // Invalidar cache para refetch automático
+        () => {
           queryClient.invalidateQueries({ queryKey: ['circuit-breaker-status'] });
         }
       )
@@ -114,9 +112,9 @@ export function CircuitBreakerStatus() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5" />
-            Circuit Breaker Status
+            Estado Motor OCR
           </CardTitle>
-          <CardDescription>Cargando estado de motores OCR...</CardDescription>
+          <CardDescription>Cargando estado de Claude Vision...</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -127,22 +125,23 @@ export function CircuitBreakerStatus() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="w-5 h-5" />
-          Circuit Breaker Status
+          Estado Motor OCR
         </CardTitle>
         <CardDescription>
-          Estado de los motores OCR (actualizado cada 10s)
+          Estado del motor Claude Vision (tiempo real)
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {states?.map(state => (
+          {states && states.length > 0 ? states.map(state => (
             <div 
               key={state.engine} 
               className="border rounded-lg p-4 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold capitalize text-lg">
-                  {state.engine === 'openai' ? 'OpenAI Vision' : 'Mindee'}
+                <span className="font-semibold capitalize text-lg flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-600" />
+                  Claude Vision
                 </span>
                 <CircuitStateBadge state={state.state} />
               </div>
@@ -186,7 +185,13 @@ export function CircuitBreakerStatus() {
                 )}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="col-span-2 text-center p-6 text-muted-foreground">
+              <Sparkles className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+              <p className="font-medium">Claude Vision</p>
+              <p className="text-sm">Motor OCR activo y operativo</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

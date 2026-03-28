@@ -9,10 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { useOCRProcessingLogs, type OCRProcessingLog } from "@/hooks/useOCRProcessingLogs";
 import { 
-  Zap, 
-  AlertCircle, 
-  Bot, 
-  Brain, 
+  Sparkles, 
   FileText,
   Clock,
   Coins,
@@ -45,7 +42,7 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
 
   // Calcular métricas agregadas
   const totalTime = logs.reduce((acc, log) => 
-    acc + (log.processing_time_ms || log.ms_openai || 0), 0
+    acc + (log.processing_time_ms || 0), 0
   );
   const totalTokens = logs.reduce((acc, log) => 
     acc + (log.tokens_in || 0) + (log.tokens_out || 0), 0
@@ -53,32 +50,19 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
   const totalCost = logs.reduce((acc, log) => 
     acc + (log.cost_estimate_eur || 0), 0
   );
-  const finalEngine = logs[logs.length - 1]?.engine || "unknown";
+  const finalEngine = logs[logs.length - 1]?.engine || "claude";
 
-  // Función para obtener el icono y color según el proveedor OCR
+  // Función para obtener el icono y color
   const getEventIcon = (log: OCRProcessingLog) => {
-    if (log.engine === "openai") {
-      return { icon: Bot, color: "text-blue-600", bg: "bg-blue-100" };
-    }
-    if (log.engine === "mindee") {
-      return { icon: Brain, color: "text-purple-600", bg: "bg-purple-100" };
-    }
-    if (log.ocr_provider === "openai") {
-      return { icon: Bot, color: "text-blue-600", bg: "bg-blue-100" };
-    }
-    if (log.ocr_provider === "mindee") {
-      return { icon: Brain, color: "text-purple-600", bg: "bg-purple-100" };
-    }
     if (log.confidence && log.confidence > 0.9) {
       return { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-100" };
     }
-    return { icon: FileText, color: "text-gray-600", bg: "bg-gray-100" };
+    return { icon: Sparkles, color: "text-purple-600", bg: "bg-purple-100" };
   };
 
   // Función para obtener el label del evento
   const getEventLabel = (log: OCRProcessingLog) => {
-    const engine = log.engine || log.ocr_provider || "unknown";
-    return `${engine.toUpperCase()} OCR procesando`;
+    return `Claude Vision OCR procesando`;
   };
 
   return (
@@ -93,11 +77,11 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
         <div className="grid grid-cols-4 gap-4">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
-              <Bot className="h-3 w-3" />
+              <Sparkles className="h-3 w-3" />
               Motor
             </div>
             <Badge variant="outline" className="font-mono text-xs">
-              {finalEngine}
+              {finalEngine === 'claude' ? 'Claude Vision' : finalEngine}
             </Badge>
           </div>
           <div className="text-center">
@@ -144,12 +128,10 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
 
             return (
               <div key={log.id} className="flex gap-3">
-                {/* Icono del evento */}
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full ${bg} flex items-center justify-center`}>
                   <Icon className={`h-4 w-4 ${color}`} />
                 </div>
 
-                {/* Detalles del evento */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs text-muted-foreground">
@@ -158,7 +140,6 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
                     <span className="text-sm font-medium">{label}</span>
                   </div>
 
-                  {/* Información adicional */}
                   <div className="mt-1 text-xs text-muted-foreground">
                     {log.confidence && (
                       <span className="inline-block mr-3">
@@ -168,11 +149,6 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
                     {log.processing_time_ms && (
                       <span className="inline-block mr-3">
                         Duración: {log.processing_time_ms}ms
-                      </span>
-                    )}
-                    {log.ms_openai && (
-                      <span className="inline-block mr-3">
-                        Tiempo OpenAI: {log.ms_openai}ms
                       </span>
                     )}
                     {log.pages && (
@@ -199,13 +175,13 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-4 pt-2">
-              {logs.map((log, index) => (
+              {logs.map((log) => (
                 <div key={log.id}>
                   {log.raw_response && (
                     <div className="mb-3">
                       <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                        <Bot className="h-3 w-3" />
-                        Raw Response ({log.engine || log.ocr_provider})
+                        <Sparkles className="h-3 w-3" />
+                        Raw Response (Claude Vision)
                       </p>
                       <pre className="text-xs bg-muted p-3 rounded overflow-x-auto max-h-64 overflow-y-auto">
                         {JSON.stringify(log.raw_response, null, 2)}
@@ -216,7 +192,7 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
                     <div className="mb-3">
                       <p className="text-xs font-medium mb-2 flex items-center gap-1">
                         <FileText className="h-3 w-3" />
-                        Extracted Data
+                        Datos Extraídos
                       </p>
                       <pre className="text-xs bg-muted p-3 rounded overflow-x-auto max-h-64 overflow-y-auto">
                         {JSON.stringify(log.extracted_data, null, 2)}
@@ -227,7 +203,7 @@ export function OCRLogViewer({ invoiceId }: OCRLogViewerProps) {
                     <div className="mb-3">
                       <p className="text-xs font-medium mb-2 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
-                        User Corrections
+                        Correcciones de Usuario
                       </p>
                       <pre className="text-xs bg-muted p-3 rounded overflow-x-auto max-h-64 overflow-y-auto">
                         {JSON.stringify(log.user_corrections, null, 2)}

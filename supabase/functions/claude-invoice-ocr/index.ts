@@ -133,14 +133,23 @@ serve(async (req) => {
           {
             role: 'user',
             content: [
-              {
-                type: 'document',
+              ...(isPDF ? [{
+                type: 'document' as const,
                 source: {
-                  type: 'base64',
-                  media_type: mediaType,
+                  type: 'base64' as const,
+                  media_type: 'application/pdf' as const,
                   data: base64,
                 },
-              },
+                // Limit to first 5 pages to stay under token limits
+                cache_control: undefined,
+              }] : [{
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                  data: base64,
+                },
+              }]),
               {
                 type: 'text',
                 text: EXTRACTION_PROMPT,

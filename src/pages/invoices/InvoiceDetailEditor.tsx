@@ -517,7 +517,8 @@ export default function InvoiceDetailEditor() {
             toast.success(`Proveedor "${found.name}" localizado por NIF y seleccionado`);
           } else {
             console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
-            toast.info('Proveedor no encontrado por NIF. Puedes crearlo con "Crear proveedor".');
+            setOcrSupplierTaxId(vatId);
+            setOcrSupplierName(legalName || '');
           }
         } catch (e: any) {
           console.error('[Supplier Match] Error al buscar proveedor:', e);

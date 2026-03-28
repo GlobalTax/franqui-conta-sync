@@ -148,7 +148,7 @@ export function InvoiceFormHeader({
   {isProcessing && (
     <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
       <Loader2 className="h-3 w-3 animate-spin" />
-      Procesando con Mindee...
+      Procesando con Claude Vision...
     </div>
   )}
 

@@ -193,11 +193,39 @@ export const useProcessInvoiceOCR = () => {
 
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
-        throw new Error(error.message || 'Error al procesar OCR con Claude');
+        
+        // supabase.functions.invoke returns { data, error } where on non-2xx,
+        // data may still contain the JSON body and error.message has raw text
+        const errorBody = data || {};
+        let parsedFromMessage: any = null;
+        try {
+          if (typeof error.message === 'string' && error.message.startsWith('{')) {
+            parsedFromMessage = JSON.parse(error.message);
+          }
+        } catch {}
+        
+        const merged = { ...parsedFromMessage, ...errorBody };
+        
+        if (merged.error_type === 'DUPLICATE') {
+          const dupError = new Error(merged.error || 'Factura duplicada') as any;
+          dupError.isDuplicate = true;
+          dupError.duplicateHint = merged.duplicate_hint;
+          throw dupError;
+        }
+        
+        throw new Error(merged.error || error.message || 'Error al procesar OCR con Claude');
       }
 
       if (!data.success) {
         console.error('[useProcessInvoiceOCR] OCR processing failed:', data.error);
+        
+        if (data.error_type === 'DUPLICATE') {
+          const dupError = new Error(data.error || 'Factura duplicada') as any;
+          dupError.isDuplicate = true;
+          dupError.duplicateHint = data.duplicate_hint;
+          throw dupError;
+        }
+        
         throw new Error(data.error || 'Error desconocido en OCR');
       }
 

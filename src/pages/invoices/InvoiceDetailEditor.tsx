@@ -546,6 +546,15 @@ export default function InvoiceDetailEditor() {
 
     } catch (error: any) {
       console.error('[OCR] Error completo:', error);
+      
+      if (error.isDuplicate) {
+        toast.error('⚠️ Factura duplicada', {
+          description: error.message,
+          duration: 8000,
+        });
+        return;
+      }
+      
       console.error('[OCR] Error message:', error.message);
       console.error('[OCR] Error stack:', error.stack);
       toast.error(`Error OCR: ${error.message}`, {

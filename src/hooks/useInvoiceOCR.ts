@@ -112,7 +112,7 @@ export interface InvoiceEntryValidationResult {
 }
 
 export interface OCRResponse {
-  success: boolean;
+  success: true;
   ocr_engine?: "claude";
   status?: "processed_ok" | "needs_review" | "posted";
   merge_notes?: string[];

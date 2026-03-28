@@ -196,8 +196,8 @@ export default function OCRMetrics() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard OCR Híbrido</h1>
-          <p className="text-muted-foreground mt-1">Control de OpenAI + Mindee · Costes · Confianza · Auto-posting</p>
+          <h1 className="text-3xl font-bold">Dashboard OCR Claude Vision</h1>
+          <p className="text-muted-foreground mt-1">Costes · Confianza · Auto-posting · Claude Vision</p>
         </div>
         <Button 
           variant="outline" 

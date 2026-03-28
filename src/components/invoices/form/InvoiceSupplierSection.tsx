@@ -1,16 +1,17 @@
 // ============================================================================
 // INVOICE SUPPLIER SECTION
-// Sección de datos del proveedor con validación NIF
+// Sección de datos del proveedor con validación NIF + auto-creación OCR
 // ============================================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Control, UseFormSetValue } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, SearchCheck, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, SearchCheck, AlertTriangle, UserPlus } from 'lucide-react';
 import { SupplierSelector } from '@/components/invoices/SupplierSelector';
 import { SupplierFormDialog } from '@/components/suppliers/SupplierFormDialog';
 import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
@@ -23,13 +24,27 @@ interface InvoiceSupplierSectionProps {
   control: Control<any>;
   setValue: UseFormSetValue<any>;
   watch: any;
+  ocrTaxId?: string;
+  ocrSupplierName?: string;
 }
 
-export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupplierSectionProps) {
+export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName }: InvoiceSupplierSectionProps) {
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const [validatingNIF, setValidatingNIF] = useState(false);
   const [pendingNIF, setPendingNIF] = useState<string>('');
+  const [pendingName, setPendingName] = useState<string>('');
   const { data: suppliers } = useSuppliers({ active: true });
+
+  const supplierId = watch('supplier_id');
+  const hasOcrPending = !!(ocrTaxId && !supplierId);
+
+  // Auto-open creation dialog when OCR data arrives without a match
+  useEffect(() => {
+    if (ocrTaxId && !supplierId) {
+      setPendingNIF(ocrTaxId);
+      setPendingName(ocrSupplierName || '');
+    }
+  }, [ocrTaxId, ocrSupplierName, supplierId]);
 
   const handleValidateNIF = async () => {
     const nif = watch('supplier_tax_id');
@@ -38,33 +53,26 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
       return;
     }
 
-    // 1. Validar formato
     const isValid = validateNIFOrCIF(nif);
     if (!isValid) {
       toast.error(getNIFCIFErrorMessage(nif));
       return;
     }
 
-    // 2. Buscar proveedor en BD
     setValidatingNIF(true);
     try {
       const existingSupplier = await getSupplierByTaxId(nif);
       
       if (existingSupplier) {
-        // ✅ ENCONTRADO: Auto-seleccionar
         setValue('supplier_id', existingSupplier.id);
         setValue('supplier_tax_id', existingSupplier.taxId);
         setValue('supplier_name', existingSupplier.name);
         toast.success(`✅ Proveedor encontrado: ${existingSupplier.name}`);
       } else {
-        // ⚠️ NO ENCONTRADO: Abrir formulario de creación
-        toast.warning('⚠️ Proveedor no encontrado. Créalo primero.', {
-          description: 'Se abrirá el formulario con el NIF pre-rellenado',
-          icon: <AlertTriangle className="h-4 w-4" />
-        });
+        toast.warning('⚠️ Proveedor no encontrado. Créalo primero.');
         setPendingNIF(nif);
+        setPendingName('');
         setShowSupplierDialog(true);
-        // Limpiar campos
         setValue('supplier_id', '');
         setValue('supplier_tax_id', '');
         setValue('supplier_name', '');
@@ -77,6 +85,12 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
     }
   };
 
+  const handleCreateFromOCR = () => {
+    setPendingNIF(ocrTaxId || '');
+    setPendingName(ocrSupplierName || '');
+    setShowSupplierDialog(true);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -85,6 +99,28 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Banner OCR: proveedor no registrado */}
+        {hasOcrPending && (
+          <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="flex items-center justify-between gap-2">
+              <span className="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>{ocrSupplierName || 'Proveedor'}</strong> ({ocrTaxId}) no está registrado
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0 border-yellow-500 text-yellow-700 hover:bg-yellow-100"
+                onClick={handleCreateFromOCR}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Crear proveedor
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Selector de proveedor */}
         <FormField
           control={control}
@@ -93,19 +129,21 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 Proveedor *
-                {!field.value && (
+                {hasOcrPending ? (
+                  <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
+                    Pendiente de crear
+                  </Badge>
+                ) : !field.value ? (
                   <Badge variant="destructive" className="text-xs">
                     Requerido
                   </Badge>
-                )}
+                ) : null}
               </FormLabel>
               <FormControl>
                 <SupplierSelector
                   value={field.value}
                   onValueChange={(value) => {
                     field.onChange(value);
-                    
-                    // Auto-rellenar campos del proveedor cuando se selecciona
                     const selectedSupplier = suppliers?.find(s => s.id === value);
                     if (selectedSupplier) {
                       setValue('supplier_tax_id', selectedSupplier.tax_id);
@@ -114,6 +152,7 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
                   }}
                   onCreateNew={() => {
                     setPendingNIF('');
+                    setPendingName('');
                     setShowSupplierDialog(true);
                   }}
                 />
@@ -134,11 +173,11 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
                 <FormControl>
                   <Input 
                     {...field} 
-                    placeholder={watch('supplier_id') ? "Auto-rellenado" : "Introduce NIF y pulsa Validar"}
-                    readOnly={!!watch('supplier_id')}
+                    placeholder={supplierId ? "Auto-rellenado" : "Introduce NIF y pulsa Validar"}
+                    readOnly={!!supplierId}
                     className={cn(
                       "flex-1",
-                      watch('supplier_id') && "bg-muted cursor-not-allowed"
+                      supplierId && "bg-muted cursor-not-allowed"
                     )}
                   />
                 </FormControl>
@@ -147,12 +186,12 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
                   variant="outline"
                   size="icon"
                   onClick={handleValidateNIF}
-                  disabled={validatingNIF || !field.value || !!watch('supplier_id')}
-                  title={watch('supplier_id') ? "Proveedor ya seleccionado" : "Buscar proveedor por NIF/CIF"}
+                  disabled={validatingNIF || !field.value || !!supplierId}
+                  title={supplierId ? "Proveedor ya seleccionado" : "Buscar proveedor por NIF/CIF"}
                 >
                   {validatingNIF ? (
                     <Search className="h-4 w-4 animate-pulse" />
-                  ) : watch('supplier_id') ? (
+                  ) : supplierId ? (
                     <SearchCheck className="h-4 w-4 text-success" />
                   ) : (
                     <Search className="h-4 w-4" />
@@ -190,16 +229,20 @@ export function InvoiceSupplierSection({ control, setValue, watch }: InvoiceSupp
         open={showSupplierDialog}
         onOpenChange={(open) => {
           setShowSupplierDialog(open);
-          if (!open) setPendingNIF('');
+          if (!open) {
+            setPendingNIF('');
+            setPendingName('');
+          }
         }}
         initialTaxId={pendingNIF}
+        initialName={pendingName}
         onSuccess={(newSupplier) => {
-          // Auto-seleccionar el proveedor recién creado
           setValue('supplier_id', newSupplier.id);
           setValue('supplier_tax_id', newSupplier.tax_id);
           setValue('supplier_name', newSupplier.name);
           toast.success(`✅ Proveedor "${newSupplier.name}" creado y seleccionado`);
           setPendingNIF('');
+          setPendingName('');
         }}
       />
     </Card>

@@ -126,6 +126,8 @@ export default function InvoiceDetailEditor() {
   const [normalizationChanges, setNormalizationChanges] = useState<NormalizationChange[]>([]);
   const [normalizationWarnings, setNormalizationWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
+  const [ocrSupplierTaxId, setOcrSupplierTaxId] = useState<string>('');
+  const [ocrSupplierName, setOcrSupplierName] = useState<string>('');
   // Claude is the only engine now
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
@@ -515,7 +517,8 @@ export default function InvoiceDetailEditor() {
             toast.success(`Proveedor "${found.name}" localizado por NIF y seleccionado`);
           } else {
             console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
-            toast.info('Proveedor no encontrado por NIF. Puedes crearlo con "Crear proveedor".');
+            setOcrSupplierTaxId(vatId);
+            setOcrSupplierName(legalName || '');
           }
         } catch (e: any) {
           console.error('[Supplier Match] Error al buscar proveedor:', e);
@@ -1211,6 +1214,8 @@ export default function InvoiceDetailEditor() {
                     control={form.control}
                     setValue={form.setValue}
                     watch={form.watch}
+                    ocrTaxId={ocrSupplierTaxId}
+                    ocrSupplierName={ocrSupplierName}
                   />
                   
                   <InvoiceDataSection
@@ -1477,6 +1482,8 @@ export default function InvoiceDetailEditor() {
                       control={form.control}
                       setValue={form.setValue}
                       watch={form.watch}
+                      ocrTaxId={ocrSupplierTaxId}
+                      ocrSupplierName={ocrSupplierName}
                     />
                     
                     <InvoiceDataSection

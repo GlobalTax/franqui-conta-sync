@@ -36,6 +36,7 @@ interface SupplierFormDialogProps {
   onSuccess?: (supplier: Supplier) => void;
   editingSupplier?: Supplier | null;
   initialTaxId?: string;
+  initialName?: string;
 }
 
 export function SupplierFormDialog({ 
@@ -43,7 +44,8 @@ export function SupplierFormDialog({
   onOpenChange, 
   onSuccess,
   editingSupplier,
-  initialTaxId 
+  initialTaxId,
+  initialName 
 }: SupplierFormDialogProps) {
   const [formData, setFormData] = useState<SupplierFormData>({
     tax_id: '',
@@ -161,7 +163,7 @@ export function SupplierFormDialog({
       } else {
         setFormData({
           tax_id: initialTaxId || '',
-          name: '',
+          name: initialName || '',
           commercial_name: '',
           email: '',
           phone: '',

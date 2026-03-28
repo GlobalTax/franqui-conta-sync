@@ -285,16 +285,15 @@ serve(async (req) => {
     // 12. Log OCR processing
     await supabase.from('ocr_processing_log').insert({
       invoice_id,
-      provider: 'claude',
-      model: 'claude-sonnet-4-20250514',
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cost_eur: costEUR,
+      document_path: documentPath,
+      ocr_provider: 'claude',
+      engine: 'claude',
+      tokens_in: inputTokens,
+      tokens_out: outputTokens,
+      cost_estimate_eur: costEUR,
       processing_time_ms: processingTimeMs,
-      confidence_score: confidenceScore,
-      status: invoiceStatus,
-      autofix_applied,
-      validation_errors: validation.errors,
+      confidence: confidenceScore / 100, // Store as 0-1
+      pages: 1,
     }).then(({ error }) => {
       if (error) console.warn('[claude-ocr] Error logging OCR:', error.message);
     });

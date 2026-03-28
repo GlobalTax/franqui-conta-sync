@@ -260,14 +260,13 @@ export const useLogOCRProcessing = () => {
           invoice_id: logData.invoiceId || null,
           document_path: logData.documentPath,
           ocr_provider: logData.ocrProvider,
-          engine: logData.engine,
+          engine: logData.engine || 'claude',
           raw_response: {
             ...logData.rawResponse,
             orchestrator_logs: logData.orchestratorLogs
           },
           extracted_data: logData.extractedData,
           confidence: logData.confidence,
-          confidence_score: logData.confidenceScore,
           processing_time_ms: logData.processingTimeMs,
           tokens_in: logData.tokensIn,
           tokens_out: logData.tokensOut,

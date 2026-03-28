@@ -1482,6 +1482,8 @@ export default function InvoiceDetailEditor() {
                       control={form.control}
                       setValue={form.setValue}
                       watch={form.watch}
+                      ocrTaxId={ocrSupplierTaxId}
+                      ocrSupplierName={ocrSupplierName}
                     />
                     
                     <InvoiceDataSection

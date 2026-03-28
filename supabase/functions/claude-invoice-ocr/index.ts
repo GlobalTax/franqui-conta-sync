@@ -104,13 +104,20 @@ serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const fileSizeKB = Math.round(bytes.byteLength / 1024);
+    const fileSizeMB = fileSizeKB / 1024;
+    
+    // Reject files > 25MB to avoid token limit issues
+    if (fileSizeMB > 25) {
+      throw new Error(`Archivo demasiado grande (${fileSizeMB.toFixed(1)}MB). Máximo 25MB.`);
+    }
+    
     let binary = '';
     const chunkSize = 8192;
     for (let i = 0; i < bytes.length; i += chunkSize) {
       binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
     }
     const base64 = btoa(binary);
-    console.log(`[claude-ocr] PDF convertido a base64: ${fileSizeKB}KB`);
+    console.log(`[claude-ocr] Archivo convertido a base64: ${fileSizeKB}KB (${fileSizeMB.toFixed(1)}MB)`);
 
     // 3. Determine media type
     const isPDF = documentPath.toLowerCase().endsWith('.pdf');
@@ -125,6 +132,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'pdfs-2024-09-25',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -133,14 +141,23 @@ serve(async (req) => {
           {
             role: 'user',
             content: [
-              {
-                type: 'document',
+              ...(isPDF ? [{
+                type: 'document' as const,
                 source: {
-                  type: 'base64',
-                  media_type: mediaType,
+                  type: 'base64' as const,
+                  media_type: 'application/pdf' as const,
                   data: base64,
                 },
-              },
+                // Limit to first 5 pages to stay under token limits
+                cache_control: undefined,
+              }] : [{
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                  data: base64,
+                },
+              }]),
               {
                 type: 'text',
                 text: EXTRACTION_PROMPT,

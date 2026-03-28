@@ -193,11 +193,38 @@ export const useProcessInvoiceOCR = () => {
 
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
+        
+        // Try to parse structured error from edge function (e.g. 409 duplicate)
+        let parsedError: any = null;
+        try {
+          if (typeof error.message === 'string') {
+            parsedError = JSON.parse(error.message);
+          }
+          if (!parsedError && error.context && typeof error.context === 'object') {
+            parsedError = error.context;
+          }
+        } catch {}
+        
+        if (parsedError?.error_type === 'DUPLICATE') {
+          const dupError = new Error(parsedError.error || 'Factura duplicada') as any;
+          dupError.isDuplicate = true;
+          dupError.duplicateHint = parsedError.duplicate_hint;
+          throw dupError;
+        }
+        
         throw new Error(error.message || 'Error al procesar OCR con Claude');
       }
 
       if (!data.success) {
         console.error('[useProcessInvoiceOCR] OCR processing failed:', data.error);
+        
+        if (data.error_type === 'DUPLICATE') {
+          const dupError = new Error(data.error || 'Factura duplicada') as any;
+          dupError.isDuplicate = true;
+          dupError.duplicateHint = data.duplicate_hint;
+          throw dupError;
+        }
+        
         throw new Error(data.error || 'Error desconocido en OCR');
       }
 

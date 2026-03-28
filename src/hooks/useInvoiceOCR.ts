@@ -194,25 +194,26 @@ export const useProcessInvoiceOCR = () => {
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
         
-        // Try to parse structured error from edge function (e.g. 409 duplicate)
-        let parsedError: any = null;
+        // supabase.functions.invoke returns { data, error } where on non-2xx,
+        // data may still contain the JSON body and error.message has raw text
+        const errorBody = data || {};
+        let parsedFromMessage: any = null;
         try {
-          if (typeof error.message === 'string') {
-            parsedError = JSON.parse(error.message);
-          }
-          if (!parsedError && error.context && typeof error.context === 'object') {
-            parsedError = error.context;
+          if (typeof error.message === 'string' && error.message.startsWith('{')) {
+            parsedFromMessage = JSON.parse(error.message);
           }
         } catch {}
         
-        if (parsedError?.error_type === 'DUPLICATE') {
-          const dupError = new Error(parsedError.error || 'Factura duplicada') as any;
+        const merged = { ...parsedFromMessage, ...errorBody };
+        
+        if (merged.error_type === 'DUPLICATE') {
+          const dupError = new Error(merged.error || 'Factura duplicada') as any;
           dupError.isDuplicate = true;
-          dupError.duplicateHint = parsedError.duplicate_hint;
+          dupError.duplicateHint = merged.duplicate_hint;
           throw dupError;
         }
         
-        throw new Error(error.message || 'Error al procesar OCR con Claude');
+        throw new Error(merged.error || error.message || 'Error al procesar OCR con Claude');
       }
 
       if (!data.success) {

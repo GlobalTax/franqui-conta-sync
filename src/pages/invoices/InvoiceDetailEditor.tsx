@@ -438,6 +438,19 @@ export default function InvoiceDetailEditor() {
         documentPath: effectivePath,
         centroCode
       });
+
+      if (!result.success) {
+        if (result.error_type === 'DUPLICATE') {
+          toast.warning('⚠️ Factura duplicada', {
+            description: result.error,
+            duration: 8000,
+          });
+          return;
+        }
+
+        toast.error(`Error OCR: ${result.error || 'Error desconocido'}`);
+        return;
+      }
       
       console.log('[OCR] Resultado recibido:', result);
       

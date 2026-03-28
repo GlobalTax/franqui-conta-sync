@@ -188,10 +188,8 @@ export default function OCRMetrics() {
     .sort((a: any, b: any) => b.count - a.count)
     .slice(0, 10) || [];
 
-  const COLORS = {
-    openai: 'hsl(var(--chart-1))',
-    mindee: 'hsl(var(--chart-2))',
-    merged: 'hsl(var(--chart-3))'
+  const COLORS: Record<string, string> = {
+    claude: 'hsl(var(--chart-1))',
   };
 
   return (

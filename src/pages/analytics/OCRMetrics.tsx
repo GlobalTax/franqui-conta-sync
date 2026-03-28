@@ -146,8 +146,6 @@ export default function OCRMetrics() {
 
   // KPIs adicionales desde invoicesData
   const totalFiltered = invoicesData?.length || 0;
-  const mindeeFallback = metrics?.find(m => m.engine === 'mindee')?.total_invocations || 0;
-  const fallbackRate = totalInvoices > 0 ? (mindeeFallback / totalInvoices) * 100 : 0;
   
   const needsReviewCount = invoicesData?.filter(inv => inv.approval_status === 'needs_review').length || 0;
   const needsReviewRate = totalFiltered > 0 ? (needsReviewCount / totalFiltered) * 100 : 0;

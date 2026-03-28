@@ -165,6 +165,15 @@ export interface OCRResponse {
   error?: string;
 }
 
+export interface OCRDuplicateResponse {
+  success: false;
+  error_type: "DUPLICATE";
+  error: string;
+  duplicate_hint?: string;
+}
+
+export type OCRProcessResult = OCRResponse | OCRDuplicateResponse;
+
 export interface OCRValidationResult {
   isValid: boolean;
   errors: string[];
@@ -173,7 +182,7 @@ export interface OCRValidationResult {
 
 export const useProcessInvoiceOCR = () => {
   return useMutation({
-    mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRResponse> => {
+    mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRProcessResult> => {
       console.log('[useProcessInvoiceOCR] ========================================');
       console.log('[useProcessInvoiceOCR] Starting Claude Vision OCR...');
       console.log('[useProcessInvoiceOCR] invoice_id:', invoice_id);
@@ -216,10 +225,12 @@ export const useProcessInvoiceOCR = () => {
         console.log('[useProcessInvoiceOCR] Parsed error body:', errorBody);
         
         if (errorBody?.error_type === 'DUPLICATE') {
-          const dupError = new Error(errorBody.error || 'Factura duplicada') as any;
-          dupError.isDuplicate = true;
-          dupError.duplicateHint = errorBody.duplicate_hint;
-          throw dupError;
+          return {
+            success: false,
+            error_type: 'DUPLICATE',
+            error: errorBody.error || 'Factura duplicada',
+            duplicate_hint: errorBody.duplicate_hint,
+          };
         }
         
         throw new Error(errorBody?.error || error.message || 'Error al procesar OCR con Claude');
@@ -229,10 +240,12 @@ export const useProcessInvoiceOCR = () => {
         console.error('[useProcessInvoiceOCR] OCR processing failed:', data.error);
         
         if (data.error_type === 'DUPLICATE') {
-          const dupError = new Error(data.error || 'Factura duplicada') as any;
-          dupError.isDuplicate = true;
-          dupError.duplicateHint = data.duplicate_hint;
-          throw dupError;
+          return {
+            success: false,
+            error_type: 'DUPLICATE',
+            error: data.error || 'Factura duplicada',
+            duplicate_hint: data.duplicate_hint,
+          };
         }
         
         throw new Error(data.error || 'Error desconocido en OCR');
@@ -246,6 +259,8 @@ export const useProcessInvoiceOCR = () => {
       toast.error(`Error al procesar el documento con Claude: ${error.message}`);
     },
     onSuccess: (data) => {
+      if (!data.success) return;
+
       const confidence = data.confidence || 0;
       const needsReview = data.status === 'needs_review';
 

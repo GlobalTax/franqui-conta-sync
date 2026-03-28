@@ -259,6 +259,30 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('[claude-ocr] Error actualizando factura:', updateError);
+      
+      // Handle duplicate invoice gracefully
+      if (updateError.message?.includes('DUPLICATE_INVOICE') || updateError.message?.includes('DUPLICATE_FILE')) {
+        // Extract existing invoice hint from error
+        const isDuplicateInvoice = updateError.message.includes('DUPLICATE_INVOICE');
+        
+        // Delete the orphan draft since it's a duplicate
+        await supabase.from('invoices_received').delete().eq('id', invoice_id);
+        console.log(`[claude-ocr] Borrador huérfano ${invoice_id} eliminado (duplicado)`);
+        
+        // Return success:false with a user-friendly duplicate message
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error_type: 'DUPLICATE',
+            error: isDuplicateInvoice
+              ? `Esta factura ya existe en el sistema. ${updateError.message.split(': ').slice(1).join(': ')}`
+              : `Este archivo ya fue subido anteriormente.`,
+            duplicate_hint: updateError.hint || null,
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`Error actualizando factura: ${updateError.message}`);
     }
 

@@ -255,9 +255,7 @@ export default function OCRMetrics() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="openai">OpenAI</SelectItem>
-                  <SelectItem value="mindee">Mindee</SelectItem>
-                  <SelectItem value="merged">Merged</SelectItem>
+                  <SelectItem value="claude">Claude Vision</SelectItem>
                 </SelectContent>
               </Select>
             </div>

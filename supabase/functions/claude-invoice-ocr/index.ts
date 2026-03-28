@@ -104,13 +104,20 @@ serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const fileSizeKB = Math.round(bytes.byteLength / 1024);
+    const fileSizeMB = fileSizeKB / 1024;
+    
+    // Reject files > 25MB to avoid token limit issues
+    if (fileSizeMB > 25) {
+      throw new Error(`Archivo demasiado grande (${fileSizeMB.toFixed(1)}MB). Máximo 25MB.`);
+    }
+    
     let binary = '';
     const chunkSize = 8192;
     for (let i = 0; i < bytes.length; i += chunkSize) {
       binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
     }
     const base64 = btoa(binary);
-    console.log(`[claude-ocr] PDF convertido a base64: ${fileSizeKB}KB`);
+    console.log(`[claude-ocr] Archivo convertido a base64: ${fileSizeKB}KB (${fileSizeMB.toFixed(1)}MB)`);
 
     // 3. Determine media type
     const isPDF = documentPath.toLowerCase().endsWith('.pdf');

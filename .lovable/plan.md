@@ -1,55 +1,40 @@
 
 
-# Plan: Fix Edge Function Column Mismatch
+# Plan: Auto-resolver proveedor tras OCR
 
-## Problem
+## Problema
 
-The `claude-invoice-ocr` edge function fails with `Could not find the 'autofix_applied' column` because it writes to **14 columns that don't exist** on `invoices_received`. Additionally, the `ocr_engine` CHECK constraint doesn't allow `'claude'`.
+El OCR de Claude extrae correctamente el NIF (B67282871) y la razón social (Glovoapp Spain Platform S.L.), pero el proveedor **no existe en la tabla `suppliers`**. Por eso `supplier_id` queda vacío y aparece el badge "Requerido".
 
-## Database Changes (SQL Migration)
+El flujo actual muestra un toast informativo ("Proveedor no encontrado por NIF") pero no ofrece una forma directa de resolver el problema.
 
-### 1. Add missing columns
+## Solución
 
-```sql
-ALTER TABLE public.invoices_received
-ADD COLUMN IF NOT EXISTS customer_name TEXT,
-ADD COLUMN IF NOT EXISTS customer_tax_id TEXT,
-ADD COLUMN IF NOT EXISTS base_imponible_10 NUMERIC(12,2),
-ADD COLUMN IF NOT EXISTS cuota_iva_10 NUMERIC(12,2),
-ADD COLUMN IF NOT EXISTS base_imponible_21 NUMERIC(12,2),
-ADD COLUMN IF NOT EXISTS cuota_iva_21 NUMERIC(12,2),
-ADD COLUMN IF NOT EXISTS document_type TEXT,
-ADD COLUMN IF NOT EXISTS ocr_raw_response JSONB,
-ADD COLUMN IF NOT EXISTS ocr_processed_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS validation_errors JSONB,
-ADD COLUMN IF NOT EXISTS autofix_applied TEXT[],
-ADD COLUMN IF NOT EXISTS ocr_cost_eur NUMERIC(10,6);
-```
+Cuando el OCR extrae datos de proveedor pero no lo encuentra en BD, **auto-abrir el diálogo de creación de proveedor** con los datos pre-rellenados (NIF + nombre), en lugar de solo mostrar un toast.
 
-### 2. Fix `ocr_engine` CHECK constraint to allow `'claude'`
+## Cambios
 
-```sql
-ALTER TABLE public.invoices_received DROP CONSTRAINT invoices_received_ocr_engine_check;
-ALTER TABLE public.invoices_received ADD CONSTRAINT invoices_received_ocr_engine_check 
-  CHECK (ocr_engine IN ('openai', 'merged', 'manual_review', 'claude'));
-```
+### 1. `InvoiceDetailEditor.tsx` — Bloque post-OCR (líneas ~516-518)
 
-### 3. Fix edge function column name for confidence_notes
+Cuando `getSupplierByTaxId` devuelve `null`:
+- En vez de solo `toast.info(...)`, llamar a una función que active el diálogo de creación en `InvoiceSupplierSection`
+- Pasar el NIF y nombre extraídos como props para pre-rellenar
 
-The column exists as `ocr_confidence_notes` (type `TEXT[]`), but the edge function writes `confidence_notes`. Fix this in the edge function.
+### 2. `InvoiceSupplierSection.tsx` — Recibir datos OCR para auto-crear
 
-## Edge Function Change
+- Añadir props opcionales `ocrTaxId` y `ocrSupplierName`
+- Cuando se detecte que hay `ocrTaxId` pero no `supplier_id`, mostrar un **banner/alerta** claro: "Proveedor no registrado — Crear proveedor" con botón directo
+- Al hacer click, abrir `SupplierFormDialog` con NIF y nombre pre-rellenados
+- Eliminar el badge "Requerido" cuando ya hay datos OCR pendientes de crear (reemplazar por un badge "Pendiente de crear" en amarillo)
 
-**File:** `supabase/functions/claude-invoice-ocr/index.ts` (line ~256)
+### 3. `SupplierFormDialog.tsx` — Aceptar nombre inicial
 
-Change `confidence_notes` → `ocr_confidence_notes` in the update payload.
+- Añadir prop `initialName` además de `initialTaxId` para pre-rellenar ambos campos
 
-## Summary
+## Resultado esperado
 
-| Action | Detail |
-|--------|--------|
-| Add 12 columns to `invoices_received` | customer_name, customer_tax_id, base_imponible_10/21, cuota_iva_10/21, document_type, ocr_raw_response, ocr_processed_at, validation_errors, autofix_applied, ocr_cost_eur |
-| Update CHECK constraint | Allow `'claude'` in `ocr_engine` |
-| Fix edge function | `confidence_notes` → `ocr_confidence_notes` |
-| Redeploy | `claude-invoice-ocr` |
+1. OCR extrae NIF + nombre → no existe en BD
+2. Se muestra banner amarillo: "Proveedor Glovoapp Spain Platform S.L. (B67282871) no registrado — [Crear proveedor]"
+3. Click → diálogo abre con datos pre-rellenados
+4. Al guardar → `supplier_id` se auto-selecciona y desaparece el badge
 

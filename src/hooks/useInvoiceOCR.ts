@@ -193,27 +193,36 @@ export const useProcessInvoiceOCR = () => {
 
       if (error) {
         console.error('[useProcessInvoiceOCR] Supabase function error:', error);
+        console.error('[useProcessInvoiceOCR] Error type:', error.constructor?.name);
         
-        // supabase.functions.invoke returns { data, error } where on non-2xx,
-        // data may still contain the JSON body and error.message has raw text
-        const errorBody = data || {};
-        let parsedFromMessage: any = null;
+        // For FunctionsHttpError (non-2xx), parse the response body
+        let errorBody: any = null;
         try {
-          if (typeof error.message === 'string' && error.message.startsWith('{')) {
-            parsedFromMessage = JSON.parse(error.message);
+          // FunctionsHttpError has context as a Response object
+          if (error.context && typeof error.context.json === 'function') {
+            errorBody = await error.context.json();
           }
         } catch {}
         
-        const merged = { ...parsedFromMessage, ...errorBody };
+        // Fallback: try parsing error.message as JSON
+        if (!errorBody) {
+          try {
+            if (typeof error.message === 'string' && error.message.startsWith('{')) {
+              errorBody = JSON.parse(error.message);
+            }
+          } catch {}
+        }
         
-        if (merged.error_type === 'DUPLICATE') {
-          const dupError = new Error(merged.error || 'Factura duplicada') as any;
+        console.log('[useProcessInvoiceOCR] Parsed error body:', errorBody);
+        
+        if (errorBody?.error_type === 'DUPLICATE') {
+          const dupError = new Error(errorBody.error || 'Factura duplicada') as any;
           dupError.isDuplicate = true;
-          dupError.duplicateHint = merged.duplicate_hint;
+          dupError.duplicateHint = errorBody.duplicate_hint;
           throw dupError;
         }
         
-        throw new Error(merged.error || error.message || 'Error al procesar OCR con Claude');
+        throw new Error(errorBody?.error || error.message || 'Error al procesar OCR con Claude');
       }
 
       if (!data.success) {

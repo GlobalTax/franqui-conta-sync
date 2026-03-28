@@ -48,8 +48,7 @@ export interface OCRMetrics {
   total_tokens: number;
   avg_cost_per_invoice: number;
   avg_processing_time: number;
-  openai_cost: number;
-  mindee_cost: number;
+  claude_cost: number;
 }
 
 // ============================================================================

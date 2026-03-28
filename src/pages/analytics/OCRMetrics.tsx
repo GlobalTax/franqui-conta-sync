@@ -351,13 +351,13 @@ export default function OCRMetrics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fallback Mindee</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">Motor OCR</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{fallbackRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-purple-600">Claude</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mindeeFallback} facturas
+              Vision AI
             </p>
           </CardContent>
         </Card>

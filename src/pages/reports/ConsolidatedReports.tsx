@@ -31,7 +31,7 @@ export default function ConsolidatedReports() {
 
   const handleExport = async () => {
     const XLSX = await import('xlsx');
-    if (!data?.centres || data.centres.length === 0) return;
+    if (!(data as any)?.centres || (data as any).centres.length === 0) return;
 
     logger.info('ConsolidatedReports', 'Exporting to Excel...');
 

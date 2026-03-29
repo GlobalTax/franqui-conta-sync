@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, XCircle, Clock, CheckCircle2, AlertTriangle, Send } from "lucide-react";
+import { RefreshCw, XCircle, Clock, CheckCircle2, AlertTriangle, Send, Copy, MailX, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, isPast, format } from "date-fns";
@@ -13,12 +13,17 @@ interface Invite {
   id: string;
   email: string;
   role: string;
+  token: string;
   franchisee_id: string | null;
   centro: string | null;
   created_at: string;
   expires_at: string;
   accepted_at: string | null;
   invited_by: string | null;
+  email_status: string | null;
+  email_error: string | null;
+  email_sent_at: string | null;
+  last_send_attempt_at: string | null;
 }
 
 interface PendingInvitesTableProps {
@@ -53,7 +58,7 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setInvites(data as Invite[]);
+      setInvites(data as unknown as Invite[]);
     }
     setLoading(false);
   };
@@ -94,6 +99,51 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
     }
   };
 
+  const getEmailBadge = (invite: Invite) => {
+    const es = invite.email_status;
+    if (es === "sent") {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <MailCheck className="h-3 w-3 mr-1" />
+          Enviado
+        </Badge>
+      );
+    }
+    if (es === "failed") {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge className="bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400">
+                <MailX className="h-3 w-3 mr-1" />
+                Error
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">{invite.email_error || "Error desconocido"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-xs text-muted-foreground">
+        <Clock className="h-3 w-3 mr-1" />
+        Sin enviar
+      </Badge>
+    );
+  };
+
+  const handleCopyLink = async (invite: Invite) => {
+    const appUrl = window.location.origin;
+    const link = `${appUrl}/accept-invite?token=${invite.token}`;
+    await navigator.clipboard.writeText(link);
+    toast({
+      title: "Enlace copiado",
+      description: `Enlace de invitación para ${invite.email} copiado`,
+    });
+  };
+
   const handleResend = async (invite: Invite) => {
     setActionLoading(invite.id);
     try {
@@ -108,10 +158,18 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast({
-        title: "Invitación reenviada",
-        description: `Se ha reenviado la invitación a ${invite.email}`,
-      });
+      if (data?.email_sent) {
+        toast({
+          title: "Invitación reenviada",
+          description: `Email enviado a ${invite.email}`,
+        });
+      } else {
+        toast({
+          title: "Invitación recreada",
+          description: data?.email_error || "El email no se pudo enviar. Usa 'Copiar enlace'.",
+          variant: "destructive",
+        });
+      }
       loadInvites();
     } catch (err: any) {
       toast({
@@ -166,11 +224,11 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
   const pending = invites.filter(i => getStatus(i) === "pending").length;
   const accepted = invites.filter(i => getStatus(i) === "accepted").length;
   const expired = invites.filter(i => getStatus(i) === "expired").length;
+  const emailFailed = invites.filter(i => i.email_status === "failed" && getStatus(i) === "pending").length;
 
   return (
     <div className="space-y-4">
-      {/* Summary counters */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm">
           <Clock className="h-4 w-4 text-amber-500" />
           <span className="font-medium">{pending}</span>
@@ -186,6 +244,13 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
           <span className="font-medium">{expired}</span>
           <span className="text-muted-foreground">expiradas</span>
         </div>
+        {emailFailed > 0 && (
+          <div className="flex items-center gap-2 text-sm">
+            <MailX className="h-4 w-4 text-red-500" />
+            <span className="font-medium">{emailFailed}</span>
+            <span className="text-muted-foreground">sin email</span>
+          </div>
+        )}
       </div>
 
       <Table>
@@ -195,6 +260,7 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
             <TableHead>Rol</TableHead>
             <TableHead>Centro</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead>Email</TableHead>
             <TableHead>Enviada</TableHead>
             <TableHead>Expira</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
@@ -217,6 +283,7 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
                   {invite.centro || "Todos"}
                 </TableCell>
                 <TableCell>{getStatusBadge(status)}</TableCell>
+                <TableCell>{getEmailBadge(invite)}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   <TooltipProvider>
                     <Tooltip>
@@ -242,8 +309,25 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
                   </TooltipProvider>
                 </TableCell>
                 <TableCell className="text-right">
-                  {status === "pending" && (
-                    <div className="flex gap-1 justify-end">
+                  <div className="flex gap-1 justify-end">
+                    {/* Copy link — always available for pending */}
+                    {status === "pending" && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleCopyLink(invite)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Copiar enlace de invitación</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {(status === "pending" || status === "expired") && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -259,6 +343,8 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
                           <TooltipContent>Reenviar invitación</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+                    )}
+                    {status === "pending" && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -275,25 +361,8 @@ const PendingInvitesTable = ({ refreshKey }: PendingInvitesTableProps) => {
                           <TooltipContent>Cancelar invitación</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    </div>
-                  )}
-                  {status === "expired" && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleResend(invite)}
-                            disabled={isLoading}
-                          >
-                            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Reenviar invitación</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );

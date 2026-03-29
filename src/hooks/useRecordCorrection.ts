@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import type { CorrectionInput } from '@/types/learning';
 
 export function useRecordCorrection() {
@@ -31,7 +32,7 @@ export function useRecordCorrection() {
       }
     },
     onError: (error) => {
-      console.error('Error recording correction:', error);
+      logger.error('useRecordCorrection', 'Error recording correction:', error);
       toast.error('Error al guardar la corrección');
     },
   });

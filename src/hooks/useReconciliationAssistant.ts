@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export interface RuleSuggestion {
   suggested_rule_name: string;
@@ -46,7 +47,7 @@ export function useAnalyzePatterns(centroCode?: string, bankAccountId?: string) 
       });
 
       if (error) {
-        console.error('[useAnalyzePatterns] Error:', error);
+        logger.error('useAnalyzePatterns', 'Error:', error);
         throw error;
       }
 
@@ -78,7 +79,7 @@ export function useEnhancePattern() {
       toast.success(`Patrón generado con ${data.confidence}% de confianza`);
     },
     onError: (error: any) => {
-      console.error('[useEnhancePattern] Error:', error);
+      logger.error('useEnhancePattern', 'Error:', error);
       toast.error(error.message || 'Error al analizar patrón con IA');
     },
   });

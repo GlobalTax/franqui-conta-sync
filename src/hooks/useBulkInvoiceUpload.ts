@@ -267,7 +267,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         throw new Error(ocrResult?.error || 'Error en procesamiento Claude OCR');
       }
 
-      console.log('[BulkUpload] ✓ OCR completado:', {
+      logger.info('BulkUpload', 'OCR completado:', {
         confidence: ocrResult.ocr_confidence,
         cost: ocrResult.ocr_cost_euros,
         engine: ocrResult.ocr_engine,
@@ -294,7 +294,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
       ));
 
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      logger.error('BulkUpload', 'Error uploading file:', error);
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id 
           ? { 

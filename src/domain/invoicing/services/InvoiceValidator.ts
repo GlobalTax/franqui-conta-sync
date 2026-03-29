@@ -3,6 +3,8 @@
 // Responsabilidad: Validar reglas de negocio para facturas antes de persistir
 // ============================================================================
 
+import { VALID_VAT_RATES } from '@/domain/accounting/constants/VATConstants';
+
 import type { InvoiceReceived, InvoiceIssued, InvoiceLine, ApprovalStatus } from '../types';
 import { PGCValidator } from '@/domain/accounting/services/PGCValidator';
 
@@ -22,7 +24,7 @@ export interface ValidationResult {
  * Centraliza todas las reglas de negocio relacionadas con validación
  */
 export class InvoiceValidator {
-  private static readonly VALID_TAX_RATES = [0, 4, 10, 21];
+  private static readonly VALID_TAX_RATES = VALID_VAT_RATES;
   private static readonly MIN_AMOUNT = 0.01;
   private static readonly MAX_DISCOUNT = 100;
 

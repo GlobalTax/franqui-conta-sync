@@ -119,6 +119,11 @@ export class ApprovalEngine {
     approvalLevel: 'manager' | 'accounting',
     action: 'approved' | 'rejected'
   ): ApprovalStatus {
+    // Guard: final states are immutable
+    if (invoice.approvalStatus === 'approved' || invoice.approvalStatus === 'rejected') {
+      return invoice.approvalStatus;
+    }
+
     // Si se rechaza, el estado final es 'rejected' siempre
     if (action === 'rejected') {
       return 'rejected';

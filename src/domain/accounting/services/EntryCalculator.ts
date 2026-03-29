@@ -5,6 +5,7 @@
 
 import { Transaction, EntryTotals } from '../types';
 import { Money } from '../value-objects/Money';
+import { MONETARY_TOLERANCE } from '@/domain/accounting/constants/VATConstants';
 
 export class EntryCalculator {
   /**
@@ -19,7 +20,7 @@ export class EntryCalculator {
       debit,
       credit,
       difference,
-      isBalanced: difference < 0.01,
+      isBalanced: Math.abs(difference) <= MONETARY_TOLERANCE,
     };
   }
 

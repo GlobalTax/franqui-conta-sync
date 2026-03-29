@@ -5,6 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { VAT_RATES } from '@/domain/accounting/constants/VATConstants';
 
 // ============================================================================
 // MODELO 111 - Retenciones e ingresos a cuenta IRPF (trimestral)
@@ -47,7 +48,8 @@ export function useModelo111(centroCode?: string, year?: number, trimestre?: num
         .eq('centro_code', centroCode)
         .gte('periodo_liquidacion', startDate)
         .lte('periodo_liquidacion', endDate)
-        .eq('status', 'posted');
+        .eq('status', 'posted')
+        .throwOnError();
 
       const trabajadores = (nominas || []).filter(n => n.tipo_nomina !== 'autonomo');
       const profesionales = (nominas || []).filter(n => n.tipo_nomina === 'autonomo');
@@ -111,7 +113,8 @@ export function useModelo190(centroCode?: string, year?: number) {
         .eq('centro_code', centroCode)
         .gte('periodo_liquidacion', `${year}-01-01`)
         .lte('periodo_liquidacion', `${year}-12-31`)
-        .eq('status', 'posted');
+        .eq('status', 'posted')
+        .throwOnError();
 
       // Agrupar por perceptor
       const perceptorMap = new Map<string, Modelo190Perceptor>();
@@ -184,7 +187,8 @@ export function useModelo347(centroCode?: string, year?: number) {
         .eq('centro_code', centroCode)
         .gte('invoice_date', `${year}-01-01`)
         .lte('invoice_date', `${year}-12-31`)
-        .not('supplier_id', 'is', null);
+        .not('supplier_id', 'is', null)
+        .throwOnError();
 
       // Facturas emitidas (clientes)
       const { data: facturasEmitidas } = await supabase
@@ -192,7 +196,8 @@ export function useModelo347(centroCode?: string, year?: number) {
         .select('*')
         .eq('centro_code', centroCode)
         .gte('invoice_date', `${year}-01-01`)
-        .lte('invoice_date', `${year}-12-31`);
+        .lte('invoice_date', `${year}-12-31`)
+        .throwOnError();
 
       const operacionMap = new Map<string, Modelo347Operacion>();
 

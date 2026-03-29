@@ -2,6 +2,8 @@
 // VAT UTILITIES - Validación de coherencia fiscal IVA España
 // ============================================================================
 
+import { VAT_RATE_FRACTIONS } from '@/domain/accounting/constants/VATConstants';
+
 export interface VATCheckResult {
   valid: boolean;
   reason?: string;
@@ -38,7 +40,7 @@ export function validateVATCoherence(
   // Solo si hay base imponible
   if (subtotal > 0) {
     const detectedRatio = taxTotal / subtotal;
-    const standardRatios = [0.04, 0.10, 0.21, 0]; // 4%, 10%, 21%, exento
+    const standardRatios = Object.values(VAT_RATE_FRACTIONS); // 4%, 10%, 21%, exento
 
     const matchesStandardRate = standardRatios.some(rate => 
       Math.abs(detectedRatio - rate) < 0.005 // Tolerancia 0.5%
@@ -93,7 +95,7 @@ export function detectVATRate(base: number, vat: number): number | null {
   if (base <= 0) return null;
 
   const ratio = vat / base;
-  const standardRates = [0.04, 0.10, 0.21];
+  const standardRates = [VAT_RATE_FRACTIONS.SUPER_REDUCED, VAT_RATE_FRACTIONS.REDUCED, VAT_RATE_FRACTIONS.STANDARD];
 
   for (const rate of standardRates) {
     if (Math.abs(ratio - rate) < 0.005) {

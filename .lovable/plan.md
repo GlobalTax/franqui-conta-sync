@@ -1,240 +1,126 @@
 
-Diagnóstico claro: la invitación sí se está creando en base de datos, pero el email no se está enviando.
+Plan: arreglar Realtime de notificaciones de raíz
 
-## Lo que he verificado
+## Diagnóstico real
 
-### 1. La invitación existe
-En `public.invites` aparecen invitaciones recientes, incluida:
-- `s.navarro@nrro.es`
-- creada el `2026-03-29 21:50:25+00`
-- estado: pendiente
-- expiración: `2026-04-05`
+Hay 2 causas probables y ambas están presentes:
 
-Eso confirma que el flujo de “crear invitación” funciona.
+1. **El hook se está montando varias veces con el mismo canal**
+   - `NotificationBell` llama a `useNotifications()`
+   - y además `useUnreadCount()`, que internamente vuelve a llamar a `useNotifications()`
+   - en `/notificaciones` pasa otra vez: `useNotifications()` + `useUnreadCount()`
+   - eso crea **suscripciones duplicadas** usando siempre el mismo nombre de canal: `notifications-realtime`
 
-### 2. El problema real está en el envío del correo
-La Edge Function `send-invite` sigue usando Resend con este remitente:
+   Resultado: un canal pisa/cierra al otro y aparecen logs como:
+   - “Suscripcion Realtime cerrada”
+   - “Error en canal Realtime”
 
-```ts
-from: "FranquiContaSync <noreply@franquicontasync.com>"
-```
+2. **La tabla `alert_notifications` no está publicada en `supabase_realtime`**
+   - he consultado `pg_publication_tables` y `alert_notifications` **no aparece**
+   - así que aunque el frontend se suscriba bien, Postgres Realtime no va a emitir cambios de esa tabla
 
-Y los logs devuelven exactamente esto:
+## Lo que sí está bien
+
+- La tabla `alert_notifications` existe
+- Las políticas RLS de lectura/actualización para el destinatario existen
+- El problema no parece ser de permisos de lectura
+
+## Cambios propuestos
+
+### 1. Rehacer `useNotifications` para que no cree canales duplicados
+Archivo:
+- `src/hooks/useNotifications.ts`
+
+Cambio:
+- convertirlo en un hook que exponga todo lo necesario desde **una sola fuente**
+- devolver:
+  - `notifications`
+  - `unreadCount`
+  - `isLoading`
+- eliminar el patrón actual donde `useUnreadCount()` vuelve a llamar al hook principal
+
+Además:
+- usar un **nombre de canal único por usuario/instancia** o asegurar una sola suscripción activa
+- limpiar correctamente el canal anterior antes de volver a suscribirse
+- evitar suscribirse si no hay usuario autenticado
+
+### 2. Simplificar consumidores para usar una sola instancia del hook
+Archivos:
+- `src/components/notifications/NotificationBell.tsx`
+- `src/pages/Notifications.tsx`
+
+Cambio:
+- en cada componente, llamar **una sola vez** al hook
+- leer `unreadCount` desde el mismo resultado del hook
+- no volver a disparar otra suscripción indirectamente
+
+Impacto esperado:
+- en `/admin`, la campana dejará de abrir 2 canales
+- en `/notificaciones`, la página dejará de abrir 2-3 canales superpuestos
+
+### 3. Activar Realtime para `alert_notifications`
+Archivo:
+- nueva migración SQL en `supabase/migrations/`
+
+Cambio:
+- añadir `public.alert_notifications` a la publicación `supabase_realtime`
+
+Esto es imprescindible para que `INSERT/UPDATE` lleguen al cliente en tiempo real.
+
+### 4. Endurecer el manejo de estados del canal
+Archivo:
+- `src/hooks/useNotifications.ts`
+
+Cambio:
+- manejar mejor `SUBSCRIBED`, `CLOSED`, `CHANNEL_ERROR`, y opcionalmente `TIMED_OUT`
+- registrar contexto útil en logs para distinguir:
+  - cierre por cleanup normal
+  - cierre por colisión de canal
+  - error real del backend Realtime
+
+## Diseño recomendado
+
+La forma más limpia aquí es:
 
 ```text
-403 The franquicontasync.com domain is not verified
+useNotifications()
+  -> query inicial
+  -> 1 sola suscripción realtime
+  -> devuelve:
+     notifications
+     unreadCount
+     isLoading
 ```
 
-O sea:
-- la función responde `200 success`
-- se guarda la invitación
-- pero el proveedor rechaza el email
-- por eso no te llega nada
-
-### 3. Además hay un problema de UX serio
-Ahora mismo el sistema dice “Invitación enviada” aunque en realidad solo significa:
-- “invitación creada”
-- no “email entregado” ni siquiera “email aceptado por el proveedor”
-
-Eso es lo que está generando la confusión.
-
-### 4. Tu proyecto ya apunta a otro sistema de email
-He comprobado que el proyecto tiene dominio de correo configurado como:
-
+Y quitar:
 ```text
-notify.www.nrro.es
+useUnreadCount() -> useNotifications() -> suscripción duplicada
 ```
-
-pero está en estado pendiente de DNS.
-
-Eso deja una inconsistencia importante:
-- el proyecto parece preparado para usar tu dominio `nrro.es`
-- pero `send-invite` sigue intentando enviar desde `franquicontasync.com`
-- que no es el dominio correcto ni está verificado
-
-## Causa raíz
-
-Hay dos capas del problema:
-
-1. **Dominio de envío incorrecto / no verificado**
-   - se está enviando desde `franquicontasync.com`
-   - ese dominio no está verificado
-
-2. **Diseño del flujo engañoso**
-   - la función no falla cuando el proveedor rechaza el email
-   - el frontend muestra éxito aunque el correo no salió
-
-## Solución recomendada “experiencia top”
-
-No haría solo un parche. Haría una solución completa y profesional en 3 niveles:
-
----
-
-## Fase 1 — Corregir el envío real
-
-### Objetivo
-Que las invitaciones se envíen desde el dominio correcto y que el sistema falle si el proveedor rechaza el correo.
-
-### Cambios
-#### A. Dejar de usar `franquicontasync.com`
-En `supabase/functions/send-invite/index.ts`:
-- sustituir el remitente duro por el dominio real del proyecto
-- o, mejor aún, centralizar el remitente en una constante/configuración única
-
-#### B. Si el proveedor devuelve error, responder error de verdad
-Ahora mismo hace `console.error(...)` pero luego devuelve éxito.
-Hay que cambiarlo para que:
-- si el proveedor rechaza el email, la API responda `400/502`
-- el frontend muestre “No se ha podido enviar el correo”
-- no se confunda “invitación creada” con “email enviado”
-
-#### C. Mantener el enlace de invitación aunque falle el email
-La invitación en BD puede seguir existiendo, pero la respuesta debe indicar algo como:
-- invitación creada
-- email no enviado
-- copiar enlace manualmente / reenviar después
-
-Eso es mucho más robusto para operación real.
-
----
-
-## Fase 2 — Hacer visible el estado real en Admin
-
-### Objetivo
-Que en `/admin` puedas saber exactamente qué pasó con cada invitación.
-
-### Cambios en `PendingInvitesTable`
-Añadir estado de entrega real, no solo:
-- Pendiente
-- Aceptada
-- Expirada
-
-Sino también algo como:
-
-- `Email enviado`
-- `Error de envío`
-- `Pendiente de reenvío`
-- `Aceptada`
-- `Expirada`
-
-### Recomendación de modelo
-La tabla `invites` hoy no guarda nada del envío. Haría una de estas dos opciones:
-
-#### Opción recomendada
-Añadir campos a `invites`:
-- `email_status` (`pending`, `sent`, `failed`)
-- `email_error` text
-- `email_sent_at` timestamptz
-- `last_send_attempt_at` timestamptz
-
-Así en admin puedes ver:
-- si el enlace existe
-- si el correo salió
-- cuándo se intentó
-- por qué falló
-
-#### UX resultante
-En la tabla de invitaciones:
-- badge de “correo enviado” o “falló envío”
-- texto corto del error
-- botón “Reenviar”
-- botón “Copiar enlace”
-
-Eso te da control operativo real.
-
----
-
-## Fase 3 — Flujo premium de invitaciones
-
-### Objetivo
-Que el sistema siga siendo usable incluso si el email falla o DNS aún no está listo.
-
-### Mejoras UX
-#### A. Toast correcto al invitar
-Separar mensajes:
-- “Invitación creada y email enviado”
-- “Invitación creada, pero el email no se pudo enviar”
-- “Copia el enlace manualmente mientras terminamos la configuración del dominio”
-
-#### B. Mostrar el link de aceptación en admin
-Como ya existe `token`, se puede construir:
-```text
-/accept-invite?token=...
-```
-
-Y en la UI:
-- botón “Copiar enlace”
-- botón “Abrir enlace”
-- útil para WhatsApp o envío manual mientras se arregla el correo
-
-#### C. Reenvío inteligente
-El botón “Reenviar” debe:
-- regenerar token o reutilizar según la política elegida
-- actualizar `last_send_attempt_at`
-- guardar el nuevo estado del envío
-- mostrar feedback preciso
-
----
 
 ## Archivos a tocar
 
-### Backend
-- `supabase/functions/send-invite/index.ts`
-  - usar remitente correcto
-  - convertir rechazo del proveedor en error real
-  - devolver payload más rico con estado de envío
-  - opcional: guardar metadata de envío en `invites`
-
-### Frontend
-- `src/components/admin/InviteUserDialog.tsx`
-  - mostrar éxito parcial vs éxito total
-  - si falla el correo, ofrecer copiar enlace
-
-- `src/components/admin/PendingInvitesTable.tsx`
-  - añadir columnas/estado de entrega
-  - mostrar error de envío
-  - añadir acción “Copiar enlace”
-
-- `src/pages/admin/UsersManagement.tsx`
-  - pequeños ajustes de UX si hace falta para resaltar invitaciones con error
-
-### Base de datos
-- migración para ampliar `invites` con estado de email
-
-## Orden de implementación recomendado
-
-1. arreglar `send-invite` para que no devuelva falso éxito
-2. añadir campos de estado de email en `invites`
-3. guardar resultado del envío en la invitación
-4. actualizar `InviteUserDialog` para mostrar mensajes correctos
-5. actualizar `PendingInvitesTable` con estado real + copiar enlace
-6. opcional: añadir filtro “Con error de envío”
+- `src/hooks/useNotifications.ts`
+- `src/components/notifications/NotificationBell.tsx`
+- `src/pages/Notifications.tsx`
+- `supabase/migrations/...sql` para `supabase_realtime`
 
 ## Resultado esperado
 
 Después del cambio:
-- sabrás si la invitación fue creada
-- sabrás si el email salió o falló
-- verás el motivo del fallo
-- podrás reenviar o copiar el enlace manualmente
-- el sistema dejará de decir “enviada” cuando en realidad no salió nada
 
-## Importante para este caso concreto
+- desaparecerán los cierres/errores repetidos del canal
+- la campana de notificaciones no creará suscripciones duplicadas
+- la página de notificaciones tampoco duplicará queries/canales
+- los `INSERT/UPDATE` sobre `alert_notifications` llegarán de verdad por Realtime
+- el contador de no leídas y la lista se actualizarán sin refrescar
 
-Ahora mismo, aunque implementemos la mejor UX del mundo, **seguirán sin llegar los correos** hasta corregir la configuración del dominio de envío.
+## Nota técnica importante
 
-Con lo que he visto, hay que alinear una de estas dos estrategias:
-- usar el dominio real del proyecto `nrro.es` cuando esté listo
-- o mantener proveedor externo pero con un dominio realmente verificado
+He visto otros componentes con Realtime (`ocr_circuit_breaker`, `invoices_received`, `ocr_processing_log`) y la consulta a `pg_publication_tables` tampoco devuelve esas tablas. O sea, el problema puede ser más amplio que notificaciones. Para este fix me centraría primero en `alert_notifications`, y después revisaría si queréis estandarizar Realtime en el resto de módulos.
 
-Ahora mismo estás en un estado mixto y por eso falla.
+## Orden de implementación
 
-## Resumen ejecutivo
-
-El bug no es que “no cree la invitación”.
-El bug es que:
-1. la crea,
-2. el proveedor rechaza el email,
-3. y la app dice igualmente que se envió.
-
-La solución top no es solo “hacer que llegue”, sino rediseñar el flujo para que el estado de invitación y el estado del email sean visibles, auditables y accionables desde admin.
+1. refactor de `useNotifications`
+2. simplificar `NotificationBell` y `Notifications`
+3. migración para publicar `alert_notifications` en Realtime
+4. prueba en `/admin` y `/notificaciones` verificando que ya no aparecen `CLOSED` / `CHANNEL_ERROR`

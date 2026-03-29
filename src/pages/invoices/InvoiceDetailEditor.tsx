@@ -531,6 +531,10 @@ export default function InvoiceDetailEditor() {
             console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
             setOcrSupplierTaxId(vatId);
             setOcrSupplierName(legalName || '');
+            setOcrSupplierAddress(normalized.issuer?.address || '');
+            setOcrSupplierCity(normalized.issuer?.city || '');
+            setOcrSupplierPostalCode(normalized.issuer?.postal_code || '');
+            setOcrSupplierEmail(normalized.issuer?.email || '');
           }
         } catch (e: any) {
           console.error('[Supplier Match] Error al buscar proveedor:', e);

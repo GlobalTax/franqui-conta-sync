@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from '@/lib/logger';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,7 @@ const Invoices = () => {
     try {
       await generateEntry.mutateAsync(invoiceId);
     } catch (error) {
-      console.error("Error generating entry:", error);
+      logger.error("Invoices", "Error generating entry", error);
     }
   };
 

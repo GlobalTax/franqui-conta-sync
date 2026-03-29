@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import type { InvoiceReceived } from "@/hooks/useInvoicesReceived";
+import { logger } from "@/lib/logger";
 
 // ✅ Lazy load: Secciones pesadas del sheet
 const InvoiceReviewPDFSection = lazy(() => import("./review/InvoiceReviewPDFSection").then(m => ({ default: m.InvoiceReviewPDFSection })));
@@ -117,7 +118,7 @@ export function InvoiceReviewSheet({
             
             toast.info(`Proveedor vinculado automáticamente: ${existingSupplier.name}`);
           } catch (error) {
-            console.error('[Auto-link supplier]', error);
+            logger.error('InvoiceReviewSheet', 'Auto-link supplier failed', error);
           }
         } else if (issuerName) {
           // Proveedor NO existe pero tenemos datos del OCR
@@ -191,7 +192,7 @@ export function InvoiceReviewSheet({
         description: 'Ahora puedes aprobar la factura'
       });
     } catch (error) {
-      console.error('[Auto-create supplier]', error);
+      logger.error('InvoiceReviewSheet', 'Auto-create supplier failed', error);
       toast.error('Error al crear proveedor automáticamente');
     } finally {
       setCreatingSupplier(false);

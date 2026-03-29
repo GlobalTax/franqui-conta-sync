@@ -11,6 +11,7 @@ import type { Norma43ParseResult } from "@/domain/banking/services/Norma43Parser
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { createMigrationLogger } from "@/lib/migration/migrationLogger";
+import { logger } from "@/lib/logger";
 
 interface StepBancosProps {
   config: FiscalYearConfig;
@@ -122,7 +123,7 @@ export function StepBancos({
       setFileContent(null);
       setPreview(null);
     } catch (error: any) {
-      console.error('Error importing Norma 43:', error);
+      logger.error('StepBancos', 'Error importing Norma 43', error);
       await logger?.error('Error en importación bancaria', error);
       toast.error(`Error al importar: ${error.message}`);
     } finally {

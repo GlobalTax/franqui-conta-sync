@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from '@/lib/logger';
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ export default function BankRemittances() {
       toast.success(`${termIds.length} vencimiento(s) añadido(s) a la remesa`);
     } catch (error) {
       toast.error("Error al añadir vencimientos");
-      console.error(error);
+      logger.error("BankRemittances", "Error al añadir vencimientos", error);
     }
   };
 

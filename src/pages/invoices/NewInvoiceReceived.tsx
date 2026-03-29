@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +73,7 @@ export default function NewInvoiceReceived() {
         
         setApMapping(mapping);
       } catch (error) {
-        console.error('[AP Mapping] Error:', error);
+        logger.error('NewInvoiceReceived', 'AP Mapping error', error);
         toast.error('Error al obtener sugerencias de cuentas');
       }
     }
@@ -97,7 +98,7 @@ export default function NewInvoiceReceived() {
         
         setApMapping(mapping);
       } catch (error) {
-        console.error('[AP Mapping] Error on lines change:', error);
+        logger.error('NewInvoiceReceived', 'AP Mapping error on lines change', error);
       }
     }
   };

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Search, SearchCheck, AlertTriangle, UserPlus } from 'lucide-react';
 import { SupplierSelector } from '@/components/invoices/SupplierSelector';
+import { logger } from '@/lib/logger';
 import { SupplierFormDialog } from '@/components/suppliers/SupplierFormDialog';
 import { validateNIFOrCIF, getNIFCIFErrorMessage } from '@/lib/nif-validator';
 import { toast } from 'sonner';
@@ -92,7 +93,7 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
         setValue('supplier_name', '');
       }
     } catch (error) {
-      console.error('[Validate NIF] Error:', error);
+      logger.error('InvoiceSupplierSection', 'Validate NIF error', error);
       toast.error('Error al buscar proveedor');
     } finally {
       setValidatingNIF(false);

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
 import { createMigrationLogger } from "@/lib/migration/migrationLogger";
+import { logger } from "@/lib/logger";
 
 interface StepAperturaProps {
   config: FiscalYearConfig;
@@ -184,7 +185,7 @@ export function StepApertura({ config, completed, entryId, migrationRunId, onCom
       toast.success(`✅ Asiento de apertura creado con ${transactions.length} líneas`);
       onComplete(entry.id, config.startDate);
     } catch (error: any) {
-      console.error('Import error:', error);
+      logger.error('StepApertura', 'Import error', error);
       await logger?.error('Error en importación de apertura', error);
       setErrors([error.message || 'Error desconocido']);
       toast.error(error.message || 'Error al importar');

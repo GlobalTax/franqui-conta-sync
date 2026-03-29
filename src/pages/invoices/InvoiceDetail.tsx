@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from "@/components/ui/panel-card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ const InvoiceDetail = () => {
         await generateIssuedEntry.mutateAsync(id!);
       }
     } catch (error) {
-      console.error("Error generating entry:", error);
+      logger.error("InvoiceDetail", "Error generating entry", error);
     }
   };
 

@@ -12,6 +12,7 @@ import { Info, Sparkles } from 'lucide-react';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 import type { InvoiceReceived } from '@/domain/invoicing/types';
+import { logger } from '@/lib/logger';
 
 interface ReprocessOCRDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function ReprocessOCRDialog({
       onOpenChange(false);
       onComplete?.();
     } catch (error) {
-      console.error('Reprocess error:', error);
+      logger.error('ReprocessOCRDialog', 'Reprocess error', error);
     }
   };
 

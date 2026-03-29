@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface ErrorsDownloadButtonProps {
   errors: any[];
@@ -45,7 +46,7 @@ export function ErrorsDownloadButton({ errors, filename = 'errores-importacion' 
 
       toast.success('Archivo de errores descargado');
     } catch (error) {
-      console.error('Error downloading errors:', error);
+      logger.error('ErrorsDownloadButton', 'Error downloading errors', error);
       toast.error('Error al descargar el archivo de errores');
     }
   };

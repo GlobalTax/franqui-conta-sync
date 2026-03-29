@@ -7,6 +7,7 @@ import { AlertTriangle, Plus } from "lucide-react";
 import { useUnmappedAccounts } from "@/hooks/useUnmappedAccounts";
 import { usePLTemplate } from "@/hooks/usePLTemplates";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { logger } from "@/lib/logger";
 
 interface UnmappedAccountsPanelProps {
   templateCode: string;
@@ -24,7 +25,7 @@ export const UnmappedAccountsPanel = ({ templateCode }: UnmappedAccountsPanelPro
   });
 
   const handleCreateRuleFromAccount = (accountCode: string) => {
-    console.log("Crear regla para:", accountCode);
+    logger.debug("UnmappedAccountsPanel", "Crear regla para:", accountCode);
   };
 
   if (isLoading) return <div>Cargando cuentas sin mapear...</div>;

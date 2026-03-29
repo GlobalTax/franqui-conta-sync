@@ -6,6 +6,7 @@ import { Scan, Upload, Inbox, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function OCRQuickAccessCard() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export function OCRQuickAccessCard() {
           filter: 'status=eq.pending_ocr', // Solo facturas pendientes
         },
         (payload) => {
-          console.log('📥 Factura pendiente OCR actualizada:', payload);
+          logger.debug('OCRQuickAccessCard', 'Factura pendiente OCR actualizada', payload);
           // Invalidar contador para refetch
           queryClient.invalidateQueries({ queryKey: ['ocr-pending-count'] });
         }

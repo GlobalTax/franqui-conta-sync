@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Cpu, TrendingUp, DollarSign } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export function OCREngineMetrics() {
   const queryClient = useQueryClient();
@@ -58,7 +59,7 @@ export function OCREngineMetrics() {
           table: 'ocr_processing_log',
         },
         (payload) => {
-          console.log('📊 Nuevo procesamiento OCR:', payload.new);
+          logger.debug('OCREngineMetrics', 'Nuevo procesamiento OCR', payload.new);
           // Invalidar métricas para recalcular
           queryClient.invalidateQueries({ queryKey: ['ocr-engine-metrics'] });
         }

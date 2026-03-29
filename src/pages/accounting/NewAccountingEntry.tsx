@@ -1,4 +1,5 @@
 import { ArrowLeft, FileText, AlertCircle } from "lucide-react";
+import { logger } from '@/lib/logger';
 import { Button } from "@/components/ui/button";
 import { AccountingEntryForm } from "@/components/accounting/AccountingEntryForm";
 import { useCreateAccountingEntry } from "@/hooks/useAccountingEntries";
@@ -40,7 +41,7 @@ export default function NewAccountingEntry() {
         // Evaluate the expression safely
         return Function(`'use strict'; return (${expression})`)();
       } catch (e) {
-        console.error('Error evaluating formula:', formula, e);
+        logger.error('NewAccountingEntry', 'Error evaluating formula', formula, e);
         return 0;
       }
     };

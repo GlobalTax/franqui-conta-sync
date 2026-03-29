@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { NewAccountingEntryFormData, MovementType } from "@/types/accounting-entries";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 type ParsedRow = {
   entry_date: string;
@@ -194,7 +195,7 @@ export function JournalCSVImporter({
         }
       });
     } catch (error) {
-      console.error('Error validating:', error);
+      logger.error('JournalCSVImporter', 'Error validating', error);
     }
 
     setValidationErrors(validationIssues);

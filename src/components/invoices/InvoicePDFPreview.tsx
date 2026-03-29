@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import "react-pdf/dist/Page/AnnotationLayer.css";
+import { logger } from "@/lib/logger";
 import "react-pdf/dist/Page/TextLayer.css";
 
 // Configurar worker de PDF.js
@@ -68,7 +69,7 @@ export function InvoicePDFPreview({
         if (error) throw error;
         setPdfUrl(data.signedUrl);
       } catch (err: any) {
-        console.error("Error loading PDF:", err);
+        logger.error("InvoicePDFPreview", "Error loading PDF", err);
         setError(err.message);
       } finally {
         setLoading(false);

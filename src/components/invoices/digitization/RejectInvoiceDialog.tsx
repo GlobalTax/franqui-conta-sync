@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 import type { InvoiceReceived } from '@/domain/invoicing/types';
@@ -70,7 +71,7 @@ export function RejectInvoiceDialog({
       onOpenChange(false);
       onComplete?.();
     } catch (error) {
-      console.error('Reject error:', error);
+      logger.error('RejectInvoiceDialog', 'Reject error', error);
     }
   };
 

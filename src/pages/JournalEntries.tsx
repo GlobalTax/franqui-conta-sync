@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -245,7 +246,7 @@ const JournalEntries = () => {
           centroCode="MADRID-001"
           onSuccess={() => {
             // Aquí se podría refrescar la lista de asientos
-            console.log('Import successful');
+            logger.info('JournalEntries', 'Import successful');
           }}
         />
       </div>

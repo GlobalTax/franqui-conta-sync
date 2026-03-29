@@ -110,7 +110,7 @@ serve(async (req) => {
         );
       }
       
-      console.error('[VIES] Network error:', fetchError);
+      logger.error('validate-eu-vat', 'Network error', fetchError);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -123,7 +123,7 @@ serve(async (req) => {
     clearTimeout(timeoutId);
 
     if (!viesResponse.ok) {
-      console.error(`[VIES] HTTP error: ${viesResponse.status}`);
+      logger.error('validate-eu-vat', 'HTTP error', { status: viesResponse.status });
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -135,7 +135,7 @@ serve(async (req) => {
 
     // Parsear respuesta XML
     const xmlText = await viesResponse.text();
-    console.log('[VIES] Response received:', xmlText.substring(0, 200));
+    logger.debug('validate-eu-vat', 'Response received', { preview: xmlText.substring(0, 200) });
 
     // Detectar errores SOAP
     if (xmlText.includes('INVALID_INPUT')) {
@@ -177,7 +177,7 @@ serve(async (req) => {
     const companyName = nameMatch?.[1] || undefined;
     const companyAddress = addressMatch?.[1] || undefined;
 
-    console.log(`[VIES] Result: valid=${isValid}, name=${companyName}`);
+    logger.info('validate-eu-vat', 'Validation result', { valid: isValid, name: companyName });
 
     const result: VIESResponse = {
       valid: isValid,
@@ -195,7 +195,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[VIES] Unexpected error:', error);
+    logger.error('validate-eu-vat', 'Unexpected error', error);
     return new Response(
       JSON.stringify({ 
         valid: false, 

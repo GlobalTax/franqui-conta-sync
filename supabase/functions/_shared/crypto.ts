@@ -3,6 +3,8 @@
 // Purpose: Secure token storage with mock mode for development
 // ============================================================================
 
+import { logger } from './logger.ts';
+
 /**
  * Encrypts data using AES-256-GCM
  * Returns base64-encoded format: iv:authTag:ciphertext
@@ -14,7 +16,7 @@ export async function encrypt(plaintext: string): Promise<string> {
   
   // Mock mode for development without secrets
   if (!key) {
-    console.warn('⚠️ CRYPTO MOCK MODE: DATA_ENC_KEY not set, using plaintext with prefix');
+    logger.warn('crypto', 'CRYPTO MOCK MODE: DATA_ENC_KEY not set, using plaintext with prefix');
     return `MOCK:${btoa(plaintext)}`;
   }
 
@@ -52,7 +54,7 @@ export async function encrypt(plaintext: string): Promise<string> {
       bytesToBase64(actualCiphertext)
     ].join(':');
   } catch (error) {
-    console.error('Encryption failed:', error);
+    logger.error('crypto', 'Encryption failed', error);
     throw new Error('CRYPTO_ENCRYPT_FAILED');
   }
 }
@@ -65,7 +67,7 @@ export async function encrypt(plaintext: string): Promise<string> {
 export async function decrypt(encrypted: string): Promise<string> {
   // Handle mock mode
   if (encrypted.startsWith('MOCK:')) {
-    console.warn('⚠️ CRYPTO MOCK MODE: Decrypting mock data');
+    logger.warn('crypto', 'CRYPTO MOCK MODE: Decrypting mock data');
     return atob(encrypted.slice(5));
   }
 
@@ -109,7 +111,7 @@ export async function decrypt(encrypted: string): Promise<string> {
 
     return new TextDecoder().decode(decrypted);
   } catch (error) {
-    console.error('Decryption failed:', error);
+    logger.error('crypto', 'Decryption failed', error);
     throw new Error('CRYPTO_DECRYPT_FAILED');
   }
 }

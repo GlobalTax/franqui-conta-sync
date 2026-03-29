@@ -2,6 +2,8 @@
 // LEARNING ENGINE - Aprende de correcciones para mejorar mapping
 // ============================================================================
 
+import { logger } from '../logger.ts';
+
 export interface CorrectionInput {
   invoice_id: string;
   supplier_id: string | null;
@@ -54,7 +56,7 @@ export async function recordCorrection(
     
     if (error) throw error;
     
-    console.log('[Learning] Correction recorded:', {
+    logger.info('learning-engine', 'Correction recorded', {
       correction_id: data.id,
       pattern_detected: data.pattern_detected,
     });
@@ -66,7 +68,7 @@ export async function recordCorrection(
     };
     
   } catch (error) {
-    console.error('[Learning] Error:', error);
+    logger.error('learning-engine', 'Error recording correction', error);
     return { success: false };
   }
 }
@@ -84,7 +86,7 @@ export async function getLearnedPatterns(
     .order('confidence_score', { ascending: false });
   
   if (error) {
-    console.error('[Learning] Error fetching patterns:', error);
+    logger.error('learning-engine', 'Error fetching patterns', error);
     return [];
   }
   

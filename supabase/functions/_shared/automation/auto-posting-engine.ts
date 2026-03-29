@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { EnhancedInvoiceData } from "../ocr/types.ts";
+import { logger } from '../logger.ts';
 
 // ============================================================================
 // TYPES
@@ -220,12 +221,12 @@ export async function executeAutoPost(
       })
       .eq('id', invoiceId);
     
-    console.log(`[Auto-Post] Invoice ${invoiceId} auto-approved`);
+    logger.info('auto-posting-engine', 'Invoice auto-approved', { invoiceId });
     
     return { success: true };
     
   } catch (error) {
-    console.error(`[Auto-Post] Error:`, error);
+    logger.error('auto-posting-engine', 'Error auto-posting', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

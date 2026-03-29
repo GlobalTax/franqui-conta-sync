@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { EnhancedInvoiceData } from "../ocr/types.ts";
+import { logger } from '../logger.ts';
 
 export interface APMappingSuggestion {
   account_suggestion: string;
@@ -42,7 +43,7 @@ async function validateAccountExists(
   const { data, error } = await query.maybeSingle();
   
   if (error) {
-    console.error(`Error validating account ${accountCode}:`, error);
+    logger.error('mapping-engine', `Error validating account ${accountCode}`, error);
     return false;
   }
   
@@ -131,10 +132,10 @@ export async function apMapperEngine(
           rationale: learnedPattern.rationale,
           matched_rule_name: 'Machine Learning',
         };
-        console.log('[AP Mapper] Applied learned pattern:', learnedPattern);
+        logger.info('mapping-engine', 'Applied learned pattern', learnedPattern);
       }
     } catch (err) {
-      console.error('[AP Mapper] Learning pattern error:', err);
+      logger.error('mapping-engine', 'Learning pattern error', err);
     }
   }
   
@@ -235,7 +236,7 @@ async function loadAPMappingRules(supabase: any) {
     .order('priority', { ascending: false });
   
   if (error) {
-    console.error('Error loading AP mapping rules:', error);
+    logger.error('mapping-engine', 'Error loading AP mapping rules', error);
     return [];
   }
   

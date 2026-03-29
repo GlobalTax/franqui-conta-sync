@@ -396,17 +396,17 @@ Deno.serve(async (req) => {
       .eq('id', fiscalYearId);
 
     if (updateError) {
-      console.error('[close-fiscal-year] Error updating fiscal year:', updateError);
+      logger.error('close-fiscal-year', 'Error updating fiscal year', updateError);
       throw new Error(`Error al actualizar ejercicio: ${updateError.message}`);
     }
 
-    console.log(`[close-fiscal-year] ✅ Fiscal year closed successfully`);
+    logger.info('close-fiscal-year', 'Fiscal year closed successfully');
 
     // ========================================================================
     // STEP 5: Create closing_periods records (monthly + annual)
     // ========================================================================
 
-    console.log(`[close-fiscal-year] Creating closing_periods...`);
+    logger.info('close-fiscal-year', 'Creating closing_periods');
 
     // Calculate all months in fiscal year
     const startDate = new Date(fiscalYear.start_date);
@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
 
-    console.log(`[close-fiscal-year] Months to close: ${months.length}`);
+    logger.info('close-fiscal-year', 'Months to close', { count: months.length });
 
     // Insert monthly closing periods
     const monthlyPeriods = months.map(({ year, month }) => ({
@@ -442,11 +442,11 @@ Deno.serve(async (req) => {
       .insert(monthlyPeriods);
 
     if (monthlyError) {
-      console.error('[close-fiscal-year] Error creating monthly closings:', monthlyError);
+      logger.error('close-fiscal-year', 'Error creating monthly closings', monthlyError);
       throw new Error(`Error al crear cierres mensuales: ${monthlyError.message}`);
     }
 
-    console.log(`[close-fiscal-year] ✅ ${months.length} monthly closings created`);
+    logger.info('close-fiscal-year', 'Monthly closings created', { count: months.length });
 
     // Insert annual closing period
     const { error: annualError } = await supabase
@@ -465,11 +465,11 @@ Deno.serve(async (req) => {
       });
 
     if (annualError) {
-      console.error('[close-fiscal-year] Error creating annual closing:', annualError);
+      logger.error('close-fiscal-year', 'Error creating annual closing', annualError);
       throw new Error(`Error al crear cierre anual: ${annualError.message}`);
     }
 
-    console.log(`[close-fiscal-year] ✅ Annual closing created`);
+    logger.info('close-fiscal-year', 'Annual closing created');
 
     return new Response(
       JSON.stringify({
@@ -495,7 +495,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('[close-fiscal-year] Fatal error:', error);
+    logger.error('close-fiscal-year', 'Fatal error', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       {

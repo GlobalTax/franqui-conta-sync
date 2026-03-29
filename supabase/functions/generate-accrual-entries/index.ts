@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    console.log(`✅ Generados ${entries.length} asientos periódicos para ${accrualId}`);
+    logger.info('generate-accrual-entries', 'Periodic entries generated', { count: entries.length, accrualId });
 
     return new Response(
       JSON.stringify({
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error:", error);
+    logger.error('generate-accrual-entries', 'Error', error);
     
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
     

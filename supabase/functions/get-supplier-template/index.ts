@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +36,7 @@ serve(async (req) => {
 
     const { supplier_id, supplier_vat_id }: RequestBody = await req.json();
 
-    console.log('[get-supplier-template] Request:', { supplier_id, supplier_vat_id });
+    logger.info('get-supplier-template', 'Request received', { supplier_id, supplier_vat_id });
 
     let query = supabase
       .from('supplier_ocr_templates')
@@ -65,7 +66,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (supplierError) {
-        console.error('[get-supplier-template] Error finding supplier:', supplierError);
+        logger.error('get-supplier-template', 'Error finding supplier', supplierError);
         return new Response(
           JSON.stringify({ error: 'Error finding supplier', details: supplierError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -73,7 +74,7 @@ serve(async (req) => {
       }
 
       if (!supplier) {
-        console.log('[get-supplier-template] No supplier found for VAT ID:', supplier_vat_id);
+        logger.info('get-supplier-template', 'No supplier found for VAT ID', { supplier_vat_id });
         return new Response(
           JSON.stringify({ template: null, message: 'No supplier found for VAT ID' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -91,7 +92,7 @@ serve(async (req) => {
     const { data: templates, error } = await query;
 
     if (error) {
-      console.error('[get-supplier-template] Error:', error);
+      logger.error('get-supplier-template', 'Error fetching template', error);
       return new Response(
         JSON.stringify({ error: 'Error fetching template', details: error.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -100,7 +101,7 @@ serve(async (req) => {
 
     const template = templates && templates.length > 0 ? templates[0] : null;
 
-    console.log('[get-supplier-template] Found template:', template?.id || 'none');
+    logger.info('get-supplier-template', 'Found template', { templateId: template?.id || 'none' });
 
     return new Response(
       JSON.stringify({ 
@@ -111,7 +112,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[get-supplier-template] Unexpected error:', error);
+    logger.error('get-supplier-template', 'Unexpected error', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

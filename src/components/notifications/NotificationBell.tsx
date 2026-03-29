@@ -2,13 +2,12 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useNotifications, useUnreadCount } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationItem } from "./NotificationItem";
 import { useNavigate } from "react-router-dom";
 
 export function NotificationBell() {
-  const { data: notifications } = useNotifications();
-  const unreadCount = useUnreadCount();
+  const { data: notifications, unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   return (

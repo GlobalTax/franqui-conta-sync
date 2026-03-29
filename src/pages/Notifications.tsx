@@ -1,13 +1,11 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCheck } from "lucide-react";
-import { useNotifications, useUnreadCount, useMarkAllAsRead } from "@/hooks/useNotifications";
+import { useNotifications, useMarkAllAsRead } from "@/hooks/useNotifications";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 
 export default function Notifications() {
-  const { data: notifications, isLoading } = useNotifications();
-  const unreadCount = useUnreadCount();
+  const { data: notifications, isLoading, unreadCount } = useNotifications();
   const markAllAsRead = useMarkAllAsRead();
 
   const unreadNotifications = notifications?.filter((n) => !n.leida) || [];

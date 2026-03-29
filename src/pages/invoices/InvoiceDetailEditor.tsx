@@ -128,6 +128,10 @@ export default function InvoiceDetailEditor() {
   const [ocrProcessed, setOcrProcessed] = useState(false);
   const [ocrSupplierTaxId, setOcrSupplierTaxId] = useState<string>('');
   const [ocrSupplierName, setOcrSupplierName] = useState<string>('');
+  const [ocrSupplierAddress, setOcrSupplierAddress] = useState<string>('');
+  const [ocrSupplierCity, setOcrSupplierCity] = useState<string>('');
+  const [ocrSupplierPostalCode, setOcrSupplierPostalCode] = useState<string>('');
+  const [ocrSupplierEmail, setOcrSupplierEmail] = useState<string>('');
   // Claude is the only engine now
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);

@@ -182,7 +182,7 @@ const App = () => {
             {/* Mantener ruta legacy por compatibilidad */}
             <Route path="/invoices/inbox" element={<Navigate to="/digitalizacion?tab=inbox" replace />} />
             <Route path="/invoices/received/:id/edit" element={<ErrorBoundary context="Editor Factura"><InvoiceDetailEditor /></ErrorBoundary>} />
-             <Route path="/facturas" element={<Navigate to="/invoices" replace />} />
+             <Route path="/facturas" element={<Navigate to="/invoices/received" replace />} />
              <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<Navigate to="/invoices/new-received" replace />} />

@@ -35,7 +35,7 @@ export function useLaborCostKPIs(centroCode?: string, startDate?: string, endDat
       if (!centroCode || !startDate || !endDate) return null;
 
       // Obtener costes laborales del período
-      const { data: payrollData, error: payrollError } = await supabase
+      const { data: payrollData, error: payrollError } = await (supabase as any)
         .from('stg_nominas')
         .select('*')
         .eq('centro_code', centroCode)

@@ -77,9 +77,10 @@ export const usePLReport = ({
             plData: plDataAccumulated,
             summary: calculateSummary(summaryData),
           };
-        } catch (err: any) {
+        } catch (error: unknown) {
           // Fallback: si el RPC acumulado no existe o falla, hacer dos llamadas separadas
-          if (err.code === '404' || err.code === '400' || err.code === '42883') {
+          const errCode = error instanceof Object && 'code' in error ? (error as { code: string }).code : undefined;
+          if (errCode === '404' || errCode === '400' || errCode === '42883') {
             logger.warn('usePLReport', 'calculate_pl_report_accumulated no disponible, usando fallback dual');
             
             const periodDateObj = new Date(periodDate);
@@ -144,7 +145,7 @@ export const usePLReport = ({
               summary: calculateSummary(summaryData),
             };
           }
-          throw err;
+          throw error;
         }
       }
       // Si hay múltiples centros, usar RPC consolidado

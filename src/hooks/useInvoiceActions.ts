@@ -240,9 +240,9 @@ export function useInvoiceActions() {
       window.open(data.publicUrl, '_blank');
 
       toast.success('PDF descargado');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Error al descargar PDF', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
       });
     }
   };

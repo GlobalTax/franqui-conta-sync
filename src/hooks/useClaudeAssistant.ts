@@ -76,10 +76,10 @@ export function useClaudeAssistant(options: UseClaudeAssistantOptions = {}) {
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error('useClaudeAssistant', 'Error:', error);
         const errorMessage =
-          error?.message || "Error al comunicar con el asistente IA";
+          error instanceof Error ? error.message : "Error al comunicar con el asistente IA";
         toast.error(errorMessage);
 
         // Add error message to chat

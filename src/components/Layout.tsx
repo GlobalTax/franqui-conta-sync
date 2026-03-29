@@ -213,7 +213,7 @@ const Layout = () => {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-6 overflow-auto">
+        <nav aria-label="Navegación principal" className="flex-1 p-4 space-y-6 overflow-auto">
           <div>
             <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
               Principal
@@ -282,7 +282,7 @@ const Layout = () => {
           {/* IVA Dropdown */}
           <div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
+              <DropdownMenuTrigger aria-label="Abrir menú IVA" className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4" strokeWidth={2} />
                   <span className="text-sm">IVA</span>
@@ -329,7 +329,7 @@ const Layout = () => {
           {/* Informes Dropdown */}
           <div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
+              <DropdownMenuTrigger aria-label="Abrir menú Informes" className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group">
                 <div className="flex items-center gap-3">
                   <BarChart3 className="h-4 w-4" strokeWidth={2} />
                   <span className="text-sm">Informes</span>

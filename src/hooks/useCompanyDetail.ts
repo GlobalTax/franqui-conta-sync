@@ -148,15 +148,18 @@ export function useCompanyDetail(companyId?: string) {
         });
 
         return [...centresFromCC, ...centresFromDirect];
-      } catch (error: any) {
-        logger.error('useCompanyDetail', '❌ Error fetching centres:', error?.code, error?.message);
+      } catch (error: unknown) {
+        const errCode = error instanceof Object && 'code' in error ? (error as { code: string }).code : undefined;
+        const errMessage = error instanceof Error ? error.message : 'Error desconocido';
+        logger.error('useCompanyDetail', '❌ Error fetching centres:', errCode, errMessage);
         throw error;
       }
     },
     enabled: !!companyId && !!company?.cif && company.cif !== "",
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: unknown) => {
       // No reintentar si es error 400 (datos inválidos)
-      if (error?.code === 'PGRST116' || error?.status === 400) {
+      const errObj = error instanceof Object ? error as Record<string, unknown> : {};
+      if (errObj?.code === 'PGRST116' || errObj?.status === 400) {
         logger.warn('useCompanyDetail', '⚠️ Not retrying 400 error for centres query');
         return false;
       }

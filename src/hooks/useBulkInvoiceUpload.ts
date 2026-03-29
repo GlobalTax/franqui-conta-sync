@@ -293,16 +293,16 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
           : f
       ));
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('BulkUpload', 'Error uploading file:', error);
-      setFiles(prev => prev.map(f => 
-        f.id === fileItem.id 
-          ? { 
-              ...f, 
-              status: 'error', 
-              error: error.message || 'Error desconocido',
+      setFiles(prev => prev.map(f =>
+        f.id === fileItem.id
+          ? {
+              ...f,
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Error desconocido',
               progress: 100
-            } 
+            }
           : f
       ));
     }

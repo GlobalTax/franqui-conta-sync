@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ interface PLTableMonthlyProps {
   onRubricClick?: (rubricCode: string, rubricName: string, month: number) => void;
 }
 
-export const PLTableMonthly = ({
+const PLTableMonthlyInner = ({
   monthlyQueries,
   prevYearMonthlyQueries,
   year,
@@ -21,6 +21,12 @@ export const PLTableMonthly = ({
   onRubricClick,
 }: PLTableMonthlyProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const handleRubricClick = useCallback((rubricCode: string, rubricName: string, isTotal: boolean, monthIdx: number) => {
+    if (!isTotal && onRubricClick) {
+      onRubricClick(rubricCode, rubricName, monthIdx + 1);
+    }
+  }, [onRubricClick]);
   
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   
@@ -138,11 +144,7 @@ export const PLTableMonthly = ({
                           className={`text-right font-mono text-sm ${
                             !rubric.is_total && onRubricClick ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''
                           }`}
-                          onClick={() => {
-                            if (!rubric.is_total && onRubricClick) {
-                              onRubricClick(rubric.rubric_code, rubric.rubric_name, monthIdx + 1);
-                            }
-                          }}
+                          onClick={() => handleRubricClick(rubric.rubric_code, rubric.rubric_name, rubric.is_total, monthIdx)}
                         >
                           {currentAmount.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </TableCell>
@@ -192,3 +194,5 @@ export const PLTableMonthly = ({
     </div>
   );
 };
+
+export const PLTableMonthly = React.memo(PLTableMonthlyInner);

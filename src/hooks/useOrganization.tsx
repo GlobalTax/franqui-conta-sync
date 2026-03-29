@@ -80,7 +80,7 @@ export function useOrganization() {
 
       setMemberships(membershipsWithData);
       setCurrentMembership(membershipsWithData[0] || null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('useOrganization', 'Error fetching memberships:', error);
       toast({
         title: "Error",

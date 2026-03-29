@@ -26,6 +26,10 @@ interface InvoiceSupplierSectionProps {
   watch: any;
   ocrTaxId?: string;
   ocrSupplierName?: string;
+  ocrSupplierAddress?: string;
+  ocrSupplierCity?: string;
+  ocrSupplierPostalCode?: string;
+  ocrSupplierEmail?: string;
 }
 
 export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName }: InvoiceSupplierSectionProps) {

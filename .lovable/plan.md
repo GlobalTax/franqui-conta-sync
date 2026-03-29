@@ -1,51 +1,30 @@
 
 
-# Plan: Añadir rol "Empleado" (personal del franquiciado) con permisos configurables
+# Plan: Arreglar el bloqueo de invitaciones duplicadas
 
-## Concepto
+## Problema
 
-Nuevo rol `empleado` — personal del franquiciado (gerente de restaurante, encargado, etc.) que puede acceder al sistema con permisos granulares configurados por el admin. A diferencia del `franquiciado` (solo lectura fija), el empleado tiene permisos selectivos.
+La Edge Function `send-invite` rechaza con 409 ("Ya existe una invitación pendiente para este email") cuando ya hay una invitación no aceptada y no expirada para ese email. En la tabla `invites` hay invitaciones recientes (del 29 de marzo, expiran el 5 de abril) que bloquean cualquier reenvío.
 
-## Modelo de roles actualizado
+## Solución
 
-| Rol | Quién | Acceso |
-|-----|-------|--------|
-| `admin` | Asesoría | Total |
-| `gestor` | Empleado asesoría | Centros asignados |
-| `franquiciado` | Propietario | Solo lectura sus restaurantes |
-| **`empleado`** | **Personal del franquiciado** | **Configurable por el admin** |
+Dos cambios:
 
-## Cambios
+### 1. Edge Function: reemplazar invitación existente en vez de rechazar
 
-### 1. Migración SQL
-- Añadir `'empleado'` al enum `app_role` (`ALTER TYPE app_role ADD VALUE 'empleado'`)
-- Insertar permisos base para `empleado` en `role_permissions` (por defecto solo vista básica)
+En `supabase/functions/send-invite/index.ts`, cuando ya existe una invitación pendiente para el mismo email:
+- **Eliminar la invitación anterior** y crear una nueva (en vez de devolver 409)
+- Esto permite "reenviar" simplemente volviendo a invitar
 
-### 2. Frontend — 5 archivos
+Cambio concreto: reemplazar el bloque que devuelve 409 por un `DELETE` de la invitación existente antes de insertar la nueva.
+
+### 2. Frontend: añadir botón "Reenviar" en la tabla de invitaciones (opcional, mejora UX)
+
+Si quieres también poder ver las invitaciones pendientes y reenviarlas, puedo añadir una pestaña/sección en UsersManagement que liste las invitaciones pendientes con opción de reenviar o cancelar.
+
+## Archivo a tocar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/admin/RolesManagement.tsx` | Añadir entrada `empleado` con icono 👤 y descripción |
-| `src/components/admin/InviteUserDialog.tsx` | Añadir `empleado` al select de roles + marcar como `needsFranchisee` |
-| `src/components/admin/EditUserDialog.tsx` | Añadir `empleado` al select |
-| `src/components/admin/RolePermissionsEditor.tsx` | Añadir `empleado` al select (permisos editables con checkboxes) |
-| `src/components/admin/PermissionsMatrix.tsx` | Añadir `empleado` al array `ROLES` |
-| `src/pages/admin/UsersManagement.tsx` | Añadir badge/icono para `empleado` |
-| `src/pages/AcceptInvite.tsx` | Añadir label para `empleado` |
-| `supabase/functions/send-invite/index.ts` | Añadir label para `empleado` en el email |
-
-### 3. Permisos configurables
-
-El admin usa el `RolePermissionsEditor` existente para marcar qué puede ver/hacer el rol `empleado`. Por ejemplo:
-- ✅ Ver nóminas, ver horarios, ver ausencias
-- ❌ Crear/editar/eliminar, importar, exportar, administración
-
-Esto ya funciona con la tabla `role_permissions` y el RPC `has_permission` — solo hay que añadir el rol nuevo al selector.
-
-## Resultado
-
-Al invitar un empleado del franquiciado, el admin:
-1. Elige rol "Empleado"
-2. Asigna franquiciado + centro(s)
-3. Los permisos granulares se configuran desde "Permisos por Rol"
+| `supabase/functions/send-invite/index.ts` | Reemplazar invitación existente en vez de 409 |
 

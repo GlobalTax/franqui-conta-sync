@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 
 export interface ReconciliationSuggestion {
   matched_id: string;
@@ -34,7 +35,7 @@ export const useReconciliationSuggestions = (
       });
 
       if (error) {
-        console.error('[useReconciliationSuggestions] Error:', error);
+        logger.error('useReconciliationSuggestions', 'Error:', error);
         throw error;
       }
 
@@ -42,7 +43,7 @@ export const useReconciliationSuggestions = (
       const result = data as unknown as { success: boolean; suggestions: ReconciliationSuggestion[]; error?: string } | null;
 
       if (!result?.success) {
-        console.error('[useReconciliationSuggestions] RPC failed:', result?.error);
+        logger.error('useReconciliationSuggestions', 'RPC failed:', result?.error);
         return [];
       }
 

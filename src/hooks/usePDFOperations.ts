@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface SplitPDFParams {
   invoiceId: string;
@@ -48,7 +49,7 @@ export function usePDFOperations() {
       });
     },
     onError: (error: Error) => {
-      console.error('Error splitting PDF:', error);
+      logger.error('usePDFOperations', 'Error splitting PDF:', error);
       toast.error(`Error al dividir PDF: ${error.message}`);
     },
   });
@@ -75,7 +76,7 @@ export function usePDFOperations() {
       });
     },
     onError: (error: Error) => {
-      console.error('Error merging PDFs:', error);
+      logger.error('usePDFOperations', 'Error merging PDFs:', error);
       toast.error(`Error al fusionar PDFs: ${error.message}`);
     },
   });

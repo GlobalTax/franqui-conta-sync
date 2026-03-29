@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 import { 
   getBankTransactions, 
   createBankTransaction, 
@@ -95,7 +96,7 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al crear transacción");
-      console.error(error);
+      logger.error('useBankTransactions', 'Error creating transaction:', error);
     },
   });
 
@@ -124,7 +125,7 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al actualizar transacción");
-      console.error(error);
+      logger.error('useBankTransactions', 'Error updating transaction:', error);
     },
   });
 
@@ -153,7 +154,7 @@ export const useBankTransactions = (filters: TransactionFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al importar transacciones");
-      console.error(error);
+      logger.error('useBankTransactions', 'Error importing transactions:', error);
     },
   });
 

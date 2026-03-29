@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface BulkApproveParams {
   invoiceIds: string[];
@@ -63,7 +64,7 @@ export function useBulkApprove() {
 
           results.success++;
         } catch (error: any) {
-          console.error(`Error approving invoice ${invoiceId}:`, error);
+          logger.error('useBulkApprove', `Error approving invoice ${invoiceId}:`, error);
           results.failed++;
           results.errors.push({
             invoiceId,
@@ -93,7 +94,7 @@ export function useBulkApprove() {
       setProgress({ current: 0, total: 0 });
     },
     onError: (error: Error) => {
-      console.error('Error in bulk approve:', error);
+      logger.error('useBulkApprove', 'Error in bulk approve:', error);
       toast.error(`Error: ${error.message}`);
       setProgress({ current: 0, total: 0 });
     },

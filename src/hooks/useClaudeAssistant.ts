@@ -7,6 +7,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 export type AssistantMode = "chat" | "document-analysis" | "report-generation" | "mapping-enhancement";
 
@@ -76,7 +77,7 @@ export function useClaudeAssistant(options: UseClaudeAssistantOptions = {}) {
 
         setMessages((prev) => [...prev, assistantMsg]);
       } catch (error: any) {
-        console.error("[useClaudeAssistant] Error:", error);
+        logger.error('useClaudeAssistant', 'Error:', error);
         const errorMessage =
           error?.message || "Error al comunicar con el asistente IA";
         toast.error(errorMessage);

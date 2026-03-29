@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 export interface ReconciliationMatch {
   id: string;
@@ -133,7 +134,7 @@ export const useReconciliation = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al aprobar conciliación");
-      console.error(error);
+      logger.error('useReconciliation', 'Error approving match:', error);
     },
   });
 
@@ -155,7 +156,7 @@ export const useReconciliation = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al rechazar conciliación");
-      console.error(error);
+      logger.error('useReconciliation', 'Error rejecting match:', error);
     },
   });
 
@@ -196,7 +197,7 @@ export const useReconciliation = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al buscar coincidencias");
-      console.error(error);
+      logger.error('useReconciliation', 'Error suggesting matches:', error);
     },
   });
 

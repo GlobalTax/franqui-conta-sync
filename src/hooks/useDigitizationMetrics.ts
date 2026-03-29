@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // INTERFACES
@@ -49,7 +50,7 @@ export const useDigitizationMetrics = (filters: DigitizationMetricsFilters) => {
       });
 
       if (error) {
-        console.error('Error fetching digitization metrics:', error);
+        logger.error('useDigitizationMetrics', 'Error fetching digitization metrics:', error);
         throw error;
       }
 

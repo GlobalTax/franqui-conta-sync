@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
 import { autoDetectCentro } from '@/lib/centro-detection';
+import { logger } from '@/lib/logger';
 
 interface UploadParams {
   file: File;
@@ -129,7 +130,7 @@ export const useInvoiceUpload = () => {
         .single();
 
       if (insertError) {
-        console.error('[useInvoiceUpload] Insert error:', insertError);
+        logger.error('useInvoiceUpload', 'Insert error:', insertError);
         throw new Error(`Error al crear registro: ${insertError.message}`);
       }
 
@@ -140,7 +141,7 @@ export const useInvoiceUpload = () => {
       setProgress(70);
 
       // 6. Procesar con Claude Vision OCR
-      console.log('[useInvoiceUpload] Iniciando Claude Vision OCR...');
+      logger.info('useInvoiceUpload', 'Iniciando Claude Vision OCR...');
       
       const { data: ocrData, error: ocrError } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
@@ -153,7 +154,7 @@ export const useInvoiceUpload = () => {
       setProgress(90);
 
       if (ocrError) {
-        console.error('[useInvoiceUpload] Claude OCR error:', ocrError);
+        logger.error('useInvoiceUpload', 'Claude OCR error:', ocrError);
         
         await supabase
           .from('invoices_received')
@@ -200,7 +201,7 @@ export const useInvoiceUpload = () => {
       };
 
     } catch (error) {
-      console.error('[useInvoiceUpload] Error:', error);
+      logger.error('useInvoiceUpload', 'Error:', error);
       throw error;
     } finally {
       setIsUploading(false);

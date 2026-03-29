@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface ReprocessParams {
   invoiceId: string;
@@ -21,7 +22,7 @@ export function useReprocessInvoice() {
         throw new Error('No se pudo recuperar la factura');
       }
 
-      console.log('[Reprocess] Using Claude Vision OCR:', invoiceId);
+      logger.info('useReprocessInvoice', 'Using Claude Vision OCR:', invoiceId);
 
       const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
@@ -32,11 +33,11 @@ export function useReprocessInvoice() {
       });
 
       if (error) {
-        console.error('[Reprocess] Claude OCR error:', error);
+        logger.error('useReprocessInvoice', 'Claude OCR error:', error);
         throw error;
       }
 
-      console.log('[Reprocess] Claude OCR success:', {
+      logger.info('useReprocessInvoice', 'Claude OCR success:', {
         confidence: data?.ocr_confidence,
         cost: data?.ocr_cost_euros,
         needsReview: data?.needs_manual_review
@@ -69,7 +70,7 @@ export function useReprocessInvoice() {
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
     },
     onError: (error) => {
-      console.error('Error reprocessing invoice:', error);
+      logger.error('useReprocessInvoice', 'Error reprocessing invoice:', error);
       toast.error('Error al reprocesar la factura', {
         description: error instanceof Error ? error.message : 'Error desconocido'
       });

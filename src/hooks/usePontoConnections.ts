@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 export interface PontoConnection {
   id: string;
@@ -54,7 +55,7 @@ export const usePontoConnections = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al eliminar conexión Ponto");
-      console.error(error);
+      logger.error('usePontoConnections', 'Error deleting connection:', error);
     },
   });
 

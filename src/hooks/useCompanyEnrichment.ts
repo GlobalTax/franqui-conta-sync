@@ -59,7 +59,7 @@ const getFromLocalCache = (cif: string): EnrichedCompanyData | null => {
     logger.info('CompanyEnrichment', `✅ Cache hit for ${cif}`);
     return cached.data;
   } catch (error) {
-    console.error('Error reading from localStorage cache:', error);
+    logger.error('CompanyEnrichment', 'Error reading from localStorage cache:', error);
     return null;
   }
 };
@@ -74,7 +74,7 @@ const saveToLocalCache = (cif: string, data: EnrichedCompanyData): void => {
     localStorage.setItem(cacheKey, JSON.stringify(cached));
     logger.info('CompanyEnrichment', `✅ Saved to cache: ${cif}`);
   } catch (error) {
-    console.error('Error saving to localStorage cache:', error);
+    logger.error('CompanyEnrichment', 'Error saving to localStorage cache:', error);
   }
 };
 
@@ -86,10 +86,10 @@ export const clearLocalCache = (): void => {
         localStorage.removeItem(key);
       }
     });
-    console.log('✅ Local cache cleared');
+    logger.info('CompanyEnrichment', 'Local cache cleared');
     toast.success('Caché local limpiada');
   } catch (error) {
-    console.error('Error clearing local cache:', error);
+    logger.error('CompanyEnrichment', 'Error clearing local cache:', error);
   }
 };
 
@@ -132,7 +132,7 @@ export function useCompanyEnrichment() {
       });
 
       if (error) {
-        console.error('Error al buscar empresa:', error);
+        logger.error('CompanyEnrichment', 'Error al buscar empresa:', error);
         toast.error('Error al buscar información de la empresa');
         return null;
       }
@@ -177,7 +177,7 @@ export function useCompanyEnrichment() {
 
       return companyData;
     } catch (error) {
-      console.error('Error al buscar empresa:', error);
+      logger.error('CompanyEnrichment', 'Error al buscar empresa:', error);
       toast.error('Error al buscar información de la empresa');
       return null;
     } finally {

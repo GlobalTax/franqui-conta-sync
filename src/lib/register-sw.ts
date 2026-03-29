@@ -3,6 +3,8 @@
 // Registra y gestiona el Service Worker para caching y offline support
 // ============================================================================
 
+import { logger } from '@/lib/logger';
+
 /**
  * Registra el Service Worker en el navegador
  * Solo se ejecuta en producción (import.meta.env.PROD)
@@ -10,7 +12,7 @@
 export async function registerServiceWorker() {
   // Verificar soporte del navegador
   if (!('serviceWorker' in navigator)) {
-    console.log('ℹ️ Service Worker no soportado en este navegador');
+    logger.info('register-sw', 'Service Worker no soportado en este navegador');
     return;
   }
 
@@ -19,17 +21,17 @@ export async function registerServiceWorker() {
       scope: '/',
     });
     
-    console.log('✅ Service Worker registrado:', registration.scope);
+    logger.info('register-sw', 'Service Worker registrado:', registration.scope);
 
     // Escuchar actualizaciones del Service Worker
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
-      console.log('🔄 Nueva versión del Service Worker detectada');
+      logger.info('register-sw', 'Nueva version del Service Worker detectada');
       
       newWorker?.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           // Hay nueva versión disponible
-          console.log('🆕 Nueva versión disponible. Recarga la página para actualizar.');
+          logger.info('register-sw', 'Nueva version disponible. Recarga la pagina para actualizar.');
           
           // Opcional: Mostrar notificación al usuario
           if (window.confirm('Nueva versión disponible. ¿Deseas actualizar ahora?')) {
@@ -45,12 +47,12 @@ export async function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshing) return;
       refreshing = true;
-      console.log('🔄 Service Worker actualizado, recargando...');
+      logger.info('register-sw', 'Service Worker actualizado, recargando...');
       window.location.reload();
     });
 
   } catch (error) {
-    console.error('❌ Error al registrar Service Worker:', error);
+    logger.error('register-sw', 'Error al registrar Service Worker:', error);
   }
 }
 
@@ -66,7 +68,7 @@ export async function unregisterServiceWorker() {
     
     for (const registration of registrations) {
       await registration.unregister();
-      console.log('🗑️ Service Worker desregistrado');
+      logger.info('register-sw', 'Service Worker desregistrado');
     }
     
     // Limpiar caches
@@ -75,9 +77,9 @@ export async function unregisterServiceWorker() {
       cacheNames.map((name) => caches.delete(name))
     );
     
-    console.log('🗑️ Caches limpiados');
+    logger.info('register-sw', 'Caches limpiados');
   } catch (error) {
-    console.error('❌ Error al desregistrar Service Worker:', error);
+    logger.error('register-sw', 'Error al desregistrar Service Worker:', error);
   }
 }
 
@@ -92,10 +94,10 @@ export async function clearServiceWorkerCache() {
     
     if (registration && registration.active) {
       registration.active.postMessage({ type: 'CLEAR_CACHE' });
-      console.log('🗑️ Limpieza de cache solicitada');
+      logger.info('register-sw', 'Limpieza de cache solicitada');
     }
   } catch (error) {
-    console.error('❌ Error al limpiar cache:', error);
+    logger.error('register-sw', 'Error al limpiar cache:', error);
   }
 }
 

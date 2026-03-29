@@ -5,6 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 interface UndoReconciliationParams {
   transactionId: string;
@@ -44,7 +45,7 @@ export const useUndoReconciliation = () => {
       });
     },
     onError: (error: Error) => {
-      console.error("[useUndoReconciliation] Error:", error);
+      logger.error('useUndoReconciliation', 'Error:', error);
       toast.error("Error al deshacer conciliación", {
         description: error.message,
       });

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 import { PaymentTerm } from "@/types/advanced-accounting";
 
 interface PaymentTermFilters {
@@ -60,7 +61,7 @@ export const usePaymentTerms = (filters: PaymentTermFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al crear vencimiento");
-      console.error(error);
+      logger.error('usePaymentTerms', 'Error creating term:', error);
     },
   });
 
@@ -81,7 +82,7 @@ export const usePaymentTerms = (filters: PaymentTermFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al actualizar vencimiento");
-      console.error(error);
+      logger.error('usePaymentTerms', 'Error updating term:', error);
     },
   });
 
@@ -112,7 +113,7 @@ export const usePaymentTerms = (filters: PaymentTermFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al marcar como pagado");
-      console.error(error);
+      logger.error('usePaymentTerms', 'Error marking as paid:', error);
     },
   });
 
@@ -130,7 +131,7 @@ export const usePaymentTerms = (filters: PaymentTermFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al eliminar vencimiento");
-      console.error(error);
+      logger.error('usePaymentTerms', 'Error deleting term:', error);
     },
   });
 

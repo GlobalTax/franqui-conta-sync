@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 
 const RETRY_INTERVALS = [60000, 300000, 900000]; // 1m, 5m, 15m in milliseconds
 
@@ -46,7 +47,7 @@ export const useOCRRetry = () => {
         throw new Error('No se pudo recuperar la factura');
       }
 
-      console.log('[useOCRRetry] Retrying with Claude Vision:', { invoiceId, attemptCount });
+      logger.info('useOCRRetry', 'Retrying with Claude Vision:', { invoiceId, attemptCount });
 
       const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {

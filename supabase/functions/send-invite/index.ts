@@ -8,25 +8,40 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    const authHeader = req.headers.get("Authorization")!;
-    const authToken = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authToken);
-
-    if (authError || !user) {
+    // Authenticate caller via JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Verify user is admin
-    const { data: hasAdminRole } = await supabase.rpc("has_role", {
-      _user_id: user.id,
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Use service role client for admin operations
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Verify user is admin via user_roles
+    const { data: hasAdminRole } = await adminClient.rpc("has_role", {
+      _user_id: userId,
       _role: "admin",
     });
 
@@ -39,21 +54,44 @@ serve(async (req) => {
 
     const { email, role, franchisee_id, centro } = await req.json();
 
+    if (!email || !role) {
+      return new Response(JSON.stringify({ error: "Email y rol son obligatorios" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check for existing pending invite with same email
+    const { data: existingInvite } = await adminClient
+      .from("invites")
+      .select("id")
+      .eq("email", email.toLowerCase())
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (existingInvite) {
+      return new Response(
+        JSON.stringify({ error: "Ya existe una invitación pendiente para este email" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Generate unique token
-    const token = crypto.randomUUID();
+    const inviteToken = crypto.randomUUID();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Create invite
-    const { error: inviteError } = await supabase
+    const { error: inviteError } = await adminClient
       .from("invites")
       .insert({
-        email,
-        token,
+        email: email.toLowerCase(),
+        token: inviteToken,
         role,
-        franchisee_id,
-        centro,
-        invited_by: user.id,
+        franchisee_id: franchisee_id || null,
+        centro: centro || null,
+        invited_by: userId,
         expires_at: expiresAt.toISOString(),
       });
 
@@ -62,8 +100,16 @@ serve(async (req) => {
     // Send email (if RESEND_API_KEY is configured)
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (resendApiKey) {
-      const inviteLink = `${req.headers.get("origin")}/accept-invite?token=${token}`;
-      
+      const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://franqui-conta-sync.lovable.app";
+      const inviteLink = `${appUrl}/accept-invite?token=${inviteToken}`;
+
+      const roleLabels: Record<string, string> = {
+        admin: "Administrador",
+        gestor: "Gestor",
+        franquiciado: "Franquiciado",
+        asesoria: "Asesoría",
+      };
+
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -71,22 +117,27 @@ serve(async (req) => {
           "Authorization": `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from: "noreply@franquicontasync.com",
+          from: "FranquiContaSync <noreply@franquicontasync.com>",
           to: email,
           subject: "Invitación a FranquiContaSync",
           html: `
-            <h2>Has sido invitado a FranquiContaSync</h2>
-            <p>Se te ha asignado el rol de: <strong>${role}</strong></p>
-            <p>Haz clic en el siguiente enlace para aceptar la invitación:</p>
-            <a href="${inviteLink}">${inviteLink}</a>
-            <p>Esta invitación expira en 7 días.</p>
+            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+              <h2 style="color: #0F172A; margin-bottom: 16px;">Has sido invitado a FranquiContaSync</h2>
+              <p style="color: #475569;">Se te ha asignado el rol de: <strong>${roleLabels[role] || role}</strong></p>
+              <div style="margin: 32px 0;">
+                <a href="${inviteLink}" style="background-color: #1D4ED8; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block;">
+                  Aceptar Invitación
+                </a>
+              </div>
+              <p style="color: #94A3B8; font-size: 14px;">Esta invitación expira en 7 días.</p>
+            </div>
           `,
         }),
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Invitation sent" }),
+      JSON.stringify({ success: true, message: "Invitación enviada correctamente" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

@@ -5,6 +5,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface DocumentAnalysis {
   pages: number;
@@ -35,7 +36,7 @@ export function useDocumentAnalyzer() {
       documentPath: string;
       supplierVatId?: string;
     }): Promise<DocumentAnalysis> => {
-      console.log('[useDocumentAnalyzer] Analyzing document:', params);
+      logger.debug('useDocumentAnalyzer', 'Analyzing document:', params);
       
       const { data, error } = await supabase.functions.invoke(
         'analyze-document-characteristics',
@@ -43,11 +44,11 @@ export function useDocumentAnalyzer() {
       );
 
       if (error) {
-        console.error('[useDocumentAnalyzer] Error:', error);
+        logger.error('useDocumentAnalyzer', 'Error:', error);
         throw error;
       }
 
-      console.log('[useDocumentAnalyzer] Analysis result:', data);
+      logger.debug('useDocumentAnalyzer', 'Analysis result:', data);
       return data as DocumentAnalysis;
     }
   });

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from '@/lib/logger';
 import { useQueryClient } from "@tanstack/react-query";
 import { FileText, Plus, Filter, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,9 +66,9 @@ export default function InvoicesIssued() {
         staleTime: 5 * 60 * 1000,
       });
       
-      console.log(`✅ Prefetch: Página ${page + 1} precargada`);
+      logger.debug("InvoicesIssued", `Prefetch: Página ${page + 1} precargada`);
     } catch (error) {
-      console.error('Error prefetching:', error);
+      logger.error("InvoicesIssued", "Error prefetching:", error);
     } finally {
       setIsPrefetching(false);
     }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 
 export interface CompanyWithAddresses {
   id: string;
@@ -104,7 +105,7 @@ export function useCompanyConfiguration(companyId?: string) {
       });
     },
     onError: (error: any) => {
-      console.error("Error updating company:", error);
+      logger.error('useCompanyConfiguration', 'Error updating company:', error);
       toast({
         title: "Error al guardar",
         description: error.message || "No se pudieron guardar los cambios",

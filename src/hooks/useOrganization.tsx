@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 import type { Membership, Organization, Restaurant } from "@/types/accounting";
 
 // Re-export types for convenience
@@ -80,7 +81,7 @@ export function useOrganization() {
       setMemberships(membershipsWithData);
       setCurrentMembership(membershipsWithData[0] || null);
     } catch (error: any) {
-      console.error("Error fetching memberships:", error);
+      logger.error('useOrganization', 'Error fetching memberships:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar las organizaciones",

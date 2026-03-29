@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 interface OCRRequest {
   invoice_id: string;
@@ -183,11 +184,11 @@ export interface OCRValidationResult {
 export const useProcessInvoiceOCR = () => {
   return useMutation({
     mutationFn: async ({ invoice_id, documentPath, centroCode, supplierHint }: OCRRequest): Promise<OCRProcessResult> => {
-      console.log('[useProcessInvoiceOCR] ========================================');
-      console.log('[useProcessInvoiceOCR] Starting Claude Vision OCR...');
-      console.log('[useProcessInvoiceOCR] invoice_id:', invoice_id);
-      console.log('[useProcessInvoiceOCR] documentPath:', documentPath);
-      console.log('[useProcessInvoiceOCR] centroCode:', centroCode);
+      logger.info('useProcessInvoiceOCR', '========================================');
+      logger.info('useProcessInvoiceOCR', 'Starting Claude Vision OCR...');
+      logger.debug('useProcessInvoiceOCR', 'invoice_id:', invoice_id);
+      logger.debug('useProcessInvoiceOCR', 'documentPath:', documentPath);
+      logger.debug('useProcessInvoiceOCR', 'centroCode:', centroCode);
       
       const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
@@ -197,12 +198,12 @@ export const useProcessInvoiceOCR = () => {
         }
       });
 
-      console.log('[useProcessInvoiceOCR] Response received');
-      console.log('[useProcessInvoiceOCR] data:', data);
+      logger.debug('useProcessInvoiceOCR', 'Response received');
+      logger.debug('useProcessInvoiceOCR', 'data:', data);
 
       if (error) {
-        console.error('[useProcessInvoiceOCR] Supabase function error:', error);
-        console.error('[useProcessInvoiceOCR] Error type:', error.constructor?.name);
+        logger.error('useProcessInvoiceOCR', 'Supabase function error:', error);
+        logger.error('useProcessInvoiceOCR', 'Error type:', error.constructor?.name);
         
         // For FunctionsHttpError (non-2xx), parse the response body
         let errorBody: any = null;
@@ -211,7 +212,7 @@ export const useProcessInvoiceOCR = () => {
           if (error.context && typeof error.context.json === 'function') {
             errorBody = await error.context.json();
           }
-        } catch {}
+        } catch (e) { logger.debug('useProcessInvoiceOCR', 'Could not parse error context as JSON', e); }
         
         // Fallback: try parsing error.message as JSON
         if (!errorBody) {
@@ -219,10 +220,10 @@ export const useProcessInvoiceOCR = () => {
             if (typeof error.message === 'string' && error.message.startsWith('{')) {
               errorBody = JSON.parse(error.message);
             }
-          } catch {}
+          } catch (e) { logger.debug('useProcessInvoiceOCR', 'Error message is not JSON', e); }
         }
         
-        console.log('[useProcessInvoiceOCR] Parsed error body:', errorBody);
+        logger.debug('useProcessInvoiceOCR', 'Parsed error body:', errorBody);
         
         if (errorBody?.error_type === 'DUPLICATE') {
           return {
@@ -237,7 +238,7 @@ export const useProcessInvoiceOCR = () => {
       }
 
       if (!data.success) {
-        console.error('[useProcessInvoiceOCR] OCR processing failed:', data.error);
+        logger.error('useProcessInvoiceOCR', 'OCR processing failed:', data.error);
         
         if (data.error_type === 'DUPLICATE') {
           return {
@@ -251,11 +252,11 @@ export const useProcessInvoiceOCR = () => {
         throw new Error(data.error || 'Error desconocido en OCR');
       }
 
-      console.log('[useProcessInvoiceOCR] ✅ OCR success');
+      logger.info('useProcessInvoiceOCR', 'OCR success');
       return data as OCRResponse;
     },
     onError: (error: any) => {
-      console.error('[useProcessInvoiceOCR] Mutation error:', error);
+      logger.error('useProcessInvoiceOCR', 'Mutation error:', error);
       toast.error(`Error al procesar el documento con Claude: ${error.message}`);
     },
     onSuccess: (data) => {

@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { UseCaseFactory } from '@/domain/UseCaseFactory';
 import { useOrganization } from './useOrganization';
+import { logger } from '@/lib/logger';
 
 interface BulkAssignCentreParams {
   invoiceIds: string[];
@@ -72,7 +73,7 @@ export function useBulkInvoiceActions() {
       }
     },
     onError: (error: Error) => {
-      console.error('Error en asignación masiva:', error);
+      logger.error('useBulkInvoiceActions', 'Error en asignación masiva:', error);
       toast.error(`Error: ${error.message}`);
     },
   });
@@ -114,7 +115,7 @@ export function useBulkInvoiceActions() {
       }
     },
     onError: (error: Error) => {
-      console.error('Error en aprobación masiva:', error);
+      logger.error('useBulkInvoiceActions', 'Error en aprobación masiva:', error);
       toast.error(`Error: ${error.message}`);
     },
   });
@@ -156,7 +157,7 @@ export function useBulkInvoiceActions() {
       }
     },
     onError: (error: Error) => {
-      console.error('Error en rechazo masivo:', error);
+      logger.error('useBulkInvoiceActions', 'Error en rechazo masivo:', error);
       toast.error(`Error: ${error.message}`);
     },
   });

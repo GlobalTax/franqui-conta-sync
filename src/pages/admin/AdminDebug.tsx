@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from '@/lib/logger';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,7 @@ export default function AdminDebug() {
 
   useEffect(() => {
     const loadDebugInfo = async () => {
-      console.log('[AdminDebug] 🔍 Iniciando diagnóstico completo...');
+      logger.info('AdminDebug', 'Iniciando diagnóstico completo...');
       
       const info: any = {
         timestamp: new Date().toISOString(),
@@ -28,7 +29,7 @@ export default function AdminDebug() {
           email: user?.email || null,
           error: userError?.message || null
         };
-        console.log('[AdminDebug] 👤 Auth:', info.auth);
+        logger.debug('AdminDebug', 'Auth:', info.auth);
       } catch (error: any) {
         info.errors.push(`Auth error: ${error.message}`);
       }
@@ -46,7 +47,7 @@ export default function AdminDebug() {
             result: data,
             error: error?.message || null
           };
-          console.log('[AdminDebug] 🔐 Role check:', info.role);
+          logger.debug('AdminDebug', 'Role check:', info.role);
         } catch (error: any) {
           info.errors.push(`Role check error: ${error.message}`);
         }
@@ -63,7 +64,7 @@ export default function AdminDebug() {
             count: roles?.length || 0,
             error: rolesError?.message || null
           };
-          console.log('[AdminDebug] 📋 User roles:', info.userRoles);
+          logger.debug('AdminDebug', 'User roles:', info.userRoles);
         } catch (error: any) {
           info.errors.push(`User roles query error: ${error.message}`);
         }
@@ -71,7 +72,7 @@ export default function AdminDebug() {
 
       setDebugInfo(info);
       setLoading(false);
-      console.log('[AdminDebug] ✅ Diagnóstico completo:', info);
+      logger.info('AdminDebug', 'Diagnóstico completo:', info);
     };
 
     loadDebugInfo();

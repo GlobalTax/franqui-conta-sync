@@ -6,6 +6,7 @@
 
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { logger } from '@/lib/logger';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -311,58 +312,41 @@ export default function InvoiceDetailEditor() {
   const logOCRTimeline = (logs: any[]) => {
     if (!logs || logs.length === 0) return;
     
-    console.group('🔍 OCR ORCHESTRATOR TIMELINE');
-    
     const startTime = logs[0]?.timestamp || 0;
-    
+
+    logger.debug('OCR Timeline', 'OCR ORCHESTRATOR TIMELINE');
+
     logs.forEach((log) => {
       const elapsedMs = startTime > 0 ? log.timestamp - startTime : 0;
-      const icon = {
-        'INIT': '🚀',
-        'ROUTING': '🛤️',
-        'EXECUTION': '⚙️',
-        'VALIDATION': '✅',
-        'DECISION': '🎯',
-        'MERGE': '🔀',
-        'CACHE': '💾'
-      }[log.stage] || '📌';
-      
-      const style = log.decision?.includes('FAILED') || log.action?.includes('failed')
-        ? 'color: #ef4444; font-weight: bold'
-        : log.stage === 'DECISION'
-        ? 'color: #3b82f6; font-weight: bold'
-        : 'color: #6b7280';
-      
-      console.log(
-        `%c[+${elapsedMs}ms] ${icon} ${log.stage} → ${log.action}${log.decision ? ` (${log.decision})` : ''}`,
-        style
+
+      logger.debug(
+        'OCR Timeline',
+        `[+${elapsedMs}ms] ${log.stage} → ${log.action}${log.decision ? ` (${log.decision})` : ''}`
       );
-      
+
       if (log.reason) {
-        console.log(`   ℹ️  ${log.reason}`);
+        logger.debug('OCR Timeline', `  ${log.reason}`);
       }
-      
+
       if (log.metrics) {
-        console.log('   📊 Metrics:', log.metrics);
+        logger.debug('OCR Timeline', '  Metrics:', log.metrics);
       }
     });
-    
-    console.groupEnd();
   };
 
   // Handler de procesamiento OCR
   // Handler de procesamiento OCR (acepta path/centro/engine opcionales para evitar carreras)
   const handleProcessOCR = async (opts?: { path?: string; centro?: string }) => {
-    console.log('[OCR] ========================================');
-    console.log('[OCR] Iniciando procesamiento OCR...');
+    logger.info('OCR', '========================================');
+    logger.info('OCR', 'Iniciando procesamiento OCR...');
     
     // ⭐ NUEVO: Verificar autenticación
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('[OCR] Current user:', user?.id);
-    console.log('[OCR] User email:', user?.email);
+    logger.debug('OCR', 'Current user:', user?.id);
+    logger.debug('OCR', 'User email:', user?.email);
     
     if (!user) {
-      console.error('[OCR] ❌ No authenticated user');
+      logger.error('OCR', 'No authenticated user');
       toast.error('No estás autenticado. Por favor, inicia sesión.', {
         description: 'Necesitas iniciar sesión para procesar documentos con OCR',
         duration: 5000
@@ -370,26 +354,26 @@ export default function InvoiceDetailEditor() {
       return;
     }
     
-    console.log('[OCR] ✅ User authenticated');
+    logger.debug('OCR', 'User authenticated');
     
     const effectivePath = opts?.path ?? documentPath;
     // Claude is the only engine
     
-    console.log('[OCR] documentPath (effective):', effectivePath);
-    console.log('[OCR] motor: Claude Vision');
+    logger.debug('OCR', 'documentPath (effective):', effectivePath);
+    logger.debug('OCR', 'motor: Claude Vision');
     
     if (!effectivePath) {
-      console.error('[OCR] ❌ No hay documentPath');
+      logger.error('OCR', 'No hay documentPath');
       toast.error("Primero sube un PDF");
       return;
     }
     
     // Usar centro actual o 'temp' si no hay seleccionado
     let centroCode = opts?.centro ?? form.getValues('centro_code');
-    console.log('[OCR] Centro code inicial:', centroCode);
+    logger.debug('OCR', 'Centro code inicial:', centroCode);
     
     if (!centroCode) {
-      console.log('[OCR] No hay centro, usando "temp"');
+      logger.debug('OCR', 'No hay centro, usando "temp"');
       toast.info("Procesando OCR sin centro asignado. Selecciona un centro después.", {
         duration: 4000
       });
@@ -399,7 +383,7 @@ export default function InvoiceDetailEditor() {
     // Auto-crear borrador si no hay ID
     let invoiceIdForOCR = effectiveId;
     if (!invoiceIdForOCR) {
-      console.log('[OCR] No hay ID, creando borrador automático...');
+      logger.debug('OCR', 'No hay ID, creando borrador automático...');
       try {
         const { data: draft, error: draftError } = await supabase
           .from('invoices_received')
@@ -419,22 +403,22 @@ export default function InvoiceDetailEditor() {
           .single();
 
         if (draftError || !draft) {
-          console.error('[OCR] ❌ Error creando borrador:', draftError);
+          logger.error('OCR', 'Error creando borrador:', draftError);
           toast.error('Error creando borrador de factura');
           return;
         }
 
         invoiceIdForOCR = draft.id;
         setCreatedInvoiceId(draft.id);
-        console.log('[OCR] ✅ Borrador creado con ID:', draft.id);
+        logger.info('OCR', 'Borrador creado con ID:', draft.id);
       } catch (err) {
-        console.error('[OCR] ❌ Error inesperado creando borrador:', err);
+        logger.error('OCR', 'Error inesperado creando borrador:', err);
         toast.error('Error creando borrador de factura');
         return;
       }
     }
 
-    console.log('[OCR] Invocando edge function con:', { invoice_id: invoiceIdForOCR, documentPath: effectivePath, centroCode });
+    logger.debug('OCR', 'Invocando edge function con:', { invoice_id: invoiceIdForOCR, documentPath: effectivePath, centroCode });
 
     try {
       const result = await processOCR.mutateAsync({
@@ -451,7 +435,7 @@ export default function InvoiceDetailEditor() {
         return;
       }
       
-      console.log('[OCR] Resultado recibido:', result);
+      logger.debug('OCR', 'Resultado recibido:', result);
       
       // ⭐ NUEVO: Mostrar timeline visual
       if (result.orchestrator_logs) {
@@ -465,21 +449,17 @@ export default function InvoiceDetailEditor() {
       
       // ⭐ NUEVO: Resumen de métricas
       if (result.ocr_metrics) {
-        console.group('📊 OCR METRICS SUMMARY');
-        console.log('Engine usado:', result.ocr_engine);
-        console.log('Confianza final:', `${Math.round(result.confidence * 100)}%`);
-        console.log('Tiempo total:', `${result.processingTimeMs}ms`);
-        console.log('Claude:', `${result.ocr_metrics.processing_time_ms}ms`);
-        console.log('Páginas:', result.ocr_metrics.pages);
-        console.log('Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
-        console.groupEnd();
+        logger.info('OCR Metrics', 'Engine usado:', result.ocr_engine);
+        logger.info('OCR Metrics', 'Confianza final:', `${Math.round(result.confidence * 100)}%`);
+        logger.info('OCR Metrics', 'Tiempo total:', `${result.processingTimeMs}ms`);
+        logger.info('OCR Metrics', 'Claude:', `${result.ocr_metrics.processing_time_ms}ms`);
+        logger.info('OCR Metrics', 'Páginas:', result.ocr_metrics.pages);
+        logger.info('OCR Metrics', 'Coste estimado:', `€${result.ocr_metrics.cost_estimate_eur?.toFixed(4) || '0.0000'}`);
       }
       
       // ⭐ NUEVO: Mostrar merge notes si existen
       if (result.merge_notes && result.merge_notes.length > 0) {
-        console.group('📝 MERGE NOTES');
-        result.merge_notes.forEach(note => console.log(`  • ${note}`));
-        console.groupEnd();
+        result.merge_notes.forEach(note => logger.debug('OCR Merge', note));
       }
 
       setRawOCRResponse(result);
@@ -521,14 +501,14 @@ export default function InvoiceDetailEditor() {
       // 3. Auto-match por NIF si no vino matcheado del backend
       if (!normalized.supplier?.matchedId && vatId) {
         try {
-          console.log('[Supplier Match] Buscando proveedor por NIF:', vatId);
+          logger.debug('InvoiceDetailEditor', '[Supplier Match] Buscando proveedor por NIF:', vatId);
           const found = await getSupplierByTaxId(vatId);
           if (found?.id) {
             form.setValue('supplier_id', found.id);
-            console.log('[Supplier Match] ✅ Proveedor encontrado:', found.name);
+            logger.info('InvoiceDetailEditor', '[Supplier Match] Proveedor encontrado:', found.name);
             toast.success(`Proveedor "${found.name}" localizado por NIF y seleccionado`);
           } else {
-            console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
+            logger.debug('InvoiceDetailEditor', '[Supplier Match] Proveedor no encontrado en BD');
             setOcrSupplierTaxId(vatId);
             setOcrSupplierName(legalName || '');
             setOcrSupplierAddress(normalized.issuer?.address || '');
@@ -537,7 +517,7 @@ export default function InvoiceDetailEditor() {
             setOcrSupplierEmail(normalized.issuer?.email || '');
           }
         } catch (e: any) {
-          console.error('[Supplier Match] Error al buscar proveedor:', e);
+          logger.error('InvoiceDetailEditor', '[Supplier Match] Error al buscar proveedor:', e);
         }
       }
       
@@ -561,7 +541,7 @@ export default function InvoiceDetailEditor() {
       );
 
     } catch (error: any) {
-      console.error('[OCR] Error completo:', error);
+      logger.error('InvoiceDetailEditor', '[OCR] Error completo:', error);
       
       if (error.isDuplicate) {
         toast.error('⚠️ Factura duplicada', {
@@ -571,8 +551,8 @@ export default function InvoiceDetailEditor() {
         return;
       }
       
-      console.error('[OCR] Error message:', error.message);
-      console.error('[OCR] Error stack:', error.stack);
+      logger.error('InvoiceDetailEditor', '[OCR] Error message:', error.message);
+      logger.error('InvoiceDetailEditor', '[OCR] Error stack:', error.stack);
       toast.error(`Error OCR: ${error.message}`, {
         description: 'Revisa la consola para más detalles',
         duration: 5000
@@ -582,7 +562,7 @@ export default function InvoiceDetailEditor() {
 
   // Handle PDF upload completion with automatic OCR
   const handleUploadComplete = async (path: string | null) => {
-    console.log('[Upload] PDF subido, path:', path);
+    logger.debug('InvoiceDetailEditor', '[Upload] PDF subido, path:', path);
     setDocumentPath(path);
     
     if (path) {
@@ -590,12 +570,12 @@ export default function InvoiceDetailEditor() {
       
       // Solo auto-trigger OCR si está en modo automático
       if (entryMode === 'auto-ocr') {
-        console.log('[Upload] Auto-trigger OCR en 300ms con Claude Vision');
+        logger.debug('InvoiceDetailEditor', '[Upload] Auto-trigger OCR en 300ms con Claude Vision');
         setTimeout(() => {
           handleProcessOCR({ path, centro: form.getValues('centro_code') || 'temp' });
         }, 300);
       } else {
-        console.log('[Upload] Modo manual - OCR no se ejecutará automáticamente');
+        logger.debug('InvoiceDetailEditor', '[Upload] Modo manual - OCR no se ejecutara automaticamente');
         toast.info("PDF listo. Completa los campos manualmente o procesa con OCR cuando quieras.", {
           duration: 4000
         });
@@ -605,7 +585,7 @@ export default function InvoiceDetailEditor() {
 
   // Handler para reintentar OCR con Claude
   const handleRetryWithDifferentEngine = () => {
-    console.log('[OCR] Reprocesando con Claude Vision');
+    logger.debug('InvoiceDetailEditor', '[OCR] Reprocesando con Claude Vision');
     toast.info('Reprocesando con Claude Vision...');
     setTimeout(() => {
       handleProcessOCR();
@@ -628,7 +608,7 @@ export default function InvoiceDetailEditor() {
   const detectAccountCorrections = async (invoiceId: string) => {
     // Obtener los datos de la factura desde la DB
     if (!invoice?.ocr_extracted_data?.ap_mapping_result) {
-      console.log('[Learning] No AP mapping data available, skipping');
+      logger.debug('InvoiceDetailEditor', '[Learning] No AP mapping data available, skipping');
       return;
     }
 
@@ -639,20 +619,20 @@ export default function InvoiceDetailEditor() {
     const originalConfidence = apMappingResult.invoice_level?.confidence_score || 0;
 
     if (!originalExpenseAccount) {
-      console.log('[Learning] No original expense account suggestion, skipping');
+      logger.debug('InvoiceDetailEditor', '[Learning] No original expense account suggestion, skipping');
       return;
     }
 
     // Obtener cuenta final del primer tax_line (que contiene la cuenta de gasto)
     const taxLines = form.getValues('tax_lines') || [];
     if (taxLines.length === 0) {
-      console.log('[Learning] No tax lines available, skipping');
+      logger.debug('InvoiceDetailEditor', '[Learning] No tax lines available, skipping');
       return;
     }
 
     const finalExpenseAccount = taxLines[0]?.account_code;
     if (!finalExpenseAccount) {
-      console.log('[Learning] No final expense account, skipping');
+      logger.debug('InvoiceDetailEditor', '[Learning] No final expense account, skipping');
       return;
     }
 
@@ -661,13 +641,13 @@ export default function InvoiceDetailEditor() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          console.error('[Learning] No authenticated user');
+          logger.error('InvoiceDetailEditor', '[Learning] No authenticated user');
           return;
         }
 
         const invoiceData = form.getValues();
         
-        console.log('[Learning] Account correction detected:', {
+        logger.info('InvoiceDetailEditor', '[Learning] Account correction detected:', {
           original: originalExpenseAccount,
           corrected: finalExpenseAccount,
           invoice_id: invoiceId
@@ -693,9 +673,9 @@ export default function InvoiceDetailEditor() {
           correction_reason: 'Manual correction from invoice editor',
         });
 
-        console.log('[Learning] ✅ Correction recorded successfully');
+        logger.info('InvoiceDetailEditor', '[Learning] Correction recorded successfully');
       } catch (error) {
-        console.error('[Learning] Error recording correction:', error);
+        logger.error('InvoiceDetailEditor', '[Learning] Error recording correction:', error);
         // No bloqueamos el guardado si falla el learning
       }
     }
@@ -778,7 +758,7 @@ export default function InvoiceDetailEditor() {
               toast.success(`✨ ${learningResult.rulesGenerated} regla(s) aprendida(s)`);
             }
           } catch (error) {
-            console.error('[AP Learning] Error:', error);
+            logger.error('InvoiceDetailEditor', '[AP Learning] Error:', error);
           }
         }
 
@@ -855,7 +835,7 @@ export default function InvoiceDetailEditor() {
               toast.success(`✨ ${learningResult.rulesGenerated} regla(s) aprendida(s)`);
             }
           } catch (error) {
-            console.error('[AP Learning] Error:', error);
+            logger.error('InvoiceDetailEditor', '[AP Learning] Error:', error);
           }
         }
       } else {
@@ -907,7 +887,7 @@ export default function InvoiceDetailEditor() {
       navigate('/invoices/inbox');
       
     } catch (error: any) {
-      console.error('Error al contabilizar:', error);
+      logger.error('InvoiceDetailEditor', 'Error al contabilizar:', error);
     }
   };
 

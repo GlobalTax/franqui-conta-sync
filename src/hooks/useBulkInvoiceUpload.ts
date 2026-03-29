@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildInvoicePath } from '@/lib/storage-utils';
+import { logger } from '@/lib/logger';
 
 export interface UploadFileItem {
   id: string;
@@ -213,7 +214,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         .single();
 
       if (invoiceError) {
-        console.error('[BulkUpload] Error creando invoice:', invoiceError);
+        logger.error('BulkUpload', 'Error creando invoice:', invoiceError);
         throw invoiceError;
       }
 
@@ -221,7 +222,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
         throw new Error('No se recibió ID de factura después de la inserción');
       }
 
-      console.log('[BulkUpload] Invoice creado:', invoice.id);
+      logger.debug('BulkUpload', 'Invoice creado:', invoice.id);
 
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id 
@@ -237,7 +238,7 @@ export const useBulkInvoiceUpload = (centroCode: string) => {
       ));
 
       // 4. CALL CLAUDE VISION OCR
-      console.log('[BulkUpload] Invocando Claude Vision OCR...', {
+      logger.info('BulkUpload', 'Invocando Claude Vision OCR...', {
         invoiceId: invoice?.id,
         path,
         centroCode

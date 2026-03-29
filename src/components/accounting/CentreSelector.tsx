@@ -178,7 +178,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
                   className="pl-8"
                 >
                   <div className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-blue-500" />
+                    <Briefcase className="h-4 w-4 text-primary" />
                     <span>{company.razon_social}</span>
                     <span className="text-xs text-muted-foreground">({company.cif})</span>
                   </div>

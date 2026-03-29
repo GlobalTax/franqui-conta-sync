@@ -50,7 +50,7 @@ function generateDocumentHash(content: string): string {
 
 // Añadir cabecera oficial
 function addOfficialHeader(
-  doc: jsPDF,
+  doc: any,
   company: CompanyInfo,
   title: string,
   period: { start: string; end: string },

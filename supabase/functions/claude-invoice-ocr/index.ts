@@ -554,8 +554,9 @@ serve(async (req) => {
         },
         autofix_applied: autofix_applied,
         accounting_validation: accountingValidation,
-        ap_mapping: apMappingStub,
+        ap_mapping: apMapping,
         entry_validation: null,
+        supplier_match: supplierMatch,
         merge_notes: autofix_applied.length > 0
           ? autofix_applied.map((fix: string) => `Autofix: ${fix}`)
           : [],

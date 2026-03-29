@@ -152,6 +152,12 @@ export interface OCRResponse {
   };
   ap_mapping: APMappingResult;
   entry_validation?: InvoiceEntryValidationResult;
+  supplier_match?: {
+    id: string;
+    name: string;
+    tax_id: string;
+    default_account_code: string | null;
+  };
   rawText?: string;
   processingTimeMs: number;
   ocr_metrics?: {

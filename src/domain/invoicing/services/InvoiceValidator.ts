@@ -3,7 +3,9 @@
 // Responsabilidad: Validar reglas de negocio para facturas antes de persistir
 // ============================================================================
 
-import type { InvoiceReceived, InvoiceIssued, InvoiceLine, ApprovalStatus } from '../types';
+import { VALID_VAT_RATES } from '@/domain/accounting/constants/VATConstants';
+
+import type { InvoiceReceived, InvoiceIssued, InvoiceLine, ApprovalStatus, DocumentType } from '../types';
 import { PGCValidator } from '@/domain/accounting/services/PGCValidator';
 
 export interface ValidationError {
@@ -22,7 +24,7 @@ export interface ValidationResult {
  * Centraliza todas las reglas de negocio relacionadas con validación
  */
 export class InvoiceValidator {
-  private static readonly VALID_TAX_RATES = [0, 4, 10, 21];
+  private static readonly VALID_TAX_RATES = VALID_VAT_RATES;
   private static readonly MIN_AMOUNT = 0.01;
   private static readonly MAX_DISCOUNT = 100;
 
@@ -89,17 +91,32 @@ export class InvoiceValidator {
 
     // Validar líneas individuales
     lines.forEach((line, index) => {
-      const lineErrors = this.validateInvoiceLine(line, index);
+      const lineErrors = this.validateInvoiceLine(line, index, invoice.documentType);
       errors.push(...lineErrors);
     });
 
-    // Validar que los totales sean positivos
-    if (invoice.total !== undefined && invoice.total < this.MIN_AMOUNT) {
-      errors.push({
-        field: 'total',
-        message: `El total debe ser al menos ${this.MIN_AMOUNT}€`,
-        code: 'TOTAL_TOO_LOW',
-      });
+    // Validar que los totales sean coherentes según tipo de documento
+    const isCreditNote = invoice.documentType === 'credit_note';
+    if (invoice.total !== undefined) {
+      if (isCreditNote) {
+        // Abonos/rectificativas: total debe ser negativo
+        if (invoice.total >= 0) {
+          errors.push({
+            field: 'total',
+            message: 'El total de un abono debe ser negativo',
+            code: 'CREDIT_NOTE_TOTAL_POSITIVE',
+          });
+        }
+      } else {
+        // Facturas normales: total debe ser positivo
+        if (invoice.total < this.MIN_AMOUNT) {
+          errors.push({
+            field: 'total',
+            message: `El total debe ser al menos ${this.MIN_AMOUNT}€`,
+            code: 'TOTAL_TOO_LOW',
+          });
+        }
+      }
     }
 
     return {
@@ -162,7 +179,7 @@ export class InvoiceValidator {
     }
 
     lines.forEach((line, index) => {
-      const lineErrors = this.validateInvoiceLine(line, index);
+      const lineErrors = this.validateInvoiceLine(line, index, invoice.documentType);
       errors.push(...lineErrors);
     });
 
@@ -178,9 +195,10 @@ export class InvoiceValidator {
    * @param lineIndex - Índice de la línea (para mensajes de error)
    * @returns Array de errores encontrados
    */
-  static validateInvoiceLine(line: InvoiceLine, lineIndex: number): ValidationError[] {
+  static validateInvoiceLine(line: InvoiceLine, lineIndex: number, documentType?: DocumentType): ValidationError[] {
     const errors: ValidationError[] = [];
     const prefix = `lines[${lineIndex}]`;
+    const isCreditNote = documentType === 'credit_note';
 
     // Validar descripción
     if (!line.description || line.description.trim() === '') {
@@ -191,17 +209,27 @@ export class InvoiceValidator {
       });
     }
 
-    // Validar cantidad
-    if (line.quantity <= 0) {
-      errors.push({
-        field: `${prefix}.quantity`,
-        message: `La cantidad en línea ${lineIndex + 1} debe ser mayor que 0`,
-        code: 'INVALID_QUANTITY',
-      });
+    // Validar cantidad (abonos permiten cantidades negativas)
+    if (isCreditNote) {
+      if (line.quantity === 0) {
+        errors.push({
+          field: `${prefix}.quantity`,
+          message: `La cantidad en línea ${lineIndex + 1} no puede ser 0`,
+          code: 'INVALID_QUANTITY',
+        });
+      }
+    } else {
+      if (line.quantity <= 0) {
+        errors.push({
+          field: `${prefix}.quantity`,
+          message: `La cantidad en línea ${lineIndex + 1} debe ser mayor que 0`,
+          code: 'INVALID_QUANTITY',
+        });
+      }
     }
 
-    // Validar precio unitario
-    if (line.unitPrice < 0) {
+    // Validar precio unitario (abonos permiten importes negativos en líneas)
+    if (!isCreditNote && line.unitPrice < 0) {
       errors.push({
         field: `${prefix}.unitPrice`,
         message: `El precio unitario en línea ${lineIndex + 1} no puede ser negativo`,

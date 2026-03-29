@@ -5,6 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { VAT_RATES } from '@/domain/accounting/constants/VATConstants';
 
 // ============================================================================
 // MODELO 111 - Retenciones e ingresos a cuenta IRPF (trimestral)
@@ -47,7 +48,8 @@ export function useModelo111(centroCode?: string, year?: number, trimestre?: num
         .eq('centro_code', centroCode)
         .gte('periodo_liquidacion', startDate)
         .lte('periodo_liquidacion', endDate)
-        .eq('status', 'posted');
+        .eq('status', 'posted')
+        .throwOnError();
 
       const trabajadores = (nominas || []).filter(n => n.tipo_nomina !== 'autonomo');
       const profesionales = (nominas || []).filter(n => n.tipo_nomina === 'autonomo');
@@ -111,7 +113,8 @@ export function useModelo190(centroCode?: string, year?: number) {
         .eq('centro_code', centroCode)
         .gte('periodo_liquidacion', `${year}-01-01`)
         .lte('periodo_liquidacion', `${year}-12-31`)
-        .eq('status', 'posted');
+        .eq('status', 'posted')
+        .throwOnError();
 
       // Agrupar por perceptor
       const perceptorMap = new Map<string, Modelo190Perceptor>();
@@ -184,7 +187,8 @@ export function useModelo347(centroCode?: string, year?: number) {
         .eq('centro_code', centroCode)
         .gte('invoice_date', `${year}-01-01`)
         .lte('invoice_date', `${year}-12-31`)
-        .not('supplier_id', 'is', null);
+        .not('supplier_id', 'is', null)
+        .throwOnError();
 
       // Facturas emitidas (clientes)
       const { data: facturasEmitidas } = await supabase
@@ -192,7 +196,8 @@ export function useModelo347(centroCode?: string, year?: number) {
         .select('*')
         .eq('centro_code', centroCode)
         .gte('invoice_date', `${year}-01-01`)
-        .lte('invoice_date', `${year}-12-31`);
+        .lte('invoice_date', `${year}-12-31`)
+        .throwOnError();
 
       const operacionMap = new Map<string, Modelo347Operacion>();
 
@@ -291,12 +296,14 @@ export function useModelo390(centroCode?: string, year?: number) {
       if (!centroCode || !year) return null;
 
       // IVA Repercutido (emitidas + daily closures)
-      const { data: emitidas } = await supabase
-        .from('invoices_issued')
-        .select('subtotal, tax_total, total')
-        .eq('centro_code', centroCode)
-        .gte('invoice_date', `${year}-01-01`)
-        .lte('invoice_date', `${year}-12-31`);
+      // Fetch invoice lines to get per-line tax rates
+      const { data: emitidaLines } = await supabase
+        .from('invoice_lines')
+        .select('subtotal, tax_rate, tax_amount, invoice:invoices_issued!inner(centro_code, invoice_date)')
+        .eq('invoice.centro_code', centroCode)
+        .gte('invoice.invoice_date', `${year}-01-01`)
+        .lte('invoice.invoice_date', `${year}-12-31`)
+        .throwOnError();
 
       const { data: closures } = await supabase
         .from('daily_closures')
@@ -304,7 +311,8 @@ export function useModelo390(centroCode?: string, year?: number) {
         .eq('centro_code', centroCode)
         .gte('closure_date', `${year}-01-01`)
         .lte('closure_date', `${year}-12-31`)
-        .in('status', ['posted', 'closed']);
+        .in('status', ['posted', 'closed'])
+        .throwOnError();
 
       // IVA Soportado (recibidas)
       const { data: recibidas } = await supabase
@@ -312,7 +320,8 @@ export function useModelo390(centroCode?: string, year?: number) {
         .select('subtotal, tax_total, total')
         .eq('centro_code', centroCode)
         .gte('invoice_date', `${year}-01-01`)
-        .lte('invoice_date', `${year}-12-31`);
+        .lte('invoice_date', `${year}-12-31`)
+        .throwOnError();
 
       // Acumular datos de closures
       const tax10Base = (closures || []).reduce((s, c) => s + (Number(c.tax_10_base) || 0), 0);
@@ -320,17 +329,35 @@ export function useModelo390(centroCode?: string, year?: number) {
       const tax21Base = (closures || []).reduce((s, c) => s + (Number(c.tax_21_base) || 0), 0);
       const tax21Amount = (closures || []).reduce((s, c) => s + (Number(c.tax_21_amount) || 0), 0);
 
-      // Sumar facturas emitidas (asumimos 21% estándar para simplificar)
-      const emisBase = (emitidas || []).reduce((s, e) => s + (Number(e.subtotal) || 0), 0);
-      const emisTax = (emitidas || []).reduce((s, e) => s + (Number(e.tax_total) || 0), 0);
+      // Group emitted invoice lines by VAT rate
+      const emisByRate = { [VAT_RATES.STANDARD]: { base: 0, tax: 0 }, [VAT_RATES.REDUCED]: { base: 0, tax: 0 }, [VAT_RATES.SUPER_REDUCED]: { base: 0, tax: 0 } };
+      for (const line of (emitidaLines || [])) {
+        const rate = Number(line.tax_rate) || 0;
+        const lineBase = Number(line.subtotal) || 0;
+        const lineTax = Number(line.tax_amount) || 0;
 
-      const baseImponible21 = tax21Base + emisBase;
-      const cuotaDevengada21 = tax21Amount + emisTax;
-      const baseImponible10 = tax10Base;
-      const cuotaDevengada10 = tax10Amount;
+        if (rate === VAT_RATES.SUPER_REDUCED) {
+          emisByRate[VAT_RATES.SUPER_REDUCED].base += lineBase;
+          emisByRate[VAT_RATES.SUPER_REDUCED].tax += lineTax;
+        } else if (rate === VAT_RATES.REDUCED) {
+          emisByRate[VAT_RATES.REDUCED].base += lineBase;
+          emisByRate[VAT_RATES.REDUCED].tax += lineTax;
+        } else {
+          // Default to standard rate (21%) for unrecognized rates
+          emisByRate[VAT_RATES.STANDARD].base += lineBase;
+          emisByRate[VAT_RATES.STANDARD].tax += lineTax;
+        }
+      }
 
-      const totalBaseDevengado = baseImponible21 + baseImponible10;
-      const totalCuotaDevengado = cuotaDevengada21 + cuotaDevengada10;
+      const baseImponible21 = tax21Base + emisByRate[VAT_RATES.STANDARD].base;
+      const cuotaDevengada21 = tax21Amount + emisByRate[VAT_RATES.STANDARD].tax;
+      const baseImponible10 = tax10Base + emisByRate[VAT_RATES.REDUCED].base;
+      const cuotaDevengada10 = tax10Amount + emisByRate[VAT_RATES.REDUCED].tax;
+      const baseImponible4 = emisByRate[VAT_RATES.SUPER_REDUCED].base;
+      const cuotaDevengada4 = emisByRate[VAT_RATES.SUPER_REDUCED].tax;
+
+      const totalBaseDevengado = baseImponible21 + baseImponible10 + baseImponible4;
+      const totalCuotaDevengado = cuotaDevengada21 + cuotaDevengada10 + cuotaDevengada4;
 
       const baseImponibleSoportado = (recibidas || []).reduce((s, r) => s + (Number(r.subtotal) || 0), 0);
       const cuotaDeducible = (recibidas || []).reduce((s, r) => s + (Number(r.tax_total) || 0), 0);
@@ -343,8 +370,8 @@ export function useModelo390(centroCode?: string, year?: number) {
         cuotaDevengada21,
         baseImponible10,
         cuotaDevengada10,
-        baseImponible4: 0,
-        cuotaDevengada4: 0,
+        baseImponible4,
+        cuotaDevengada4,
         totalBaseDevengado,
         totalCuotaDevengado,
         baseImponibleSoportado,

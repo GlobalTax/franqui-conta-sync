@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Syncing ${connections.length} connection(s)`);
+    logger.info('sync-bank-transactions', 'Syncing connections', { count: connections.length });
 
     const results = await Promise.all(
       connections.map(conn => syncConnection(supabase, conn))
@@ -73,7 +74,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error syncing transactions:', error);
+    logger.error('sync-bank-transactions', 'Error syncing transactions', error);
     return new Response(
       JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       {
@@ -90,7 +91,7 @@ async function syncConnection(supabase: any, connection: any) {
   let transactionsSynced = 0;
 
   try {
-    console.log(`Syncing connection: ${connection.connection_id}`);
+    logger.info('sync-bank-transactions', 'Syncing connection', { connection_id: connection.connection_id });
 
     // Create sync log entry
     const { data: logEntry, error: logError } = await supabase
@@ -137,7 +138,7 @@ async function syncConnection(supabase: any, connection: any) {
           .single();
 
         if (accountError) {
-          console.error('Error creating bank account:', accountError);
+          logger.error('sync-bank-transactions', 'Error creating bank account', accountError);
           continue;
         }
 
@@ -173,12 +174,12 @@ async function syncConnection(supabase: any, connection: any) {
       })
       .eq('id', logEntry.id);
 
-    console.log(`Synced ${accountsSynced} accounts, ${transactionsSynced} transactions in ${duration}ms`);
+    logger.info('sync-bank-transactions', 'Sync completed', { accountsSynced, transactionsSynced, duration_ms: duration });
 
     return { accountsSynced, transactionsSynced, duration };
 
   } catch (error) {
-    console.error('Error syncing connection:', error);
+    logger.error('sync-bank-transactions', 'Error syncing connection', error);
     
     await supabase
       .from('salt_edge_sync_log')
@@ -290,7 +291,7 @@ async function syncTransactions(supabase: any, bankAccountId: string, transactio
     if (!error) {
       synced++;
     } else {
-      console.error('Error inserting transaction:', error);
+      logger.error('sync-bank-transactions', 'Error inserting transaction', error);
     }
   }
 

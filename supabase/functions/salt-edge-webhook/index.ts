@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
     const signature = req.headers.get('signature');
     const body = await req.text();
     
-    console.log('Received Salt Edge webhook:', body.substring(0, 200));
+    logger.info('salt-edge-webhook', 'Received Salt Edge webhook', { body_preview: body.substring(0, 200) });
 
     // Verify signature
     const SALT_EDGE_SECRET = Deno.env.get('SALT_EDGE_SECRET');
@@ -31,7 +32,7 @@ serve(async (req) => {
     if (signature) {
       const isValid = await verifySignature(body, signature, SALT_EDGE_SECRET);
       if (!isValid) {
-        console.error('Invalid webhook signature');
+        logger.error('salt-edge-webhook', 'Invalid webhook signature');
         throw new Error('Invalid signature');
       }
     }
@@ -39,7 +40,7 @@ serve(async (req) => {
     const payload = JSON.parse(body);
     const { data } = payload;
 
-    console.log('Webhook event:', data?.stage, 'for connection:', data?.connection_id);
+    logger.info('salt-edge-webhook', 'Webhook event received', { stage: data?.stage, connection_id: data?.connection_id });
 
     // Handle different webhook events
     switch (data?.stage) {
@@ -54,7 +55,7 @@ serve(async (req) => {
         await handleErrorEvent(supabase, data);
         break;
       default:
-        console.log('Unhandled webhook stage:', data?.stage);
+        logger.info('salt-edge-webhook', 'Unhandled webhook stage', { stage: data?.stage });
     }
 
     return new Response(
@@ -66,7 +67,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.error('salt-edge-webhook', 'Error processing webhook', error);
     return new Response(
       JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       {
@@ -78,13 +79,13 @@ serve(async (req) => {
 });
 
 async function handleSuccessEvent(supabase: any, data: any) {
-  console.log('Processing success event for connection:', data.connection_id);
+  logger.info('salt-edge-webhook', 'Processing success event', { connection_id: data.connection_id });
 
   // Get connection details from Salt Edge API
   const connectionDetails = await fetchConnectionDetails(data.connection_id);
 
   if (!connectionDetails) {
-    console.error('Could not fetch connection details');
+    logger.error('salt-edge-webhook', 'Could not fetch connection details');
     return;
   }
 
@@ -114,18 +115,18 @@ async function handleSuccessEvent(supabase: any, data: any) {
     });
 
   if (upsertError) {
-    console.error('Error upserting connection:', upsertError);
+    logger.error('salt-edge-webhook', 'Error upserting connection', upsertError);
     throw upsertError;
   }
 
-  console.log('Connection stored successfully:', data.connection_id);
+  logger.info('salt-edge-webhook', 'Connection stored successfully', { connection_id: data.connection_id });
 
   // Trigger initial sync
   await triggerTransactionSync(data.connection_id);
 }
 
 async function handleNotifyEvent(supabase: any, data: any) {
-  console.log('Processing notify event for connection:', data.connection_id);
+  logger.info('salt-edge-webhook', 'Processing notify event', { connection_id: data.connection_id });
 
   // Update connection status
   const { error } = await supabase
@@ -137,7 +138,7 @@ async function handleNotifyEvent(supabase: any, data: any) {
     .eq('connection_id', data.connection_id);
 
   if (error) {
-    console.error('Error updating connection:', error);
+    logger.error('salt-edge-webhook', 'Error updating connection', error);
   }
 
   // Trigger transaction sync
@@ -145,7 +146,7 @@ async function handleNotifyEvent(supabase: any, data: any) {
 }
 
 async function handleErrorEvent(supabase: any, data: any) {
-  console.log('Processing error event for connection:', data.connection_id);
+  logger.info('salt-edge-webhook', 'Processing error event', { connection_id: data.connection_id });
 
   const { error } = await supabase
     .from('salt_edge_connections')
@@ -156,7 +157,7 @@ async function handleErrorEvent(supabase: any, data: any) {
     .eq('connection_id', data.connection_id);
 
   if (error) {
-    console.error('Error updating connection status:', error);
+    logger.error('salt-edge-webhook', 'Error updating connection status', error);
   }
 
   // Log error
@@ -190,7 +191,7 @@ async function fetchConnectionDetails(connectionId: string) {
   });
 
   if (!response.ok) {
-    console.error('Error fetching connection details:', await response.text());
+    logger.error('salt-edge-webhook', 'Error fetching connection details', { status: response.status });
     return null;
   }
 
@@ -199,7 +200,7 @@ async function fetchConnectionDetails(connectionId: string) {
 }
 
 async function triggerTransactionSync(connectionId: string) {
-  console.log('Triggering transaction sync for connection:', connectionId);
+  logger.info('salt-edge-webhook', 'Triggering transaction sync', { connectionId });
   
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
@@ -212,7 +213,7 @@ async function triggerTransactionSync(connectionId: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ connectionId }),
-  }).catch(err => console.error('Error triggering sync:', err));
+  }).catch(err => logger.error('salt-edge-webhook', 'Error triggering sync', err));
 }
 
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {

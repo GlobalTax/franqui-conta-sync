@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,7 +49,7 @@ serve(async (req) => {
 
     const learningData: LearningRequest = await req.json();
 
-    console.log('[AP Learning] Processing corrections for invoice:', learningData.invoiceId);
+    logger.info('ap-learning', 'Processing corrections for invoice', { invoiceId: learningData.invoiceId });
 
     const corrections: any[] = [];
     const newRules: any[] = [];
@@ -56,16 +57,15 @@ serve(async (req) => {
     for (const line of learningData.lines) {
       // Detectar si hay corrección
       if (line.suggestedAccount === line.correctedAccount) {
-        console.log(`[AP Learning] Line ${line.lineId}: No correction (accepted suggestion)`);
+        logger.debug('ap-learning', 'No correction (accepted suggestion)', { lineId: line.lineId });
         continue;
       }
 
-      console.log(`[AP Learning] Line ${line.lineId}: Correction detected`);
-      console.log(`  Suggested: ${line.suggestedAccount} → Corrected: ${line.correctedAccount}`);
+      logger.info('ap-learning', 'Correction detected', { lineId: line.lineId, suggested: line.suggestedAccount, corrected: line.correctedAccount });
 
       // Extraer keywords relevantes de la descripción
       const keywords = extractKeywords(line.description);
-      console.log(`  Extracted keywords:`, keywords);
+      logger.debug('ap-learning', 'Extracted keywords', { keywords });
 
       // Registrar la corrección
       const correction = {
@@ -109,11 +109,11 @@ serve(async (req) => {
         .select();
 
       if (correctionsError) {
-        console.error('[AP Learning] Error saving corrections:', correctionsError);
+        logger.error('ap-learning', 'Error saving corrections', correctionsError);
         throw correctionsError;
       }
 
-      console.log(`[AP Learning] Saved ${savedCorrections.length} corrections`);
+      logger.info('ap-learning', 'Saved corrections', { count: savedCorrections.length });
 
       // Guardar reglas generadas
       if (newRules.length > 0) {
@@ -123,11 +123,11 @@ serve(async (req) => {
           .select();
 
         if (rulesError) {
-          console.error('[AP Learning] Error saving rules:', rulesError);
+          logger.error('ap-learning', 'Error saving rules', rulesError);
           throw rulesError;
         }
 
-        console.log(`[AP Learning] Generated ${savedRules.length} new rules`);
+        logger.info('ap-learning', 'Generated new rules', { count: savedRules.length });
 
         // Vincular reglas generadas a correcciones
         for (let i = 0; i < savedCorrections.length; i++) {
@@ -172,7 +172,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[AP Learning] Error:', error);
+    logger.error('ap-learning', 'Error', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
@@ -331,6 +331,6 @@ async function generateRule(
   }
 
   // Si no hay información suficiente, no generar regla
-  console.log('[AP Learning] Insufficient context to generate rule');
+  logger.info('ap-learning', 'Insufficient context to generate rule');
   return null;
 }

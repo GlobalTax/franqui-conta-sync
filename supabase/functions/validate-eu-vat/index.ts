@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[VIES] Request received');
+    logger.info('validate-eu-vat', 'Request received');
     
     const { countryCode, vatNumber }: VIESRequest = await req.json();
     
@@ -63,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[VIES] Validating ${cleanCountryCode}${cleanVatNumber}`);
+    logger.info('validate-eu-vat', 'Validating VAT', { countryCode: cleanCountryCode, vatNumber: cleanVatNumber });
 
     // Construir petición SOAP
     const soapRequest = `<?xml version="1.0" encoding="UTF-8"?>
@@ -99,7 +100,7 @@ serve(async (req) => {
       clearTimeout(timeoutId);
       
       if ((fetchError as Error).name === 'AbortError') {
-        console.error('[VIES] Timeout after 10 seconds');
+        logger.error('validate-eu-vat', 'Timeout after 10 seconds');
         return new Response(
           JSON.stringify({ 
             valid: false, 

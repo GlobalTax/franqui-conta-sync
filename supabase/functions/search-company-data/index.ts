@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
+import { logger } from '../_shared/logger.ts';
 
 /**
  * CORS Configuration
@@ -77,7 +78,7 @@ serve(async (req) => {
       .single();
 
     if (cachedData && !cacheError) {
-      console.log(`✅ Cache hit for CIF: ${normalizedCIF} (searches: ${cachedData.search_count})`);
+      logger.info('search-company-data', 'Cache hit for CIF', { cif: normalizedCIF, search_count: cachedData.search_count });
       
       // Increment search counter
       await supabase.rpc('increment_cache_search_count', { p_cif: normalizedCIF });
@@ -100,12 +101,12 @@ serve(async (req) => {
       );
     }
 
-    console.log(`❌ Cache miss for CIF: ${normalizedCIF}, calling Lovable AI...`);
+    logger.info('search-company-data', 'Cache miss for CIF, calling Lovable AI', { cif: normalizedCIF });
 
     // 2. Call Lovable AI if not in cache
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY no configurada');
+      logger.error('search-company-data', 'LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ success: false, error: 'Servicio de IA no disponible' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -272,7 +273,7 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error de Lovable AI:', response.status, errorText);
+      logger.error('search-company-data', 'Lovable AI error', { status: response.status, errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -295,12 +296,12 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
     }
 
     const data = await response.json();
-    console.log('Respuesta de IA:', JSON.stringify(data, null, 2));
+    logger.debug('search-company-data', 'AI response received', data);
 
     // Extract tool call
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.function?.name !== 'return_company_data') {
-      console.error('No se recibió tool call esperado');
+      logger.error('search-company-data', 'Expected tool call not received');
       return new Response(
         JSON.stringify({ success: false, error: 'No se encontró información para este CIF' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -308,7 +309,7 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
     }
 
     const companyData: CompanyData = JSON.parse(toolCall.function.arguments);
-    console.log('Datos de empresa extraídos:', companyData);
+    logger.info('search-company-data', 'Company data extracted', companyData);
 
     // 3. Store in cache for future use
     try {
@@ -322,12 +323,12 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
         });
 
       if (insertError) {
-        console.error('⚠️ Error caching data:', insertError);
+        logger.error('search-company-data', 'Error caching data', insertError);
       } else {
-        console.log(`✅ Data cached for CIF: ${normalizedCIF}`);
+        logger.info('search-company-data', 'Data cached for CIF', { cif: normalizedCIF });
       }
     } catch (cacheInsertError) {
-      console.error('⚠️ Cache insertion failed:', cacheInsertError);
+      logger.error('search-company-data', 'Cache insertion failed', cacheInsertError);
     }
 
     return new Response(
@@ -343,7 +344,7 @@ Si no encuentras datos confiables o algún campo específico, indícalo.`
     );
 
   } catch (error) {
-    console.error('Error en search-company-data:', error);
+    logger.error('search-company-data', 'Unexpected error', error);
     return new Response(
       JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -5,6 +5,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 import { encrypt, fingerprint } from '../_shared/crypto.ts';
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,10 +24,10 @@ Deno.serve(async (req) => {
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
-    console.log('OAuth callback received:', { 
-      hasCode: !!code, 
-      hasState: !!state, 
-      error 
+    logger.info('ponto-oauth-callback', 'OAuth callback received', {
+      hasCode: !!code,
+      hasState: !!state,
+      error
     });
 
     // Handle OAuth error
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
     // Parse state: formato "centro_code:institution_id:user_id"
     const [centroCode, institutionId, userId] = state.split(':');
     if (!centroCode || !institutionId || !userId) {
-      console.error('Invalid state format:', state);
+      logger.error('ponto-oauth-callback', 'Invalid state format', state);
       return new Response(
         '<html><body><h1>Error</h1><p>Invalid state</p></body></html>',
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
     const clientSecret = Deno.env.get('PONTO_CLIENT_SECRET');
 
     if (!clientId || !clientSecret) {
-      console.error('Ponto credentials not configured');
+      logger.error('ponto-oauth-callback', 'Ponto credentials not configured');
       return new Response(
         '<html><body><h1>Error de configuración</h1><p>Credenciales Ponto no configuradas</p></body></html>',
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('Token exchange failed:', errorText);
+      logger.error('ponto-oauth-callback', 'Token exchange failed', errorText);
       return new Response(
         '<html><body><h1>Error de autenticación</h1><p>No se pudieron obtener los tokens</p></body></html>',
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
     }
 
     const tokens = await tokenResponse.json();
-    console.log('Tokens received:', {
+    logger.info('ponto-oauth-callback', 'Tokens received', {
       hasAccessToken: !!tokens.access_token,
       hasRefreshToken: !!tokens.refresh_token,
       expiresIn: tokens.expires_in,
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
     const encryptedRefreshToken = await encrypt(tokens.refresh_token);
     const tokenFingerprint = await fingerprint(tokens.access_token);
 
-    console.log('Tokens encrypted, fingerprint:', tokenFingerprint);
+    logger.info('ponto-oauth-callback', 'Tokens encrypted', tokenFingerprint);
 
     // Calculate expiration
     const expiresAt = new Date(Date.now() + (tokens.expires_in * 1000)).toISOString();
@@ -126,19 +127,19 @@ Deno.serve(async (req) => {
       .single();
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      logger.error('ponto-oauth-callback', 'Database error', dbError);
       return new Response(
         '<html><body><h1>Error</h1><p>No se pudo guardar la conexión</p></body></html>',
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
       );
     }
 
-    console.log('Connection created:', connection.id);
+    logger.info('ponto-oauth-callback', 'Connection created', connection.id);
 
     // Trigger initial sync (fire-and-forget)
     supabase.functions.invoke('ponto-sync', {
       body: { connection_id: connection.id },
-    }).catch(err => console.error('Sync trigger failed:', err));
+    }).catch(err => logger.error('ponto-oauth-callback', 'Sync trigger failed', err));
 
     // Success page with redirect
     return new Response(
@@ -171,7 +172,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('OAuth callback error:', error);
+    logger.error('ponto-oauth-callback', 'OAuth callback error', error);
     const message = error instanceof Error ? error.message : String(error);
     return new Response(
       `<html><body><h1>Error</h1><p>${message}</p></body></html>`,

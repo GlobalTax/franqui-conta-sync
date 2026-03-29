@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,14 +150,14 @@ serve(async (req) => {
       bankAccountId,
     } = await req.json();
 
-    console.log('🏦 Starting Norma 43 import for centro:', centroCode);
+    logger.info('import-norma43-migration', 'Starting Norma 43 import for centro', centroCode);
 
     // PASO 1: Parsear archivo
-    console.log('📄 Parsing Norma 43 file...');
+    logger.info('import-norma43-migration', 'Parsing Norma 43 file');
     const parseResult = parseNorma43(fileContent);
 
     if (parseResult.errors.length > 0) {
-      console.error('❌ Parse errors:', parseResult.errors);
+      logger.error('import-norma43-migration', 'Parse errors', parseResult.errors);
       return new Response(
         JSON.stringify({
           success: false,
@@ -177,10 +178,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Parsed ${parseResult.transactions.length} transactions`);
+    logger.info('import-norma43-migration', `Parsed ${parseResult.transactions.length} transactions`);
 
     // PASO 2: Validar fechas dentro del ejercicio fiscal
-    console.log('📅 Validating dates...');
+    logger.info('import-norma43-migration', 'Validating dates');
     const startDate = new Date(fiscalYearStart);
     const endDate = new Date(fiscalYearEnd);
     
@@ -190,7 +191,7 @@ serve(async (req) => {
     });
 
     if (outOfRangeTransactions.length > 0) {
-      console.warn(`⚠️ ${outOfRangeTransactions.length} transactions out of range`);
+      logger.warn('import-norma43-migration', `${outOfRangeTransactions.length} transactions out of range`);
       return new Response(
         JSON.stringify({
           success: false,
@@ -202,7 +203,7 @@ serve(async (req) => {
     }
 
     // PASO 3: Buscar o crear cuenta bancaria
-    console.log('🔍 Finding or creating bank account...');
+    logger.info('import-norma43-migration', 'Finding or creating bank account');
     let accountId = bankAccountId;
 
     if (!accountId) {
@@ -216,7 +217,7 @@ serve(async (req) => {
 
       if (existingAccount) {
         accountId = existingAccount.id;
-        console.log('✅ Found existing bank account:', accountId);
+        logger.info('import-norma43-migration', 'Found existing bank account', accountId);
       } else {
         // Crear nueva cuenta bancaria
         const { data: newAccount, error: createError } = await supabaseClient
@@ -233,17 +234,17 @@ serve(async (req) => {
           .single();
 
         if (createError) {
-          console.error('❌ Error creating bank account:', createError);
+          logger.error('import-norma43-migration', 'Error creating bank account', createError);
           throw createError;
         }
 
         accountId = newAccount.id;
-        console.log('✅ Created new bank account:', accountId);
+        logger.info('import-norma43-migration', 'Created new bank account', accountId);
       }
     }
 
     // PASO 4: Insertar movimientos bancarios
-    console.log('💾 Inserting bank transactions...');
+    logger.info('import-norma43-migration', 'Inserting bank transactions');
     const transactionsToInsert = parseResult.transactions.map(t => ({
       bank_account_id: accountId,
       transaction_date: t.transactionDate,
@@ -260,11 +261,11 @@ serve(async (req) => {
       .select();
 
     if (insertError) {
-      console.error('❌ Error inserting transactions:', insertError);
+      logger.error('import-norma43-migration', 'Error inserting transactions', insertError);
       throw insertError;
     }
 
-    console.log(`✅ Inserted ${insertedTransactions?.length || 0} transactions`);
+    logger.info('import-norma43-migration', `Inserted ${insertedTransactions?.length || 0} transactions`);
 
     // PASO 5: Calcular estadísticas
     const totalDebits = parseResult.transactions
@@ -290,13 +291,13 @@ serve(async (req) => {
       },
     };
 
-    console.log('✅ Import completed successfully:', result);
+    logger.info('import-norma43-migration', 'Import completed successfully', result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('❌ Error in import-norma43-migration:', error);
+    logger.error('import-norma43-migration', 'Error in import-norma43-migration', error);
     return new Response(
       JSON.stringify({
         success: false,

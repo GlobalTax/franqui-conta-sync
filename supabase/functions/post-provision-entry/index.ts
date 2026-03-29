@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
       throw new Error("Error al actualizar el estado de la provisión");
     }
 
-    console.log(`✅ Provisión ${provision.provision_number} contabilizada - Asiento ${entryNumber}`);
+    logger.info('post-provision-entry', `Provision ${provision.provision_number} contabilizada - Asiento ${entryNumber}`);
 
     return new Response(
       JSON.stringify({
@@ -131,7 +132,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Error en post-provision-entry:", error);
+    logger.error('post-provision-entry', 'Error en post-provision-entry', error);
 
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 

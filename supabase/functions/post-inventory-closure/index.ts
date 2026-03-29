@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -174,7 +175,7 @@ Deno.serve(async (req) => {
       throw new Error("Error al actualizar el estado del cierre");
     }
 
-    console.log(`✅ Cierre existencias ${closure.closure_month}/${closure.closure_year} contabilizado - Asiento ${entryNumber}`);
+    logger.info('post-inventory-closure', `Cierre existencias ${closure.closure_month}/${closure.closure_year} contabilizado - Asiento ${entryNumber}`);
 
     return new Response(
       JSON.stringify({
@@ -188,7 +189,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Error en post-inventory-closure:", error);
+    logger.error('post-inventory-closure', 'Error en post-inventory-closure', error);
 
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 

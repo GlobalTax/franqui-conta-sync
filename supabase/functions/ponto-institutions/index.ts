@@ -5,6 +5,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 import { PontoClient } from '../_shared/ponto-client.ts';
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Fetching Ponto institutions for user:', user.id);
+    logger.info('ponto-institutions', 'Fetching Ponto institutions for user', user.id);
 
     // Get country filter from query params (default: BE)
     const url = new URL(req.url);
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       `/financial-institutions?filter[country]=${country}`
     );
 
-    console.log(`Fetched ${response.data?.length || 0} institutions for country: ${country}`);
+    logger.info('ponto-institutions', `Fetched ${response.data?.length || 0} institutions for country: ${country}`);
 
     return new Response(
       JSON.stringify({
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Institutions fetch error:', error);
+    logger.error('ponto-institutions', 'Institutions fetch error', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

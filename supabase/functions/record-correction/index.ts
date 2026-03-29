@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { recordCorrection } from "../_shared/automation/learning-engine.ts";
 import type { CorrectionInput } from "../_shared/automation/learning-engine.ts";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
 
     const correction: CorrectionInput = await req.json();
 
-    console.log('[record-correction] Recording correction for invoice:', correction.invoice_id);
+    logger.info('record-correction', 'Recording correction for invoice', { invoice_id: correction.invoice_id });
 
     const result = await recordCorrection(correction, supabase);
 
@@ -29,7 +30,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (err) {
-    console.error('[record-correction] Error:', err);
+    logger.error('record-correction', 'Error processing correction', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: message }),

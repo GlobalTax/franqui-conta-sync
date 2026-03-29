@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,9 +49,7 @@ Deno.serve(async (req) => {
     const body: CloseRequest = await req.json();
     const { centroCode, fiscalYearId, closingDate } = body;
 
-    console.log(
-      `[close-fiscal-year] Starting closure: ${fiscalYearId} at ${closingDate}`
-    );
+    logger.info('close-fiscal-year', 'Starting closure', { fiscalYearId, closingDate });
 
     // Get fiscal year details for closing_periods
     const { data: fiscalYear, error: fyError } = await supabase
@@ -63,7 +62,7 @@ Deno.serve(async (req) => {
       throw new Error(`Error al obtener ejercicio fiscal: ${fyError?.message || 'No encontrado'}`);
     }
 
-    console.log(`[close-fiscal-year] Fiscal year: ${fiscalYear.year} (${fiscalYear.start_date} to ${fiscalYear.end_date})`);
+    logger.info('close-fiscal-year', 'Fiscal year details', { year: fiscalYear.year, startDate: fiscalYear.start_date, endDate: fiscalYear.end_date });
 
     // ========================================================================
     // STEP 1: Calculate P&L (Profit & Loss)
@@ -80,7 +79,7 @@ Deno.serve(async (req) => {
     );
 
     if (expensesError) {
-      console.error('[close-fiscal-year] Error getting expenses:', expensesError);
+      logger.error('close-fiscal-year', 'Error getting expenses', expensesError);
       throw new Error(`Error al calcular gastos: ${expensesError.message}`);
     }
 
@@ -95,7 +94,7 @@ Deno.serve(async (req) => {
     );
 
     if (incomeError) {
-      console.error('[close-fiscal-year] Error getting income:', incomeError);
+      logger.error('close-fiscal-year', 'Error getting income', incomeError);
       throw new Error(`Error al calcular ingresos: ${incomeError.message}`);
     }
 
@@ -111,9 +110,7 @@ Deno.serve(async (req) => {
 
     const result = totalIncome - totalExpenses;
 
-    console.log(
-      `[close-fiscal-year] P&L: Income=${totalIncome}, Expenses=${totalExpenses}, Result=${result}`
-    );
+    logger.info('close-fiscal-year', 'P&L calculated', { totalIncome, totalExpenses, result });
 
     // ========================================================================
     // STEP 2: Regularization Entry (groups 6 & 7 to 129)
@@ -152,11 +149,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (regEntryError) {
-      console.error('[close-fiscal-year] Error creating regularization entry:', regEntryError);
+      logger.error('close-fiscal-year', 'Error creating regularization entry', regEntryError);
       throw new Error(`Error al crear asiento de regularización: ${regEntryError.message}`);
     }
 
-    console.log(`[close-fiscal-year] Regularization entry created: ${regularizationEntry.id}`);
+    logger.info('close-fiscal-year', 'Regularization entry created', { entryId: regularizationEntry.id });
 
     // Build regularization transactions
     const regTransactions: any[] = [];
@@ -221,7 +218,7 @@ Deno.serve(async (req) => {
       .insert(regTransactions);
 
     if (regTransError) {
-      console.error('[close-fiscal-year] Error creating reg transactions:', regTransError);
+      logger.error('close-fiscal-year', 'Error creating reg transactions', regTransError);
       // Rollback: delete entry
       await supabase
         .from('accounting_entries')
@@ -246,9 +243,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', regularizationEntry.id);
 
-    console.log(
-      `[close-fiscal-year] Regularization entry completed: ${regTransactions.length} lines`
-    );
+    logger.info('close-fiscal-year', 'Regularization entry completed', { lines: regTransactions.length });
 
     // ========================================================================
     // STEP 3: Closing Entry (balance sheet to 0)
@@ -264,7 +259,7 @@ Deno.serve(async (req) => {
     );
 
     if (balanceError) {
-      console.error('[close-fiscal-year] Error getting balances:', balanceError);
+      logger.error('close-fiscal-year', 'Error getting balances', balanceError);
       throw new Error(`Error al obtener saldos: ${balanceError.message}`);
     }
 
@@ -274,7 +269,7 @@ Deno.serve(async (req) => {
       return ['1', '2', '3', '4', '5'].includes(group) && Math.abs(acc.balance) > 0.01;
     }) || [];
 
-    console.log(`[close-fiscal-year] Balance sheet accounts: ${balanceAccounts.length}`);
+    logger.info('close-fiscal-year', 'Balance sheet accounts found', { count: balanceAccounts.length });
 
     // Create closing entry
     const { data: closingEntry, error: closeEntryError } = await supabase
@@ -297,11 +292,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (closeEntryError) {
-      console.error('[close-fiscal-year] Error creating closing entry:', closeEntryError);
+      logger.error('close-fiscal-year', 'Error creating closing entry', closeEntryError);
       throw new Error(`Error al crear asiento de cierre: ${closeEntryError.message}`);
     }
 
-    console.log(`[close-fiscal-year] Closing entry created: ${closingEntry.id}`);
+    logger.info('close-fiscal-year', 'Closing entry created', { entryId: closingEntry.id });
 
     // Build closing transactions
     const closeTransactions: any[] = [];
@@ -367,7 +362,7 @@ Deno.serve(async (req) => {
       .insert(closeTransactions);
 
     if (closeTransError) {
-      console.error('[close-fiscal-year] Error creating close transactions:', closeTransError);
+      logger.error('close-fiscal-year', 'Error creating close transactions', closeTransError);
       // Rollback: delete entries
       await supabase
         .from('accounting_entries')
@@ -385,7 +380,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', closingEntry.id);
 
-    console.log(`[close-fiscal-year] Closing entry completed: ${closeTransactions.length} lines`);
+    logger.info('close-fiscal-year', 'Closing entry completed', { lines: closeTransactions.length });
 
     // ========================================================================
     // STEP 4: Mark fiscal year as closed

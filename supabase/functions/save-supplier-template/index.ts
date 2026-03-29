@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,7 +52,7 @@ serve(async (req) => {
 
     const body: RequestBody = await req.json();
 
-    console.log('[save-supplier-template] Request:', {
+    logger.info('save-supplier-template', 'Request received', {
       template_id: body.template_id,
       supplier_id: body.supplier_id,
       template_name: body.template_name,
@@ -104,7 +105,7 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        console.error('[save-supplier-template] Update error:', error);
+        logger.error('save-supplier-template', 'Update error', error);
         return new Response(
           JSON.stringify({ error: 'Error updating template', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -112,7 +113,7 @@ serve(async (req) => {
       }
 
       result = data;
-      console.log('[save-supplier-template] Template updated:', result.id);
+      logger.info('save-supplier-template', 'Template updated', { id: result.id });
 
     } else {
       // CREATE new template
@@ -123,7 +124,7 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        console.error('[save-supplier-template] Insert error:', error);
+        logger.error('save-supplier-template', 'Insert error', error);
         return new Response(
           JSON.stringify({ error: 'Error creating template', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -131,7 +132,7 @@ serve(async (req) => {
       }
 
       result = data;
-      console.log('[save-supplier-template] Template created:', result.id);
+      logger.info('save-supplier-template', 'Template created', { id: result.id });
     }
 
     return new Response(
@@ -143,7 +144,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[save-supplier-template] Unexpected error:', error);
+    logger.error('save-supplier-template', 'Unexpected error', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

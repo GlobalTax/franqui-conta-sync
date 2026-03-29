@@ -24,6 +24,9 @@ import { useInvoiceReview } from '@/hooks/useInvoiceReview';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { useInvoiceActions } from '@/hooks/useInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
+import { UseCaseFactory } from '@/domain/UseCaseFactory';
+import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
+import { ApprovalEngine } from '@/domain/invoicing/services/ApprovalEngine';
 import { useListNavigationShortcuts, useBulkActionShortcuts } from '@/lib/shortcuts/ShortcutManager';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -180,14 +183,64 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
     setPage(1);
   };
 
-  const handleApprove = (id: string) => {
-    toast.success('Factura aprobada correctamente');
-    // TODO: Implementar lógica de aprobación
+  const handleApprove = async (id: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error('Usuario no autenticado'); return; }
+
+      const invoice = await InvoiceQueries.findInvoiceReceivedById(id);
+      if (!invoice) { toast.error('Factura no encontrada'); return; }
+
+      const userRole = (currentMembership?.role || 'viewer') as 'admin' | 'manager' | 'accountant' | 'viewer';
+      const pendingLevel = ApprovalEngine.getPendingApprovalLevel(invoice);
+      const approvalLevel = pendingLevel ||
+        ApprovalEngine.determineApprovalRequirements(invoice.total).nextApprovalLevel ||
+        'accounting';
+
+      const useCase = UseCaseFactory.approveInvoiceUseCase();
+      await useCase.execute({
+        invoice,
+        approverUserId: user.id,
+        approverRole: userRole,
+        approvalLevel: approvalLevel as 'manager' | 'accounting',
+      });
+
+      toast.success('Factura aprobada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+    } catch (error: any) {
+      toast.error(error.message || 'Error al aprobar la factura');
+    }
   };
 
-  const handleReject = (id: string) => {
-    toast.error('Factura rechazada');
-    // TODO: Implementar lógica de rechazo
+  const handleReject = async (id: string) => {
+    const reason = prompt('Motivo del rechazo:');
+    if (!reason || reason.trim() === '') {
+      toast.error('Debe proporcionar un motivo de rechazo');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error('Usuario no autenticado'); return; }
+
+      const invoice = await InvoiceQueries.findInvoiceReceivedById(id);
+      if (!invoice) { toast.error('Factura no encontrada'); return; }
+
+      const userRole = (currentMembership?.role || 'viewer') as 'admin' | 'manager' | 'accountant' | 'viewer';
+
+      const useCase = UseCaseFactory.rejectInvoiceUseCase();
+      await useCase.execute({
+        invoice,
+        rejectorUserId: user.id,
+        rejectorRole: userRole,
+        reason: reason.trim(),
+      });
+
+      toast.error('Factura rechazada');
+      queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
+    } catch (error: any) {
+      toast.error(error.message || 'Error al rechazar la factura');
+    }
   };
 
   const handleAssignCentre = (id: string, centroCode: string) => {

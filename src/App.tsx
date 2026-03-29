@@ -74,6 +74,9 @@ const Provisions = lazy(() => import("@/pages/accounting/Provisions"));
 const Accruals = lazy(() => import("@/pages/accounting/Accruals"));
 const InventoryClosures = lazy(() => import("@/pages/accounting/InventoryClosures"));
 const ComplianceDashboard = lazy(() => import("@/pages/compliance/ComplianceDashboard"));
+const DailyClosure = lazy(() => import("@/pages/accounting/DailyClosure"));
+const LaborCosts = lazy(() => import("@/pages/accounting/LaborCosts"));
+const FiscalModels = lazy(() => import("@/pages/compliance/FiscalModels"));
 
 /**
  * React Query Configuration
@@ -215,7 +218,10 @@ const App = () => {
               <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
               
               {/* Auditoría & Compliance */}
+              <Route path="/contabilidad/cierre-diario" element={<DailyClosure />} />
+              <Route path="/contabilidad/costes-laborales" element={<LaborCosts />} />
               <Route path="/auditoria" element={<ComplianceDashboard />} />
+              <Route path="/cumplimiento/modelos-fiscales" element={<FiscalModels />} />
               
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

@@ -1,5 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RestaurantFilterProps {
   value: string;
@@ -9,14 +11,26 @@ interface RestaurantFilterProps {
 export function RestaurantFilter({ value, onChange }: RestaurantFilterProps) {
   const { currentMembership, loading } = useOrganization();
 
+  const { data: centres = [] } = useQuery({
+    queryKey: ['centres-filter', currentMembership?.organization_id],
+    queryFn: async () => {
+      if (!currentMembership?.organization_id) return [];
+      const { data, error } = await supabase
+        .from('centres')
+        .select('codigo, nombre')
+        .order('nombre');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentMembership?.organization_id,
+  });
+
   if (loading) return null;
 
-  // If user is admin or contable (without specific restaurant), show all restaurants
-  const canViewAll = currentMembership?.role === "admin" || 
+  const canViewAll = currentMembership?.role === "admin" ||
     (currentMembership?.role === "contable" && !currentMembership?.restaurant_id);
 
   if (!canViewAll && currentMembership?.restaurant) {
-    // User can only see their restaurant
     return (
       <div className="text-sm text-muted-foreground">
         Restaurante: {currentMembership.restaurant.nombre}
@@ -31,7 +45,11 @@ export function RestaurantFilter({ value, onChange }: RestaurantFilterProps) {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Todos los restaurantes</SelectItem>
-        {/* TODO: Fetch and display restaurants for the organization */}
+        {centres.map((centre) => (
+          <SelectItem key={centre.codigo} value={centre.codigo}>
+            {centre.nombre || centre.codigo}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );

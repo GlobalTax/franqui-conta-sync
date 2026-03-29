@@ -7,6 +7,7 @@ import { InvoiceValidator } from '../services/InvoiceValidator';
 import { ApprovalEngine } from '../services/ApprovalEngine';
 import { InvoiceQueries } from '@/infrastructure/persistence/supabase/queries/InvoiceQueries';
 import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
+import { ApprovalHistoryQueries } from '@/infrastructure/persistence/supabase/queries/ApprovalHistoryQueries';
 import type { InvoiceReceived, ApprovalStatus } from '../types';
 
 export interface ApproveInvoiceInput {
@@ -86,14 +87,13 @@ export class ApproveInvoiceUseCase {
     });
 
     // PASO 6: Registrar aprobación en historial (tabla invoice_approvals)
-    // TODO: Implementar cuando se cree ApprovalHistoryQueries
-    // await ApprovalHistoryQueries.createApproval({
-    //   invoiceId: input.invoice.id,
-    //   approverId: input.approverUserId,
-    //   approvalLevel: input.approvalLevel,
-    //   action: 'approved',
-    //   comments: input.comments,
-    // });
+    await ApprovalHistoryQueries.createApproval({
+      invoiceId: input.invoice.id,
+      approverId: input.approverUserId,
+      approvalLevel: input.approvalLevel,
+      action: 'approved',
+      comments: input.comments,
+    });
 
     return {
       updatedInvoice,

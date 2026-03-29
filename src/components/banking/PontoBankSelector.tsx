@@ -24,7 +24,7 @@ export function PontoBankSelector({ centroCode, onConnectionStart }: PontoBankSe
       }
 
       // Build OAuth URL
-      const clientId = "YOUR_PONTO_CLIENT_ID"; // TODO: Get from env or config
+      const clientId = import.meta.env.VITE_PONTO_CLIENT_ID || '';
       const redirectUri = `${window.location.origin}/functions/v1/ponto-oauth-callback`;
       const state = `${centroCode}:${institutionId}:${user.id}`;
       

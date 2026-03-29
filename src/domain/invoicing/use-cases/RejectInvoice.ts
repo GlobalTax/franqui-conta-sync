@@ -6,6 +6,7 @@
 import { InvoiceValidator } from '../services/InvoiceValidator';
 import { ApprovalEngine } from '../services/ApprovalEngine';
 import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
+import { ApprovalHistoryQueries } from '@/infrastructure/persistence/supabase/queries/ApprovalHistoryQueries';
 import type { InvoiceReceived } from '../types';
 
 export interface RejectInvoiceInput {
@@ -81,14 +82,13 @@ export class RejectInvoiceUseCase {
     });
 
     // PASO 5: Registrar rechazo en historial (tabla invoice_approvals)
-    // TODO: Implementar cuando se cree ApprovalHistoryQueries
-    // await ApprovalHistoryQueries.createApproval({
-    //   invoiceId: input.invoice.id,
-    //   approverId: input.rejectorUserId,
-    //   approvalLevel: currentPendingLevel || 'accounting',
-    //   action: 'rejected',
-    //   comments: input.reason,
-    // });
+    await ApprovalHistoryQueries.createApproval({
+      invoiceId: input.invoice.id,
+      approverId: input.rejectorUserId,
+      approvalLevel: currentPendingLevel || 'accounting',
+      action: 'rejected',
+      comments: input.reason,
+    });
 
     return {
       updatedInvoice,

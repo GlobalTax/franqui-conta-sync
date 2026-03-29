@@ -101,7 +101,7 @@ serve(async (req) => {
         empleado: "Empleado",
       };
 
-      await fetch("https://api.resend.com/emails", {
+      const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,6 +125,13 @@ serve(async (req) => {
           `,
         }),
       });
+      const resendBody = await resendRes.text();
+      console.log(`Resend response: status=${resendRes.status} body=${resendBody}`);
+      if (!resendRes.ok) {
+        console.error(`Resend error: ${resendBody}`);
+      }
+    } else {
+      console.log("No RESEND_API_KEY configured, skipping email send");
     }
 
     return new Response(

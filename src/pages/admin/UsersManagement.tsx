@@ -127,17 +127,28 @@ const UsersManagement = () => {
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <div className="flex gap-2 flex-wrap">
-                    {user.user_roles?.map((role: any) => (
-                      <Badge 
-                        key={role.id} 
-                        variant={getRoleBadgeVariant(role.role)}
-                      >
-                        {getRoleIcon(role.role)} {role.role}
-                        {role.centres && ` - ${role.centres.nombre} (${role.centres.codigo})`}
-                        {!role.centres && role.centro && ` - ${role.centro}`}
-                      </Badge>
-                    )) || <span className="text-muted-foreground">Sin roles</span>}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    {(() => {
+                      const roles = user.user_roles || [];
+                      if (roles.length === 0) return <span className="text-muted-foreground">Sin roles</span>;
+                      const grouped: Record<string, any[]> = {};
+                      roles.forEach((r: any) => {
+                        if (!grouped[r.role]) grouped[r.role] = [];
+                        grouped[r.role].push(r);
+                      });
+                      return Object.entries(grouped).map(([role, items]) => {
+                        const hasCentres = items.some((i: any) => i.centro || i.centres);
+                        return (
+                          <Badge key={role} variant={getRoleBadgeVariant(role)}>
+                            {getRoleIcon(role)} {role}
+                            {hasCentres && ` (${items.length} centros)`}
+                          </Badge>
+                        );
+                      });
+                    })()}
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setEditUser(user)}>
+                      Ver detalle
+                    </Button>
                   </div>
                 </TableCell>
                 <TableCell>

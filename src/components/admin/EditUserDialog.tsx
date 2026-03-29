@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { upsertUserRole, revokeUserRole } from "@/lib/supabase-queries";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
 
 interface EditUserDialogProps {
   user: any;
@@ -19,6 +21,19 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newRole, setNewRole] = useState("gestor");
+  const [roleSearch, setRoleSearch] = useState("");
+
+  const filteredRoles = useMemo(() => {
+    const roles = user.user_roles || [];
+    if (!roleSearch) return roles;
+    const q = roleSearch.toLowerCase();
+    return roles.filter((r: any) => 
+      r.role?.toLowerCase().includes(q) ||
+      r.centro?.toLowerCase().includes(q) ||
+      r.centres?.nombre?.toLowerCase().includes(q) ||
+      r.centres?.codigo?.toLowerCase().includes(q)
+    );
+  }, [user.user_roles, roleSearch]);
 
   const handleAddRole = async () => {
     setLoading(true);
@@ -80,24 +95,41 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
           </div>
 
           <div className="space-y-2">
-            <Label>Roles Actuales</Label>
-            <div className="flex flex-wrap gap-2">
-              {user.user_roles?.map((role: any) => (
-                <Badge key={role.id} variant="secondary" className="gap-2">
-                  {role.role}
-                  {role.centro && ` - ${role.centro}`}
-                  <button
-                    onClick={() => handleRemoveRole(role.id)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-              {(!user.user_roles || user.user_roles.length === 0) && (
-                <span className="text-sm text-muted-foreground">Sin roles asignados</span>
+            <div className="flex items-center justify-between">
+              <Label>Roles Actuales ({user.user_roles?.length || 0})</Label>
+              {(user.user_roles?.length || 0) > 5 && (
+                <div className="relative w-48">
+                  <Search className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar rol o centro..."
+                    value={roleSearch}
+                    onChange={(e) => setRoleSearch(e.target.value)}
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
               )}
             </div>
+            <ScrollArea className="max-h-48">
+              <div className="flex flex-wrap gap-2 pr-3">
+                {filteredRoles.map((role: any) => (
+                  <Badge key={role.id} variant="secondary" className="gap-1.5">
+                    {role.role}
+                    {role.centres ? ` - ${role.centres.nombre}` : role.centro ? ` - ${role.centro}` : ''}
+                    <button
+                      onClick={() => handleRemoveRole(role.id)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {filteredRoles.length === 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {roleSearch ? 'Sin resultados' : 'Sin roles asignados'}
+                  </span>
+                )}
+              </div>
+            </ScrollArea>
           </div>
 
           <div className="space-y-2">

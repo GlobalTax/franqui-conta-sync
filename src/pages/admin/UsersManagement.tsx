@@ -56,7 +56,6 @@ const UsersManagement = () => {
       case "admin": return "default";
       case "gestor": return "secondary";
       case "franquiciado": return "outline";
-      case "asesoria": return "outline";
       default: return "outline";
     }
   };

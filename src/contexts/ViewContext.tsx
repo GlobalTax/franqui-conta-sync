@@ -2,9 +2,9 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import { logger } from '@/lib/logger';
 
 export interface ViewSelection {
-  type: 'all' | 'company' | 'centre';
+  type: 'all' | 'centre';
   id: string;
-  code?: string; // Código del centro o sociedad (TEXT)
+  code?: string; // Código del centro (TEXT)
   name: string;
 }
 
@@ -19,7 +19,7 @@ const ViewContext = createContext<ViewContextType | undefined>(undefined);
 export const ViewProvider = ({ children }: { children: ReactNode }) => {
   const [selectedView, setSelectedView] = useState<ViewSelection | null>(null);
   
-  const isConsolidated = selectedView?.type === 'all' || selectedView?.type === 'company';
+  const isConsolidated = selectedView?.type === 'all';
 
   // Persistir en localStorage
   useEffect(() => {
@@ -33,7 +33,12 @@ export const ViewProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('accounting-view');
     if (saved) {
       try {
-        setSelectedView(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Migrate old 'company' type to 'all'
+        if (parsed.type === 'company') {
+          parsed.type = 'all';
+        }
+        setSelectedView(parsed);
       } catch (e) {
         logger.error('ViewContext', 'Error loading saved view', e);
       }

@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useGlobalFilters } from "@/hooks/useGlobalFilters";
 import { useFranchisees } from "@/hooks/useFranchisees";
-import { useCompanies } from "@/hooks/useCompanies";
 import { useCentres } from "@/hooks/useCentres";
 import { Building2, ChevronDown, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -16,42 +15,27 @@ import { Badge } from "@/components/ui/badge";
 export default function CompactOrgSelector() {
   const {
     selectedFranchiseeId,
-    selectedCompanyId,
     selectedCentreCode,
     setFilters,
     reset,
   } = useGlobalFilters();
 
   const { data: franchisees, isLoading: loadingFranchisees } = useFranchisees();
-  const { data: companies } = useCompanies(selectedFranchiseeId || undefined);
   const { data: centres } = useCentres(selectedFranchiseeId || undefined);
-
-  const filteredCentres = selectedCompanyId
-    ? centres?.filter(c => c.company_id === selectedCompanyId)
-    : centres;
 
   // Get display names
   const selectedFranchisee = franchisees?.find(f => f.id === selectedFranchiseeId);
-  const selectedCompany = companies?.find(c => c.id === selectedCompanyId);
   const selectedCentre = centres?.find(c => c.codigo === selectedCentreCode);
 
-  const hasFilters = selectedFranchiseeId || selectedCompanyId || selectedCentreCode;
+  const hasFilters = selectedFranchiseeId || selectedCentreCode;
 
   const handleFranchiseeChange = (value: string) => {
     const id = value === "all" ? null : value;
-    // Changing franchisee resets company and centre
-    setFilters({ franchiseeId: id, companyId: null, centreCode: null });
-  };
-
-  const handleCompanyChange = (value: string) => {
-    const id = value === "all" ? null : value;
-    // Changing company resets centre, keeps franchisee
-    setFilters({ companyId: id, centreCode: null });
+    setFilters({ franchiseeId: id, centreCode: null });
   };
 
   const handleCentreChange = (value: string) => {
     const code = value === "all" ? null : value;
-    // Changing centre keeps franchisee and company
     setFilters({ centreCode: code });
   };
 
@@ -64,8 +48,6 @@ export default function CompactOrgSelector() {
             <span className="text-sm truncate">
               {selectedCentre ? (
                 `${selectedCentre.codigo} - ${selectedCentre.nombre}`
-              ) : selectedCompany ? (
-                selectedCompany.razon_social
               ) : selectedFranchisee ? (
                 `Todos - ${selectedFranchisee.name}`
               ) : (
@@ -120,42 +102,20 @@ export default function CompactOrgSelector() {
             )}
           </div>
 
-          {/* Company */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Entidad Mercantil</Label>
-            <Select
-              value={selectedCompanyId || ""}
-              onValueChange={handleCompanyChange}
-              disabled={!selectedFranchiseeId}
-            >
-              <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Todas las sociedades" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todas las sociedades</SelectItem>
-                {companies?.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.razon_social}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Centre */}
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Centro</Label>
+            <Label className="text-xs text-muted-foreground">Restaurante</Label>
             <Select
               value={selectedCentreCode || ""}
               onValueChange={handleCentreChange}
               disabled={!selectedFranchiseeId}
             >
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Todos los centros" />
+                <SelectValue placeholder="Todos los restaurantes" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos los centros</SelectItem>
-                {filteredCentres?.map((c) => (
+                <SelectItem value="all">Todos los restaurantes</SelectItem>
+                {centres?.map((c) => (
                   <SelectItem key={c.id} value={c.codigo}>
                     {c.codigo} - {c.nombre}
                   </SelectItem>
@@ -172,11 +132,6 @@ export default function CompactOrgSelector() {
                 {selectedFranchisee && (
                   <Badge variant="secondary" className="text-xs">
                     {selectedFranchisee.name}
-                  </Badge>
-                )}
-                {selectedCompany && (
-                  <Badge variant="secondary" className="text-xs">
-                    {selectedCompany.razon_social}
                   </Badge>
                 )}
                 {selectedCentre && (

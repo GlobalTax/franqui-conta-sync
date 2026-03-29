@@ -20,16 +20,14 @@ export default function CompanyConfiguration() {
   // Obtener datos del centro (para derivar companyId) cuando aplique
   const { data: centre, isLoading: isCentreLoading } = useCentre((centreId as string) || "");
 
-  // Derivar companyId: primero company_id, luego principal, luego primera asociada
+  // Derivar companyId desde el centro seleccionado
   const targetCompanyId =
-    selectedView?.type === 'company'
-      ? selectedView.id
-      : isCentreView
-        ? (centre?.company_id ||
-           centre?.centre_companies?.find((c: any) => c.es_principal)?.id ||
-           centre?.centre_companies?.[0]?.id ||
-           null)
-        : null;
+    isCentreView
+      ? (centre?.company_id ||
+         centre?.centre_companies?.find((c: any) => c.es_principal)?.id ||
+         centre?.centre_companies?.[0]?.id ||
+         null)
+      : null;
   
   const { company, isLoading, updateCompany, isUpdating } = useCompanyConfiguration((targetCompanyId as string) || undefined);
 

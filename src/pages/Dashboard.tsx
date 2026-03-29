@@ -53,7 +53,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-2xl font-bold">Dashboard Operativo</h1>
             <p className="text-sm text-muted-foreground">
-              Vista en tiempo real • {selectedView.type === 'company' ? 'Consolidado' : selectedView.name}
+              Vista en tiempo real • {selectedView.type === 'all' ? 'Consolidado' : selectedView.name}
             </p>
           </div>
         </div>

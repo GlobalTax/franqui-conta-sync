@@ -16,18 +16,6 @@ export function MyRestaurantsCard() {
   if (selectedView?.type === 'all' && selectedView.id) {
     const f = franchiseesWithCentres.find(f => f.id === selectedView.id);
     visibleCentres = f?.centres || [];
-  } else if (selectedView?.type === 'company') {
-    // Show all centres from the same franchisee
-    for (const f of franchiseesWithCentres) {
-      if (f.centres.some(c => c.franchisee_id)) {
-        visibleCentres = f.centres;
-        break;
-      }
-    }
-    // fallback: show all
-    if (!visibleCentres.length) {
-      visibleCentres = franchiseesWithCentres.flatMap(f => f.centres);
-    }
   } else {
     visibleCentres = franchiseesWithCentres.flatMap(f => f.centres);
   }

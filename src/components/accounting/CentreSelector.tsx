@@ -3,8 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAllUserCentres } from "@/hooks/useAllUserCentres";
-import { useAllUserCompanies } from "@/hooks/useAllUserCompanies";
-import { AlertCircle, Building2, Store, RefreshCw, Briefcase, Users, LayoutGrid } from "lucide-react";
+import { AlertCircle, Store, RefreshCw, Users, LayoutGrid } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
 import { useEffect } from "react";
 
@@ -14,12 +13,7 @@ interface CentreSelectorProps {
 }
 
 export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
-  const { data: franchiseesWithCentres, isLoading: centresLoading, error: centresError, isError: centresIsError, refetch: refetchCentres } = useAllUserCentres();
-  const { data: franchiseesWithCompanies, isLoading: companiesLoading } = useAllUserCompanies();
-
-  const isLoading = centresLoading || companiesLoading;
-  const isError = centresIsError;
-  const error = centresError;
+  const { data: franchiseesWithCentres, isLoading, error, isError, refetch: refetchCentres } = useAllUserCentres();
 
   // Auto-select: if 1 centre → select it; if multiple → franchisee consolidated view
   useEffect(() => {
@@ -33,28 +27,16 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
           code: centre.codigo,
           name: `${centre.codigo} - ${centre.nombre}`
         });
-      } else if (franchiseesWithCentres.length === 1) {
-        // Multiple centres, single franchisee → consolidated view
+      } else if (franchiseesWithCentres.length >= 1) {
         const franchisee = franchiseesWithCentres[0];
         onChange({
           type: 'all',
           id: franchisee.id,
           name: `Todos - ${franchisee.name}`
         });
-      } else if (franchiseesWithCompanies?.length) {
-        // Multiple franchisees: default to first company
-        const firstCompany = franchiseesWithCompanies[0]?.companies[0];
-        if (firstCompany) {
-          onChange({
-            type: 'company',
-            id: firstCompany.id,
-            code: firstCompany.cif,
-            name: firstCompany.razon_social
-          });
-        }
       }
     }
-  }, [franchiseesWithCentres, franchiseesWithCompanies, value, onChange, isLoading]);
+  }, [franchiseesWithCentres, value, onChange, isLoading]);
 
   if (isLoading) {
     return (
@@ -72,7 +54,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         <AlertTitle>Error al cargar datos</AlertTitle>
         <AlertDescription>
           <div className="space-y-2">
-            <p>No se pudieron cargar las sociedades y centros.</p>
+            <p>No se pudieron cargar los centros.</p>
             {error?.message && (
               <p className="text-xs opacity-70">{error.message}</p>
             )}
@@ -91,7 +73,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
     );
   }
 
-  if (!franchiseesWithCentres?.length && !franchiseesWithCompanies?.length) {
+  if (!franchiseesWithCentres?.length) {
     return null;
   }
 
@@ -103,28 +85,12 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         const id = rest.join(':');
         
         if (type === 'all') {
-          // Franchisee consolidated view
-          const franchisee = franchiseesWithCentres?.find(f => f.id === id)
-            || franchiseesWithCompanies?.find(f => f.id === id);
+          const franchisee = franchiseesWithCentres?.find(f => f.id === id);
           if (franchisee) {
             onChange({
               type: 'all',
               id,
               name: `Todos - ${franchisee.name}`
-            });
-          }
-        } else if (type === 'company') {
-          let foundCompany = null;
-          for (const franchisee of franchiseesWithCompanies || []) {
-            foundCompany = franchisee.companies.find(c => c.id === id);
-            if (foundCompany) break;
-          }
-          if (foundCompany) {
-            onChange({ 
-              type: 'company', 
-              id,
-              code: foundCompany.cif,
-              name: foundCompany.razon_social
             });
           }
         } else if (type === 'centre') {
@@ -148,7 +114,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         <SelectValue placeholder="Seleccionar vista..." />
       </SelectTrigger>
       <SelectContent className="max-h-[500px]">
-        {franchiseesWithCentres && franchiseesWithCentres.map((franchisee) => (
+        {franchiseesWithCentres.map((franchisee) => (
           <div key={`franchisee-group-${franchisee.id}`}>
             {/* Franchisee header */}
             <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
@@ -169,22 +135,6 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
                 </div>
               </SelectItem>
             )}
-
-            {/* Companies for this franchisee */}
-            {franchiseesWithCompanies?.find(f => f.id === franchisee.id)?.companies.map((company) => (
-              <div key={company.id}>
-                <SelectItem 
-                  value={`company:${company.id}`}
-                  className="pl-8"
-                >
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-primary" />
-                    <span>{company.razon_social}</span>
-                    <span className="text-xs text-muted-foreground">({company.cif})</span>
-                  </div>
-                </SelectItem>
-              </div>
-            ))}
 
             {/* Individual centres */}
             {franchisee.centres.map((centre) => (

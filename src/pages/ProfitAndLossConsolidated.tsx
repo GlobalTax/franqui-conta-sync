@@ -37,18 +37,20 @@ const ProfitAndLossConsolidated = () => {
   useEffect(() => {
     if (!selectedView || !centres || !franchiseesWithCompanies) return;
 
-    if (selectedView.type === 'company') {
-      // Buscar la empresa seleccionada en todas las franquicias
-      let targetCompany = null;
-      for (const franchisee of franchiseesWithCompanies) {
-        targetCompany = franchisee.companies.find(c => c.id === selectedView.id);
-        if (targetCompany) break;
-      }
-
-      // Si la empresa tiene centros, auto-seleccionarlos
-      if (targetCompany?.centres && targetCompany.centres.length > 0) {
-        const companyCentreCodes = targetCompany.centres.map(c => c.codigo);
-        setSelectedCentres(companyCentreCodes);
+    if (selectedView.type === 'all') {
+      // Buscar el franquiciado seleccionado y auto-seleccionar todos sus centros
+      const franchisee = franchiseesWithCompanies?.find(f => f.id === selectedView.id);
+      if (franchisee) {
+        const allCentreCodes = franchisee.companies.flatMap(c => c.centres?.map(ct => ct.codigo) || []);
+        if (allCentreCodes.length > 0) {
+          setSelectedCentres(allCentreCodes);
+        } else {
+          // Fallback: use centres list
+          const fCentres = centres?.filter(c => c.franchisee_id === selectedView.id);
+          if (fCentres?.length) {
+            setSelectedCentres(fCentres.map(c => c.codigo));
+          }
+        }
       }
     } else if (selectedView.type === 'centre') {
       // Buscar el centro específico y auto-seleccionarlo
@@ -201,7 +203,7 @@ const ProfitAndLossConsolidated = () => {
               </div>
               
               {/* Indicador de auto-selección */}
-              {selectedView?.type === 'company' && selectedCentres.length > 0 && (
+              {selectedView?.type === 'all' && selectedCentres.length > 0 && (
                 <div className="px-3 py-2 mb-3 bg-primary/10 border border-primary/20 rounded-md text-xs">
                   <span className="font-medium">Vista: {selectedView.name}</span>
                   <span className="text-muted-foreground ml-2">

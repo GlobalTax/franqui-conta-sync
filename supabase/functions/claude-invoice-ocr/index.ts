@@ -339,6 +339,7 @@ serve(async (req) => {
         invoice_date: normalized.issue_date || undefined,
         supplier_name: normalized.issuer.name || undefined,
         supplier_tax_id: normalized.issuer.vat_id || undefined,
+        supplier_id: supplierMatch?.id || undefined,
         customer_name: normalized.receiver.name || undefined,
         customer_tax_id: normalized.receiver.vat_id || undefined,
         total: normalized.totals.total,

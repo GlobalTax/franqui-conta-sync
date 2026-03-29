@@ -516,7 +516,7 @@ export default function InvoiceDetailEditor() {
             setOcrSupplierPostalCode(normalized.issuer?.postal_code || '');
             setOcrSupplierEmail(normalized.issuer?.email || '');
           }
-        } catch (e: any) {
+        } catch (e: unknown) {
           logger.error('InvoiceDetailEditor', '[Supplier Match] Error al buscar proveedor:', e);
         }
       }
@@ -540,20 +540,21 @@ export default function InvoiceDetailEditor() {
         { duration: 4000 }
       );
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('InvoiceDetailEditor', '[OCR] Error completo:', error);
-      
-      if (error.isDuplicate) {
+
+      if (error && typeof error === 'object' && 'isDuplicate' in error) {
         toast.error('⚠️ Factura duplicada', {
-          description: error.message,
+          description: error instanceof Error ? error.message : 'Error desconocido',
           duration: 8000,
         });
         return;
       }
-      
-      logger.error('InvoiceDetailEditor', '[OCR] Error message:', error.message);
-      logger.error('InvoiceDetailEditor', '[OCR] Error stack:', error.stack);
-      toast.error(`Error OCR: ${error.message}`, {
+
+      const errMsg = error instanceof Error ? error.message : 'Error desconocido';
+      logger.error('InvoiceDetailEditor', '[OCR] Error message:', errMsg);
+      logger.error('InvoiceDetailEditor', '[OCR] Error stack:', error instanceof Error ? error.stack : undefined);
+      toast.error(`Error OCR: ${errMsg}`, {
         description: 'Revisa la consola para más detalles',
         duration: 5000
       });
@@ -765,9 +766,9 @@ export default function InvoiceDetailEditor() {
         toast.success('Factura guardada como borrador');
         navigate(`/invoices/received/${newInvoice.id}/edit`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Error al guardar la factura', {
-        description: error.message
+        description: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
   };
@@ -886,7 +887,7 @@ export default function InvoiceDetailEditor() {
       
       navigate('/invoices/inbox');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('InvoiceDetailEditor', 'Error al contabilizar:', error);
     }
   };
@@ -904,9 +905,9 @@ export default function InvoiceDetailEditor() {
       
       toast.info('Factura marcada como ignorada');
       navigate('/invoices/inbox');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Error al ignorar la factura', {
-        description: error.message
+        description: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
   };

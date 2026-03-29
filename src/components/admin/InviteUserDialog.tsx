@@ -39,10 +39,10 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
       setRole("gestor");
       onOpenChange(false);
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo enviar la invitación",
+        description: error instanceof Error ? error.message : "No se pudo enviar la invitación",
         variant: "destructive",
       });
     } finally {

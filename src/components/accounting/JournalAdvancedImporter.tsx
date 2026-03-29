@@ -110,8 +110,8 @@ export function JournalAdvancedImporter({
         toast.warning(`Preview con ${data.errors.length} errores de validación`);
       }
 
-    } catch (error: any) {
-      toast.error(error.message || 'Error en preview');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error en preview');
       logger.error('JournalAdvancedImporter', 'Error en preview', error);
     } finally {
       setUploadProgress(0);
@@ -144,8 +144,8 @@ export function JournalAdvancedImporter({
       setUploadedPath(null);
       onSuccess?.();
 
-    } catch (error: any) {
-      toast.error(error.message || 'Error en importación');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error en importación');
       logger.error('JournalAdvancedImporter', 'Error en importación', error);
     } finally {
       setImporting(false);

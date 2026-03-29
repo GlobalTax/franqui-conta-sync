@@ -267,8 +267,8 @@ export function JournalCSVImporter({
       setRows([]);
       setErrors([]);
       setValidationErrors([]);
-    } catch (err: any) {
-      toast.error(`Error: ${err.message}`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? `Error: ${error.message}` : 'Error desconocido');
     } finally {
       setImporting(false);
     }

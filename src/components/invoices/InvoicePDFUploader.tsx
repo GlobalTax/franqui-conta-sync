@@ -75,9 +75,9 @@ export const InvoicePDFUploader = ({
 
       toast.success("PDF subido correctamente");
       onUploadComplete?.(path);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("InvoicePDFUploader", "Error uploading file", error);
-      toast.error(`Error al subir el archivo: ${error.message}`);
+      toast.error(error instanceof Error ? `Error al subir el archivo: ${error.message}` : 'Error desconocido');
     } finally {
       setUploading(false);
     }
@@ -118,9 +118,9 @@ export const InvoicePDFUploader = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("InvoicePDFUploader", "Error downloading file", error);
-      toast.error(`Error al descargar el archivo: ${error.message}`);
+      toast.error(error instanceof Error ? `Error al descargar el archivo: ${error.message}` : 'Error desconocido');
     }
   };
 
@@ -151,9 +151,9 @@ export const InvoicePDFUploader = ({
 
       toast.success("PDF eliminado correctamente");
       onUploadComplete?.(null as any);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("InvoicePDFUploader", "Error deleting file", error);
-      toast.error(`Error al eliminar el archivo: ${error.message}`);
+      toast.error(error instanceof Error ? `Error al eliminar el archivo: ${error.message}` : 'Error desconocido');
     }
   };
 

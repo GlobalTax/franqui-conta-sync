@@ -89,9 +89,9 @@ export function LogsViewer({
       if (data && data.length > 0) {
         setTotalLogs(data[0].total_count || 0);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('LogsViewer', 'Error fetching logs', error);
-      toast.error(`Error al cargar logs: ${error.message}`);
+      toast.error(error instanceof Error ? `Error al cargar logs: ${error.message}` : 'Error desconocido');
     } finally {
       setLoading(false);
     }

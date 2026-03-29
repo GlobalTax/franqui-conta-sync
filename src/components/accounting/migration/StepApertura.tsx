@@ -184,11 +184,12 @@ export function StepApertura({ config, completed, entryId, migrationRunId, onCom
 
       toast.success(`✅ Asiento de apertura creado con ${transactions.length} líneas`);
       onComplete(entry.id, config.startDate);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('StepApertura', 'Import error', error);
       await logger?.error('Error en importación de apertura', error);
-      setErrors([error.message || 'Error desconocido']);
-      toast.error(error.message || 'Error al importar');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setErrors([errorMessage]);
+      toast.error(errorMessage || 'Error al importar');
     } finally {
       setImporting(false);
     }

@@ -62,10 +62,10 @@ export function ManageRestaurantCompaniesDialog({ centre, open, onOpenChange, on
     try {
       const data = await getCentreCompanies(centre.id);
       setCompanies(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -94,10 +94,10 @@ export function ManageRestaurantCompaniesDialog({ centre, open, onOpenChange, on
       resetForm();
       loadCompanies();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -126,10 +126,10 @@ export function ManageRestaurantCompaniesDialog({ centre, open, onOpenChange, on
       resetForm();
       loadCompanies();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -149,10 +149,10 @@ export function ManageRestaurantCompaniesDialog({ centre, open, onOpenChange, on
       });
       loadCompanies();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -179,10 +179,10 @@ export function ManageRestaurantCompaniesDialog({ centre, open, onOpenChange, on
       });
       loadCompanies();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {

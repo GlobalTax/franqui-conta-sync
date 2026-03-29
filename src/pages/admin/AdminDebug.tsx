@@ -30,8 +30,8 @@ export default function AdminDebug() {
           error: userError?.message || null
         };
         logger.debug('AdminDebug', 'Auth:', info.auth);
-      } catch (error: any) {
-        info.errors.push(`Auth error: ${error.message}`);
+      } catch (error: unknown) {
+        info.errors.push(`Auth error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
 
       // 2. Verificar rol de admin
@@ -48,8 +48,8 @@ export default function AdminDebug() {
             error: error?.message || null
           };
           logger.debug('AdminDebug', 'Role check:', info.role);
-        } catch (error: any) {
-          info.errors.push(`Role check error: ${error.message}`);
+        } catch (error: unknown) {
+          info.errors.push(`Role check error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
 
         // 3. Verificar user_roles directamente
@@ -65,8 +65,8 @@ export default function AdminDebug() {
             error: rolesError?.message || null
           };
           logger.debug('AdminDebug', 'User roles:', info.userRoles);
-        } catch (error: any) {
-          info.errors.push(`User roles query error: ${error.message}`);
+        } catch (error: unknown) {
+          info.errors.push(`User roles query error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
       }
 

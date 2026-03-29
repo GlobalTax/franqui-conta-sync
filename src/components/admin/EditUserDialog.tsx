@@ -31,10 +31,10 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
         description: `Se ha añadido el rol ${newRole} al usuario`,
       });
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -53,10 +53,10 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
         description: "Se ha eliminado el rol del usuario",
       });
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {

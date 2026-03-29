@@ -147,16 +147,17 @@ export default function ScenarioSimulator() {
         description: `Se generaron ${daysInMonth} cierres diarios y ${monthlyExpenses.length} gastos mensuales`,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       addLog({
         level: 'error',
         category: 'Simulator',
-        message: `❌ Error en simulación: ${error.message}`,
+        message: `❌ Error en simulación: ${errorMessage}`,
       });
 
       toast({
         title: "Error en simulación",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

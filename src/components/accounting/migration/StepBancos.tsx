@@ -122,10 +122,10 @@ export function StepBancos({
       setFile(null);
       setFileContent(null);
       setPreview(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('StepBancos', 'Error importing Norma 43', error);
       await logger?.error('Error en importación bancaria', error);
-      toast.error(`Error al importar: ${error.message}`);
+      toast.error(error instanceof Error ? `Error al importar: ${error.message}` : 'Error desconocido');
     } finally {
       setImporting(false);
     }

@@ -65,8 +65,8 @@ export function CreateApiKeyDialog({
         toast.success('API Key created successfully');
         onKeyCreated();
       }
-    } catch (error: any) {
-      toast.error(`Error creating API key: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? `Error creating API key: ${error.message}` : 'Error desconocido');
     } finally {
       setLoading(false);
     }

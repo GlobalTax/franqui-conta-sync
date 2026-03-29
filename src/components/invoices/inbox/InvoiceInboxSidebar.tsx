@@ -68,7 +68,7 @@ export function InvoiceInboxSidebar({
           )
         `)
         .eq('id', invoiceId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

@@ -44,7 +44,7 @@ export function InvoiceInboxSidebar({
   onAssignCentre,
   onGenerateEntry,
 }: InvoiceInboxSidebarProps) {
-  const { data: invoice, isLoading } = useQuery({
+  const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice-detail', invoiceId],
     queryFn: async () => {
       if (!invoiceId) return null;
@@ -92,6 +92,10 @@ export function InvoiceInboxSidebar({
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-6 w-1/2" />
             <Skeleton className="h-[400px] w-full" />
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-destructive">
+            <p>Error al cargar datos</p>
           </div>
         ) : invoice ? (
           <>

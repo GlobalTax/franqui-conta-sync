@@ -304,7 +304,11 @@ export default function SimplePLMapping() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {(plLinesError || mappingsError) ? (
+            <div className="p-4 text-center text-destructive">
+              <p>Error al cargar datos</p>
+            </div>
+          ) : isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Cargando mapeos...
             </div>

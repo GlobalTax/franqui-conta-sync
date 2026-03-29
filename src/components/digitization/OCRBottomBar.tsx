@@ -11,6 +11,7 @@ import { useBulkInvoiceActions } from "@/hooks/useBulkInvoiceActions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { CheckCircle2, X, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface OCRBottomBarProps {
   selectedIds: string[];
@@ -41,7 +42,7 @@ export function OCRBottomBar({ selectedIds, onClear, onSuccess }: OCRBottomBarPr
       toast.success(`${selectedIds.length} facturas aprobadas correctamente`);
       onSuccess();
     } catch (error) {
-      console.error('Error bulk approve:', error);
+      logger.error('OCRBottomBar', 'Error bulk approve', error);
       toast.error('Error al aprobar facturas');
     } finally {
       setIsProcessing(false);

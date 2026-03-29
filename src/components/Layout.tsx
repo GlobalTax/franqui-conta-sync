@@ -183,13 +183,13 @@ const Layout = () => {
             {selectedView && (
               <div className="p-3 bg-muted rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-1.5">
-                  {selectedView.type === 'all' || selectedView.type === 'company' ? (
+                  {selectedView.type === 'all' ? (
                     <Building2 className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
                   ) : (
                     <Store className="h-3.5 w-3.5 text-success" strokeWidth={2} />
                   )}
                   <span className="text-xs font-medium text-muted-foreground">
-                    {selectedView.type === 'all' || selectedView.type === 'company' ? 'Consolidado' : 'Centro'}
+                    {selectedView.type === 'all' ? 'Consolidado' : 'Centro'}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-foreground">

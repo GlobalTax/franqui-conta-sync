@@ -288,6 +288,43 @@ serve(async (req) => {
     const normalizeResult = normalizeBackend(extractedData, rawText, companyVATIds);
     const { normalized, validation, autofix_applied } = normalizeResult;
 
+    // 8b. Auto-fill receiver from centre data if OCR didn't extract it
+    if ((!normalized.receiver?.name || !normalized.receiver?.vat_id) && centreCompanies?.length) {
+      const principal = centreCompanies[0];
+      if (!normalized.receiver) {
+        (normalized as any).receiver = { name: null, vat_id: null, address: null };
+      }
+      if (!normalized.receiver.name && principal.razon_social) {
+        normalized.receiver.name = principal.razon_social;
+        autofix_applied.push('Receptor auto-rellenado desde datos del centro');
+      }
+      if (!normalized.receiver.vat_id && principal.cif) {
+        normalized.receiver.vat_id = principal.cif;
+      }
+    }
+
+    // 8c. Auto-match supplier by NIF/CIF
+    let supplierMatch: { id: string; name: string; tax_id: string; default_account_code: string | null } | null = null;
+    const issuerVatId = normalized.issuer?.vat_id;
+    if (issuerVatId) {
+      const { data: matchedSupplier } = await supabase
+        .from('suppliers')
+        .select('id, name, tax_id, default_account_code')
+        .eq('tax_id', issuerVatId)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (matchedSupplier) {
+        supplierMatch = {
+          id: matchedSupplier.id,
+          name: matchedSupplier.name,
+          tax_id: matchedSupplier.tax_id,
+          default_account_code: matchedSupplier.default_account_code,
+        };
+        logger.info('claude-ocr', 'Supplier auto-matched', { supplierId: matchedSupplier.id, name: matchedSupplier.name });
+      }
+    }
+
     // 9. Determine status
     const confidenceScore = normalized.confidence_score || extractedData.confidence_score || 0;
     const needsReview = !validation.ok || confidenceScore < 70;

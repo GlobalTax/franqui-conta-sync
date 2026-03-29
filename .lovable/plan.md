@@ -1,40 +1,39 @@
 
 
-# Plan: Auto-resolver proveedor tras OCR
+# Plan: Corregir errores de build TypeScript
 
 ## Problema
+El build falla por errores de TypeScript en varios archivos que no fueron modificados recientemente. Esto impide que la preview cargue correctamente, mostrando una pantalla en blanco.
 
-El OCR de Claude extrae correctamente el NIF (B67282871) y la razón social (Glovoapp Spain Platform S.L.), pero el proveedor **no existe en la tabla `suppliers`**. Por eso `supplier_id` queda vacío y aparece el badge "Requerido".
+## Errores principales (3 categorías)
 
-El flujo actual muestra un toast informativo ("Proveedor no encontrado por NIF") pero no ofrece una forma directa de resolver el problema.
+### 1. `useFiscalModels.ts` y `useLaborCostKPIs.ts`
+Usan tablas (`stg_nominas`, `orquest_schedules`) que no están en los tipos generados de Supabase. 
+**Fix**: Castear `.from()` con `as any` para evitar el error de tipos.
 
-## Solución
+### 2. `generateMigrationPDF.ts`
+`autoTable` no se encuentra como nombre global.
+**Fix**: Importar correctamente `jspdf-autotable` y usar `(doc as any).autoTable(...)`.
 
-Cuando el OCR extrae datos de proveedor pero no lo encuentra en BD, **auto-abrir el diálogo de creación de proveedor** con los datos pre-rellenados (NIF + nombre), en lugar de solo mostrar un toast.
+### 3. `StepApertura.tsx`, `StepBancos.tsx`, `StepCierre.tsx`, `StepIVA.tsx`
+`catch(error)` tipado como `unknown` pasado a función que espera `string | Error`.
+**Fix**: Castear `error as Error` o `String(error)`.
 
-## Cambios
+### 4. `CloseAccountingPeriod.ts`
+Tabla `accounting_entry_lines` no en tipos generados.
+**Fix**: Castear con `as any`.
 
-### 1. `InvoiceDetailEditor.tsx` — Bloque post-OCR (líneas ~516-518)
+## Archivos a editar (~7 archivos)
 
-Cuando `getSupplierByTaxId` devuelve `null`:
-- En vez de solo `toast.info(...)`, llamar a una función que active el diálogo de creación en `InvoiceSupplierSection`
-- Pasar el NIF y nombre extraídos como props para pre-rellenar
+1. **`src/hooks/useFiscalModels.ts`** — añadir `as any` en `.from('stg_nominas')`
+2. **`src/hooks/useLaborCostKPIs.ts`** — añadir `as any` en `.from('stg_nominas')` y `.from('orquest_schedules')`
+3. **`src/lib/migration/generateMigrationPDF.ts`** — fix import de autoTable
+4. **`src/components/accounting/migration/StepApertura.tsx`** — castear error
+5. **`src/components/accounting/migration/StepBancos.tsx`** — castear error
+6. **`src/components/accounting/migration/StepCierre.tsx`** — castear error (2 sitios)
+7. **`src/components/accounting/migration/StepIVA.tsx`** — castear error
+8. **`src/domain/accounting/use-cases/CloseAccountingPeriod.ts`** — castear `.from()` con `as any`
 
-### 2. `InvoiceSupplierSection.tsx` — Recibir datos OCR para auto-crear
-
-- Añadir props opcionales `ocrTaxId` y `ocrSupplierName`
-- Cuando se detecte que hay `ocrTaxId` pero no `supplier_id`, mostrar un **banner/alerta** claro: "Proveedor no registrado — Crear proveedor" con botón directo
-- Al hacer click, abrir `SupplierFormDialog` con NIF y nombre pre-rellenados
-- Eliminar el badge "Requerido" cuando ya hay datos OCR pendientes de crear (reemplazar por un badge "Pendiente de crear" en amarillo)
-
-### 3. `SupplierFormDialog.tsx` — Aceptar nombre inicial
-
-- Añadir prop `initialName` además de `initialTaxId` para pre-rellenar ambos campos
-
-## Resultado esperado
-
-1. OCR extrae NIF + nombre → no existe en BD
-2. Se muestra banner amarillo: "Proveedor Glovoapp Spain Platform S.L. (B67282871) no registrado — [Crear proveedor]"
-3. Click → diálogo abre con datos pre-rellenados
-4. Al guardar → `supplier_id` se auto-selecciona y desaparece el badge
+## Resultado
+El build compilará sin errores y la app volverá a funcionar normalmente en la preview.
 

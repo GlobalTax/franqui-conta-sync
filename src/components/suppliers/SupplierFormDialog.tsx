@@ -37,6 +37,10 @@ interface SupplierFormDialogProps {
   editingSupplier?: Supplier | null;
   initialTaxId?: string;
   initialName?: string;
+  initialAddress?: string;
+  initialCity?: string;
+  initialPostalCode?: string;
+  initialEmail?: string;
 }
 
 export function SupplierFormDialog({ 

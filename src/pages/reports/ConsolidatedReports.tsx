@@ -35,7 +35,7 @@ export default function ConsolidatedReports() {
 
     logger.info('ConsolidatedReports', 'Exporting to Excel...');
 
-    const rows = data.centres.map((centre: any) => ({
+    const rows = ((data as any).centres || []).map((centre: any) => ({
       Centro: centre.name || centre.code,
       Ventas: centre.sales || 0,
       Gastos: centre.expenses || 0,

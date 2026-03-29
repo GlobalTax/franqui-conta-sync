@@ -20,9 +20,10 @@ export function useSyncViewAndFilters() {
 
   // Track which system triggered the last change to avoid infinite loops
   const syncSourceRef = useRef<'view' | 'filters' | null>(null);
+  const initializedRef = useRef(false);
   const prevViewRef = useRef<ViewSelection | null>(null);
-  const prevCentreCodeRef = useRef<string | null>(null);
-  const prevCompanyIdRef = useRef<string | null>(null);
+  const prevCentreCodeRef = useRef<string | undefined>(undefined);
+  const prevCompanyIdRef = useRef<string | undefined>(undefined);
 
   // Sync ViewContext → GlobalFilters
   useEffect(() => {
@@ -31,14 +32,18 @@ export function useSyncViewAndFilters() {
       return;
     }
 
-    if (!selectedView || selectedView === prevViewRef.current) return;
-    
-    // Check if the view actually changed (deep compare)
-    if (prevViewRef.current && 
-        prevViewRef.current.type === selectedView.type && 
-        prevViewRef.current.id === selectedView.id) {
-      return;
+    if (!selectedView) return;
+
+    // Force first sync even if view looks the same as initial null
+    if (initializedRef.current) {
+      // Check if the view actually changed (deep compare)
+      if (prevViewRef.current && 
+          prevViewRef.current.type === selectedView.type && 
+          prevViewRef.current.id === selectedView.id) {
+        return;
+      }
     }
+    initializedRef.current = true;
 
     prevViewRef.current = selectedView;
     syncSourceRef.current = 'view';

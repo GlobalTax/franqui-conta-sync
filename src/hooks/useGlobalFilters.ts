@@ -29,12 +29,7 @@ export const useGlobalFilters = create<GlobalFiltersState>()(
       selectedCentreCode: null,
       
       setFranchiseeId: (id) => {
-        set({ 
-          selectedFranchiseeId: id,
-          // Reset dependent filters
-          selectedCompanyId: null,
-          selectedCentreCode: null,
-        });
+        set({ selectedFranchiseeId: id });
       },
       
       setCompanyId: (id) => {

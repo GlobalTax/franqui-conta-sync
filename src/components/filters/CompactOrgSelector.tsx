@@ -38,12 +38,6 @@ export default function CompactOrgSelector() {
   const selectedCompany = companies?.find(c => c.id === selectedCompanyId);
   const selectedCentre = centres?.find(c => c.codigo === selectedCentreCode);
 
-  // Auto-select first franchisee if none selected
-  useEffect(() => {
-    if (!selectedFranchiseeId && franchisees && franchisees.length > 0) {
-      setFranchiseeId(franchisees[0].id);
-    }
-  }, [franchisees, selectedFranchiseeId, setFranchiseeId]);
 
   const hasFilters = selectedFranchiseeId || selectedCompanyId || selectedCentreCode;
 

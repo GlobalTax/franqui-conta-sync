@@ -186,7 +186,7 @@ export function StepApertura({ config, completed, entryId, migrationRunId, onCom
       onComplete(entry.id, config.startDate);
     } catch (error: unknown) {
       logger.error('StepApertura', 'Import error', error);
-      await logger?.error('Error en importación de apertura', error);
+      await logger?.error('Error en importación de apertura', error as Error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setErrors([errorMessage]);
       toast.error(errorMessage || 'Error al importar');

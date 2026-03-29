@@ -91,7 +91,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
       }
     } catch (error: unknown) {
       logger.error('StepCierre', 'Validation error', error);
-      await logger?.error('Error crítico en validación', error);
+      await logger?.error('Error crítico en validación', error as Error);
       toast.error("Error al validar");
       setValidationResult({ valid: false, errors: [], warnings: [] });
       setValidationErrors([{
@@ -173,7 +173,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
       }
     } catch (error: unknown) {
       logger.error('StepCierre', 'Closing error', error);
-      await logger?.error('Error crítico en cierre de ejercicio', error);
+      await logger?.error('Error crítico en cierre de ejercicio', error as Error);
       toast.error(error instanceof Error ? error.message : "Error al cerrar el ejercicio");
     } finally {
       setClosing(false);

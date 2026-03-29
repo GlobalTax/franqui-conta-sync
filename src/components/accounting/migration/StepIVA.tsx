@@ -133,7 +133,7 @@ function IVAImportPanel({ type, config, completed, count, migrationRunId, onComp
       toast.success(`${data.count} facturas importadas`);
       onComplete(data.count);
     } catch (error: unknown) {
-      await logger?.error(`Error en importación de IVA ${type}`, error);
+      await logger?.error(`Error en importación de IVA ${type}`, error as Error);
       toast.error(error instanceof Error ? error.message : 'Error al importar');
     } finally {
       setImporting(false);

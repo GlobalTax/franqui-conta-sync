@@ -35,7 +35,7 @@ export function useLaborCostKPIs(centroCode?: string, startDate?: string, endDat
       if (!centroCode || !startDate || !endDate) return null;
 
       // Obtener costes laborales del período
-      const { data: payrollData, error: payrollError } = await supabase
+      const { data: payrollData, error: payrollError } = await (supabase as any)
         .from('stg_nominas')
         .select('*')
         .eq('centro_code', centroCode)
@@ -46,7 +46,7 @@ export function useLaborCostKPIs(centroCode?: string, startDate?: string, endDat
       if (payrollError) throw payrollError;
 
       // Obtener horas de Orquest (si hay datos)
-      const { data: scheduleData } = await supabase
+      const { data: scheduleData } = await (supabase as any)
         .from('orquest_schedules')
         .select('total_hours, employee_id')
         .eq('centro_code', centroCode)
@@ -95,7 +95,7 @@ export function useLaborCostDetails(centroCode?: string, startDate?: string, end
     queryFn: async (): Promise<LaborCostDetail[]> => {
       if (!centroCode || !startDate || !endDate) return [];
 
-      const { data: payrollData, error } = await supabase
+      const { data: payrollData, error } = await (supabase as any)
         .from('stg_nominas')
         .select('*')
         .eq('centro_code', centroCode)
@@ -129,7 +129,7 @@ export function useLaborCostDetails(centroCode?: string, startDate?: string, end
       }
 
       // Obtener horas por empleado de Orquest
-      const { data: scheduleData } = await supabase
+      const { data: scheduleData } = await (supabase as any)
         .from('orquest_schedules')
         .select('employee_id, total_hours')
         .eq('centro_code', centroCode)

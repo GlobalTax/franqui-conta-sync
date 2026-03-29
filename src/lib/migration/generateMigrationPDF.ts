@@ -1,6 +1,8 @@
 import { MigrationSummary } from "./migrationSummaryService";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 export async function generateMigrationPDF(
   summary: MigrationSummary,
@@ -46,7 +48,7 @@ export async function generateMigrationPDF(
     ]);
   }
 
-  autoTable(doc, {
+  (doc as any).autoTable({
     startY: yPosition,
     body: basicInfo,
     theme: "plain",
@@ -78,7 +80,7 @@ export async function generateMigrationPDF(
       ["Haber:", `${summary.sections.apertura.credit.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €`],
     ];
 
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: yPosition,
       body: aperturaData,
       theme: "plain",
@@ -114,7 +116,7 @@ export async function generateMigrationPDF(
     ],
   ];
 
-  autoTable(doc, {
+  (doc as any).autoTable({
     startY: yPosition,
     body: diarioData,
     theme: "plain",
@@ -177,7 +179,7 @@ export async function generateMigrationPDF(
     ],
   ];
 
-  autoTable(doc, {
+  (doc as any).autoTable({
     startY: yPosition,
     body: ivaData,
     theme: "plain",
@@ -208,7 +210,7 @@ export async function generateMigrationPDF(
     ],
   ];
 
-  autoTable(doc, {
+  (doc as any).autoTable({
     startY: yPosition,
     body: bancosData,
     theme: "plain",
@@ -247,7 +249,7 @@ export async function generateMigrationPDF(
       ],
     ];
 
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: yPosition,
       body: validationsData,
       theme: "plain",
@@ -277,7 +279,7 @@ export async function generateMigrationPDF(
       log.message.substring(0, 60),
     ]);
 
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: yPosition,
       head: [["Fecha", "Paso", "Severidad", "Mensaje"]],
       body: logsTable,

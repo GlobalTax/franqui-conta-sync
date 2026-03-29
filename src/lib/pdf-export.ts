@@ -161,7 +161,7 @@ export async function exportJournalBookPDF(
     currentY += 5;
     
     // Tabla de líneas del asiento
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: currentY,
       head: [['Cuenta', 'Nombre de la Cuenta', 'Debe (€)', 'Haber (€)']],
       body: entry.lines.map(line => [
@@ -247,7 +247,7 @@ export async function exportGeneralLedgerPDF(
     const totalCredit = account.lines.reduce((sum, line) => sum + Number(line.credit), 0);
     const finalBalance = account.lines[account.lines.length - 1]?.balance || 0;
     
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: currentY,
       head: [['Fecha', 'Asiento', 'Descripción', 'Debe (€)', 'Haber (€)', 'Saldo (€)']],
       body: tableData,

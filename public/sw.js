@@ -4,6 +4,8 @@
 // ============================================================================
 
 const CACHE_NAME = 'franquiconta-v1.0.0';
+const DEBUG = false; // Set to true for verbose SW logging
+const log = DEBUG ? log.bind(console) : () => {};
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -13,11 +15,11 @@ const STATIC_ASSETS = [
 // INSTALL: Precachear assets críticos
 // ============================================================
 self.addEventListener('install', (event) => {
-  console.log('✅ Service Worker instalado');
+  log('✅ Service Worker instalado');
   
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 Precacheando assets críticos...');
+      log('📦 Precacheando assets críticos...');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -30,7 +32,7 @@ self.addEventListener('install', (event) => {
 // ACTIVATE: Limpiar caches antiguos
 // ============================================================
 self.addEventListener('activate', (event) => {
-  console.log('🔄 Service Worker activado');
+  log('🔄 Service Worker activado');
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -38,7 +40,7 @@ self.addEventListener('activate', (event) => {
         cacheNames
           .filter((name) => name !== CACHE_NAME)
           .map((name) => {
-            console.log('🗑️ Eliminando cache antiguo:', name);
+            log('🗑️ Eliminando cache antiguo:', name);
             return caches.delete(name);
           })
       );
@@ -67,11 +69,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
-          console.log('💾 Cache hit:', url.pathname);
+          log('💾 Cache hit:', url.pathname);
           return cachedResponse;
         }
         
-        console.log('🌐 Descargando asset:', url.pathname);
+        log('🌐 Descargando asset:', url.pathname);
         return fetch(request).then((response) => {
           // Solo cachear respuestas exitosas
           if (response.ok) {
@@ -105,7 +107,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Si falla la red, intentar cache (modo offline)
-          console.log('📡 Sin conexión, usando cache para:', url.pathname);
+          log('📡 Sin conexión, usando cache para:', url.pathname);
           return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
@@ -162,12 +164,12 @@ self.addEventListener('fetch', (event) => {
 // ============================================================
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('⏩ Forzando activación del nuevo Service Worker...');
+    log('⏩ Forzando activación del nuevo Service Worker...');
     self.skipWaiting();
   }
   
   if (event.data && event.data.type === 'CLEAR_CACHE') {
-    console.log('🗑️ Limpiando cache por solicitud del cliente...');
+    log('🗑️ Limpiando cache por solicitud del cliente...');
     event.waitUntil(
       caches.keys().then((cacheNames) => {
         return Promise.all(
@@ -178,4 +180,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('🚀 Service Worker de FranquiConta inicializado');
+log('🚀 Service Worker de FranquiConta inicializado');

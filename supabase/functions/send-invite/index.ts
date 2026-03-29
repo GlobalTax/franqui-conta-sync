@@ -61,21 +61,12 @@ serve(async (req) => {
       });
     }
 
-    // Check for existing pending invite with same email
-    const { data: existingInvite } = await adminClient
+    // Delete any existing pending invites for this email
+    await adminClient
       .from("invites")
-      .select("id")
+      .delete()
       .eq("email", email.toLowerCase())
-      .is("accepted_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
-
-    if (existingInvite) {
-      return new Response(
-        JSON.stringify({ error: "Ya existe una invitación pendiente para este email" }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+      .is("accepted_at", null);
 
     // Generate unique token
     const inviteToken = crypto.randomUUID();

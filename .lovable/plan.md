@@ -1,48 +1,61 @@
 
 
-# Plan: Limpiar la vista de roles en la tabla de usuarios admin
+# Plan: Redefinir roles — la asesoría es el Admin
 
-## Problema
+## Modelo correcto
 
-Cada usuario tiene decenas de roles `gestor - NombreCentro (código)` mostrados como badges individuales, creando una pared de texto ilegible.
+| Rol | Quién es | Acceso |
+|-----|----------|--------|
+| **admin** | Personal de la asesoría (despacho contable) | Acceso total, gestión de todo |
+| **gestor** | Empleado de la asesoría asignado a ciertos franquiciados | CRUD en sus centros asignados |
+| **franquiciado** | Cliente (dueño de restaurantes) | Solo lectura de sus datos |
 
-## Solución
-
-Agrupar y resumir los roles en la tabla. En vez de mostrar 100+ badges, mostrar un resumen compacto:
-
-```text
-Antes:  🛡️ admin  👔 gestor - Esparteros (7)  👔 gestor - Málaga Centro (29)  👔 gestor - Cuatro Caminos (43) ... x100
-
-Después: 🛡️ admin  👔 gestor (97 centros)  [Ver detalle]
-```
+El rol `asesoria` se elimina — es redundante con `admin`.
 
 ## Cambios
 
-### `src/pages/admin/UsersManagement.tsx`
+### 1. Migración SQL: eliminar `asesoria` del enum y datos
 
-1. **Agrupar roles por tipo** antes de renderizar: contar cuántos centros tiene cada rol
-2. **Mostrar resumen compacto**: `admin` como badge individual, `gestor (N centros)` como badge con contador
-3. **Botón "Ver detalle"** que abre el `EditUserDialog` existente (ya muestra el detalle completo)
-
-Lógica de agrupación:
-```tsx
-const groupedRoles = {};
-user.user_roles?.forEach(r => {
-  if (!groupedRoles[r.role]) groupedRoles[r.role] = [];
-  groupedRoles[r.role].push(r);
-});
-// Render: role sin centro → badge simple
-//         role con centros → "gestor (N centros)"
+```sql
+-- Reasignar user_roles con role='asesoria' → 'admin' (o 'gestor' según contexto)
+UPDATE user_roles SET role = 'admin' WHERE role = 'asesoria';
+-- Eliminar permisos de asesoria en role_permissions
+DELETE FROM role_permissions WHERE role = 'asesoria';
+-- Recrear el enum sin 'asesoria'
+-- (ALTER TYPE ... DROP VALUE no existe en Postgres, hay que recrear)
 ```
 
-### `src/components/admin/EditUserDialog.tsx`
+Nota: Postgres no permite `DROP VALUE` de un enum directamente. Se necesita recrear el tipo con las columnas dependientes, o simplemente dejar el valor en el enum y no usarlo en la UI (enfoque más seguro y sin downtime).
 
-4. **Mejorar la lista de centros** en el dialog: añadir scroll y búsqueda cuando hay muchos roles, para que el detalle también sea manejable
+**Enfoque recomendado**: no tocar el enum (evita riesgo), solo limpiar datos y ocultar en la UI.
 
-## Archivos
+### 2. Frontend: eliminar `asesoria` de todos los selectores y labels
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/admin/UsersManagement.tsx` | Agrupar roles, mostrar resumen compacto |
-| `src/components/admin/EditUserDialog.tsx` | Añadir scroll + búsqueda en lista de roles |
+| `src/pages/admin/RolesManagement.tsx` | Eliminar entrada `asesoria`, actualizar descripciones (admin = "Asesoría — acceso total") |
+| `src/pages/admin/UsersManagement.tsx` | Quitar `asesoria` del filtro y de `getRoleBadgeVariant`/`getRoleIcon` |
+| `src/components/admin/InviteUserDialog.tsx` | Quitar `asesoria` del select y de `needsFranchisee` |
+| `src/components/admin/EditUserDialog.tsx` | Quitar `asesoria` del select |
+| `src/components/admin/RolePermissionsEditor.tsx` | Quitar `asesoria` del select |
+| `src/components/admin/PermissionsMatrix.tsx` | Quitar `asesoria` del array `ROLES` |
+| `src/pages/AcceptInvite.tsx` | Quitar `asesoria` del map de labels |
+| `supabase/functions/send-invite/index.ts` | Quitar `asesoria` del map de labels |
+
+### 3. Actualizar descripciones de roles
+
+```
+admin  → 🛡️ "Asesoría (Admin)" — Acceso total al sistema, gestión de todos los franquiciados
+gestor → 👔 "Gestor" — Empleado de la asesoría con acceso a franquiciados asignados
+franquiciado → 🍔 "Franquiciado" — Propietario, ve sus restaurantes en solo lectura
+```
+
+### 4. Migración: reasignar roles existentes
+
+```sql
+UPDATE user_roles SET role = 'admin' WHERE role = 'asesoria';
+DELETE FROM role_permissions WHERE role = 'asesoria';
+```
+
+## Archivos totales: 8 frontend + 1 edge function + 1 migración
 

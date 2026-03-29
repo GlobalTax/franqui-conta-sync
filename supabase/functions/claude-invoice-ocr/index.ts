@@ -9,12 +9,7 @@ import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { logger } from '../_shared/logger.ts';
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 const MAX_PDF_PAGES_FOR_CLAUDE = 5;
 

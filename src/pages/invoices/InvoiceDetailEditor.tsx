@@ -1241,6 +1241,10 @@ export default function InvoiceDetailEditor() {
                     watch={form.watch}
                     ocrTaxId={ocrSupplierTaxId}
                     ocrSupplierName={ocrSupplierName}
+                    ocrSupplierAddress={ocrSupplierAddress}
+                    ocrSupplierCity={ocrSupplierCity}
+                    ocrSupplierPostalCode={ocrSupplierPostalCode}
+                    ocrSupplierEmail={ocrSupplierEmail}
                   />
                   
                   <InvoiceDataSection

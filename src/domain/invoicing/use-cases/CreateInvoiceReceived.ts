@@ -15,6 +15,7 @@ export interface CreateInvoiceReceivedInput {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate?: string;
+  documentType?: 'invoice' | 'credit_note' | 'ticket';
   notes?: string;
   lines: Omit<InvoiceLine, 'id' | 'invoiceId' | 'invoiceType'>[];
   createdBy?: string;
@@ -59,6 +60,7 @@ export class CreateInvoiceReceivedUseCase {
     const invoice: Omit<InvoiceReceived, 'id' | 'createdAt' | 'updatedAt'> = {
       supplierId: input.supplierId,
       centroCode: input.centroCode,
+      documentType: input.documentType || 'invoice',
       invoiceNumber: input.invoiceNumber,
       invoiceDate: input.invoiceDate,
       dueDate: input.dueDate || null,

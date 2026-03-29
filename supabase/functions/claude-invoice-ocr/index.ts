@@ -263,15 +263,15 @@ serve(async (req) => {
 
     logger.info('claude-ocr', 'Token usage and cost', { inputTokens, outputTokens, costEUR: parseFloat(costEUR.toFixed(4)) });
 
-    // 7. Get company VAT IDs for receiver inference
+    // 7. Get company VAT IDs for receiver inference + auto-fill
     const { data: centreCompanies } = await supabase
       .from('centre_companies')
-      .select('cif')
+      .select('cif, razon_social')
       .eq('centre_id', centroCode);
     
     const { data: centreData } = await supabase
       .from('centres')
-      .select('company_tax_id')
+      .select('company_tax_id, nombre, direccion, ciudad, postal_code')
       .eq('codigo', centroCode)
       .single();
 
@@ -288,6 +288,43 @@ serve(async (req) => {
     const normalizeResult = normalizeBackend(extractedData, rawText, companyVATIds);
     const { normalized, validation, autofix_applied } = normalizeResult;
 
+    // 8b. Auto-fill receiver from centre data if OCR didn't extract it
+    if ((!normalized.receiver?.name || !normalized.receiver?.vat_id) && centreCompanies?.length) {
+      const principal = centreCompanies[0];
+      if (!normalized.receiver) {
+        (normalized as any).receiver = { name: null, vat_id: null, address: null };
+      }
+      if (!normalized.receiver.name && principal.razon_social) {
+        normalized.receiver.name = principal.razon_social;
+        autofix_applied.push('Receptor auto-rellenado desde datos del centro');
+      }
+      if (!normalized.receiver.vat_id && principal.cif) {
+        normalized.receiver.vat_id = principal.cif;
+      }
+    }
+
+    // 8c. Auto-match supplier by NIF/CIF
+    let supplierMatch: { id: string; name: string; tax_id: string; default_account_code: string | null } | null = null;
+    const issuerVatId = normalized.issuer?.vat_id;
+    if (issuerVatId) {
+      const { data: matchedSupplier } = await supabase
+        .from('suppliers')
+        .select('id, name, tax_id, default_account_code')
+        .eq('tax_id', issuerVatId)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (matchedSupplier) {
+        supplierMatch = {
+          id: matchedSupplier.id,
+          name: matchedSupplier.name,
+          tax_id: matchedSupplier.tax_id,
+          default_account_code: matchedSupplier.default_account_code,
+        };
+        logger.info('claude-ocr', 'Supplier auto-matched', { supplierId: matchedSupplier.id, name: matchedSupplier.name });
+      }
+    }
+
     // 9. Determine status
     const confidenceScore = normalized.confidence_score || extractedData.confidence_score || 0;
     const needsReview = !validation.ok || confidenceScore < 70;
@@ -302,6 +339,7 @@ serve(async (req) => {
         invoice_date: normalized.issue_date || undefined,
         supplier_name: normalized.issuer.name || undefined,
         supplier_tax_id: normalized.issuer.vat_id || undefined,
+        supplier_id: supplierMatch?.id || undefined,
         customer_name: normalized.receiver.name || undefined,
         customer_tax_id: normalized.receiver.vat_id || undefined,
         total: normalized.totals.total,
@@ -396,27 +434,79 @@ serve(async (req) => {
       processingTimeMs,
     });
 
-    // 13. Build AP mapping stub
-    const apMappingStub = {
+    // 13. Build AP mapping with intelligent rules lookup
+    let apMapping: any = null;
+
+    // Try to find matching AP rules from the database
+    const supplierTaxId = supplierMatch?.tax_id || normalized.issuer?.vat_id || null;
+    let matchedRule: any = null;
+
+    if (supplierTaxId) {
+      // First try exact supplier match
+      const { data: supplierRule } = await supabase
+        .from('ap_mapping_rules')
+        .select('*')
+        .eq('supplier_tax_id', supplierTaxId)
+        .eq('active', true)
+        .order('priority', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (supplierRule) {
+        matchedRule = supplierRule;
+      }
+    }
+
+    // If no supplier rule, try keyword-based rules
+    if (!matchedRule && normalized.lines?.length > 0) {
+      const firstLineDesc = (normalized.lines[0]?.description || '').toLowerCase();
+      const { data: keywordRules } = await supabase
+        .from('ap_mapping_rules')
+        .select('*')
+        .eq('active', true)
+        .eq('match_type', 'keyword')
+        .order('priority', { ascending: false })
+        .limit(10);
+
+      if (keywordRules) {
+        matchedRule = keywordRules.find((rule: any) => {
+          if (!rule.text_keywords?.length) return false;
+          return rule.text_keywords.some((kw: string) => firstLineDesc.includes(kw.toLowerCase()));
+        }) || null;
+      }
+    }
+
+    // Use supplier's default account if available and no rule found
+    const defaultExpenseAccount = matchedRule?.suggested_expense_account 
+      || supplierMatch?.default_account_code 
+      || '6290000';
+    const defaultTaxAccount = matchedRule?.suggested_tax_account || '4720001';
+    const defaultApAccount = matchedRule?.suggested_ap_account || '4000000';
+    const ruleConfidence = matchedRule ? (matchedRule.confidence_score || 0.8) : (supplierMatch?.default_account_code ? 0.7 : 0.5);
+    const ruleRationale = matchedRule 
+      ? `Regla: ${matchedRule.rule_name}` 
+      : (supplierMatch?.default_account_code ? `Cuenta por defecto del proveedor: ${supplierMatch.name}` : 'Default mapping - pendiente de revisión');
+
+    apMapping = {
       invoice_level: {
-        account_suggestion: '6290000',
-        tax_account: '4720001',
-        ap_account: '4000000',
+        account_suggestion: defaultExpenseAccount,
+        tax_account: defaultTaxAccount,
+        ap_account: defaultApAccount,
         centre_id: centroCode !== 'temp' ? centroCode : null,
-        confidence_score: 0.5,
-        rationale: 'Default mapping - pendiente de revisión',
-        matched_rule_id: null,
-        matched_rule_name: null,
+        confidence_score: ruleConfidence,
+        rationale: ruleRationale,
+        matched_rule_id: matchedRule?.id || null,
+        matched_rule_name: matchedRule?.rule_name || null,
       },
       line_level: (normalized.lines || []).map((line: any) => ({
-        account_suggestion: '6290000',
-        tax_account: '4720001',
-        ap_account: '4000000',
+        account_suggestion: defaultExpenseAccount,
+        tax_account: defaultTaxAccount,
+        ap_account: defaultApAccount,
         centre_id: centroCode !== 'temp' ? centroCode : null,
-        confidence_score: 0.5,
-        rationale: `Línea: ${(line.description || '').substring(0, 50)}`,
-        matched_rule_id: null,
-        matched_rule_name: null,
+        confidence_score: ruleConfidence,
+        rationale: `${ruleRationale} | Línea: ${(line.description || '').substring(0, 50)}`,
+        matched_rule_id: matchedRule?.id || null,
+        matched_rule_name: matchedRule?.rule_name || null,
       })),
     };
 
@@ -464,8 +554,9 @@ serve(async (req) => {
         },
         autofix_applied: autofix_applied,
         accounting_validation: accountingValidation,
-        ap_mapping: apMappingStub,
+        ap_mapping: apMapping,
         entry_validation: null,
+        supplier_match: supplierMatch,
         merge_notes: autofix_applied.length > 0
           ? autofix_applied.map((fix: string) => `Autofix: ${fix}`)
           : [],

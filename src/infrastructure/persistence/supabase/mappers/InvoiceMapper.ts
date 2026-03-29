@@ -23,6 +23,7 @@ export class InvoiceMapper {
       id: dbInvoice.id,
       supplierId: dbInvoice.supplier_id,
       centroCode: dbInvoice.centro_code,
+      documentType: dbInvoice.document_type || 'invoice',
       invoiceNumber: dbInvoice.invoice_number,
       invoiceDate: dbInvoice.invoice_date,
       dueDate: dbInvoice.due_date,
@@ -66,6 +67,7 @@ export class InvoiceMapper {
     return {
       id: dbInvoice.id,
       centroCode: dbInvoice.centro_code,
+      documentType: dbInvoice.document_type || 'invoice',
       customerName: dbInvoice.customer_name,
       customerTaxId: dbInvoice.customer_tax_id,
       customerEmail: dbInvoice.customer_email,
@@ -146,6 +148,7 @@ export class InvoiceMapper {
     return {
       supplier_id: invoice.supplierId,
       centro_code: invoice.centroCode,
+      document_type: invoice.documentType,
       invoice_number: invoice.invoiceNumber,
       invoice_date: invoice.invoiceDate,
       due_date: invoice.dueDate,
@@ -174,6 +177,7 @@ export class InvoiceMapper {
   static issuedToDatabase(invoice: Partial<InvoiceIssued>): Partial<any> {
     return {
       centro_code: invoice.centroCode,
+      document_type: invoice.documentType,
       customer_name: invoice.customerName,
       customer_tax_id: invoice.customerTaxId,
       customer_email: invoice.customerEmail,

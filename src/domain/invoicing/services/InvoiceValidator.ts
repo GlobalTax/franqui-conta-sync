@@ -247,7 +247,7 @@ export class InvoiceValidator {
     }
 
     // Validar tasa de IVA
-    if (!this.VALID_TAX_RATES.includes(line.taxRate)) {
+    if (!this.VALID_TAX_RATES.includes(line.taxRate as any)) {
       errors.push({
         field: `${prefix}.taxRate`,
         message: `La tasa de IVA en línea ${lineIndex + 1} debe ser 0%, 4%, 10% o 21%`,

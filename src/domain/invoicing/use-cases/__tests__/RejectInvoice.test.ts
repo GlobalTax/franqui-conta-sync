@@ -16,6 +16,7 @@ describe('RejectInvoiceUseCase', () => {
     id: 'invoice-123',
     supplierId: 'supplier-123',
     centroCode: 'C001',
+    documentType: 'invoice',
     invoiceNumber: 'F2025-001',
     invoiceDate: '2025-01-15',
     dueDate: null,

@@ -51,6 +51,12 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
     if (ocrTaxId && !supplierId) {
       setPendingNIF(ocrTaxId);
       setPendingName(ocrSupplierName || '');
+      setPendingAddress(ocrSupplierAddress || '');
+      setPendingCity(ocrSupplierCity || '');
+      setPendingPostalCode(ocrSupplierPostalCode || '');
+      setPendingEmail(ocrSupplierEmail || '');
+      // Auto-abrir diálogo de creación
+      setShowSupplierDialog(true);
     }
   }, [ocrTaxId, ocrSupplierName, supplierId]);
 

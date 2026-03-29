@@ -38,7 +38,11 @@ Responde SOLO con un JSON válido con esta estructura exacta (sin markdown, sin 
   "document_type": "invoice" | "credit_note" | "ticket",
   "issuer": {
     "name": "string",
-    "vat_id": "string o null"
+    "vat_id": "string o null",
+    "address": "string o null",
+    "city": "string o null",
+    "postal_code": "string o null",
+    "email": "string o null"
   },
   "receiver": {
     "name": "string o null",

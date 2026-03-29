@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useFranchisees } from "@/hooks/useFranchisees";
+import { useAllUserCentres } from "@/hooks/useAllUserCentres";
 
 interface InviteUserDialogProps {
   open: boolean;
@@ -18,6 +20,16 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("gestor");
+  const [franchiseeId, setFranchiseeId] = useState<string>("");
+  const [centroCode, setCentroCode] = useState<string>("");
+
+  const { data: franchisees } = useFranchisees();
+  const { data: franchiseesWithCentres } = useAllUserCentres();
+
+  // Get centres for selected franchisee
+  const selectedFranchiseeCentres = franchiseesWithCentres?.find(
+    f => f.id === franchiseeId
+  )?.centres || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +37,12 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
 
     try {
       const { error } = await supabase.functions.invoke("send-invite", {
-        body: { email, role }
+        body: { 
+          email, 
+          role,
+          franchisee_id: franchiseeId || undefined,
+          centro: centroCode || undefined,
+        }
       });
 
       if (error) throw error;
@@ -37,6 +54,8 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
       
       setEmail("");
       setRole("gestor");
+      setFranchiseeId("");
+      setCentroCode("");
       onOpenChange(false);
       onSuccess();
     } catch (error: unknown) {
@@ -50,9 +69,11 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
     }
   };
 
+  const needsFranchisee = ["gestor", "franquiciado", "asesoria"].includes(role);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Invitar Usuario</DialogTitle>
         </DialogHeader>
@@ -71,18 +92,62 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
 
           <div className="grid gap-2">
             <Label htmlFor="role">Rol</Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select value={role} onValueChange={(v) => {
+              setRole(v);
+              if (v === "admin") {
+                setFranchiseeId("");
+                setCentroCode("");
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
                 <SelectItem value="franquiciado">Franquiciado</SelectItem>
                 <SelectItem value="asesoria">Asesoría</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {needsFranchisee && (
+            <div className="grid gap-2">
+              <Label>Franquiciado</Label>
+              <Select value={franchiseeId} onValueChange={(v) => {
+                setFranchiseeId(v);
+                setCentroCode("");
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar franquiciado..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {franchisees?.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {needsFranchisee && franchiseeId && selectedFranchiseeCentres.length > 0 && (
+            <div className="grid gap-2">
+              <Label>Restaurante <span className="text-muted-foreground text-xs">(opcional — todos si vacío)</span></Label>
+              <Select value={centroCode} onValueChange={setCentroCode}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los restaurantes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos los restaurantes</SelectItem>
+                  {selectedFranchiseeCentres.map(c => (
+                    <SelectItem key={c.id} value={c.codigo}>
+                      {c.codigo} - {c.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

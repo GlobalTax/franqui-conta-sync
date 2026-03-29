@@ -60,7 +60,7 @@ export const useBalanceSheetCustom = (
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo")
-          .eq("company_id", viewSelection.id)
+          .eq("franchisee_id", viewSelection.id)
           .eq("activo", true);
 
         if (!centres || centres.length === 0) {

@@ -48,7 +48,7 @@ export function useConsolidatedReports(
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo, nombre")
-          .eq("company_id", viewSelection.id)
+          .eq("franchisee_id", viewSelection.id)
           .eq("activo", true);
 
         centroCodes = centres?.map(c => ({ code: c.codigo, name: c.nombre })) || [];

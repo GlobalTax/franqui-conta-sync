@@ -102,6 +102,10 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
   const handleCreateFromOCR = () => {
     setPendingNIF(ocrTaxId || '');
     setPendingName(ocrSupplierName || '');
+    setPendingAddress(ocrSupplierAddress || '');
+    setPendingCity(ocrSupplierCity || '');
+    setPendingPostalCode(ocrSupplierPostalCode || '');
+    setPendingEmail(ocrSupplierEmail || '');
     setShowSupplierDialog(true);
   };
 

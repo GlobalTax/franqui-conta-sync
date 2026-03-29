@@ -69,7 +69,7 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
     }
   };
 
-  const needsFranchisee = ["gestor", "franquiciado"].includes(role);
+  const needsFranchisee = ["gestor", "franquiciado", "empleado"].includes(role);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

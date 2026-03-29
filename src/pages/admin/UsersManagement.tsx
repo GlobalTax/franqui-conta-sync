@@ -98,6 +98,7 @@ const UsersManagement = () => {
                 <SelectItem value="admin">Asesoría (Admin)</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
                 <SelectItem value="franquiciado">Franquiciado</SelectItem>
+                <SelectItem value="empleado">Empleado</SelectItem>
               </SelectContent>
             </Select>
           </div>

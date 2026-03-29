@@ -107,6 +107,7 @@ serve(async (req) => {
         admin: "Asesoría (Admin)",
         gestor: "Gestor",
         franquiciado: "Franquiciado",
+        empleado: "Empleado",
       };
 
       await fetch("https://api.resend.com/emails", {

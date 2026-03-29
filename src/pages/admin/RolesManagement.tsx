@@ -40,6 +40,18 @@ const RolesManagement = () => {
         "Solo lectura de datos",
         "Exportar información"
       ]
+    },
+    {
+      role: "empleado",
+      icon: "👤",
+      name: "Empleado",
+      description: "Personal del franquiciado — permisos configurables por el admin",
+      permissions: [
+        "Acceso según permisos asignados",
+        "Ver datos de sus centros asignados",
+        "Permisos granulares configurables",
+        "Sin acceso a administración por defecto"
+      ]
     }
   ];
 

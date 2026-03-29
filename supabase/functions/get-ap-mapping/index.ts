@@ -2,11 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { apMapperEngine, matchSupplier } from "../_shared/ap/mapping-engine.ts";
 import { logger } from '../_shared/logger.ts';
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   // Handle CORS preflight

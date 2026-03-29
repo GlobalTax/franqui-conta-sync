@@ -1,10 +1,6 @@
 import { validateApiKey, createApiKeyResponse } from '../_shared/api-key-middleware.ts';
 import { logger } from '../_shared/logger.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight

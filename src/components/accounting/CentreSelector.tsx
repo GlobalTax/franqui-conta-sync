@@ -194,7 +194,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
                 className="pl-10"
               >
                 <div className="flex items-center gap-2">
-                  <Store className="h-3 w-3 text-emerald-500" />
+                  <Store className="h-3 w-3 text-success" />
                   <span className="text-sm">{centre.codigo} - {centre.nombre}</span>
                 </div>
               </SelectItem>

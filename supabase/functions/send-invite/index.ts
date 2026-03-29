@@ -104,10 +104,9 @@ serve(async (req) => {
       const inviteLink = `${appUrl}/accept-invite?token=${inviteToken}`;
 
       const roleLabels: Record<string, string> = {
-        admin: "Administrador",
+        admin: "Asesoría (Admin)",
         gestor: "Gestor",
         franquiciado: "Franquiciado",
-        asesoria: "Asesoría",
       };
 
       await fetch("https://api.resend.com/emails", {

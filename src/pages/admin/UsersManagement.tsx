@@ -56,7 +56,6 @@ const UsersManagement = () => {
       case "admin": return "default";
       case "gestor": return "secondary";
       case "franquiciado": return "outline";
-      case "asesoria": return "outline";
       default: return "outline";
     }
   };
@@ -66,7 +65,6 @@ const UsersManagement = () => {
       case "admin": return "🛡️";
       case "gestor": return "👔";
       case "franquiciado": return "🍔";
-      case "asesoria": return "📊";
       default: return "👤";
     }
   };
@@ -95,10 +93,9 @@ const UsersManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los roles</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="admin">Asesoría (Admin)</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
                 <SelectItem value="franquiciado">Franquiciado</SelectItem>
-                <SelectItem value="asesoria">Asesoría</SelectItem>
               </SelectContent>
             </Select>
           </div>

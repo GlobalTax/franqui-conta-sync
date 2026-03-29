@@ -142,10 +142,9 @@ export function RolePermissionsEditor() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="admin">Asesoría (Admin)</SelectItem>
               <SelectItem value="gestor">Gestor</SelectItem>
               <SelectItem value="franquiciado">Franquiciado</SelectItem>
-              <SelectItem value="asesoria">Asesoría</SelectItem>
             </SelectContent>
           </Select>
         </div>

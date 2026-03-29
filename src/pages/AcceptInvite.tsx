@@ -126,10 +126,9 @@ const AcceptInvite = () => {
   };
 
   const roleLabels: Record<string, string> = {
-    admin: "Administrador",
+    admin: "Asesoría (Admin)",
     gestor: "Gestor",
     franquiciado: "Franquiciado",
-    asesoria: "Asesoría",
   };
 
   if (status === "validating") {

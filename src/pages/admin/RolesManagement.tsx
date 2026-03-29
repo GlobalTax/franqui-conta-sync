@@ -7,12 +7,11 @@ const RolesManagement = () => {
     {
       role: "admin",
       icon: "🛡️",
-      name: "Admin",
-      description: "Acceso total al sistema sin restricciones",
+      name: "Asesoría (Admin)",
+      description: "Acceso total al sistema — gestión de todos los franquiciados",
       permissions: [
         "Gestionar usuarios y roles",
-        "Acceso a todos los franchisees",
-        "Acceso a todos los centros",
+        "Acceso a todos los franquiciados y centros",
         "Todas las operaciones CRUD",
         "Configuración del sistema",
         "Ver logs de auditoría"
@@ -22,7 +21,7 @@ const RolesManagement = () => {
       role: "gestor",
       icon: "👔",
       name: "Gestor",
-      description: "Administra centros asignados",
+      description: "Empleado de la asesoría con acceso a franquiciados asignados",
       permissions: [
         "CRUD en sus centros asignados",
         "Ver reportes de sus centros",
@@ -34,24 +33,12 @@ const RolesManagement = () => {
       role: "franquiciado",
       icon: "🍔",
       name: "Franquiciado",
-      description: "Propietario del negocio",
+      description: "Propietario — ve sus restaurantes en solo lectura",
       permissions: [
         "Ver todos sus centros",
         "Ver reportes y métricas",
         "Solo lectura de datos",
         "Exportar información"
-      ]
-    },
-    {
-      role: "asesoria",
-      icon: "📊",
-      name: "Asesoría",
-      description: "Consultor externo",
-      permissions: [
-        "Solo lectura global",
-        "Ver reportes",
-        "Exportar datos",
-        "Sin capacidad de modificación"
       ]
     }
   ];

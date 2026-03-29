@@ -177,6 +177,7 @@ export class InvoiceMapper {
   static issuedToDatabase(invoice: Partial<InvoiceIssued>): Partial<any> {
     return {
       centro_code: invoice.centroCode,
+      document_type: invoice.documentType,
       customer_name: invoice.customerName,
       customer_tax_id: invoice.customerTaxId,
       customer_email: invoice.customerEmail,

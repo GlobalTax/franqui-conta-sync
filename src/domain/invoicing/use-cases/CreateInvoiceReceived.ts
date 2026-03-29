@@ -60,6 +60,7 @@ export class CreateInvoiceReceivedUseCase {
     const invoice: Omit<InvoiceReceived, 'id' | 'createdAt' | 'updatedAt'> = {
       supplierId: input.supplierId,
       centroCode: input.centroCode,
+      documentType: input.documentType || 'invoice',
       invoiceNumber: input.invoiceNumber,
       invoiceDate: input.invoiceDate,
       dueDate: input.dueDate || null,

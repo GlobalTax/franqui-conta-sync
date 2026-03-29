@@ -27,6 +27,7 @@ export function createTestInvoiceReceived(overrides?: Partial<InvoiceReceived>):
     id: crypto.randomUUID(),
     supplierId: 'supplier-123',
     centroCode: 'C001',
+    documentType: 'invoice' as const,
     invoiceNumber: `F${Date.now()}`,
     invoiceDate: '2025-01-15',
     dueDate: '2025-02-15',

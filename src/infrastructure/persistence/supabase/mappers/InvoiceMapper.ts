@@ -23,6 +23,7 @@ export class InvoiceMapper {
       id: dbInvoice.id,
       supplierId: dbInvoice.supplier_id,
       centroCode: dbInvoice.centro_code,
+      documentType: dbInvoice.document_type || 'invoice',
       invoiceNumber: dbInvoice.invoice_number,
       invoiceDate: dbInvoice.invoice_date,
       dueDate: dbInvoice.due_date,

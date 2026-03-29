@@ -96,8 +96,8 @@ const ChartOfAccounts = () => {
 
         setAccounts(accountsData);
         setAccountTree(tree);
-      } catch (error: any) {
-        toast.error("Error al cargar cuentas: " + error.message);
+      } catch (error: unknown) {
+        toast.error("Error al cargar cuentas: " + (error instanceof Error ? error.message : 'Error desconocido'));
       } finally {
         setLoading(false);
       }
@@ -195,8 +195,8 @@ const ChartOfAccounts = () => {
 
       setAccounts(accountsData || []);
       setAccountTree(tree);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      throw new Error(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
 

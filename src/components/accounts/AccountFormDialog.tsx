@@ -133,8 +133,8 @@ export function AccountFormDialog({
       }
 
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error al guardar la cuenta");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Error al guardar la cuenta");
     } finally {
       setIsSubmitting(false);
     }

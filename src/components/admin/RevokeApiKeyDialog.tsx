@@ -40,8 +40,8 @@ export function RevokeApiKeyDialog({
       toast.success('API Key revoked successfully');
       onRevoked();
       onClose();
-    } catch (error: any) {
-      toast.error(`Error revoking API key: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? `Error revoking API key: ${error.message}` : 'Error desconocido');
     } finally {
       setLoading(false);
     }

@@ -112,8 +112,8 @@ export const PLRuleFormDialog = ({
         await createMutation.mutateAsync(payload);
       }
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
 

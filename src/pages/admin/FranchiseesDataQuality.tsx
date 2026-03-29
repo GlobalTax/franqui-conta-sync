@@ -53,10 +53,10 @@ const FranchiseesDataQuality = () => {
       });
       
       refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error en la reconstrucción",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {

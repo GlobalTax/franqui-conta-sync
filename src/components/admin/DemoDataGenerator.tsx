@@ -126,16 +126,17 @@ export default function DemoDataGenerator() {
         description: "Todos los datos demo han sido eliminados correctamente. Ahora puedes regenerarlos.",
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('DemoDataGenerator', '❌ Error al eliminar datos:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       const lastStep = steps[steps.length - 1];
       if (lastStep) {
-        updateStep(lastStep.name, "error", error.message);
+        updateStep(lastStep.name, "error", errorMessage);
       }
-      
+
       toast({
         title: "Error al eliminar datos demo",
-        description: error.message || "Ocurrió un error durante la eliminación",
+        description: errorMessage || "Ocurrió un error durante la eliminación",
         variant: "destructive",
       });
     } finally {
@@ -313,16 +314,17 @@ export default function DemoDataGenerator() {
         description: `Franchisee, ${companies.length} sociedades, ${centres.length} centros, año fiscal y proveedores creados exitosamente`,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('DemoDataGenerator', '❌ Error al generar datos:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       const lastStep = steps[steps.length - 1];
       if (lastStep) {
-        updateStep(lastStep.name, "error", error.message);
+        updateStep(lastStep.name, "error", errorMessage);
       }
       
       toast({
         title: "Error al generar datos demo",
-        description: error.message || "Ocurrió un error durante la generación",
+        description: errorMessage || "Ocurrió un error durante la generación",
         variant: "destructive",
       });
     } finally {

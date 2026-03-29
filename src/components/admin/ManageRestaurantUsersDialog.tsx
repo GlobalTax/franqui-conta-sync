@@ -46,10 +46,10 @@ export function ManageRestaurantUsersDialog({ centre, open, onOpenChange, onUpda
       ]);
       setCentreUsers(users);
       setAllUsers(allUsersList);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -70,10 +70,10 @@ export function ManageRestaurantUsersDialog({ centre, open, onOpenChange, onUpda
       setSelectedUserId("");
       loadData();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -91,10 +91,10 @@ export function ManageRestaurantUsersDialog({ centre, open, onOpenChange, onUpda
       });
       loadData();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {
@@ -112,10 +112,10 @@ export function ManageRestaurantUsersDialog({ centre, open, onOpenChange, onUpda
       });
       loadData();
       onUpdate?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: "destructive",
       });
     } finally {

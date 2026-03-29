@@ -103,10 +103,11 @@ export function RollbackDialog({ open, onOpenChange, migrationRun }: RollbackDia
         handleClose();
       }, 3000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('RollbackDialog', 'Error en rollback', error);
-      toast.error(`Error: ${error.message}`);
-      setResult({ success: false, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast.error(`Error: ${errorMessage}`);
+      setResult({ success: false, error: errorMessage });
     } finally {
       setRolling(false);
     }

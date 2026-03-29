@@ -90,7 +90,7 @@ const FranchiseesManagement = () => {
       }));
 
       setFranchisees(enrichedData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("FranchiseesManagement", "Error loading franchisees", err);
       toast({
         title: "Error",

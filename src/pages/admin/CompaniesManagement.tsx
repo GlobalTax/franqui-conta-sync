@@ -112,7 +112,7 @@ const CompaniesManagement = () => {
       );
 
       setCompanies(companiesWithCounts);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("CompaniesManagement", "Error loading companies", err);
       toast({
         title: "Error",
@@ -189,11 +189,11 @@ const CompaniesManagement = () => {
 
       setDialogOpen(false);
       loadCompanies();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("CompaniesManagement", "Error saving company", err);
       toast({
         title: "Error",
-        description: err.message || "No se pudo guardar la sociedad mercantil",
+        description: err instanceof Error ? err.message : "No se pudo guardar la sociedad mercantil",
         variant: "destructive",
       });
     }
@@ -244,11 +244,11 @@ const CompaniesManagement = () => {
       setSelectedCompanies([]);
       setDeleteDialogOpen(false);
       loadCompanies();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("CompaniesManagement", "Error deleting companies", err);
       toast({
         title: "Error",
-        description: err.message || "No se pudieron eliminar las sociedades",
+        description: err instanceof Error ? err.message : "No se pudieron eliminar las sociedades",
         variant: "destructive",
       });
     }

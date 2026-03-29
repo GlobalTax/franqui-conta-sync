@@ -39,8 +39,8 @@ const CentresManagement = () => {
       if (error) throw error;
 
       setCentres(data || []);
-    } catch (error: any) {
-      logger.error('CentresManagement', 'Error al cargar datos:', error?.message);
+    } catch (error: unknown) {
+      logger.error('CentresManagement', 'Error al cargar datos:', error instanceof Error ? error.message : 'Error desconocido');
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos",

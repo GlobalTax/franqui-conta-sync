@@ -77,9 +77,9 @@ export function IncidentManager() {
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       setSelectedIncident(null);
       setResolutionNotes('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Error al resolver incidente', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Error desconocido',
       });
     } finally {
       setIsResolving(false);

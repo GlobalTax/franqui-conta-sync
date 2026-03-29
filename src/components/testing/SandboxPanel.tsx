@@ -65,19 +65,20 @@ export default function SandboxPanel() {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('SandboxPanel', `❌ Error en ${operationName}:`, error);
-      
+
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       addLog({
         level: 'error',
         category: 'Sandbox',
         message: `❌ Error en ${operationName}`,
-        details: { error: error.message, code: error.code },
+        details: { error: errorMessage, code: (error as any)?.code },
       });
 
       toast({
         title: "Error en operación",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
       

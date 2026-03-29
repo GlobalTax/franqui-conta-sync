@@ -68,9 +68,9 @@ export function InvoicePDFPreview({
 
         if (error) throw error;
         setPdfUrl(data.signedUrl);
-      } catch (err: any) {
-        logger.error("InvoicePDFPreview", "Error loading PDF", err);
-        setError(err.message);
+      } catch (error: unknown) {
+        logger.error("InvoicePDFPreview", "Error loading PDF", error);
+        setError(error instanceof Error ? error.message : 'Error desconocido');
       } finally {
         setLoading(false);
       }

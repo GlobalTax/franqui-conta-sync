@@ -253,9 +253,9 @@ export function TemplateBuilder({
 
       toast.success(existingTemplate ? 'Template actualizado' : 'Template creado');
       onSave?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('TemplateBuilder', 'Error saving template', error);
-      toast.error('Error al guardar template: ' + error.message);
+      toast.error(error instanceof Error ? 'Error al guardar template: ' + error.message : 'Error desconocido');
     }
   };
 

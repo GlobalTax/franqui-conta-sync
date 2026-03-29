@@ -55,8 +55,8 @@ export default function ApiKeysManagement() {
 
       if (error) throw error;
       setKeys(data || []);
-    } catch (error: any) {
-      toast.error(`Error loading API keys: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Error loading API keys: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }

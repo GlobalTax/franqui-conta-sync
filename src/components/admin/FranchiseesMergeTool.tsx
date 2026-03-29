@@ -105,11 +105,11 @@ export const FranchiseesMergeTool = ({
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("FranchiseesMergeTool", "Error merging franchisees", error);
       toast({
         title: "Error en la fusión",
-        description: error.message || "No se pudieron fusionar los franquiciados",
+        description: error instanceof Error ? error.message : "No se pudieron fusionar los franquiciados",
         variant: "destructive",
       });
     } finally {

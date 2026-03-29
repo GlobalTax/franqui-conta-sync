@@ -207,8 +207,8 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
 
       toast.success('Factura aprobada correctamente');
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
-    } catch (error: any) {
-      toast.error(error.message || 'Error al aprobar la factura');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al aprobar la factura');
     }
   };
 
@@ -238,8 +238,8 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
 
       toast.error('Factura rechazada');
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
-    } catch (error: any) {
-      toast.error(error.message || 'Error al rechazar la factura');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al rechazar la factura');
     }
   };
 
@@ -324,8 +324,8 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
       toast.success(`${selectedIds.length} factura(s) eliminadas`);
       setSelectedIds([]);
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
-    } catch (error: any) {
-      toast.error(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -364,8 +364,8 @@ export default function InvoicesInbox({ view = 'inbox' }: InvoicesInboxProps) {
       await supabase.from('invoices_received').delete().eq('id', invoiceId);
       toast.success('Factura eliminada');
       queryClient.invalidateQueries({ queryKey: ['invoices_received'] });
-    } catch (error: any) {
-      toast.error(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 

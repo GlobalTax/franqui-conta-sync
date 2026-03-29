@@ -89,7 +89,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         await logger?.validation(`Validación exitosa sin errores`, true);
         toast.success("✅ Validación exitosa - No hay errores");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('StepCierre', 'Validation error', error);
       await logger?.error('Error crítico en validación', error);
       toast.error("Error al validar");
@@ -98,7 +98,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         error_type: 'missing_data',
         severity: 'error',
         entity_type: 'journal_entry',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Error desconocido',
         suggestion: 'Contactar soporte técnico',
       }]);
       setShowErrorDialog(true);
@@ -171,10 +171,10 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         await logger?.error('Error en cierre de ejercicio', data.error);
         throw new Error(data.error || 'Error al cerrar el ejercicio');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('StepCierre', 'Closing error', error);
       await logger?.error('Error crítico en cierre de ejercicio', error);
-      toast.error(error.message || "Error al cerrar el ejercicio");
+      toast.error(error instanceof Error ? error.message : "Error al cerrar el ejercicio");
     } finally {
       setClosing(false);
     }

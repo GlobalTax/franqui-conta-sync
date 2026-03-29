@@ -1,39 +1,69 @@
 
 
-# Plan: Corregir errores de build TypeScript
+# Plan: Fix build errors + Mejoras OCR
 
-## Problema
-El build falla por errores de TypeScript en varios archivos que no fueron modificados recientemente. Esto impide que la preview cargue correctamente, mostrando una pantalla en blanco.
+## Parte 1: Corregir TODOS los errores de build
 
-## Errores principales (3 categorías)
+### 1.1 `src/lib/pdf-export.ts` — eliminar import estático no usado
+- Línea 1: eliminar `import jsPDF from "jspdf"` (las funciones usan import dinámico `await import("jspdf")`)
+- Mantener línea 2: `import "jspdf-autotable"` (side-effect import necesario)
 
-### 1. `useFiscalModels.ts` y `useLaborCostKPIs.ts`
-Usan tablas (`stg_nominas`, `orquest_schedules`) que no están en los tipos generados de Supabase. 
-**Fix**: Castear `.from()` con `as any` para evitar el error de tipos.
+### 1.2 Añadir `documentType` en todos los sitios que lo requieren
+El tipo `InvoiceReceived` exige `documentType` pero falta en 6 archivos:
 
-### 2. `generateMigrationPDF.ts`
-`autoTable` no se encuentra como nombre global.
-**Fix**: Importar correctamente `jspdf-autotable` y usar `(doc as any).autoTable(...)`.
+**`src/infrastructure/persistence/supabase/mappers/InvoiceMapper.ts`**
+- `receivedToDomain` (línea 22): añadir `documentType: dbInvoice.document_type || 'invoice'`
+- `issuedToDomain` (línea 66): añadir `documentType: dbInvoice.document_type || 'invoice'`
+- `receivedToDatabase` (línea 145): añadir `document_type: invoice.documentType`
+- `issuedToDatabase` (línea 174): añadir `document_type: invoice.documentType`
 
-### 3. `StepApertura.tsx`, `StepBancos.tsx`, `StepCierre.tsx`, `StepIVA.tsx`
-`catch(error)` tipado como `unknown` pasado a función que espera `string | Error`.
-**Fix**: Castear `error as Error` o `String(error)`.
+**`src/domain/invoicing/use-cases/CreateInvoiceReceived.ts`** (línea 59)
+- Añadir `documentType: input.documentType || 'invoice'` al objeto invoice
 
-### 4. `CloseAccountingPeriod.ts`
-Tabla `accounting_entry_lines` no en tipos generados.
-**Fix**: Castear con `as any`.
+**`src/domain/__tests__/integration/helpers/test-data-builders.ts`** (línea 26)
+- Añadir `documentType: 'invoice'` al objeto de test
 
-## Archivos a editar (~7 archivos)
+**`src/domain/invoicing/use-cases/__tests__/ApproveInvoice.test.ts`** (línea 15)
+- Añadir `documentType: 'invoice'` en `createPendingInvoice`
 
-1. **`src/hooks/useFiscalModels.ts`** — añadir `as any` en `.from('stg_nominas')`
-2. **`src/hooks/useLaborCostKPIs.ts`** — añadir `as any` en `.from('stg_nominas')` y `.from('orquest_schedules')`
-3. **`src/lib/migration/generateMigrationPDF.ts`** — fix import de autoTable
-4. **`src/components/accounting/migration/StepApertura.tsx`** — castear error
-5. **`src/components/accounting/migration/StepBancos.tsx`** — castear error
-6. **`src/components/accounting/migration/StepCierre.tsx`** — castear error (2 sitios)
-7. **`src/components/accounting/migration/StepIVA.tsx`** — castear error
-8. **`src/domain/accounting/use-cases/CloseAccountingPeriod.ts`** — castear `.from()` con `as any`
+**`src/domain/invoicing/use-cases/__tests__/RejectInvoice.test.ts`** (línea 15)
+- Añadir `documentType: 'invoice'` en `createPendingInvoice`
 
-## Resultado
-El build compilará sin errores y la app volverá a funcionar normalmente en la preview.
+### 1.3 `src/domain/invoicing/services/InvoiceValidator.ts` (línea 250)
+- `VALID_TAX_RATES` es `readonly VATRate[]` (0|4|10|21 literal), pero `line.taxRate` es `number`
+- Fix: castear `line.taxRate as VATRate` en el `.includes()` call
+
+## Parte 2: Mejoras OCR en edge function
+
+### 2.1 Auto-matching de proveedor por NIF
+**`supabase/functions/claude-invoice-ocr/index.ts`**
+- Después de la extracción OCR (paso 10), si `normalized.issuer.vat_id` existe, buscar en tabla `suppliers` por `tax_id`
+- Si hay match, incluir `supplier_match: { id, name, tax_id, default_account_code }` en la respuesta
+- Actualizar también `supplier_id` en el registro `invoices_received`
+
+### 2.2 AP Mapping inteligente con reglas existentes
+- Reemplazar el stub hardcodeado (líneas 399-421) por una llamada al `apMapperEngine` real que ya existe en `_shared/ap/mapping-engine.ts`
+- Si hay `supplier_match`, usar los datos del proveedor para que el engine aplique reglas y patrones aprendidos
+
+### 2.3 Auto-relleno del receptor
+- Después de obtener `centreData` y `centreCompanies`, si el receptor extraído por OCR está vacío, rellenar con datos de la empresa del centro
+- Query adicional a `centre_companies` para obtener `nombre`, `cif` y dirección
+
+### 2.4 Actualizar tipos frontend
+**`src/hooks/useInvoiceOCR.ts`**
+- Añadir `supplier_match?: { id: string; name: string; tax_id: string; default_account_code: string | null }` al `OCRResponse`
+
+## Archivos a modificar (10 archivos)
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/lib/pdf-export.ts` | Eliminar import estático línea 1 |
+| `src/infrastructure/.../InvoiceMapper.ts` | Añadir documentType en mappers |
+| `src/domain/.../CreateInvoiceReceived.ts` | Añadir documentType |
+| `src/domain/__tests__/.../test-data-builders.ts` | Añadir documentType |
+| `src/domain/.../ApproveInvoice.test.ts` | Añadir documentType |
+| `src/domain/.../RejectInvoice.test.ts` | Añadir documentType |
+| `src/domain/.../InvoiceValidator.ts` | Cast taxRate as VATRate |
+| `supabase/functions/claude-invoice-ocr/index.ts` | Supplier match + AP mapping real + receptor auto-fill |
+| `src/hooks/useInvoiceOCR.ts` | Añadir supplier_match al tipo OCRResponse |
 

@@ -21,6 +21,19 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newRole, setNewRole] = useState("gestor");
+  const [roleSearch, setRoleSearch] = useState("");
+
+  const filteredRoles = useMemo(() => {
+    const roles = user.user_roles || [];
+    if (!roleSearch) return roles;
+    const q = roleSearch.toLowerCase();
+    return roles.filter((r: any) => 
+      r.role?.toLowerCase().includes(q) ||
+      r.centro?.toLowerCase().includes(q) ||
+      r.centres?.nombre?.toLowerCase().includes(q) ||
+      r.centres?.codigo?.toLowerCase().includes(q)
+    );
+  }, [user.user_roles, roleSearch]);
 
   const handleAddRole = async () => {
     setLoading(true);

@@ -1,4 +1,3 @@
-import type jsPDF from "jspdf";
 import "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

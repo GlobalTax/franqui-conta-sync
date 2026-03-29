@@ -15,6 +15,7 @@ export interface CreateInvoiceReceivedInput {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate?: string;
+  documentType?: 'invoice' | 'credit_note' | 'ticket';
   notes?: string;
   lines: Omit<InvoiceLine, 'id' | 'invoiceId' | 'invoiceType'>[];
   createdBy?: string;

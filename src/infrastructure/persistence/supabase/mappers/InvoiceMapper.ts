@@ -67,6 +67,7 @@ export class InvoiceMapper {
     return {
       id: dbInvoice.id,
       centroCode: dbInvoice.centro_code,
+      documentType: dbInvoice.document_type || 'invoice',
       customerName: dbInvoice.customer_name,
       customerTaxId: dbInvoice.customer_tax_id,
       customerEmail: dbInvoice.customer_email,

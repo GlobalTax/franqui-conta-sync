@@ -30,20 +30,21 @@ export default function BankReconciliation() {
 
   const autoMatch = useAutoMatchWithRules();
 
-  if (!selectedView) {
+  const centroCode = selectedView?.type === 'centre' ? (selectedView.code ?? '') : undefined;
+
+  if (!selectedView || !centroCode) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-6 space-y-6">
+        <PageHeader title="Conciliación Bancaria" breadcrumbs={[{ label: 'Tesorería', href: '/banks' }, { label: 'Conciliación' }]} />
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Por favor, selecciona un centro para ver la conciliación bancaria.
+            Selecciona un restaurante específico en el selector lateral para acceder a la conciliación bancaria. La vista consolidada no está disponible para esta función.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
-
-  const centroCode = typeof selectedView === 'string' ? selectedView : '';
 
   const handleAutoMatch = async () => {
     if (!selectedAccount || !centroCode) {

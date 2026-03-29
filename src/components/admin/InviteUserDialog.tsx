@@ -36,7 +36,7 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke("send-invite", {
+      const { data, error } = await supabase.functions.invoke("send-invite", {
         body: { 
           email, 
           role,
@@ -46,6 +46,7 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Invitación enviada",

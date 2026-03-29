@@ -3386,10 +3386,14 @@ export type Database = {
           centro: string | null
           created_at: string
           email: string
+          email_error: string | null
+          email_sent_at: string | null
+          email_status: string
           expires_at: string
           franchisee_id: string | null
           id: string
           invited_by: string | null
+          last_send_attempt_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           token: string
         }
@@ -3398,10 +3402,14 @@ export type Database = {
           centro?: string | null
           created_at?: string
           email: string
+          email_error?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           expires_at: string
           franchisee_id?: string | null
           id?: string
           invited_by?: string | null
+          last_send_attempt_at?: string | null
           role: Database["public"]["Enums"]["app_role"]
           token: string
         }
@@ -3410,10 +3418,14 @@ export type Database = {
           centro?: string | null
           created_at?: string
           email?: string
+          email_error?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           expires_at?: string
           franchisee_id?: string | null
           id?: string
           invited_by?: string | null
+          last_send_attempt_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           token?: string
         }

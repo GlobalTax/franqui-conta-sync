@@ -95,7 +95,7 @@ export function useLaborCostDetails(centroCode?: string, startDate?: string, end
     queryFn: async (): Promise<LaborCostDetail[]> => {
       if (!centroCode || !startDate || !endDate) return [];
 
-      const { data: payrollData, error } = await supabase
+      const { data: payrollData, error } = await (supabase as any)
         .from('stg_nominas')
         .select('*')
         .eq('centro_code', centroCode)

@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface ValidationError {
   row_number?: number;
@@ -38,7 +35,7 @@ serve(async (req) => {
 
     const { centroCode, fiscalYear, startDate, endDate } = await req.json();
 
-    console.log('Validating migration:', { centroCode, fiscalYear, startDate, endDate });
+    logger.info('validate-migration', 'Validating migration', { centroCode, fiscalYear, startDate, endDate });
 
     const detailedErrors: ValidationError[] = [];
 
@@ -81,7 +78,7 @@ serve(async (req) => {
     );
 
     if (accountsError) {
-      console.warn('Could not check invalid accounts:', accountsError);
+      logger.warn('validate-migration', 'Could not check invalid accounts', accountsError);
       detailedErrors.push({
         error_type: 'missing_data',
         severity: 'warning',
@@ -146,7 +143,7 @@ serve(async (req) => {
     );
 
     if (tbError) {
-      console.warn('Could not calculate trial balance:', tbError);
+      logger.warn('validate-migration', 'Could not calculate trial balance', tbError);
       detailedErrors.push({
         error_type: 'trial_balance',
         severity: 'warning',
@@ -189,7 +186,7 @@ serve(async (req) => {
       },
     };
 
-    console.log('Validation complete:', summary);
+    logger.info('validate-migration', 'Validation complete', summary);
 
     return new Response(
       JSON.stringify({
@@ -204,7 +201,7 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('Validation error:', error);
+    logger.error('validate-migration', 'Validation error', error);
     return new Response(
       JSON.stringify({ 
         valid: false, 

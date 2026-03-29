@@ -1,9 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface VIESRequest {
   countryCode: string;
@@ -24,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[VIES] Request received');
+    logger.info('validate-eu-vat', 'Request received');
     
     const { countryCode, vatNumber }: VIESRequest = await req.json();
     
@@ -63,7 +60,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[VIES] Validating ${cleanCountryCode}${cleanVatNumber}`);
+    logger.info('validate-eu-vat', 'Validating VAT', { countryCode: cleanCountryCode, vatNumber: cleanVatNumber });
 
     // Construir petición SOAP
     const soapRequest = `<?xml version="1.0" encoding="UTF-8"?>
@@ -99,7 +96,7 @@ serve(async (req) => {
       clearTimeout(timeoutId);
       
       if ((fetchError as Error).name === 'AbortError') {
-        console.error('[VIES] Timeout after 10 seconds');
+        logger.error('validate-eu-vat', 'Timeout after 10 seconds');
         return new Response(
           JSON.stringify({ 
             valid: false, 
@@ -109,7 +106,7 @@ serve(async (req) => {
         );
       }
       
-      console.error('[VIES] Network error:', fetchError);
+      logger.error('validate-eu-vat', 'Network error', fetchError);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -122,7 +119,7 @@ serve(async (req) => {
     clearTimeout(timeoutId);
 
     if (!viesResponse.ok) {
-      console.error(`[VIES] HTTP error: ${viesResponse.status}`);
+      logger.error('validate-eu-vat', 'HTTP error', { status: viesResponse.status });
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -134,7 +131,7 @@ serve(async (req) => {
 
     // Parsear respuesta XML
     const xmlText = await viesResponse.text();
-    console.log('[VIES] Response received:', xmlText.substring(0, 200));
+    logger.debug('validate-eu-vat', 'Response received', { preview: xmlText.substring(0, 200) });
 
     // Detectar errores SOAP
     if (xmlText.includes('INVALID_INPUT')) {
@@ -176,7 +173,7 @@ serve(async (req) => {
     const companyName = nameMatch?.[1] || undefined;
     const companyAddress = addressMatch?.[1] || undefined;
 
-    console.log(`[VIES] Result: valid=${isValid}, name=${companyName}`);
+    logger.info('validate-eu-vat', 'Validation result', { valid: isValid, name: companyName });
 
     const result: VIESResponse = {
       valid: isValid,
@@ -194,7 +191,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[VIES] Unexpected error:', error);
+    logger.error('validate-eu-vat', 'Unexpected error', error);
     return new Response(
       JSON.stringify({ 
         valid: false, 

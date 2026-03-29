@@ -6,12 +6,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 type AssistantMode = "chat" | "document-analysis" | "report-generation" | "mapping-enhancement";
 
@@ -144,7 +140,7 @@ serve(async (req: Request) => {
 
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
-      console.error("Claude API error:", claudeResponse.status, errorText);
+      logger.error('claude-assistant', 'Claude API error', { status: claudeResponse.status, errorText });
       
       if (claudeResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Límite de requests excedido. Intenta de nuevo en unos segundos." }), {
@@ -184,7 +180,7 @@ serve(async (req: Request) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Claude assistant error:", error);
+    logger.error('claude-assistant', 'Claude assistant error', error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

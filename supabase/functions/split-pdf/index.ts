@@ -6,11 +6,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface SplitRange {
   from_page: number;
@@ -52,7 +49,7 @@ serve(async (req) => {
     const body: SplitRequest = await req.json();
     const { invoice_id, document_path, splits } = body;
 
-    console.log(`[split-pdf] Processing invoice ${invoice_id} with ${splits.length} splits`);
+    logger.info('split-pdf', 'Processing invoice', { invoice_id, splits_count: splits.length });
 
     // 3. Validate splits
     if (!splits || splits.length === 0 || splits.length > 10) {
@@ -79,7 +76,7 @@ serve(async (req) => {
       throw new Error(`Failed to download PDF: ${downloadError?.message}`);
     }
 
-    console.log('[split-pdf] PDF downloaded, processing...');
+    logger.info('split-pdf', 'PDF downloaded, processing');
 
     // 6. Load PDF document
     const pdfArrayBuffer = await pdfBlob.arrayBuffer();
@@ -126,7 +123,7 @@ serve(async (req) => {
         .upload(newPath, pdfBytes, { contentType: 'application/pdf', upsert: false });
 
       if (uploadError) {
-        console.error(`Failed to upload split ${i + 1}:`, uploadError);
+        logger.error('split-pdf', `Failed to upload split ${i + 1}`, uploadError);
         throw new Error(`Failed to upload split: ${uploadError.message}`);
       }
 
@@ -155,7 +152,7 @@ serve(async (req) => {
         .single();
 
       if (insertError || !newInvoice) {
-        console.error(`Failed to create invoice record:`, insertError);
+        logger.error('split-pdf', 'Failed to create invoice record', insertError);
         throw new Error(`Failed to create invoice: ${insertError?.message}`);
       }
 
@@ -168,7 +165,7 @@ serve(async (req) => {
         processing_time_ms: processingTime,
       });
 
-      console.log(`[split-pdf] Created invoice ${newInvoice.id} (${split.from_page}-${split.to_page}, ${processingTime}ms)`);
+      logger.info('split-pdf', 'Created invoice', { id: newInvoice.id, from_page: split.from_page, to_page: split.to_page, processing_time_ms: processingTime });
     }
 
     // 9. Update original invoice status
@@ -203,7 +200,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[split-pdf] Error:', error);
+    logger.error('split-pdf', 'Error processing split', error);
     return new Response(
       JSON.stringify({
         success: false,

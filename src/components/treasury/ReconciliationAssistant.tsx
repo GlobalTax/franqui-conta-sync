@@ -166,8 +166,8 @@ export function ReconciliationAssistant({ centroCode, bankAccountId }: Reconcili
             <ScrollArea className="h-[500px] pr-4">
               <div className="space-y-3">
                 {data.suggestions.map((suggestion, index) => (
-                  <Card 
-                    key={index}
+                  <Card
+                    key={suggestion.description_pattern}
                     className={`cursor-pointer transition-all ${
                       selectedSuggestions.has(index) 
                         ? 'border-primary bg-primary/5' 

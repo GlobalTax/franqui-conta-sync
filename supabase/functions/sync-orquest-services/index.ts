@@ -1,17 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-/**
- * CORS Configuration
- * Set ALLOWED_ORIGIN env var in Supabase Project Settings
- * Examples:
- * - Single: "https://app.franquicontasync.com"
- * - Multiple: "https://app.com,https://staging.app.com"
- * - Dev: leave empty or "*" for local development
- */
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
-  .split(",")
-  .map(o => o.trim());
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface OrquestService {
   id: string;
@@ -23,13 +13,6 @@ interface OrquestService {
 }
 
 serve(async (req) => {
-  const requestOrigin = req.headers.get("origin") || "";
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes("*") 
-      ? "*" 
-      : (ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0]),
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -54,7 +37,7 @@ serve(async (req) => {
     if (logError) throw logError;
     const logId = logData.id;
 
-    console.log(`[Sync] Starting sync with log ID: ${logId}`);
+    logger.info('sync-orquest-services', 'Starting sync', { logId });
 
     // Obtener todos los franchisees con configuración de Orquest
     const { data: franchisees, error: franchiseesError } = await supabase
@@ -73,7 +56,7 @@ serve(async (req) => {
     // Para cada franchisee, obtener servicios de Orquest
     for (const franchisee of franchisees || []) {
       try {
-        console.log(`[Sync] Processing franchisee: ${franchisee.name} (${franchisee.id})`);
+        logger.info('sync-orquest-services', 'Processing franchisee', { name: franchisee.name, id: franchisee.id });
 
         // En una implementación real, aquí harías la llamada a la API de Orquest
         // Por ahora, simulamos la respuesta
@@ -88,7 +71,7 @@ serve(async (req) => {
         // const services: OrquestService[] = await response.json();
 
         // Por ahora, solo registramos el intento sin hacer llamada real
-        console.log(`[Sync] Would sync services for business_id: ${franchisee.orquest_business_id}`);
+        logger.info('sync-orquest-services', 'Would sync services for business', { business_id: franchisee.orquest_business_id });
         
         // Marcar como exitoso (en producción, esto dependería de la respuesta de Orquest)
         franchiseesSucceeded++;
@@ -100,7 +83,7 @@ serve(async (req) => {
         });
 
       } catch (error: any) {
-        console.error(`[Sync] Error processing franchisee ${franchisee.name}:`, error);
+        logger.error('sync-orquest-services', `Error processing franchisee ${franchisee.name}`, error);
         franchiseesFailed++;
         errors.push({
           franchisee_id: franchisee.id,
@@ -125,7 +108,7 @@ serve(async (req) => {
       })
       .eq('id', logId);
 
-    console.log(`[Sync] Completed. Total services: ${totalServices}`);
+    logger.info('sync-orquest-services', 'Sync completed', { totalServices });
 
     return new Response(
       JSON.stringify({
@@ -141,7 +124,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[Sync] Fatal error:', error);
+    logger.error('sync-orquest-services', 'Fatal error', error);
     
     return new Response(
       JSON.stringify({

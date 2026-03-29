@@ -4,16 +4,20 @@
 // ============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ponto-signature',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -24,11 +28,11 @@ Deno.serve(async (req) => {
     // TODO: Implement HMAC validation when webhook secret is configured
     // For POC, we log but don't enforce
     if (!signature) {
-      console.warn('⚠️ Webhook received without signature (POC mode)');
+      logger.warn('ponto-webhooks', 'Webhook received without signature (POC mode)');
     }
 
     const event = JSON.parse(body);
-    console.log('Webhook received:', {
+    logger.info('ponto-webhooks', 'Webhook received', {
       type: event.type,
       id: event.id,
       hasSignature: !!signature,
@@ -55,7 +59,7 @@ Deno.serve(async (req) => {
       case 'account.synchronization.succeeded': {
         const accountId = event.relationships?.account?.data?.id;
         if (accountId) {
-          console.log('Account sync succeeded, triggering refresh:', accountId);
+          logger.info('ponto-webhooks', 'Account sync succeeded, triggering refresh', accountId);
           
           // Find connection by account
           const { data: account } = await supabase
@@ -68,7 +72,7 @@ Deno.serve(async (req) => {
             // Trigger sync (fire-and-forget)
             supabase.functions.invoke('ponto-sync', {
               body: { connection_id: account.connection_id },
-            }).catch(err => console.error('Sync trigger failed:', err));
+            }).catch(err => logger.error('ponto-webhooks', 'Sync trigger failed', err));
           }
         }
         break;
@@ -76,7 +80,7 @@ Deno.serve(async (req) => {
 
       case 'account.synchronization.failed': {
         const accountId = event.relationships?.account?.data?.id;
-        console.error('Account sync failed:', {
+        logger.error('ponto-webhooks', 'Account sync failed', {
           accountId,
           error: event.attributes?.error,
         });
@@ -88,7 +92,7 @@ Deno.serve(async (req) => {
       case 'account.removed': {
         const accountId = event.relationships?.account?.data?.id;
         if (accountId) {
-          console.log('Account removed, marking as inactive:', accountId);
+          logger.info('ponto-webhooks', 'Account removed, marking as inactive', accountId);
           
           await supabase
             .from('ponto_accounts')
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
       }
 
       default:
-        console.log('Unhandled webhook event type:', event.type);
+        logger.info('ponto-webhooks', 'Unhandled webhook event type', event.type);
     }
 
     return new Response(
@@ -108,7 +112,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    logger.error('ponto-webhooks', 'Webhook error', error);
     const message = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ error: message }),

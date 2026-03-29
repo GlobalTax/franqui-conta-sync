@@ -4,11 +4,8 @@
 // ============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface IVARow {
   fecha: string;
@@ -60,7 +57,7 @@ Deno.serve(async (req) => {
     const body: ImportRequest = await req.json();
     const { centroCode, fiscalYear, invoiceType, rows } = body;
 
-    console.log(`[import-iva-historical] Starting import: ${invoiceType}, ${rows.length} rows`);
+    logger.info('import-iva-historical', 'Starting import', { invoiceType, rowCount: rows.length });
 
     // Create import_run
     const { data: importRun, error: runError } = await supabase
@@ -76,11 +73,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (runError) {
-      console.error('[import-iva-historical] Error creating import_run:', runError);
+      logger.error('import-iva-historical', 'Error creating import_run', runError);
       throw new Error(`Error al crear import_run: ${runError.message}`);
     }
 
-    console.log(`[import-iva-historical] Import run created: ${importRun.id}`);
+    logger.info('import-iva-historical', 'Import run created', { importRunId: importRun.id });
 
     // Validate and prepare rows
     const validRows: any[] = [];
@@ -174,9 +171,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `[import-iva-historical] Validated ${validRows.length}/${rows.length} rows, ${errors.length} errors`
-    );
+    logger.info('import-iva-historical', 'Validation complete', { validRows: validRows.length, totalRows: rows.length, errors: errors.length });
 
     // Check error threshold
     const errorRate = errors.length / rows.length;
@@ -209,7 +204,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase.from(tableName).insert(validRows);
 
     if (insertError) {
-      console.error('[import-iva-historical] Error inserting rows:', insertError);
+      logger.error('import-iva-historical', 'Error inserting rows', insertError);
 
       await supabase
         .from('import_runs')
@@ -232,9 +227,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', importRun.id);
 
-    console.log(
-      `[import-iva-historical] ✅ Import completed: ${validRows.length} invoices`
-    );
+    logger.info('import-iva-historical', 'Import completed', { invoiceCount: validRows.length });
 
     return new Response(
       JSON.stringify({
@@ -252,7 +245,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('[import-iva-historical] Fatal error:', error);
+    logger.error('import-iva-historical', 'Fatal error', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       {

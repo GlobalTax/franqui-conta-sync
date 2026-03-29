@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface PostDepreciationParams {
   assetId: string;
@@ -27,7 +24,7 @@ serve(async (req) => {
     const params: PostDepreciationParams = await req.json();
     const { assetId, year, month, centroCode, userId } = params;
 
-    console.log('Posting depreciation entry:', { assetId, year, month, centroCode });
+    logger.info('post-depreciation-entry', 'Posting depreciation entry', { assetId, year, month, centroCode });
 
     // Obtener amortización del periodo
     const { data: depreciation, error: depError } = await supabase
@@ -115,7 +112,7 @@ serve(async (req) => {
 
     if (updateError) throw new Error(`Error updating depreciation: ${updateError.message}`);
 
-    console.log('Depreciation entry posted successfully:', entry.id);
+    logger.info('post-depreciation-entry', 'Depreciation entry posted successfully', entry.id);
 
     return new Response(
       JSON.stringify({
@@ -130,7 +127,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error posting depreciation entry:', error);
+    logger.error('post-depreciation-entry', 'Error posting depreciation entry', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),

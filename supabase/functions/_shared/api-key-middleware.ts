@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logger } from './logger.ts';
 
 export interface ApiKeyValidationResult {
   isValid: boolean;
@@ -49,7 +50,7 @@ export async function validateApiKey(
   });
 
   if (error || !rpcData || rpcData.length === 0) {
-    console.error('[API Key Middleware] Validation failed:', error);
+    logger.error('api-key-middleware', 'Validation failed', error);
     return { isValid: false };
   }
 

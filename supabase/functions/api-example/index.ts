@@ -1,9 +1,6 @@
 import { validateApiKey, createApiKeyResponse } from '../_shared/api-key-middleware.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -25,9 +22,11 @@ Deno.serve(async (req) => {
     }
 
     // Continuar con la lógica de la función
-    console.log(`[API Example] Request from user: ${validation.userId}`);
-    console.log(`[API Example] Centro: ${validation.centroCode}`);
-    console.log(`[API Example] Scopes: ${validation.scopes?.join(', ')}`);
+    logger.info('api-example', 'Request received', {
+      userId: validation.userId,
+      centroCode: validation.centroCode,
+      scopes: validation.scopes,
+    });
 
     // Tu lógica aquí...
     const response = {
@@ -43,7 +42,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[API Example] Error:', error);
+    logger.error('api-example', 'Error processing request', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 

@@ -34,8 +34,8 @@ export const PageHeader = ({ breadcrumbs, title, subtitle, actions }: PageHeader
               </BreadcrumbLink>
             </BreadcrumbItem>
             
-            {breadcrumbs.map((crumb, index) => (
-              <div key={index} className="flex items-center gap-1.5">
+            {breadcrumbs.map((crumb) => (
+              <div key={crumb.label} className="flex items-center gap-1.5">
                 <BreadcrumbSeparator>
                   <ChevronRight className="h-4 w-4" />
                 </BreadcrumbSeparator>

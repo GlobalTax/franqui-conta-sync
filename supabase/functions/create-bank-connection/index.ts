@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface CreateConnectionRequest {
   centroCode: string;
@@ -42,7 +39,7 @@ serve(async (req) => {
       throw new Error('Missing required fields: centroCode, providerCode');
     }
 
-    console.log(`Creating Salt Edge connection for centro ${centroCode}, provider ${providerCode}`);
+    logger.info('create-bank-connection', 'Creating Salt Edge connection', { centroCode, providerCode });
 
     const SALT_EDGE_APP_ID = Deno.env.get('SALT_EDGE_APP_ID');
     const SALT_EDGE_SECRET = Deno.env.get('SALT_EDGE_SECRET');
@@ -69,7 +66,7 @@ serve(async (req) => {
       }
     };
 
-    console.log('Creating/finding Salt Edge customer:', customerIdentifier);
+    logger.debug('create-bank-connection', 'Creating/finding Salt Edge customer', { customerIdentifier });
 
     const customerResponse = await fetch(`${SALT_EDGE_BASE_URL}/customers`, {
       method: 'POST',
@@ -82,10 +79,10 @@ serve(async (req) => {
     if (customerResponse.ok) {
       const customerResult = await customerResponse.json();
       customerId = customerResult.data?.id;
-      console.log('Customer created/found:', customerId);
+      logger.info('create-bank-connection', 'Customer created/found', { customerId });
     } else {
       const customerError = await customerResponse.text();
-      console.error('Customer creation error:', customerError);
+      logger.error('create-bank-connection', 'Customer creation error', { customerError });
       
       // If customer already exists, try to list and find it
       if (customerError.includes('already exists') || customerResponse.status === 409) {
@@ -102,7 +99,7 @@ serve(async (req) => {
         if (!customerId) {
           throw new Error('Customer exists but could not be retrieved');
         }
-        console.log('Found existing customer:', customerId);
+        logger.info('create-bank-connection', 'Found existing customer', { customerId });
       } else {
         throw new Error(`Salt Edge customer error: ${customerResponse.status} - ${customerError}`);
       }
@@ -125,7 +122,7 @@ serve(async (req) => {
       }
     };
 
-    console.log('Creating connect session for customer:', customerId);
+    logger.debug('create-bank-connection', 'Creating connect session', { customerId });
 
     const response = await fetch(`${SALT_EDGE_BASE_URL}/connect_sessions/create`, {
       method: 'POST',
@@ -135,13 +132,13 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Salt Edge API error:', errorText);
+      logger.error('create-bank-connection', 'Salt Edge API error', { errorText });
       throw new Error(`Salt Edge API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
 
-    console.log('Salt Edge connect session created:', result.data?.connect_url);
+    logger.info('create-bank-connection', 'Salt Edge connect session created', { connectUrl: result.data?.connect_url });
 
     return new Response(
       JSON.stringify({
@@ -156,7 +153,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error creating bank connection:', error);
+    logger.error('create-bank-connection', 'Error creating bank connection', error);
     return new Response(
       JSON.stringify({
         success: false,

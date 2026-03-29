@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,7 +24,7 @@ serve(async (req) => {
       compare_yoy = false,
     } = await req.json();
 
-    console.log(`[pl-rubric-breakdown] ${rubric_code} | ${start_date} → ${end_date} | YoY: ${compare_yoy}`);
+    logger.info('pl-rubric-breakdown', `${rubric_code} | ${start_date} → ${end_date} | YoY: ${compare_yoy}`);
 
     // 1. Obtener info de la rúbrica
     const { data: templateData } = await supabaseClient
@@ -127,7 +124,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[pl-rubric-breakdown] Error:', error);
+    logger.error('pl-rubric-breakdown', 'Error', error);
     return new Response(
       JSON.stringify({
         success: false,

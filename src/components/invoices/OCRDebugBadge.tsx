@@ -142,8 +142,8 @@ export function OCRDebugBadge({
               const stageColor = getStageColor(log.stage, log.decision);
               
               return (
-                <div 
-                  key={index} 
+                <div
+                  key={`${log.timestamp}-${log.stage}-${log.action}`}
                   className={`border rounded-md p-3 ${stageColor}`}
                 >
                   {/* Header de la etapa */}

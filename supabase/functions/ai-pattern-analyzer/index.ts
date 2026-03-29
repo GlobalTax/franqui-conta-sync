@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,7 +37,7 @@ ${descriptions.map((d: string, i: number) => `${i + 1}. ${d}`).join('\n')}
 
 Genera un patrón regex óptimo que capture todas estas transacciones pero que sea lo suficientemente específico para no capturar transacciones no relacionadas.`;
 
-    console.log('[AI Pattern Analyzer] Processing', descriptions.length, 'descriptions');
+    logger.info('ai-pattern-analyzer', 'Processing descriptions', { count: descriptions.length });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,7 +88,7 @@ Genera un patrón regex óptimo que capture todas estas transacciones pero que s
 
     if (!response.ok) {
       if (response.status === 429) {
-        console.error('[AI Pattern Analyzer] Rate limit exceeded');
+        logger.error('ai-pattern-analyzer', 'Rate limit exceeded');
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Por favor intenta de nuevo más tarde." }), 
           {
@@ -101,7 +98,7 @@ Genera un patrón regex óptimo que capture todas estas transacciones pero que s
         );
       }
       if (response.status === 402) {
-        console.error('[AI Pattern Analyzer] Payment required');
+        logger.error('ai-pattern-analyzer', 'Payment required');
         return new Response(
           JSON.stringify({ error: "Payment required. Por favor añade créditos a tu workspace de Lovable AI." }), 
           {
@@ -112,7 +109,7 @@ Genera un patrón regex óptimo que capture todas estas transacciones pero que s
       }
       
       const errorText = await response.text();
-      console.error('[AI Pattern Analyzer] AI gateway error:', response.status, errorText);
+      logger.error('ai-pattern-analyzer', 'AI gateway error', { status: response.status, errorText });
       throw new Error("Error en el gateway de IA");
     }
 
@@ -120,13 +117,13 @@ Genera un patrón regex óptimo que capture todas estas transacciones pero que s
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
-      console.error('[AI Pattern Analyzer] No pattern generated');
+      logger.error('ai-pattern-analyzer', 'No pattern generated');
       throw new Error("No se pudo generar un patrón");
     }
 
     const result = JSON.parse(toolCall.function.arguments);
     
-    console.log('[AI Pattern Analyzer] Pattern generated:', result.regex_pattern);
+    logger.info('ai-pattern-analyzer', 'Pattern generated', { pattern: result.regex_pattern });
 
     return new Response(
       JSON.stringify(result), 
@@ -136,7 +133,7 @@ Genera un patrón regex óptimo que capture todas estas transacciones pero que s
     );
 
   } catch (e: any) {
-    console.error('[AI Pattern Analyzer] Error:', e);
+    logger.error('ai-pattern-analyzer', 'Error', e);
     return new Response(
       JSON.stringify({ 
         error: e.message || 'Error desconocido',

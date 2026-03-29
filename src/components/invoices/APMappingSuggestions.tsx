@@ -106,8 +106,8 @@ export function APMappingSuggestions({
           
           <div className="space-y-2">
             {lineSuggestions.map((suggestion, index) => (
-              <div 
-                key={index}
+              <div
+                key={`${suggestion.account_suggestion}-${suggestion.matched_rule_id ?? index}`}
                 className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border"
               >
                 <div className="flex-1">

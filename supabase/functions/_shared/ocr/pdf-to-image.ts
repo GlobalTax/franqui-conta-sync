@@ -3,6 +3,8 @@
 // Uses pdfjs-dist with Deno-targeted imports and OffscreenCanvas
 // ============================================================================
 
+import { logger } from '../logger.ts';
+
 // Type declarations for OffscreenCanvas (available in Deno 1.30+)
 declare class OffscreenCanvas {
   constructor(width: number, height: number);
@@ -21,10 +23,10 @@ declare class OffscreenCanvasRenderingContext2D {
 function checkOffscreenCanvasSupport(): void {
   if (typeof OffscreenCanvas === 'undefined') {
     const errorMsg = 'OffscreenCanvas is not available in this Deno runtime. PDF conversion must be done on client side.';
-    console.error('[PDF→PNG]', errorMsg);
+    logger.error('pdf-to-image', errorMsg);
     throw new Error(errorMsg);
   }
-  console.log('[PDF→PNG] OffscreenCanvas is available ✓');
+  logger.info('pdf-to-image', 'OffscreenCanvas is available');
 }
 
 /**
@@ -35,7 +37,7 @@ function checkOffscreenCanvasSupport(): void {
  * @returns Data URI string: data:image/png;base64,...
  */
 export async function convertPdfToImage(base64Pdf: string): Promise<string> {
-  console.log('[PDF→PNG] Starting conversion with Deno-compatible renderer...');
+  logger.info('pdf-to-image', 'Starting conversion with Deno-compatible renderer');
   
   try {
     // 0. Check runtime support
@@ -47,25 +49,25 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    console.log(`[PDF→PNG] Decoded ${bytes.length} bytes`);
+    logger.debug('pdf-to-image', 'Decoded bytes', { size: bytes.length });
 
     // 2. Load PDF using pdfjs-dist with Deno target
-    console.log('[PDF→PNG] Loading pdfjs-dist with Deno target...');
+    logger.info('pdf-to-image', 'Loading pdfjs-dist with Deno target');
     const pdfjsLib = await import('https://esm.sh/pdfjs-dist@4.0.379?target=deno&bundle');
     
     // Configure worker with Deno target
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs?target=deno&bundle';
-    console.log('[PDF→PNG] Worker configured ✓');
+    logger.info('pdf-to-image', 'Worker configured');
 
     const loadingTask = pdfjsLib.getDocument({ data: bytes });
     const pdfDocument = await loadingTask.promise;
-    console.log(`[PDF→PNG] Loaded PDF with ${pdfDocument.numPages} page(s)`);
+    logger.info('pdf-to-image', 'Loaded PDF', { pages: pdfDocument.numPages });
 
     // 3. Get first page
     const page = await pdfDocument.getPage(1);
     const viewport = page.getViewport({ scale: 2.0 });
 
-    console.log(`[PDF→PNG] Page dimensions: ${viewport.width}x${viewport.height}`);
+    logger.debug('pdf-to-image', 'Page dimensions', { width: viewport.width, height: viewport.height });
 
     // 4. Create offscreen canvas (available in Deno runtime)
     const canvas = new OffscreenCanvas(
@@ -84,12 +86,12 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     };
 
     await page.render(renderContext).promise;
-    console.log('[PDF→PNG] Page rendered to canvas');
+    logger.info('pdf-to-image', 'Page rendered to canvas');
 
     // 5. Convert canvas to PNG blob
-    console.log('[PDF→PNG] Converting canvas to PNG blob...');
+    logger.info('pdf-to-image', 'Converting canvas to PNG blob');
     const blob = await canvas.convertToBlob({ type: 'image/png' });
-    console.log(`[PDF→PNG] Blob created: ${blob.size} bytes`);
+    logger.debug('pdf-to-image', 'Blob created', { size: blob.size });
     
     // 6. Convert blob to base64
     const arrayBuffer = await blob.arrayBuffer();
@@ -97,12 +99,12 @@ export async function convertPdfToImage(base64Pdf: string): Promise<string> {
     const base64 = btoa(String.fromCharCode(...uint8Array));
     const pngDataUrl = `data:image/png;base64,${base64}`;
     
-    console.log(`[PDF→PNG] ✓ Conversion complete. PNG data URI: ${pngDataUrl.length} chars, image size: ${blob.size} bytes`);
+    logger.info('pdf-to-image', 'Conversion complete', { data_uri_length: pngDataUrl.length, image_size: blob.size });
 
     return pngDataUrl;
 
   } catch (error) {
-    console.error('[PDF→PNG] ✗ Conversion error:', error);
+    logger.error('pdf-to-image', 'Conversion error', error);
     
     // Enhanced error message with full stack trace and context
     const errorMsg = error instanceof Error 

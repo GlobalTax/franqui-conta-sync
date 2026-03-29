@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { signRequest } from './http-signature.ts';
+import { logger } from './logger.ts';
 
 const PONTO_API_BASE = 'https://api.ponto.com';
 
@@ -86,19 +87,18 @@ export class PontoClient {
       const duration = Date.now() - startTime;
 
       // Log request
-      console.log(JSON.stringify({
-        event: 'ponto_api_request',
+      logger.info('ponto-client', 'API request completed', {
         method,
         path,
         status: response.status,
         duration_ms: duration,
         attempt,
-      }));
+      });
 
       // Handle rate limiting with exponential backoff
       if (response.status === 429 && attempt <= this.retries) {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '5');
-        console.warn(`Rate limited, retrying after ${retryAfter}s`);
+        logger.warn('ponto-client', `Rate limited, retrying after ${retryAfter}s`);
         await sleep(retryAfter * 1000);
         return this.request<T>(method, path, body, attempt + 1);
       }
@@ -106,7 +106,7 @@ export class PontoClient {
       // Handle server errors with retry
       if (response.status >= 500 && attempt <= this.retries) {
         const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        console.warn(`Server error ${response.status}, retrying after ${backoff}ms`);
+        logger.warn('ponto-client', `Server error ${response.status}, retrying after ${backoff}ms`);
         await sleep(backoff);
         return this.request<T>(method, path, body, attempt + 1);
       }
@@ -115,7 +115,7 @@ export class PontoClient {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Ponto API error:', {
+        logger.error('ponto-client', 'Ponto API error', {
           status: response.status,
           error: data,
         });
@@ -126,19 +126,18 @@ export class PontoClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      console.error(JSON.stringify({
-        event: 'ponto_api_error',
+      logger.error('ponto-client', 'API request failed', {
         method,
         path,
         error: error instanceof Error ? error.message : String(error),
         duration_ms: duration,
         attempt,
-      }));
+      });
 
       // Retry on network errors
       if (attempt <= this.retries && isRetryableError(error)) {
         const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        console.warn(`Network error, retrying after ${backoff}ms`);
+        logger.warn('ponto-client', `Network error, retrying after ${backoff}ms`);
         await sleep(backoff);
         return this.request<T>(method, path, body, attempt + 1);
       }
@@ -206,7 +205,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('Token refresh failed:', error);
+    logger.error('ponto-client', 'Token refresh failed', error);
     throw new Error('PONTO_TOKEN_REFRESH_FAILED');
   }
 

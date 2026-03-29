@@ -5,11 +5,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface ImportRequest {
   path: string;
@@ -74,7 +71,7 @@ serve(async (req) => {
 
     const { path, centro_code, template_id, dry_run = false, options = {} }: ImportRequest = await req.json();
 
-    console.log(`[journal-import] Processing: ${path}, centro: ${centro_code}, dry_run: ${dry_run}`);
+    logger.info('journal-import', `Processing: ${path}, centro: ${centro_code}, dry_run: ${dry_run}`);
 
     // Download file from Storage
     const { data: fileData, error: downloadError } = await supabaseClient.storage
@@ -88,17 +85,17 @@ serve(async (req) => {
     // Parse CSV file
     const rows = await parseCSV(fileData);
 
-    console.log(`[journal-import] Parsed ${rows.length} rows`);
+    logger.info('journal-import', `Parsed ${rows.length} rows`);
 
     // Validate rows
     const { validRows, errors } = await validateRows(rows, supabaseClient, centro_code, options);
 
-    console.log(`[journal-import] Valid: ${validRows.length}, Errors: ${errors.length}`);
+    logger.info('journal-import', `Valid: ${validRows.length}, Errors: ${errors.length}`);
 
     // Group rows into entries
     const entries = groupIntoEntries(validRows);
 
-    console.log(`[journal-import] Grouped into ${entries.length} entries`);
+    logger.info('journal-import', `Grouped into ${entries.length} entries`);
 
     // Calculate stats
     const stats = calculateStats(rows, validRows, entries);
@@ -139,7 +136,7 @@ serve(async (req) => {
 
     const createdIds = await importEntries(entries, centro_code, supabaseClient, req.headers);
 
-    console.log(`[journal-import] Created ${createdIds.length} entries`);
+    logger.info('journal-import', `Created ${createdIds.length} entries`);
 
     return new Response(
       JSON.stringify({
@@ -154,7 +151,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[journal-import] Error:', error);
+    logger.error('journal-import', 'Error', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -361,7 +358,7 @@ async function importEntries(entries: any[], centro_code: string, supabase: any,
       .single();
 
     if (entryError) {
-      console.error(`Error creating entry: ${entryError.message}`);
+      logger.error('journal-import', `Error creating entry: ${entryError.message}`);
       continue;
     }
 
@@ -379,7 +376,7 @@ async function importEntries(entries: any[], centro_code: string, supabase: any,
       .insert(transactions);
 
     if (txError) {
-      console.error(`Error creating transactions: ${txError.message}`);
+      logger.error('journal-import', `Error creating transactions: ${txError.message}`);
       await supabase.from('accounting_entries').delete().eq('id', newEntry.id);
       continue;
     }

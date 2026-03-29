@@ -1,16 +1,16 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { MigrationSummary } from "./migrationSummaryService";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export function generateMigrationPDF(
+export async function generateMigrationPDF(
   summary: MigrationSummary,
   options: {
     includeLogs?: boolean;
     includeValidations?: boolean;
   } = {}
-): void {
+): Promise<void> {
+  const { default: jsPDF } = await import("jspdf");
+  await import("jspdf-autotable");
   const doc = new jsPDF();
   const { includeLogs = true, includeValidations = true } = options;
 

@@ -4,11 +4,8 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface Accrual {
   id: string;
@@ -176,7 +173,7 @@ Deno.serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    console.log(`✅ Asiento periódico ${entryId} contabilizado: ${accountingEntry.id}`);
+    logger.info('post-accrual-entry', `Asiento periodico ${entryId} contabilizado: ${accountingEntry.id}`);
 
     return new Response(
       JSON.stringify({
@@ -189,7 +186,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error:", error);
+    logger.error('post-accrual-entry', 'Error', error);
     
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
     

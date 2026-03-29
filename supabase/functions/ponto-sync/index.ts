@@ -6,11 +6,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 import { decrypt } from '../_shared/crypto.ts';
 import { PontoClient, refreshAccessToken } from '../_shared/ponto-client.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface SyncRequest {
   connection_id: string;
@@ -60,7 +57,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Starting Ponto sync:', {
+    logger.info('ponto-sync', 'Starting Ponto sync', {
       connection_id,
       sync_accounts,
       sync_transactions,
@@ -94,7 +91,7 @@ Deno.serve(async (req) => {
     if (logError) throw logError;
     syncLogId = syncLog.id;
 
-    console.log('Sync log created:', syncLogId);
+    logger.info('ponto-sync', 'Sync log created', syncLogId);
 
     // Decrypt and validate token
     let accessToken = await decrypt(connection.access_token_encrypted);
@@ -102,7 +99,7 @@ Deno.serve(async (req) => {
 
     // Refresh token if expired
     if (tokenExpiresAt < new Date()) {
-      console.log('Token expired, refreshing...');
+      logger.info('ponto-sync', 'Token expired, refreshing');
       const refreshToken = await decrypt(connection.refresh_token_encrypted);
       const newTokens = await refreshAccessToken(refreshToken);
 
@@ -122,7 +119,7 @@ Deno.serve(async (req) => {
         .eq('id', connection_id);
 
       accessToken = newTokens.access_token;
-      console.log('Token refreshed successfully');
+      logger.info('ponto-sync', 'Token refreshed successfully');
     }
 
     // Initialize Ponto client
@@ -134,7 +131,7 @@ Deno.serve(async (req) => {
 
     // Sync accounts
     if (sync_accounts) {
-      console.log('Syncing accounts...');
+      logger.info('ponto-sync', 'Syncing accounts');
       const accountsResponse = await client.get<{ data: any[] }>('/accounts');
       const accounts = accountsResponse.data || [];
 
@@ -176,7 +173,7 @@ Deno.serve(async (req) => {
               balancesCount++;
             }
           } catch (err) {
-            console.error('Balance sync error:', err);
+            logger.error('ponto-sync', 'Balance sync error', err);
           }
         }
 
@@ -215,7 +212,7 @@ Deno.serve(async (req) => {
               if (insertedTx) transactionsCount++;
             }
           } catch (err) {
-            console.error('Transaction sync error:', err);
+            logger.error('ponto-sync', 'Transaction sync error', err);
           }
         }
       }
@@ -235,7 +232,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', syncLogId);
 
-    console.log('Sync completed:', {
+    logger.info('ponto-sync', 'Sync completed', {
       duration_ms: duration,
       accounts: accountsCount,
       transactions: transactionsCount,
@@ -255,7 +252,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Sync error:', error);
+    logger.error('ponto-sync', 'Sync error', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
 

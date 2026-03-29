@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { logger } from '../logger.ts';
 
 export type OCREngine = 'claude';
 export type CircuitState = 'closed' | 'open' | 'half_open';
@@ -86,7 +87,7 @@ export async function isEngineAvailable(engine: OCREngine): Promise<boolean> {
     const retryAt = new Date(state.next_retry_at);
     
     if (now >= retryAt) {
-      console.log(`[CircuitBreaker] ${engine} retry timeout passed, transitioning to half-open`);
+      logger.info('circuit-breaker', `${engine} retry timeout passed, transitioning to half-open`);
       // Pasar a half-open para probar
       await updateCircuitState(engine, { 
         state: 'half_open',
@@ -95,7 +96,7 @@ export async function isEngineAvailable(engine: OCREngine): Promise<boolean> {
       return true;  // Permitir un intento
     }
     
-    console.log(`[CircuitBreaker] ${engine} is open, retry available at ${state.next_retry_at}`);
+    logger.info('circuit-breaker', `${engine} is open, retry available at ${state.next_retry_at}`);
     return false;  // Aún bloqueado
   }
   
@@ -119,7 +120,7 @@ export async function recordSuccess(engine: OCREngine, invoiceId?: string): Prom
       error_type: null
     });
     
-    console.log(`[CircuitBreaker] ${engine} circuit CLOSED (recovered)`);
+    logger.info('circuit-breaker', `${engine} circuit CLOSED (recovered)`);
     
     // Log en ocr_logs
     await logCircuitEvent(engine, 'circuit_closed', 'Circuit breaker closed after recovery', invoiceId);
@@ -163,8 +164,7 @@ export async function recordFailure(
       error_type: errorType
     });
     
-    console.error(`[CircuitBreaker] ${engine} circuit OPENED after ${newFailureCount} failures (${errorType})`);
-    console.error(`[CircuitBreaker] ${engine} will retry at ${nextRetry.toISOString()}`);
+    logger.error('circuit-breaker', `${engine} circuit OPENED after ${newFailureCount} failures`, { errorType, nextRetry: nextRetry.toISOString() });
     
     // Log crítico
     await logCircuitEvent(
@@ -185,7 +185,7 @@ export async function recordFailure(
     error_type: errorType
   });
   
-  console.warn(`[CircuitBreaker] ${engine} failure ${newFailureCount}/${FAILURE_THRESHOLD} (${errorType})`);
+  logger.warn('circuit-breaker', `${engine} failure ${newFailureCount}/${FAILURE_THRESHOLD}`, { errorType });
 }
 
 /**
@@ -197,10 +197,10 @@ async function updateCircuitState(
 ): Promise<void> {
   // CRITICAL: Ensure 'state' is always provided to prevent NULL constraint violations
   if (!updates.state) {
-    console.warn(`[CircuitBreaker] ⚠️ updateCircuitState called without 'state' field. This may cause issues if row doesn't exist.`);
+    logger.warn('circuit-breaker', 'updateCircuitState called without state field, may cause issues if row does not exist');
   }
 
-  console.log(`[CircuitBreaker] Updating state for ${engine}:`, updates);
+  logger.debug('circuit-breaker', `Updating state for ${engine}`, updates);
 
   const { error } = await supabase
     .from('ocr_circuit_breaker')
@@ -213,11 +213,11 @@ async function updateCircuitState(
     });
 
   if (error) {
-    console.error(`[CircuitBreaker] Failed to update state for ${engine}:`, error);
+    logger.error('circuit-breaker', `Failed to update state for ${engine}`, error);
     throw error;
   }
 
-  console.log(`[CircuitBreaker] ✓ State updated successfully for ${engine}`);
+  logger.info('circuit-breaker', `State updated successfully for ${engine}`);
 }
 
 /**
@@ -239,7 +239,7 @@ async function logCircuitEvent(
       created_at: new Date().toISOString()
     });
   } catch (error) {
-    console.error('[CircuitBreaker] Failed to log event:', error);
+    logger.error('circuit-breaker', 'Failed to log event', error);
   }
 }
 
@@ -255,6 +255,6 @@ export async function resetCircuitBreaker(engine: OCREngine): Promise<void> {
     error_type: null
   });
   
-  console.log(`[CircuitBreaker] ${engine} circuit manually reset to CLOSED`);
+  logger.info('circuit-breaker', `${engine} circuit manually reset to CLOSED`);
   await logCircuitEvent(engine, 'manual_reset', 'Circuit breaker manually reset by admin');
 }

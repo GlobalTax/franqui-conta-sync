@@ -1,11 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { apMapperEngine, matchSupplier } from "../_shared/ap/mapping-engine.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { logger } from '../_shared/logger.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -16,7 +13,7 @@ serve(async (req) => {
   try {
     const { supplierVatId, centroCode, lines } = await req.json();
     
-    console.log('[get-ap-mapping] Request:', { supplierVatId, centroCode, linesCount: lines?.length });
+    logger.info('get-ap-mapping', 'Request received', { supplierVatId, centroCode, linesCount: lines?.length });
     
     if (!supplierVatId || !centroCode) {
       throw new Error('supplierVatId and centroCode are required');
@@ -33,7 +30,7 @@ serve(async (req) => {
       centroCode
     );
 
-    console.log('[get-ap-mapping] Supplier found:', supplierData?.name || 'None');
+    logger.debug('get-ap-mapping', 'Supplier found', { name: supplierData?.name || 'None' });
 
     // Build minimal EnhancedInvoiceData for mapper
     const invoiceData = {
@@ -80,7 +77,7 @@ serve(async (req) => {
       supplierData
     );
     
-    console.log('[get-ap-mapping] Mapping result:', {
+    logger.info('get-ap-mapping', 'Mapping result', {
       invoice_account: apMapping.invoice_level.account_suggestion,
       confidence: apMapping.invoice_level.confidence_score,
       line_count: apMapping.line_level?.length || 0
@@ -94,7 +91,7 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error('[get-ap-mapping] Error:', error);
+    logger.error('get-ap-mapping', 'Error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({
       success: false,

@@ -3,6 +3,8 @@
 // Motor de extracción OCR basado en templates configurables
 // ============================================================================
 
+import { logger } from '../logger.ts';
+
 /**
  * Interfaz de Template OCR
  */
@@ -61,8 +63,7 @@ export async function extractWithTemplate(
 ): Promise<TemplateExtractionResult> {
   const startTime = performance.now();
 
-  console.log('[template-extractor] Starting extraction with template:', template.template_name);
-  console.log('[template-extractor] Fields to extract:', Object.keys(template.field_mappings).length);
+  logger.info('template-extractor', 'Starting extraction with template', { template_name: template.template_name, field_count: Object.keys(template.field_mappings).length });
 
   const results: Record<string, any> = {};
   const fieldsFailed: string[] = [];
@@ -72,12 +73,12 @@ export async function extractWithTemplate(
 
   // Estrategia de extracción según configuración del template
   if (template.extraction_strategy === 'coordinates' && hasCoordinates(template.field_mappings)) {
-    console.log('[template-extractor] Using coordinate-based extraction');
+    logger.info('template-extractor', 'Using coordinate-based extraction');
     // Extracción por coordenadas (implementación futura con pdfjs completo)
     // Por ahora, fallback a regex
     await extractFieldsWithRegex(base64Content, template.field_mappings, results, fieldsFailed);
   } else {
-    console.log('[template-extractor] Using regex-based extraction');
+    logger.info('template-extractor', 'Using regex-based extraction');
     await extractFieldsWithRegex(base64Content, template.field_mappings, results, fieldsFailed);
   }
 
@@ -104,7 +105,7 @@ export async function extractWithTemplate(
   const avgConfidence = fieldsTotal > 0 ? totalConfidence / fieldsTotal : 0;
   const extractionTimeMs = performance.now() - startTime;
 
-  console.log('[template-extractor] Extraction complete:', {
+  logger.info('template-extractor', 'Extraction complete', {
     fields_extracted: fieldsExtracted,
     fields_total: fieldsTotal,
     confidence: (avgConfidence * 100).toFixed(1) + '%',
@@ -166,11 +167,11 @@ async function extractFieldsWithRegex(
       // Marcar como fallido si es requerido y no se encontró
       if (!extractedValue && config.required) {
         fieldsFailed.push(fieldName);
-        console.warn(`[template-extractor] Required field not found: ${fieldName}`);
+        logger.warn('template-extractor', `Required field not found: ${fieldName}`);
       }
 
     } catch (error: any) {
-      console.error(`[template-extractor] Error extracting field ${fieldName}:`, error.message);
+      logger.error('template-extractor', `Error extracting field ${fieldName}`, { message: error.message });
       fieldsFailed.push(fieldName);
       results[fieldName] = null;
     }
@@ -230,7 +231,7 @@ async function extractTextFromBase64(base64Content: string): Promise<string> {
     return text.replace(/[^\x20-\x7E\n]/g, ' ').trim();
     
   } catch (error: any) {
-    console.error('[template-extractor] Error extracting text:', error.message);
+    logger.error('template-extractor', 'Error extracting text', { message: error.message });
     return '';
   }
 }

@@ -3,6 +3,8 @@
 // Purpose: Sign outgoing requests to Ponto API using private key
 // ============================================================================
 
+import { logger } from './logger.ts';
+
 // Helper to encode to base64
 function base64Encode(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input));
@@ -24,7 +26,7 @@ export async function signRequest(
 
   // Mock mode for development without secrets
   if (!keyId || !privateKeyPem) {
-    console.warn('⚠️ HTTP-SIGNATURE MOCK MODE: Keys not set, using mock signature');
+    logger.warn('http-signature', 'HTTP-SIGNATURE MOCK MODE: Keys not set, using mock signature');
     return {
       ...headers,
       'Signature': 'keyId="mock",algorithm="hs2019",headers="(request-target) host date digest",signature="MOCK_SIGNATURE"',
@@ -75,7 +77,7 @@ export async function signRequest(
 
     return headers;
   } catch (error) {
-    console.error('HTTP signature failed:', error);
+    logger.error('http-signature', 'HTTP signature failed', error);
     throw new Error('HTTP_SIGNATURE_FAILED');
   }
 }

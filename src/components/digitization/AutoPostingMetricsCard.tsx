@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 export function AutoPostingMetricsCard() {
-  const { data: metrics } = useQuery({
+  const { data: metrics, error } = useQuery({
     queryKey: ['auto-posting-metrics'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_auto_posting_metrics');
@@ -22,6 +22,12 @@ export function AutoPostingMetricsCard() {
     },
     refetchInterval: 30000,
   });
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   if (!metrics || metrics.length === 0) {
     return (

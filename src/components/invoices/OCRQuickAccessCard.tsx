@@ -13,7 +13,7 @@ export function OCRQuickAccessCard() {
   const queryClient = useQueryClient();
 
   // Query para contar facturas pendientes en inbox
-  const { data: pendingCount } = useQuery({
+  const { data: pendingCount, error } = useQuery({
     queryKey: ['ocr-pending-count'],
     queryFn: async () => {
       const { count } = await supabase
@@ -67,6 +67,7 @@ export function OCRQuickAccessCard() {
               Procesa tus facturas con OCR automático
             </CardDescription>
           </div>
+          {error && <p className="text-sm text-destructive">Error al cargar datos</p>}
           {pendingCount !== undefined && pendingCount > 0 && (
             <Badge variant="secondary" className="animate-pulse">
               {pendingCount} pendientes

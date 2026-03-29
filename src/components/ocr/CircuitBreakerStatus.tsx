@@ -69,7 +69,7 @@ function ErrorTypeBadge({ errorType }: { errorType: ErrorType }) {
 export function CircuitBreakerStatus() {
   const queryClient = useQueryClient();
 
-  const { data: states, isLoading } = useQuery({
+  const { data: states, isLoading, error } = useQuery({
     queryKey: ['circuit-breaker-status'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -119,6 +119,12 @@ export function CircuitBreakerStatus() {
       </Card>
     );
   }
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   return (
     <Card>

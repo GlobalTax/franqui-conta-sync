@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger';
 export function OCREngineMetrics() {
   const queryClient = useQueryClient();
 
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['ocr-engine-metrics'],
     queryFn: async () => {
       // Get last 100 OCR processing logs
@@ -70,6 +70,12 @@ export function OCREngineMetrics() {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   if (isLoading || !metrics) {
     return null;

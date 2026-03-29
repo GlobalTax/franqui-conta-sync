@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { upsertUserRole, revokeUserRole } from "@/lib/supabase-queries";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
 
 interface EditUserDialogProps {
   user: any;

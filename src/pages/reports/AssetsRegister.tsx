@@ -10,7 +10,7 @@ import { useFixedAssets } from "@/hooks/useFixedAssets";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
 import { formatCurrency } from "@/lib/utils";
-import * as XLSX from 'xlsx';
+
 
 export default function AssetsRegister() {
   const { selectedView } = useView();
@@ -39,7 +39,8 @@ export default function AssetsRegister() {
     current: acc.current + (asset.current_value || asset.acquisition_value),
   }), { acquisition: 0, accumulated: 0, current: 0 });
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    const XLSX = await import('xlsx');
     // Crear workbook
     const wb = XLSX.utils.book_new();
 

@@ -29,7 +29,7 @@ import { Search, TrendingUp, TrendingDown, Download, X, ArrowUp, ArrowDown, Info
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+
 
 interface PLRubricDrilldownProps {
   open: boolean;
@@ -173,7 +173,8 @@ export function PLRubricDrilldown({
   };
 
   // Export a Excel con formato
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    const XLSX = await import("xlsx");
     if (!data?.accounts) return;
 
     const exportData = filteredAndSortedAccounts.map((acc: AccountBreakdown) => ({

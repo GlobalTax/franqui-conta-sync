@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { logger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,7 +49,7 @@ serve(async (req) => {
     const body: MergeRequest = await req.json();
     const { invoice_ids, primary_invoice_id, order } = body;
 
-    console.log(`[merge-pdf] Merging ${invoice_ids.length} invoices`);
+    logger.info('merge-pdf', `Merging ${invoice_ids.length} invoices`, { invoice_ids });
 
     // 3. Validate
     if (!invoice_ids || invoice_ids.length < 2 || invoice_ids.length > 20) {
@@ -85,7 +86,7 @@ serve(async (req) => {
 
     for (const invoice of orderedInvoices) {
       if (!invoice.document_path) {
-        console.warn(`Invoice ${invoice.id} has no document, skipping`);
+        logger.warn('merge-pdf', `Invoice has no document, skipping`, { invoiceId: invoice.id });
         continue;
       }
 
@@ -95,7 +96,7 @@ serve(async (req) => {
         .download(invoice.document_path);
 
       if (downloadError || !pdfBlob) {
-        console.error(`Failed to download ${invoice.document_path}:`, downloadError);
+        logger.error('merge-pdf', `Failed to download document`, { documentPath: invoice.document_path, error: downloadError });
         continue;
       }
 
@@ -108,7 +109,7 @@ serve(async (req) => {
       const copiedPages = await mergedPdf.copyPages(pdfDoc, Array.from({ length: pageCount }, (_, i) => i));
       copiedPages.forEach((page: any) => mergedPdf.addPage(page));
 
-      console.log(`[merge-pdf] Added ${pageCount} pages from invoice ${invoice.id}`);
+      logger.info('merge-pdf', `Added pages from invoice`, { invoiceId: invoice.id, pageCount });
     }
 
     if (totalPages === 0) {
@@ -136,7 +137,7 @@ serve(async (req) => {
       throw new Error(`Failed to upload merged PDF: ${uploadError.message}`);
     }
 
-    console.log(`[merge-pdf] Uploaded merged PDF to ${mergedPath}`);
+    logger.info('merge-pdf', 'Uploaded merged PDF', { mergedPath, totalPages });
 
     // 10. Update primary invoice
     await supabase
@@ -158,7 +159,7 @@ serve(async (req) => {
         await supabase.storage
           .from('invoice-documents')
           .remove([invoice.document_path])
-          .catch(err => console.warn(`Failed to delete ${invoice.document_path}:`, err));
+          .catch(err => logger.warn('merge-pdf', 'Failed to delete document from storage', { documentPath: invoice.document_path, error: err }));
       }
 
       // Delete from DB

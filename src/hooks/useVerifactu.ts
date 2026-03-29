@@ -58,7 +58,7 @@ export function useGenerateInvoiceHash() {
         .eq('invoice_type', params.invoice_type)
         .order('chain_position', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const previousHash = lastLog?.hash_sha256 || null;
       const chainPosition = (lastLog?.chain_position || 0) + 1;

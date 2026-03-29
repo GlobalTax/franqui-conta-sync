@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
             .from('ponto_accounts')
             .select('connection_id')
             .eq('ponto_account_id', accountId)
-            .single();
+            .maybeSingle();
 
           if (account?.connection_id) {
             // Trigger sync (fire-and-forget)

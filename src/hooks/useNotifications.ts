@@ -28,6 +28,8 @@ export const useNotifications = () => {
 
   // ✅ REALTIME: Suscripción a cambios en tiempo real
   useEffect(() => {
+    let cleanup: (() => void) | null = null;
+
     const setupRealtimeSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -46,7 +48,7 @@ export const useNotifications = () => {
           },
           (payload) => {
             logger.debug('useNotifications', 'Nueva notificacion recibida:', payload.new);
-            
+
             // Añadir notificación nueva al inicio del cache sin refetch
             queryClient.setQueryData(['notifications'], (old: any) => {
               return [payload.new, ...(old || [])];
@@ -63,10 +65,10 @@ export const useNotifications = () => {
           },
           (payload) => {
             logger.debug('useNotifications', 'Notificacion actualizada:', payload.new);
-            
+
             // Actualizar notificación en el cache
             queryClient.setQueryData(['notifications'], (old: any) => {
-              return old?.map((n: any) => 
+              return old?.map((n: any) =>
                 n.id === payload.new.id ? payload.new : n
               ) || [];
             });
@@ -82,13 +84,17 @@ export const useNotifications = () => {
           }
         });
 
-      return () => {
+      cleanup = () => {
         logger.debug('useNotifications', 'Limpiando suscripcion Realtime...');
         supabase.removeChannel(channel);
       };
     };
 
     setupRealtimeSubscription();
+
+    return () => {
+      cleanup?.();
+    };
   }, [queryClient]);
 
   return query;

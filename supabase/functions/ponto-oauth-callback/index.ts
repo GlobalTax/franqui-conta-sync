@@ -29,15 +29,15 @@ Deno.serve(async (req) => {
     // Handle OAuth error
     if (error) {
       return new Response(
-        `<html><body><h1>Error de conexión</h1><p>${error}</p></body></html>`,
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        JSON.stringify({ error: `Error de conexión: ${error}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!code || !state) {
       return new Response(
-        '<html><body><h1>Error</h1><p>Missing code or state</p></body></html>',
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        JSON.stringify({ error: 'Missing code or state' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -46,8 +46,8 @@ Deno.serve(async (req) => {
     if (!centroCode || !institutionId || !userId) {
       logger.error('ponto-oauth-callback', 'Invalid state format', state);
       return new Response(
-        '<html><body><h1>Error</h1><p>Invalid state</p></body></html>',
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        JSON.stringify({ error: 'Invalid state' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

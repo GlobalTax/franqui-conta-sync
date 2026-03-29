@@ -1,36 +1,48 @@
 
 
-# Fix: MyRestaurantsCard muestra 624 restaurantes en vez de los del franquiciado
+# Plan: Limpiar la vista de roles en la tabla de usuarios admin
 
-## Bug
+## Problema
 
-En `MyRestaurantsCard.tsx` línea 16-21, la lógica es:
-- Si `selectedView.type === 'all'` → filtra por franquiciado ✅
-- **Else** (incluye `type === 'centre'`) → muestra **todos** los centros de todos los franquiciados ❌
+Cada usuario tiene decenas de roles `gestor - NombreCentro (código)` mostrados como badges individuales, creando una pared de texto ilegible.
 
-Cuando el usuario tiene seleccionado el centro 1236, cae en el `else` y ve los 624 restaurantes.
+## Solución
 
-## Fix
+Agrupar y resumir los roles en la tabla. En vez de mostrar 100+ badges, mostrar un resumen compacto:
 
-Cambiar la lógica para que cuando hay un centro seleccionado, busque a qué franquiciado pertenece y muestre solo los centros de ese franquiciado:
+```text
+Antes:  🛡️ admin  👔 gestor - Esparteros (7)  👔 gestor - Málaga Centro (29)  👔 gestor - Cuatro Caminos (43) ... x100
 
-```tsx
-if (selectedView?.type === 'all' && selectedView.id) {
-  const f = franchiseesWithCentres.find(f => f.id === selectedView.id);
-  visibleCentres = f?.centres || [];
-} else if (selectedView?.type === 'centre') {
-  // Find which franchisee owns this centre
-  const f = franchiseesWithCentres.find(f => 
-    f.centres.some(c => c.id === selectedView.id)
-  );
-  visibleCentres = f?.centres || [];
-} else {
-  // No view selected — show all user's centres
-  visibleCentres = franchiseesWithCentres.flatMap(f => f.centres);
-}
+Después: 🛡️ admin  👔 gestor (97 centros)  [Ver detalle]
 ```
 
-## Archivo
+## Cambios
 
-- `src/components/dashboard/MyRestaurantsCard.tsx` — cambiar líneas 16-21
+### `src/pages/admin/UsersManagement.tsx`
+
+1. **Agrupar roles por tipo** antes de renderizar: contar cuántos centros tiene cada rol
+2. **Mostrar resumen compacto**: `admin` como badge individual, `gestor (N centros)` como badge con contador
+3. **Botón "Ver detalle"** que abre el `EditUserDialog` existente (ya muestra el detalle completo)
+
+Lógica de agrupación:
+```tsx
+const groupedRoles = {};
+user.user_roles?.forEach(r => {
+  if (!groupedRoles[r.role]) groupedRoles[r.role] = [];
+  groupedRoles[r.role].push(r);
+});
+// Render: role sin centro → badge simple
+//         role con centros → "gestor (N centros)"
+```
+
+### `src/components/admin/EditUserDialog.tsx`
+
+4. **Mejorar la lista de centros** en el dialog: añadir scroll y búsqueda cuando hay muchos roles, para que el detalle también sea manejable
+
+## Archivos
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/pages/admin/UsersManagement.tsx` | Agrupar roles, mostrar resumen compacto |
+| `src/components/admin/EditUserDialog.tsx` | Añadir scroll + búsqueda en lista de roles |
 

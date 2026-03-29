@@ -5,12 +5,8 @@ import { useAllUserCentres } from '@/hooks/useAllUserCentres';
 import { useAllUserCompanies } from '@/hooks/useAllUserCompanies';
 
 /**
- * Purpose: Synchronizes ViewContext (sidebar CentreSelector) with useGlobalFilters (top bar CompactOrgSelector).
- * When one changes, the other is updated to match, ensuring a single source of truth.
- * 
- * Direction:
- * - ViewContext → GlobalFilters: When sidebar selector changes, update top bar filters
- * - GlobalFilters → ViewContext: When top bar filters change, update sidebar view
+ * Synchronizes ViewContext (sidebar CentreSelector) with useGlobalFilters (top bar CompactOrgSelector).
+ * Supports 3 hierarchy levels: franchisee (consolidated) > company > centre
  */
 export function useSyncViewAndFilters() {
   const { selectedView, setSelectedView } = useView();
@@ -18,12 +14,9 @@ export function useSyncViewAndFilters() {
   const { data: franchiseesWithCentres } = useAllUserCentres();
   const { data: franchiseesWithCompanies } = useAllUserCompanies();
 
-  // Track which system triggered the last change to avoid infinite loops
   const syncSourceRef = useRef<'view' | 'filters' | null>(null);
-  const initializedRef = useRef(false);
-  const prevViewRef = useRef<ViewSelection | null>(null);
-  const prevCentreCodeRef = useRef<string | undefined>(undefined);
-  const prevCompanyIdRef = useRef<string | undefined>(undefined);
+  const lastSyncedView = useRef<string | null>(null);
+  const lastSyncedFilters = useRef<string | null>(null);
 
   // Sync ViewContext → GlobalFilters
   useEffect(() => {
@@ -33,51 +26,37 @@ export function useSyncViewAndFilters() {
     }
 
     if (!selectedView) return;
+    if (!franchiseesWithCentres || !franchiseesWithCompanies) return;
 
-    // Force first sync even if view looks the same as initial null
-    if (initializedRef.current) {
-      // Check if the view actually changed (deep compare)
-      if (prevViewRef.current && 
-          prevViewRef.current.type === selectedView.type && 
-          prevViewRef.current.id === selectedView.id) {
-        return;
-      }
-    }
-    initializedRef.current = true;
+    const viewKey = `${selectedView.type}:${selectedView.id}:${selectedView.code || ''}`;
+    if (viewKey === lastSyncedView.current) return;
 
-    prevViewRef.current = selectedView;
+    lastSyncedView.current = viewKey;
     syncSourceRef.current = 'view';
 
     if (selectedView.type === 'centre') {
-      // Find which franchisee owns this centre
       let franchiseeId: string | null = null;
       let companyId: string | null = null;
 
-      if (franchiseesWithCentres) {
-        for (const f of franchiseesWithCentres) {
-          const centre = f.centres.find(c => c.id === selectedView.id || c.codigo === selectedView.code);
-          if (centre) {
-            franchiseeId = f.id;
+      for (const f of franchiseesWithCentres) {
+        if (f.centres.find(c => c.id === selectedView.id || c.codigo === selectedView.code)) {
+          franchiseeId = f.id;
+          break;
+        }
+      }
+
+      for (const f of franchiseesWithCompanies) {
+        for (const company of f.companies) {
+          if (company.centres?.some(c => c.id === selectedView.id || c.codigo === selectedView.code)) {
+            companyId = company.id;
             break;
           }
         }
+        if (companyId) break;
       }
 
-      if (franchiseesWithCompanies) {
-        for (const f of franchiseesWithCompanies) {
-          for (const company of f.companies) {
-            const hasCentre = company.centres?.some(c => c.id === selectedView.id || c.codigo === selectedView.code);
-            if (hasCentre) {
-              companyId = company.id;
-              break;
-            }
-          }
-          if (companyId) break;
-        }
-      }
-
-      prevCentreCodeRef.current = selectedView.code || null;
-      prevCompanyIdRef.current = companyId;
+      const filtersKey = `${franchiseeId}:${companyId}:${selectedView.code}`;
+      lastSyncedFilters.current = filtersKey;
 
       setFilters({
         franchiseeId,
@@ -86,17 +65,15 @@ export function useSyncViewAndFilters() {
       });
     } else if (selectedView.type === 'company') {
       let franchiseeId: string | null = null;
-      if (franchiseesWithCompanies) {
-        for (const f of franchiseesWithCompanies) {
-          if (f.companies.some(c => c.id === selectedView.id)) {
-            franchiseeId = f.id;
-            break;
-          }
+      for (const f of franchiseesWithCompanies) {
+        if (f.companies.some(c => c.id === selectedView.id)) {
+          franchiseeId = f.id;
+          break;
         }
       }
 
-      prevCentreCodeRef.current = null;
-      prevCompanyIdRef.current = selectedView.id;
+      const filtersKey = `${franchiseeId}:${selectedView.id}:`;
+      lastSyncedFilters.current = filtersKey;
 
       setFilters({
         franchiseeId,
@@ -104,12 +81,13 @@ export function useSyncViewAndFilters() {
         centreCode: null,
       });
     } else {
-      // 'all' view
-      prevCentreCodeRef.current = null;
-      prevCompanyIdRef.current = null;
+      // 'all' view — could be franchisee-level consolidated
+      const filtersKey = `${selectedView.id || ''}::`;
+      lastSyncedFilters.current = filtersKey;
 
+      // If 'all' has an id, it's a franchisee-level selection
       setFilters({
-        franchiseeId: null,
+        franchiseeId: selectedView.id || null,
         companyId: null,
         centreCode: null,
       });
@@ -123,51 +101,59 @@ export function useSyncViewAndFilters() {
       return;
     }
 
-    // Only sync if filters actually changed
-    if (selectedCentreCode === prevCentreCodeRef.current && 
-        selectedCompanyId === prevCompanyIdRef.current) {
-      return;
-    }
+    if (!franchiseesWithCentres || !franchiseesWithCompanies) return;
 
-    prevCentreCodeRef.current = selectedCentreCode;
-    prevCompanyIdRef.current = selectedCompanyId;
+    const filtersKey = `${selectedFranchiseeId || ''}:${selectedCompanyId || ''}:${selectedCentreCode || ''}`;
+    if (filtersKey === lastSyncedFilters.current) return;
+
+    lastSyncedFilters.current = filtersKey;
     syncSourceRef.current = 'filters';
 
     if (selectedCentreCode) {
-      // Find the centre details
-      if (franchiseesWithCentres) {
-        for (const f of franchiseesWithCentres) {
-          const centre = f.centres.find(c => c.codigo === selectedCentreCode);
-          if (centre) {
-            prevViewRef.current = {
-              type: 'centre',
-              id: centre.id,
-              code: centre.codigo,
-              name: `${centre.codigo} - ${centre.nombre}`,
-            };
-            setSelectedView(prevViewRef.current);
-            return;
-          }
+      for (const f of franchiseesWithCentres) {
+        const centre = f.centres.find(c => c.codigo === selectedCentreCode);
+        if (centre) {
+          const newView: ViewSelection = {
+            type: 'centre',
+            id: centre.id,
+            code: centre.codigo,
+            name: `${centre.codigo} - ${centre.nombre}`,
+          };
+          lastSyncedView.current = `centre:${centre.id}:${centre.codigo}`;
+          setSelectedView(newView);
+          return;
         }
       }
     } else if (selectedCompanyId) {
-      // Find the company details
-      if (franchiseesWithCompanies) {
-        for (const f of franchiseesWithCompanies) {
-          const company = f.companies.find(c => c.id === selectedCompanyId);
-          if (company) {
-            prevViewRef.current = {
-              type: 'company',
-              id: company.id,
-              code: company.cif,
-              name: company.razon_social,
-            };
-            setSelectedView(prevViewRef.current);
-            return;
-          }
+      for (const f of franchiseesWithCompanies) {
+        const company = f.companies.find(c => c.id === selectedCompanyId);
+        if (company) {
+          const newView: ViewSelection = {
+            type: 'company',
+            id: company.id,
+            code: company.cif,
+            name: company.razon_social,
+          };
+          lastSyncedView.current = `company:${company.id}:${company.cif}`;
+          setSelectedView(newView);
+          return;
         }
       }
+    } else if (selectedFranchiseeId) {
+      // Franchisee-only = consolidated "all" view for that franchisee
+      const franchisee = franchiseesWithCentres.find(f => f.id === selectedFranchiseeId)
+        || franchiseesWithCompanies?.find(f => f.id === selectedFranchiseeId);
+      if (franchisee) {
+        const newView: ViewSelection = {
+          type: 'all',
+          id: franchisee.id,
+          name: `Todos - ${franchisee.name}`,
+        };
+        lastSyncedView.current = `all:${franchisee.id}:`;
+        setSelectedView(newView);
+        return;
+      }
     }
-    // If only franchisee is selected (no company or centre), don't change view
-  }, [selectedCentreCode, selectedCompanyId, franchiseesWithCentres, franchiseesWithCompanies, setSelectedView]);
+    // If nothing selected, don't change view
+  }, [selectedCentreCode, selectedCompanyId, selectedFranchiseeId, franchiseesWithCentres, franchiseesWithCompanies, setSelectedView]);
 }

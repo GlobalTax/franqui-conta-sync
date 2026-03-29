@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAllUserCentres } from "@/hooks/useAllUserCentres";
 import { useAllUserCompanies } from "@/hooks/useAllUserCompanies";
-import { AlertCircle, Building2, Store, RefreshCw, Briefcase, Users } from "lucide-react";
+import { AlertCircle, Building2, Store, RefreshCw, Briefcase, Users, LayoutGrid } from "lucide-react";
 import { ViewSelection } from "@/contexts/ViewContext";
 import { useEffect } from "react";
 
@@ -15,16 +15,15 @@ interface CentreSelectorProps {
 
 export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
   const { data: franchiseesWithCentres, isLoading: centresLoading, error: centresError, isError: centresIsError, refetch: refetchCentres } = useAllUserCentres();
-  const { data: franchiseesWithCompanies, isLoading: companiesLoading, refetch: refetchCompanies } = useAllUserCompanies();
+  const { data: franchiseesWithCompanies, isLoading: companiesLoading } = useAllUserCompanies();
 
   const isLoading = centresLoading || companiesLoading;
   const isError = centresIsError;
   const error = centresError;
 
-  // Auto-select first available centre when data loads and no view is selected
+  // Auto-select: if 1 centre → select it; if multiple → franchisee consolidated view
   useEffect(() => {
     if (!isLoading && !value && franchiseesWithCentres?.length) {
-      // If only one franchisee with one centre, auto-select it
       const allCentres = franchiseesWithCentres.flatMap(f => f.centres);
       if (allCentres.length === 1) {
         const centre = allCentres[0];
@@ -34,8 +33,16 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
           code: centre.codigo,
           name: `${centre.codigo} - ${centre.nombre}`
         });
+      } else if (franchiseesWithCentres.length === 1) {
+        // Multiple centres, single franchisee → consolidated view
+        const franchisee = franchiseesWithCentres[0];
+        onChange({
+          type: 'all',
+          id: franchisee.id,
+          name: `Todos - ${franchisee.name}`
+        });
       } else if (franchiseesWithCompanies?.length) {
-        // Multiple centres: default to first company (consolidated view)
+        // Multiple franchisees: default to first company
         const firstCompany = franchiseesWithCompanies[0]?.companies[0];
         if (firstCompany) {
           onChange({
@@ -65,7 +72,7 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         <AlertTitle>Error al cargar datos</AlertTitle>
         <AlertDescription>
           <div className="space-y-2">
-            <p>No se pudieron cargar las sociedades y centros. Por favor, intenta de nuevo.</p>
+            <p>No se pudieron cargar las sociedades y centros.</p>
             {error?.message && (
               <p className="text-xs opacity-70">{error.message}</p>
             )}
@@ -92,10 +99,21 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
     <Select
       value={value ? `${value.type}:${value.id}` : undefined}
       onValueChange={(val) => {
-        const [type, id] = val.split(':');
+        const [type, ...rest] = val.split(':');
+        const id = rest.join(':');
         
-        if (type === 'company') {
-          // Find company across all franchisees
+        if (type === 'all') {
+          // Franchisee consolidated view
+          const franchisee = franchiseesWithCentres?.find(f => f.id === id)
+            || franchiseesWithCompanies?.find(f => f.id === id);
+          if (franchisee) {
+            onChange({
+              type: 'all',
+              id,
+              name: `Todos - ${franchisee.name}`
+            });
+          }
+        } else if (type === 'company') {
           let foundCompany = null;
           for (const franchisee of franchiseesWithCompanies || []) {
             foundCompany = franchisee.companies.find(c => c.id === id);
@@ -110,7 +128,6 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
             });
           }
         } else if (type === 'centre') {
-          // Find centre across all franchisees
           let foundCentre = null;
           for (const franchisee of franchiseesWithCentres || []) {
             foundCentre = franchisee.centres.find(c => c.id === id);
@@ -131,56 +148,59 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
         <SelectValue placeholder="Seleccionar vista..." />
       </SelectTrigger>
       <SelectContent className="max-h-[500px]">
-        {/* Sociedades mercantiles agrupadas por franquiciado */}
-        {franchiseesWithCompanies && franchiseesWithCompanies.length > 0 && (
-          <>
-            <div className="px-2 py-2 text-xs font-bold text-foreground bg-muted/50 sticky top-0 z-10">
-              💼 Sociedades Mercantiles
+        {franchiseesWithCentres && franchiseesWithCentres.map((franchisee) => (
+          <div key={`franchisee-group-${franchisee.id}`}>
+            {/* Franchisee header */}
+            <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
+              <Users className="h-3 w-3" />
+              {franchisee.name}
             </div>
-            {franchiseesWithCompanies.map((franchisee) => (
-              <div key={`company-franchisee-${franchisee.id}`}>
-                {/* Franchisee header */}
-                <div className="px-3 py-1.5 text-xs font-semibold text-primary flex items-center gap-2 bg-primary/5">
-                  <Users className="h-3 w-3" />
-                  {franchisee.name}
+
+            {/* Consolidated view for this franchisee */}
+            {franchisee.centres.length > 1 && (
+              <SelectItem 
+                value={`all:${franchisee.id}`}
+                className="pl-6"
+              >
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Todos los restaurantes</span>
+                  <span className="text-xs text-muted-foreground">({franchisee.centres.length})</span>
                 </div>
-                {/* Companies for this franchisee */}
-                {franchisee.companies.map((company) => (
-                  <div key={company.id}>
-                    <SelectItem 
-                      value={`company:${company.id}`}
-                      className="pl-8"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 text-blue-500" />
-                        <span>{company.razon_social}</span>
-                        <span className="text-xs text-muted-foreground">({company.cif})</span>
-                      </div>
-                    </SelectItem>
-                    
-                    {/* Nested centres if company has 2+ centres */}
-                    {company.centres && company.centres.length >= 2 && (
-                      <div className="bg-muted/20">
-                        {company.centres.map((centre) => (
-                          <SelectItem 
-                            key={centre.id} 
-                            value={`centre:${centre.id}`}
-                            className="pl-12"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Store className="h-3 w-3 text-success" />
-                              <span className="text-sm">{centre.codigo} - {centre.nombre}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </div>
-                    )}
+              </SelectItem>
+            )}
+
+            {/* Companies for this franchisee */}
+            {franchiseesWithCompanies?.find(f => f.id === franchisee.id)?.companies.map((company) => (
+              <div key={company.id}>
+                <SelectItem 
+                  value={`company:${company.id}`}
+                  className="pl-8"
+                >
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-blue-500" />
+                    <span>{company.razon_social}</span>
+                    <span className="text-xs text-muted-foreground">({company.cif})</span>
                   </div>
-                ))}
+                </SelectItem>
               </div>
             ))}
-          </>
-        )}
+
+            {/* Individual centres */}
+            {franchisee.centres.map((centre) => (
+              <SelectItem 
+                key={centre.id} 
+                value={`centre:${centre.id}`}
+                className="pl-10"
+              >
+                <div className="flex items-center gap-2">
+                  <Store className="h-3 w-3 text-emerald-500" />
+                  <span className="text-sm">{centre.codigo} - {centre.nombre}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+        ))}
       </SelectContent>
     </Select>
   );

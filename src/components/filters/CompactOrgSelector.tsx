@@ -18,9 +18,7 @@ export default function CompactOrgSelector() {
     selectedFranchiseeId,
     selectedCompanyId,
     selectedCentreCode,
-    setFranchiseeId,
-    setCompanyId,
-    setCentreCode,
+    setFilters,
     reset,
   } = useGlobalFilters();
 
@@ -37,8 +35,25 @@ export default function CompactOrgSelector() {
   const selectedCompany = companies?.find(c => c.id === selectedCompanyId);
   const selectedCentre = centres?.find(c => c.codigo === selectedCentreCode);
 
-
   const hasFilters = selectedFranchiseeId || selectedCompanyId || selectedCentreCode;
+
+  const handleFranchiseeChange = (value: string) => {
+    const id = value === "all" ? null : value;
+    // Changing franchisee resets company and centre
+    setFilters({ franchiseeId: id, companyId: null, centreCode: null });
+  };
+
+  const handleCompanyChange = (value: string) => {
+    const id = value === "all" ? null : value;
+    // Changing company resets centre, keeps franchisee
+    setFilters({ companyId: id, centreCode: null });
+  };
+
+  const handleCentreChange = (value: string) => {
+    const code = value === "all" ? null : value;
+    // Changing centre keeps franchisee and company
+    setFilters({ centreCode: code });
+  };
 
   return (
     <Popover>
@@ -52,7 +67,7 @@ export default function CompactOrgSelector() {
               ) : selectedCompany ? (
                 selectedCompany.razon_social
               ) : selectedFranchisee ? (
-                selectedFranchisee.name
+                `Todos - ${selectedFranchisee.name}`
               ) : (
                 "Organización"
               )}
@@ -88,7 +103,7 @@ export default function CompactOrgSelector() {
             ) : (
               <Select
                 value={selectedFranchiseeId || ""}
-                onValueChange={(value) => setFranchiseeId(value === "all" ? null : value)}
+                onValueChange={handleFranchiseeChange}
               >
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Seleccionar franquiciado" />
@@ -110,7 +125,7 @@ export default function CompactOrgSelector() {
             <Label className="text-xs text-muted-foreground">Entidad Mercantil</Label>
             <Select
               value={selectedCompanyId || ""}
-              onValueChange={(value) => setCompanyId(value === "all" ? null : value)}
+              onValueChange={handleCompanyChange}
               disabled={!selectedFranchiseeId}
             >
               <SelectTrigger className="bg-background">
@@ -132,7 +147,7 @@ export default function CompactOrgSelector() {
             <Label className="text-xs text-muted-foreground">Centro</Label>
             <Select
               value={selectedCentreCode || ""}
-              onValueChange={(value) => setCentreCode(value === "all" ? null : value)}
+              onValueChange={handleCentreChange}
               disabled={!selectedFranchiseeId}
             >
               <SelectTrigger className="bg-background">

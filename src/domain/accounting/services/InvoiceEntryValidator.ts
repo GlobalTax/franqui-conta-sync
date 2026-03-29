@@ -184,8 +184,8 @@ export class InvoiceEntryValidator {
           confidenceScore -= 15;
         }
       }
-    } catch (err: any) {
-      warnings.push(`Error al validar ejercicio fiscal: ${err.message}`);
+    } catch (error: unknown) {
+      warnings.push(`Error al validar ejercicio fiscal: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
     
     // ========================================================================

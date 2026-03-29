@@ -162,11 +162,11 @@ const App = () => {
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route element={session ? <Layout /> : <Navigate to="/login" />}>
               <Route path="/" element={<Dashboard />} />
-            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/invoices" element={<ErrorBoundary context="Facturas"><Invoices /></ErrorBoundary>} />
             <Route path="/invoices/received" element={<Navigate to="/invoices/inbox" replace />} />
             <Route path="/invoices/issued" element={<Navigate to="/invoices?tab=emitidas" replace />} />
             {/* === DIGITALIZACIÓN === */}
-            <Route path="/digitalizacion" element={<Digitization />} />
+            <Route path="/digitalizacion" element={<ErrorBoundary context="Digitalización"><Digitization /></ErrorBoundary>} />
             
             {/* Rutas legacy con redirects */}
             <Route path="/digitalizacion/inbox" element={<Navigate to="/digitalizacion?tab=inbox" replace />} />
@@ -181,7 +181,7 @@ const App = () => {
             
             {/* Mantener ruta legacy por compatibilidad */}
             <Route path="/invoices/inbox" element={<Navigate to="/digitalizacion?tab=inbox" replace />} />
-            <Route path="/invoices/received/:id/edit" element={<InvoiceDetailEditor />} />
+            <Route path="/invoices/received/:id/edit" element={<ErrorBoundary context="Editor Factura"><InvoiceDetailEditor /></ErrorBoundary>} />
             <Route path="/facturas/recibidas-ocr" element={<InvoicesReceivedOCR />} />
               <Route path="/facturas/nueva" element={<NewInvoiceReceived />} />
               <Route path="/facturas/nueva-ocr" element={<Navigate to="/invoices/new-received" replace />} />
@@ -189,16 +189,16 @@ const App = () => {
               <Route path="/facturas/emitidas/nueva" element={<NewInvoiceIssued />} />
               <Route path="/facturas/:id" element={<InvoiceDetail />} />
               <Route path="/proveedores" element={<Suppliers />} />
-              <Route path="/banks" element={<Banks />} />
-              <Route path="/reconciliation" element={<Reconciliation />} />
-              <Route path="/treasury/reconciliation" element={<BankReconciliation />} />
+              <Route path="/banks" element={<ErrorBoundary context="Bancos"><Banks /></ErrorBoundary>} />
+              <Route path="/reconciliation" element={<ErrorBoundary context="Conciliación"><Reconciliation /></ErrorBoundary>} />
+              <Route path="/treasury/reconciliation" element={<ErrorBoundary context="Conciliación Bancaria"><BankReconciliation /></ErrorBoundary>} />
               <Route path="/treasury/salt-edge-connections" element={<SaltEdgeConnections />} />
               <Route path="/journal" element={<JournalEntries />} />
               <Route path="/accounts" element={<ChartOfAccounts />} />
-              <Route path="/pnl" element={<ProfitAndLoss />} />
+              <Route path="/pnl" element={<ErrorBoundary context="PyG"><ProfitAndLoss /></ErrorBoundary>} />
               <Route path="/pnl/consolidado" element={<ProfitAndLossConsolidated />} />
-              <Route path="/contabilidad/apuntes" element={<AccountingEntries />} />
-              <Route path="/contabilidad/nuevo-asiento" element={<NewAccountingEntry />} />
+              <Route path="/contabilidad/apuntes" element={<ErrorBoundary context="Apuntes Contables"><AccountingEntries /></ErrorBoundary>} />
+              <Route path="/contabilidad/nuevo-asiento" element={<ErrorBoundary context="Nuevo Asiento"><NewAccountingEntry /></ErrorBoundary>} />
               <Route path="/contabilidad/ejercicios-fiscales" element={<FiscalYears />} />
               <Route path="/contabilidad/importacion-historica" element={<HistoricalImport />} />
               <Route path="/contabilidad/ejercicios-historicos" element={<HistoricalYears />} />
@@ -214,17 +214,17 @@ const App = () => {
               <Route path="/reportes/mayor" element={<GeneralLedger />} />
               <Route path="/reportes/diario" element={<JournalBook />} />
               <Route path="/reportes/sumas-y-saldos" element={<TrialBalance />} />
-              <Route path="/reportes/consolidado" element={<ConsolidatedReports />} />
+              <Route path="/reportes/consolidado" element={<ErrorBoundary context="Reportes Consolidados"><ConsolidatedReports /></ErrorBoundary>} />
               <Route path="/iva/expedidas" element={<LibroIVARepercutido />} />
               <Route path="/iva/recibidas" element={<LibroIVASoportado />} />
               <Route path="/iva/modelo-303" element={<Modelo303 />} />
-              <Route path="/contabilidad/cierre-ejercicio" element={<FiscalYearClosing />} />
+              <Route path="/contabilidad/cierre-ejercicio" element={<ErrorBoundary context="Cierre Ejercicio"><FiscalYearClosing /></ErrorBoundary>} />
               
               {/* Auditoría & Compliance */}
-              <Route path="/contabilidad/cierre-diario" element={<DailyClosure />} />
-              <Route path="/contabilidad/costes-laborales" element={<LaborCosts />} />
-              <Route path="/auditoria" element={<ComplianceDashboard />} />
-              <Route path="/cumplimiento/modelos-fiscales" element={<FiscalModels />} />
+              <Route path="/contabilidad/cierre-diario" element={<ErrorBoundary context="Cierre Diario"><DailyClosure /></ErrorBoundary>} />
+              <Route path="/contabilidad/costes-laborales" element={<ErrorBoundary context="Costes Laborales"><LaborCosts /></ErrorBoundary>} />
+              <Route path="/auditoria" element={<ErrorBoundary context="Auditoría"><ComplianceDashboard /></ErrorBoundary>} />
+              <Route path="/cumplimiento/modelos-fiscales" element={<ErrorBoundary context="Modelos Fiscales"><FiscalModels /></ErrorBoundary>} />
               
               <Route path="/settings" element={<Dashboard />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

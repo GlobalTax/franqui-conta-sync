@@ -12,7 +12,7 @@ import { KPISummaryTable } from "@/components/reports/KPISummaryTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent, getPeriodOptions, getPeriodDates } from "@/lib/reports-utils";
 import { logger } from "@/lib/logger";
-import * as XLSX from 'xlsx';
+
 
 export default function ConsolidatedReports() {
   const { selectedView } = useView();
@@ -29,7 +29,8 @@ export default function ConsolidatedReports() {
     });
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
     if (!data?.centres || data.centres.length === 0) return;
 
     logger.info('ConsolidatedReports', 'Exporting to Excel...');

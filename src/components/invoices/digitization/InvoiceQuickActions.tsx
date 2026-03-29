@@ -64,6 +64,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
               disabled={!canApprove || actions.isApproving}
               onClick={handleApprove}
               className="h-8 px-2"
+              aria-label="Aprobar factura"
             >
               <CheckCircle className="h-4 w-4" />
             </Button>
@@ -83,6 +84,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
               variant={invoice.centroCode ? "ghost" : "outline"}
               onClick={() => setAssignCentreDialogOpen(true)}
               className="h-8 px-2"
+              aria-label="Asignar centro"
             >
               <Building2 className="h-4 w-4" />
             </Button>
@@ -103,6 +105,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
               disabled={!canReprocess || actions.isReprocessing}
               onClick={() => setReprocessDialogOpen(true)}
               className="h-8 px-2"
+              aria-label="Re-procesar OCR"
             >
               <RefreshCw className={`h-4 w-4 ${actions.isReprocessing ? 'animate-spin' : ''}`} />
             </Button>
@@ -121,6 +124,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
               disabled={!canReject || actions.isRejecting}
               onClick={() => setRejectDialogOpen(true)}
               className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              aria-label="Rechazar factura"
             >
               <XCircle className="h-4 w-4" />
             </Button>

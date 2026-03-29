@@ -1,3 +1,4 @@
+import React, { useCallback } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import type { PLReportLine } from "@/types/profit-loss";
 
@@ -11,7 +12,13 @@ interface PLTableMultiYearProps {
   onRubricClick?: (rubricCode: string, rubricName: string, year: number) => void;
 }
 
-export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate, onRubricClick }: PLTableMultiYearProps) {
+function PLTableMultiYearInner({ yearQueries, compareYears, isQSRTemplate, onRubricClick }: PLTableMultiYearProps) {
+  const handleRubricClick = useCallback((rubricCode: string, rubricName: string, isTotal: boolean) => {
+    if (!isTotal && onRubricClick) {
+      onRubricClick(rubricCode, rubricName, compareYears[0]);
+    }
+  }, [onRubricClick, compareYears]);
+
   if (yearQueries.some(q => !q.data?.plData?.length)) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -67,11 +74,7 @@ export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate, onR
                   ? "cursor-pointer hover:bg-muted/60 transition-colors"
                   : ""
               } transition-colors duration-150`}
-              onClick={() => {
-                if (!baseLine.is_total && onRubricClick) {
-                  onRubricClick(baseLine.rubric_code, baseLine.rubric_name, compareYears[0]);
-                }
-              }}
+              onClick={() => handleRubricClick(baseLine.rubric_code, baseLine.rubric_name, baseLine.is_total)}
             >
               <div className="flex items-center gap-3 flex-1">
                 <span className="font-mono text-xs text-muted-foreground w-8">
@@ -181,3 +184,5 @@ export function PLTableMultiYear({ yearQueries, compareYears, isQSRTemplate, onR
     </div>
   );
 }
+
+export const PLTableMultiYear = React.memo(PLTableMultiYearInner);

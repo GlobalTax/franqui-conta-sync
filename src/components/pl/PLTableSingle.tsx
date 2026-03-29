@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { AdjustmentCell } from "./AdjustmentCell";
@@ -14,7 +14,7 @@ interface PLTableSingleProps {
   onRubricClick?: (rubricCode: string, rubricName: string) => void;
 }
 
-export function PLTableSingle({
+function PLTableSingleInner({
   data,
   showAccumulated,
   showAdjustments,
@@ -24,6 +24,12 @@ export function PLTableSingle({
   onRubricClick,
 }: PLTableSingleProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const handleRubricClick = useCallback((rubricCode: string, rubricName: string, isTotal: boolean) => {
+    if (!isTotal && onRubricClick) {
+      onRubricClick(rubricCode, rubricName);
+    }
+  }, [onRubricClick]);
   const shouldVirtualize = enableVirtualization ?? data.length > 50;
 
   // Calcular altura dinámica según nivel de indentación
@@ -134,11 +140,7 @@ export function PLTableSingle({
                     transform: `translateY(${virtualRow.start}px)`,
                   } : {}),
                 }}
-                onClick={() => {
-                  if (!line.is_total && onRubricClick) {
-                    onRubricClick(line.rubric_code, line.rubric_name);
-                  }
-                }}
+                onClick={() => handleRubricClick(line.rubric_code, line.rubric_name, line.is_total)}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className="font-mono text-xs w-8 text-muted-foreground flex-shrink-0">
@@ -273,3 +275,5 @@ export function PLTableSingle({
     </div>
   );
 }
+
+export const PLTableSingle = React.memo(PLTableSingleInner);

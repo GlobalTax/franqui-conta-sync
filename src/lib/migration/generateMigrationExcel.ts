@@ -1,9 +1,9 @@
-import * as XLSX from "xlsx";
 import { MigrationSummary } from "./migrationSummaryService";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export function generateMigrationExcel(summary: MigrationSummary): void {
+export async function generateMigrationExcel(summary: MigrationSummary): Promise<void> {
+  const XLSX = await import("xlsx");
   const workbook = XLSX.utils.book_new();
 
   // Sheet 1: Resumen

@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import type { PLReportLine } from "@/types/profit-loss";
 
 interface ExportPLHistoricalParams {
@@ -12,7 +11,8 @@ interface ExportPLHistoricalParams {
  * Aplica estilos según nivel de rúbrica
  */
 const applyRubricStyles = (
-  ws: XLSX.WorkSheet,
+  XLSX: typeof import("xlsx"),
+  ws: import("xlsx").WorkSheet,
   rubric: PLReportLine,
   rowIndex: number,
   colCount: number,
@@ -85,12 +85,13 @@ const createHeaderSection = (
  * Exporta P&L a Excel con formato histórico multi-año
  * Replica el formato del archivo PandL_Historico_GRUPO_EDUARDO_ROSAS_v5.xlsm
  */
-export const exportPLHistorical = ({
+export const exportPLHistorical = async ({
   plDataByYear,
   years,
   restaurantName,
   templateName,
 }: ExportPLHistoricalParams) => {
+  const XLSX = await import("xlsx");
   // Crear headers profesionales
   const headerSection = createHeaderSection(restaurantName, templateName, years);
   const headerRows = headerSection.length;
@@ -149,7 +150,7 @@ export const exportPLHistorical = ({
   // Aplicar estilos según nivel de rúbrica
   const colCount = 1 + years.length * 2;
   baseRubrics.forEach((rubric, idx) => {
-    applyRubricStyles(ws, rubric, idx, colCount, headerRows);
+    applyRubricStyles(XLSX, ws, rubric, idx, colCount, headerRows);
   });
 
   // Aplicar estilos a título principal
@@ -194,12 +195,13 @@ interface ExportPLConsolidatedParams {
   period: string;
 }
 
-export const exportPLConsolidated = ({
+export const exportPLConsolidated = async ({
   plData,
   restaurantNames,
   templateName,
   period,
 }: ExportPLConsolidatedParams) => {
+  const XLSX = await import("xlsx");
   const headers = [
     `${templateName} - CONSOLIDADO`,
     `Restaurantes: ${restaurantNames.join(", ")}`,
@@ -230,7 +232,8 @@ export const exportPLConsolidated = ({
 /**
  * Exporta P&L a CSV rápido para análisis
  */
-export const exportPLCSV = (plData: PLReportLine[], fileName: string) => {
+export const exportPLCSV = async (plData: PLReportLine[], fileName: string) => {
+  const XLSX = await import("xlsx");
   const rows = plData.map((line) => ({
     Concepto: line.rubric_name,
     Importe: line.amount,
@@ -262,13 +265,14 @@ interface ExportPLMonthlyYoYParams {
   templateName: string;
 }
 
-export const exportPLMonthlyYoY = ({
+export const exportPLMonthlyYoY = async ({
   plDataByMonth,
   prevYearPlDataByMonth,
   year,
   restaurantName,
   templateName,
 }: ExportPLMonthlyYoYParams) => {
+  const XLSX = await import("xlsx");
   const hasYoY = prevYearPlDataByMonth && prevYearPlDataByMonth.length === 12;
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   
@@ -375,7 +379,7 @@ export const exportPLMonthlyYoY = ({
   // Aplicar estilos a rubros
   const colCount = hasYoY ? 1 + 12 * 3 : 1 + 12 + 1;
   baseRubrics.forEach((rubric, idx) => {
-    applyRubricStyles(ws, rubric, idx, colCount, headerRows);
+    applyRubricStyles(XLSX, ws, rubric, idx, colCount, headerRows);
   });
 
   // Estilo de título

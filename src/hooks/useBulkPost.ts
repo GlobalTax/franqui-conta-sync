@@ -76,12 +76,12 @@ export function useBulkPost() {
           if (updateError) throw updateError;
 
           results.success++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error('useBulkPost', `Error posting invoice ${invoiceId}:`, error);
           results.failed++;
           results.errors.push({
             invoiceId,
-            error: error.message || 'Error desconocido',
+            error: error instanceof Error ? error.message : 'Error desconocido',
           });
         }
 

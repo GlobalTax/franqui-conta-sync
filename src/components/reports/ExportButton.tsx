@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Download, FileText } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
-import { utils, writeFile } from "xlsx";
+
 
 interface ExportButtonProps {
   printRef: React.RefObject<HTMLDivElement>;
@@ -32,14 +32,16 @@ export const ExportButton = ({
     documentTitle: filename,
   });
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    const { utils, writeFile } = await import("xlsx");
     const ws = utils.json_to_sheet(data);
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, "Datos");
     writeFile(wb, `${filename}.xlsx`);
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    const { utils } = await import("xlsx");
     const ws = utils.json_to_sheet(data);
     const csv = utils.sheet_to_csv(ws);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

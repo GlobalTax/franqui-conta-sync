@@ -294,11 +294,11 @@ export class InvoiceCommands {
         } as any);
 
         results.success++;
-      } catch (error: any) {
+      } catch (error: unknown) {
         results.failed++;
         results.errors.push({
           invoiceId,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }
@@ -388,11 +388,11 @@ export class InvoiceCommands {
         } as any);
 
         results.success++;
-      } catch (error: any) {
+      } catch (error: unknown) {
         results.failed++;
         results.errors.push({
           invoiceId,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }
@@ -424,9 +424,9 @@ export class InvoiceCommands {
         } else {
           successCount++;
         }
-      } catch (e: any) {
+      } catch (error: unknown) {
         failedCount++;
-        errors.push({ invoiceId, error: e.message || "Error desconocido" });
+        errors.push({ invoiceId, error: error instanceof Error ? error.message : "Error desconocido" });
       }
     }
 

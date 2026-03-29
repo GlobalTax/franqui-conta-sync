@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { logger } from '../_shared/logger.ts';
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
 
@@ -138,7 +139,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Download PDF from Storage
-    console.log(`[claude-ocr] Descargando PDF: ${documentPath}`);
+    logger.info('claude-ocr', `Descargando PDF`, { documentPath });
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('invoice-documents')
       .download(documentPath);
@@ -167,18 +168,18 @@ serve(async (req) => {
     const totalPages = pdfPayload?.totalPages ?? 1;
     const base64 = encodeBase64Chunked(bytesForClaude);
 
-    console.log(
-      `[claude-ocr] Archivo preparado para Claude: ${Math.round(bytesForClaude.byteLength / 1024)}KB | páginas enviadas ${pagesSent}/${totalPages}`,
-    );
+    logger.info('claude-ocr', 'Archivo preparado para Claude', {
+      sizeKB: Math.round(bytesForClaude.byteLength / 1024),
+      pagesSent,
+      totalPages,
+    });
 
     if (pdfPayload?.truncated) {
-      console.warn(
-        `[claude-ocr] PDF truncado para OCR: ${totalPages} páginas totales, enviando primeras ${pagesSent}`,
-      );
+      logger.warn('claude-ocr', 'PDF truncado para OCR', { totalPages, pagesSent });
     }
 
     // 4. Call Claude Vision API
-    console.log(`[claude-ocr] Invocando Claude Vision para invoice ${invoice_id}...`);
+    logger.info('claude-ocr', 'Invocando Claude Vision', { invoice_id });
     const claudeStartTime = Date.now();
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -224,7 +225,7 @@ serve(async (req) => {
 
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
-      console.error(`[claude-ocr] Error API Anthropic: ${claudeResponse.status}`, errorText);
+      logger.error('claude-ocr', 'Error API Anthropic', { status: claudeResponse.status, errorText });
       throw new Error(`Claude API error: ${claudeResponse.status} - ${errorText}`);
     }
 
@@ -254,7 +255,7 @@ serve(async (req) => {
     try {
       extractedData = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('[claude-ocr] Error parseando JSON de Claude:', jsonText.substring(0, 500));
+      logger.error('claude-ocr', 'Error parseando JSON de Claude', { jsonPreview: jsonText.substring(0, 500) });
       throw new Error('Claude devolvió JSON inválido');
     }
 
@@ -265,7 +266,7 @@ serve(async (req) => {
     const costUSD = (inputTokens * 3 / 1_000_000) + (outputTokens * 15 / 1_000_000);
     const costEUR = costUSD * 0.92; // approximate EUR conversion
 
-    console.log(`[claude-ocr] Tokens: ${inputTokens} in / ${outputTokens} out | Coste: €${costEUR.toFixed(4)}`);
+    logger.info('claude-ocr', 'Token usage and cost', { inputTokens, outputTokens, costEUR: parseFloat(costEUR.toFixed(4)) });
 
     // 7. Get company VAT IDs for receiver inference
     const { data: centreCompanies } = await supabase
@@ -328,7 +329,7 @@ serve(async (req) => {
       .eq('id', invoice_id);
 
     if (updateError) {
-      console.error('[claude-ocr] Error actualizando factura:', updateError);
+      logger.error('claude-ocr', 'Error actualizando factura', { error: updateError });
       
       // Handle duplicate invoice gracefully
       if (updateError.message?.includes('DUPLICATE_INVOICE') || updateError.message?.includes('DUPLICATE_FILE')) {
@@ -337,7 +338,7 @@ serve(async (req) => {
         
         // Delete the orphan draft since it's a duplicate
         await supabase.from('invoices_received').delete().eq('id', invoice_id);
-        console.log(`[claude-ocr] Borrador huérfano ${invoice_id} eliminado (duplicado)`);
+        logger.info('claude-ocr', 'Borrador huérfano eliminado (duplicado)', { invoice_id });
         
         // Return success:false with a user-friendly duplicate message
         return new Response(
@@ -372,7 +373,7 @@ serve(async (req) => {
         .insert(linesToInsert);
 
       if (linesError) {
-        console.warn('[claude-ocr] Error insertando líneas:', linesError.message);
+        logger.warn('claude-ocr', 'Error insertando líneas', { error: linesError.message });
       }
     }
 
@@ -389,10 +390,16 @@ serve(async (req) => {
        confidence: confidenceScore / 100, // Store as 0-1
        pages: pagesSent,
     }).then(({ error }) => {
-      if (error) console.warn('[claude-ocr] Error logging OCR:', error.message);
+      if (error) logger.warn('claude-ocr', 'Error logging OCR', { error: error.message });
     });
 
-    console.log(`[claude-ocr] ✓ Factura ${invoice_id} procesada: ${invoiceStatus} | Confianza: ${confidenceScore}% | Coste: €${costEUR.toFixed(4)} | ${processingTimeMs}ms`);
+    logger.info('claude-ocr', 'Factura procesada', {
+      invoice_id,
+      status: invoiceStatus,
+      confidenceScore,
+      costEUR: parseFloat(costEUR.toFixed(4)),
+      processingTimeMs,
+    });
 
     // 13. Build AP mapping stub
     const apMappingStub = {
@@ -496,7 +503,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[claude-ocr] Error:', error);
+    logger.error('claude-ocr', 'Unhandled error', { error: error?.message || error });
     
     return new Response(
       JSON.stringify({

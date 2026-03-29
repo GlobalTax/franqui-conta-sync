@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { logger } from '../_shared/logger.ts';
 import { postInvoiceEntry } from '../_shared/accounting/post-invoice.ts';
 import type { PostInvoiceParams } from '../_shared/accounting/post-invoice.ts';
 
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
 
     const params: PostInvoiceParams = await req.json();
 
-    console.log('[post-invoice] Starting posting process:', {
+    logger.info('post-invoice', 'Starting posting process', {
       invoiceId: params.invoiceId,
       invoiceType: params.invoiceType,
       entryDate: params.entryDate,
@@ -21,14 +22,14 @@ Deno.serve(async (req) => {
 
     const result = await postInvoiceEntry(params, supabaseUrl, supabaseKey);
 
-    console.log('[post-invoice] Posting successful:', result);
+    logger.info('post-invoice', 'Posting successful', result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (err) {
-    console.error('[post-invoice] Error:', err);
+    logger.error('post-invoice', 'Error processing invoice', { error: err instanceof Error ? err.message : err });
     const message = err instanceof Error ? err.message : 'Unknown error';
     const details = err instanceof Error ? (err.stack || String(err)) : JSON.stringify(err);
     return new Response(

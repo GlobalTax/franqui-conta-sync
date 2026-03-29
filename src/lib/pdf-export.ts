@@ -1,4 +1,3 @@
-import type jsPDF from "jspdf";
 import "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -51,7 +50,7 @@ function generateDocumentHash(content: string): string {
 
 // Añadir cabecera oficial
 function addOfficialHeader(
-  doc: jsPDF,
+  doc: any,
   company: CompanyInfo,
   title: string,
   period: { start: string; end: string },
@@ -97,7 +96,7 @@ function addOfficialHeader(
 
 // Añadir pie de página oficial
 function addOfficialFooter(
-  doc: jsPDF,
+  doc: any,
   pageNumber: number,
   documentHash: string
 ) {

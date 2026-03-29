@@ -56,6 +56,7 @@ const UsersManagement = () => {
       case "admin": return "default";
       case "gestor": return "secondary";
       case "franquiciado": return "outline";
+      case "empleado": return "secondary";
       default: return "outline";
     }
   };
@@ -65,7 +66,8 @@ const UsersManagement = () => {
       case "admin": return "🛡️";
       case "gestor": return "👔";
       case "franquiciado": return "🍔";
-      default: return "👤";
+      case "empleado": return "👤";
+      default: return "❓";
     }
   };
 
@@ -96,6 +98,7 @@ const UsersManagement = () => {
                 <SelectItem value="admin">Asesoría (Admin)</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
                 <SelectItem value="franquiciado">Franquiciado</SelectItem>
+                <SelectItem value="empleado">Empleado</SelectItem>
               </SelectContent>
             </Select>
           </div>

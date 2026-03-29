@@ -69,7 +69,7 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
     }
   };
 
-  const needsFranchisee = ["gestor", "franquiciado"].includes(role);
+  const needsFranchisee = ["gestor", "franquiciado", "empleado"].includes(role);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,6 +106,7 @@ const InviteUserDialog = ({ open, onOpenChange, onSuccess }: InviteUserDialogPro
                 <SelectItem value="admin">Asesoría (Admin)</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
                 <SelectItem value="franquiciado">Franquiciado</SelectItem>
+                <SelectItem value="empleado">Empleado</SelectItem>
               </SelectContent>
             </Select>
           </div>

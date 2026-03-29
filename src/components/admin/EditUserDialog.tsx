@@ -143,6 +143,7 @@ const EditUserDialog = ({ user, open, onOpenChange, onSuccess }: EditUserDialogP
                   <SelectItem value="admin">Asesoría (Admin)</SelectItem>
                   <SelectItem value="gestor">Gestor</SelectItem>
                   <SelectItem value="franquiciado">Franquiciado</SelectItem>
+                  <SelectItem value="empleado">Empleado</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleAddRole} disabled={loading}>

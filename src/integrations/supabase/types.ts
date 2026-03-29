@@ -8245,7 +8245,13 @@ export type Database = {
     }
     Enums: {
       accounting_entry_status: "draft" | "posted" | "closed"
-      app_role: "admin" | "gestor" | "franquiciado" | "asesoria" | "contable"
+      app_role:
+        | "admin"
+        | "gestor"
+        | "franquiciado"
+        | "asesoria"
+        | "contable"
+        | "empleado"
       audit_action: "INSERT" | "UPDATE" | "DELETE"
       dq_severity: "critica" | "alta" | "media" | "baja"
       movement_type: "debit" | "credit"
@@ -8420,7 +8426,14 @@ export const Constants = {
   public: {
     Enums: {
       accounting_entry_status: ["draft", "posted", "closed"],
-      app_role: ["admin", "gestor", "franquiciado", "asesoria", "contable"],
+      app_role: [
+        "admin",
+        "gestor",
+        "franquiciado",
+        "asesoria",
+        "contable",
+        "empleado",
+      ],
       audit_action: ["INSERT", "UPDATE", "DELETE"],
       dq_severity: ["critica", "alta", "media", "baja"],
       movement_type: ["debit", "credit"],

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { getRolePermissions } from "@/lib/supabase-queries";
 import { Loader2 } from "lucide-react";
 
-const ROLES = ["admin", "gestor", "franquiciado"];
+const ROLES = ["admin", "gestor", "franquiciado", "empleado"];
 
 const PERMISSION_LABELS: Record<string, string> = {
   "employees.view": "Ver empleados",

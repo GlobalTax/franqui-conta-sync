@@ -129,6 +129,7 @@ const AcceptInvite = () => {
     admin: "Asesoría (Admin)",
     gestor: "Gestor",
     franquiciado: "Franquiciado",
+    empleado: "Empleado",
   };
 
   if (status === "validating") {

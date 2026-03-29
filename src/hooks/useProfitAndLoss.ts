@@ -54,12 +54,12 @@ export function useProfitAndLoss(
 
       let rawData: PLAccountBalance[] = [];
 
-      if (viewSelection.type === 'company') {
+      if (viewSelection.type === 'all') {
         // Vista consolidada
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo")
-          .eq("company_id", viewSelection.id)
+          .eq("franchisee_id", viewSelection.id)
           .eq("activo", true);
 
         if (!centres || centres.length === 0) return null;

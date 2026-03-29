@@ -49,12 +49,12 @@ export const useBalanceSheet = (
 
       let items: BalanceSheetItem[] = [];
 
-      if (viewSelection.type === 'company') {
-        // Vista consolidada: obtener todos los centros de la sociedad
+      if (viewSelection.type === 'all') {
+        // Vista consolidada: obtener todos los centros del franquiciado
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo")
-          .eq("company_id", viewSelection.id)
+          .eq("franchisee_id", viewSelection.id)
           .eq("activo", true);
 
         if (!centres || centres.length === 0) {

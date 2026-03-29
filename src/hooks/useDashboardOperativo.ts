@@ -61,12 +61,11 @@ export const useDashboardOperativo = (viewSelection: ViewSelection | null) => {
       let centroCodes: string[] = [];
       let companyId: string | null = null;
 
-      if (viewSelection.type === 'company') {
-        companyId = viewSelection.id;
+      if (viewSelection.type === 'all') {
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo, nombre")
-          .eq("company_id", viewSelection.id)
+          .eq("franchisee_id", viewSelection.id)
           .eq("activo", true);
 
         centroCodes = centres?.map(c => c.codigo) || [];

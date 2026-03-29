@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface ReconciliationAssistantProps {
   centroCode?: string;
@@ -68,7 +69,7 @@ export function ReconciliationAssistant({ centroCode, bankAccountId }: Reconcili
         });
         successCount++;
       } catch (error) {
-        console.error('[ReconciliationAssistant] Error creating rule:', error);
+        logger.error('ReconciliationAssistant', 'Error creating rule', error);
         errorCount++;
       }
     }

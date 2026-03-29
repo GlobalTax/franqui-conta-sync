@@ -263,15 +263,15 @@ serve(async (req) => {
 
     logger.info('claude-ocr', 'Token usage and cost', { inputTokens, outputTokens, costEUR: parseFloat(costEUR.toFixed(4)) });
 
-    // 7. Get company VAT IDs for receiver inference
+    // 7. Get company VAT IDs for receiver inference + auto-fill
     const { data: centreCompanies } = await supabase
       .from('centre_companies')
-      .select('cif')
+      .select('cif, razon_social')
       .eq('centre_id', centroCode);
     
     const { data: centreData } = await supabase
       .from('centres')
-      .select('company_tax_id')
+      .select('company_tax_id, nombre, direccion, ciudad, postal_code')
       .eq('codigo', centroCode)
       .single();
 

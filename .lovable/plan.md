@@ -1,44 +1,96 @@
 
+Problema identificado: en la pantalla donde estás (`/treasury/reconciliation`) sí cambia la selección en el selector, pero la vista no responde porque esa página está leyendo mal el centro activo.
 
-# Plan: Corregir sincronización sidebar ↔ top bar
+## Causa raíz
 
-## Problema raíz
+En `src/pages/treasury/BankReconciliation.tsx` hay este código:
 
-Hay dos conflictos que impiden la sincronización:
-
-1. **`CompactOrgSelector` auto-selecciona el franquiciado** al montar (línea 42-46), llamando `setFranchiseeId()` que **resetea `selectedCompanyId` y `selectedCentreCode` a null** — destruyendo los valores que el sync hook acababa de escribir.
-
-2. **Los refs del sync hook empiezan en `null`**, así que al cargar la app con un view persistido ("129 - Granollers"), la comparación `selectedCentreCode === prevCentreCodeRef.current` da `null === null` → skip. El sync View→Filters nunca ejecuta la primera vez.
-
-```text
-Flujo actual (roto):
-  1. ViewContext carga "129 - Granollers" desde localStorage
-  2. Sync hook: View→Filters → setFilters({centreCode: "129", ...})
-  3. CompactOrgSelector monta → auto-select franchisee → setFranchiseeId()
-     → RESET centreCode=null, companyId=null  ← AQUÍ SE ROMPE
-  4. Sync hook: Filters→View ve centreCode null, pero prevRef ya es null → skip
-  5. Resultado: sidebar="129", top bar="Todos los centros"
+```tsx
+const centroCode = typeof selectedView === 'string' ? selectedView : '';
 ```
 
-## Solución (3 cambios)
+Pero `selectedView` no es un string: siempre es un objeto tipo:
 
-### 1. `CompactOrgSelector.tsx` — eliminar auto-select conflictivo
+```ts
+{ type: 'centre' | 'company' | 'all', id: string, code?: string, name: string }
+```
 
-Eliminar el `useEffect` que llama `setFranchiseeId` (líneas 42-46). El sync hook ya se encarga de setear el franchiseeId cuando sincroniza desde el View.
+Así que `centroCode` queda siempre en `''` y toda la pantalla de conciliación se rompe funcionalmente:
 
-### 2. `useGlobalFilters.ts` — `setFranchiseeId` no debe resetear todo
+- `BankAccountSelector` no filtra por centro
+- `ImportNorma43Button` no recibe centro válido
+- `Auto-Conciliar` no funciona con el centro seleccionado
+- `ReconciliationRulesManager` y `ReconciliationAssistant` reciben un centro vacío
+- da la sensación de que “lo selecciono pero no cambia”
 
-Cambiar `setFranchiseeId` para que NO resetee `selectedCompanyId` y `selectedCentreCode`. El sync hook envía los 3 valores juntos vía `setFilters()`, así que el reset cascada es contraproducente.
+## Qué corregir
 
-### 3. `useSyncViewAndFilters.ts` — forzar sync inicial
+### 1. Arreglar `centroCode` en `BankReconciliation`
+En `src/pages/treasury/BankReconciliation.tsx`:
 
-Inicializar `prevViewRef` como un objeto diferente al view actual para que el primer `useEffect` siempre ejecute la sincronización. Cambiar la lógica de skip inicial para que compare correctamente en el primer render.
+- usar `selectedView.code` cuando el tipo sea `centre`
+- permitir estado consolidado cuando el tipo sea `company` o `all`
+- mostrar un mensaje claro si conciliación requiere centro individual
 
-## Archivos
+Cambio esperado:
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/filters/CompactOrgSelector.tsx` | Eliminar useEffect auto-select (líneas 42-46) |
-| `src/hooks/useGlobalFilters.ts` | `setFranchiseeId` solo cambia franchiseeId, sin resetear los otros |
-| `src/hooks/useSyncViewAndFilters.ts` | No skipear el primer sync; usar flag `initializedRef` |
+```tsx
+const centroCode = selectedView?.type === 'centre' ? selectedView.code : undefined;
+```
 
+## 2. Ajustar la UX según la jerarquía real
+Como la conciliación bancaria es por restaurante/cuenta bancaria, la página no debería intentar operar con una vista consolidada.
+
+Propuesta en la misma pantalla:
+
+- si `selectedView.type !== 'centre'`, mostrar alerta:
+  - “Selecciona un restaurante para conciliar movimientos bancarios”
+- desactivar tabs/acciones dependientes de centro hasta elegir uno
+
+Esto hará que el comportamiento sea consistente para franquiciados:
+- vista consolidada para reporting
+- vista centro individual para operativa bancaria
+
+## 3. Revisar usos incorrectos similares de `selectedView.id`
+He encontrado un patrón repetido en otras pantallas: varias usan `selectedView.id` como si fuera `centro_code`, pero en realidad para centros el `id` es UUID y el código operativo está en `selectedView.code`.
+
+Conviene revisar después estos archivos porque pueden tener el mismo fallo de “selecciono pero no cambia” o filtros vacíos:
+
+- `src/pages/ProfitAndLoss.tsx`
+- `src/pages/accounting/FiscalYearClosing.tsx`
+- `src/pages/accounting/BankRemittances.tsx`
+- `src/pages/accounting/PaymentTerms.tsx`
+- otros hooks/páginas que pasen `selectedView.id` a `centroCode`
+
+## Resultado esperado tras el fix
+En conciliación bancaria:
+
+- al elegir restaurante en sidebar o top bar, la cuenta bancaria se actualizará correctamente
+- aparecerán las transacciones del restaurante correcto
+- las reglas y el asistente trabajarán con el centro seleccionado
+- dejará de parecer que el selector “no hace nada”
+
+## Detalle técnico
+Resumen del bug:
+
+```text
+Selector cambia selectedView -> selectedView = { type:'centre', id:'uuid', code:'129' }
+
+BankReconciliation:
+  typeof selectedView === 'string' ? ... : ''
+=> centroCode = ''
+
+Todos los componentes hijos reciben centro vacío
+=> la UI no cambia aunque el selector sí cambió
+```
+
+## Archivos a tocar
+- `src/pages/treasury/BankReconciliation.tsx` — fix principal
+- opcional en segunda pasada: páginas que usan `selectedView.id` como `centroCode`
+
+## Alcance recomendado
+Haría primero un fix mínimo y seguro:
+
+1. corregir `BankReconciliation.tsx`
+2. bloquear vista consolidada en conciliación bancaria
+3. luego revisar el resto de pantallas con el mismo anti-patrón

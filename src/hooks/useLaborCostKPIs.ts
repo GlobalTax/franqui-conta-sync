@@ -129,7 +129,7 @@ export function useLaborCostDetails(centroCode?: string, startDate?: string, end
       }
 
       // Obtener horas por empleado de Orquest
-      const { data: scheduleData } = await supabase
+      const { data: scheduleData } = await (supabase as any)
         .from('orquest_schedules')
         .select('employee_id, total_hours')
         .eq('centro_code', centroCode)

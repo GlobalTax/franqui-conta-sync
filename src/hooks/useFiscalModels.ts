@@ -105,7 +105,7 @@ export function useModelo190(centroCode?: string, year?: number) {
     queryFn: async (): Promise<Modelo190Data | null> => {
       if (!centroCode || !year) return null;
 
-      const { data: nominas } = await supabase
+      const { data: nominas } = await (supabase as any)
         .from('stg_nominas')
         .select('*')
         .eq('centro_code', centroCode)

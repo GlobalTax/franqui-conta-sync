@@ -134,7 +134,7 @@ export class CloseAccountingPeriodUseCase {
         if (!regError && regEntry) {
           regularizationEntry = regEntry as any;
 
-          await supabase.from('accounting_entry_lines').insert(
+          await (supabase as any).from('accounting_entry_lines').insert(
             regLines.map((line, idx) => ({
               entry_id: regEntry.id,
               line_number: idx + 1,

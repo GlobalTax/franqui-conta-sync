@@ -11,7 +11,7 @@ interface RestaurantFilterProps {
 export function RestaurantFilter({ value, onChange }: RestaurantFilterProps) {
   const { currentMembership, loading } = useOrganization();
 
-  const { data: centres = [] } = useQuery({
+  const { data: centres = [], error } = useQuery({
     queryKey: ['centres-filter', currentMembership?.organization_id],
     queryFn: async () => {
       if (!currentMembership?.organization_id) return [];

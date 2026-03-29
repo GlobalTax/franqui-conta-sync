@@ -49,7 +49,11 @@ export function SupplierFormDialog({
   onSuccess,
   editingSupplier,
   initialTaxId,
-  initialName 
+  initialName,
+  initialAddress,
+  initialCity,
+  initialPostalCode,
+  initialEmail,
 }: SupplierFormDialogProps) {
   const [formData, setFormData] = useState<SupplierFormData>({
     tax_id: '',

@@ -250,10 +250,18 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
           if (!open) {
             setPendingNIF('');
             setPendingName('');
+            setPendingAddress('');
+            setPendingCity('');
+            setPendingPostalCode('');
+            setPendingEmail('');
           }
         }}
         initialTaxId={pendingNIF}
         initialName={pendingName}
+        initialAddress={pendingAddress}
+        initialCity={pendingCity}
+        initialPostalCode={pendingPostalCode}
+        initialEmail={pendingEmail}
         onSuccess={(newSupplier) => {
           setValue('supplier_id', newSupplier.id);
           setValue('supplier_tax_id', newSupplier.tax_id);
@@ -261,6 +269,10 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
           toast.success(`✅ Proveedor "${newSupplier.name}" creado y seleccionado`);
           setPendingNIF('');
           setPendingName('');
+          setPendingAddress('');
+          setPendingCity('');
+          setPendingPostalCode('');
+          setPendingEmail('');
         }}
       />
     </Card>

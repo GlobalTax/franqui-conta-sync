@@ -1,5 +1,3 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -119,12 +117,14 @@ function addOfficialFooter(
   doc.text("Documento oficial según Código de Comercio", pageWidth / 2, pageHeight - 10, { align: "center" });
 }
 
-export function exportJournalBookPDF(
+export async function exportJournalBookPDF(
   entries: JournalEntry[],
   company: CompanyInfo,
   period: { start: string; end: string },
   filename: string
 ) {
+  const { default: jsPDF } = await import("jspdf");
+  await import("jspdf-autotable");
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -200,12 +200,14 @@ export function exportJournalBookPDF(
   doc.save(`${filename}.pdf`);
 }
 
-export function exportGeneralLedgerPDF(
+export async function exportGeneralLedgerPDF(
   accounts: LedgerAccount[],
   company: CompanyInfo,
   period: { start: string; end: string },
   filename: string
 ) {
+  const { default: jsPDF } = await import("jspdf");
+  await import("jspdf-autotable");
   const doc = new jsPDF();
   
   // Generar hash del documento

@@ -65,7 +65,6 @@ const UsersManagement = () => {
       case "admin": return "🛡️";
       case "gestor": return "👔";
       case "franquiciado": return "🍔";
-      case "asesoria": return "📊";
       default: return "👤";
     }
   };

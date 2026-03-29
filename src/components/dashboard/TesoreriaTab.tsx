@@ -56,8 +56,8 @@ export const TesoreriaTab = ({ kpis }: TesoreriaTabProps) => {
                 { name: "BBVA - Cuenta Principal", amount: 75000 },
                 { name: "Santander - Operaciones", amount: 35000 },
                 { name: "CaixaBank - Nóminas", amount: 15000 },
-              ].map((bank, index) => (
-                <div key={index}>
+              ].map((bank) => (
+                <div key={bank.name}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">{bank.name}</span>
                     <span className="text-sm font-semibold">

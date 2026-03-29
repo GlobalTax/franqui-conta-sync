@@ -148,8 +148,8 @@ const LibroIVARepercutido = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {libroIVA.map((row, index) => (
-                    <TableRow key={index}>
+                  {libroIVA.map((row) => (
+                    <TableRow key={row.numero_factura}>
                       <TableCell className="font-mono text-sm">
                         {formatDate(row.fecha)}
                       </TableCell>

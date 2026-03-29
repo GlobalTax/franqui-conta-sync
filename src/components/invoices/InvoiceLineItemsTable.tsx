@@ -128,7 +128,7 @@ export function InvoiceLineItemsTable({ lines, onChange, readonly = false }: Inv
               </TableRow>
             ) : (
               localLines.map((line, index) => (
-                <TableRow key={index}>
+                <TableRow key={line.id ?? index}>
                   <TableCell>
                     <Input
                       value={line.description}

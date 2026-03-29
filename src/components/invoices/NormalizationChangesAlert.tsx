@@ -108,9 +108,9 @@ export function NormalizationChangesAlert({
                 Cambios Aplicados
               </div>
               <div className="space-y-1.5">
-                {changes.map((change, index) => (
+                {changes.map((change) => (
                   <div
-                    key={index}
+                    key={`${change.field}-${change.rule}`}
                     className="flex items-start gap-2 text-xs bg-background/50 rounded-md p-2 border border-border/30"
                   >
                     <Badge
@@ -145,9 +145,9 @@ export function NormalizationChangesAlert({
                 Advertencias
               </div>
               <div className="space-y-1">
-                {warnings.map((warning, index) => (
+                {warnings.map((warning) => (
                   <div
-                    key={index}
+                    key={warning}
                     className="text-xs bg-warning/5 rounded-md p-2 border border-warning/20 text-warning-foreground"
                   >
                     {warning}

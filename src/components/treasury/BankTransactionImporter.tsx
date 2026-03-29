@@ -169,7 +169,7 @@ export const BankTransactionImporter = ({ accountId, onImportComplete }: BankTra
                 </TableHeader>
                 <TableBody>
                   {preview.map((row, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={row.referencia || row.reference || `${row.fecha || row.date}-${index}`}>
                       <TableCell>{row.fecha || row.date}</TableCell>
                       <TableCell>{row.descripcion || row.description || row.concepto}</TableCell>
                       <TableCell className="text-right">

@@ -53,8 +53,8 @@ export const ProgressTable = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {items.map((item, index) => (
-            <div key={index}>
+          {items.map((item) => (
+            <div key={item.name}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{item.name}</span>

@@ -173,7 +173,7 @@ export function ErrorExportDialog({ open, onOpenChange, errors, warnings }: Erro
                   </TableRow>
                 ) : (
                   filteredIssues.map((issue, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={`${issue.error_type}-${issue.entity_type}-${issue.entity_number ?? index}-${issue.field ?? ''}`}>
                       <TableCell>
                         <Badge variant={SEVERITY_LABELS[issue.severity].variant}>
                           {SEVERITY_LABELS[issue.severity].label}

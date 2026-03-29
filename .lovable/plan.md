@@ -1,102 +1,54 @@
 
-Plan: arreglar la selección para que sí cambie y hacer visible “mis restaurantes” en el dashboard
 
-## Lo que está fallando ahora
+# Plan: Eliminar "Sociedad" como nivel de filtro — simplificar a Franquiciado > Restaurante
 
-He revisado el código y hay 4 causas reales:
+## Concepto
 
-1. `useSyncViewAndFilters.ts` hace el primer sync demasiado pronto.  
-   Si `selectedView` se carga antes de que lleguen `useAllUserCentres/useAllUserCompanies`, guarda `franchiseeId/companyId` como `null` y luego ya no recalcula porque el guard de `prevViewRef` lo bloquea.
-
-2. El sync inverso ignora el estado “solo franquiciado”.  
-   Si en la top bar eliges franquiciado pero no sociedad/centro, `selectedView` no cambia nunca.
-
-3. `CompactOrgSelector.tsx` ya no resetea bien la jerarquía.  
-   Tras el fix anterior, cambiar franquiciado puede dejar `companyId/centreCode` antiguos, creando combinaciones inválidas y una UI que “parece no cambiar”.
-
-4. El dashboard no muestra los restaurantes accesibles del franquiciado y, además, `useDashboardMain.ts` en vista `all` consulta centros globales en vez de limitarse a los del usuario.
-
-## Enfoque que voy a implementar
-
-Voy a tratar la selección de franquiciado como una vista consolidada válida de “mis restaurantes”, manteniendo sincronizados sidebar + top bar.
+La jerarquía de selección pasa de 3 niveles (Franquiciado > Sociedad > Centro) a 2 niveles (Franquiciado > Restaurante). La sociedad sigue existiendo en la base de datos asociada a cada restaurante, pero deja de ser un filtro seleccionable por el usuario.
 
 ## Cambios
 
-### 1. Rehacer la sincronización para soportar bien los 3 niveles
-Archivo: `src/hooks/useSyncViewAndFilters.ts`
+### 1. `CompactOrgSelector.tsx` — eliminar selector de Sociedad
 
-- Esperar a que exista la data necesaria antes de cerrar el primer sync View → Filters.
-- Sincronizar por jerarquía completa:
-  - centro seleccionado → `centreCode + companyId + franchiseeId`
-  - sociedad seleccionada → `companyId + franchiseeId`
-  - franquiciado seleccionado → vista consolidada
-- Añadir soporte explícito al caso “solo franquiciado” en Filters → View.
-- Evitar loops comparando el estado jerárquico completo, no solo refs parciales.
+- Quitar el bloque "Entidad Mercantil" (líneas 123-143)
+- Quitar `selectedCompanyId` / `handleCompanyChange` 
+- Los centros se listan directamente filtrados por franquiciado (sin filtro intermedio de sociedad)
+- El badge de filtro activo de sociedad desaparece
+- Limpiar la referencia a `useCompanies`
 
-Resultado esperado:
-- si cambias en la top bar, cambia el sidebar
-- si cambias en el sidebar, cambia la top bar
-- ya no se quedará un franquiciado arriba y otro centro distinto abajo
+### 2. `CentreSelector.tsx` — eliminar opciones de Sociedad en sidebar
 
-### 2. Restaurar resets jerárquicos correctos en el selector superior
-Archivo: `src/components/filters/CompactOrgSelector.tsx`
+- Quitar las `SelectItem` de `company:*` (líneas 173-187)
+- La lista queda: header franquiciado → "Todos los restaurantes" → centros individuales
+- En auto-select, quitar el fallback a `type: 'company'` (líneas 44-55)
 
-- Cambiar handlers para usar `setFilters(...)` por nivel:
-  - al cambiar franquiciado → limpiar sociedad y centro
-  - al cambiar sociedad → limpiar centro
-  - al cambiar centro → mantener franquiciado/sociedad coherentes
-- Mantener “Limpiar” como reset total.
+### 3. `useGlobalFilters.ts` — eliminar `selectedCompanyId`
 
-Esto corrige el estado roto actual donde puedes tener franquiciado nuevo con sociedad/centro viejos.
+- Quitar el campo `selectedCompanyId` del store
+- Quitar `setCompanyId`
+- Quitar `companyId` de `setFilters`
+- Actualizar `reset` para no incluirlo
+- Actualizar el key de persistencia (para invalidar estado guardado con company viejo)
 
-### 3. Hacer que el sidebar también soporte la vista consolidada del franquiciado
-Archivo: `src/components/accounting/CentreSelector.tsx`
+### 4. `useSyncViewAndFilters.ts` — eliminar referencias a company
 
-- Añadir opción seleccionable de vista consolidada por franquiciado (por ejemplo: “Todos los restaurantes de X”).
-- Mantener sociedad y centro como opciones hijas.
-- Cambiar el autoselect actual:
-  - si solo hay 1 restaurante → seleccionar ese centro
-  - si hay varios → seleccionar por defecto la vista consolidada del franquiciado, no la primera sociedad arbitraria
+- Quitar toda la lógica de resolución de `companyId`
+- Simplificar sync a solo 2 niveles: centro → `franchiseeId + centreCode`, o franchisee → `franchiseeId`
+- Quitar el caso `selectedView.type === 'company'` en ambas direcciones
 
-Esto hace que la experiencia tenga sentido para franquiciados con varios restaurantes.
+### 5. `ViewContext` — eliminar tipo `company` de `ViewSelection`
 
-### 4. Mostrar en el dashboard los restaurantes que tiene el usuario
-Archivos:
-- `src/pages/Dashboard.tsx`
-- probablemente un componente nuevo tipo `src/components/dashboard/...`
+- Quitar `'company'` del union type
+- Dejar solo `'centre' | 'all'`
 
-- Añadir un bloque “Mis restaurantes” / “Restaurantes de esta vista”.
-- Mostrar:
-  - total de restaurantes accesibles
-  - lista/chips de restaurantes
-  - restaurante activo resaltado
-- Si la vista es consolidada, mostrar todos los restaurantes de ese franquiciado.
-- Si la vista es una sociedad, mostrar los restaurantes de esa sociedad.
-- Si la vista es un centro, seguir mostrando la lista contextual para que el usuario vea claramente qué restaurantes tiene.
+### 6. Otras páginas que usen `selectedCompanyId`
 
-### 5. Limitar el dashboard solo a restaurantes accesibles del usuario
-Archivo: `src/hooks/useDashboardMain.ts`
+- Buscar y limpiar cualquier referencia a `selectedCompanyId` o `type === 'company'` en páginas como `ProfitAndLoss`, `BankReconciliation`, etc.
 
-- Dejar de usar “todos los centros” de la tabla `centres` para la vista `all`.
-- Resolver `centroCodes` desde los centros accesibles del usuario (`v_user_centres` / hooks derivados), filtrados por franquiciado/sociedad según la vista activa.
-- Mantener para centro individual el uso de `selectedView.code`.
+## Resultado
 
-Esto evita que la vista consolidada del dashboard mezcle centros que no corresponden al franquiciado.
+- Selector top bar: Franquiciado → Restaurante (2 dropdowns)
+- Selector sidebar: Franquiciado (header) → "Todos" → Restaurantes individuales
+- Menos complejidad, menos bugs de sincronización
+- La sociedad se consulta cuando hace falta (ej. datos fiscales de una factura) directamente desde la relación centro→sociedad
 
-## Archivos a tocar
-
-- `src/hooks/useSyncViewAndFilters.ts`
-- `src/components/filters/CompactOrgSelector.tsx`
-- `src/components/accounting/CentreSelector.tsx`
-- `src/pages/Dashboard.tsx`
-- `src/hooks/useDashboardMain.ts`
-
-## Resultado esperado
-
-Después del cambio:
-
-- seleccionar franquiciado/sociedad/centro sí cambiará la vista real
-- sidebar y top bar mostrarán siempre la misma selección
-- el dashboard enseñará los restaurantes que tiene ese franquiciado
-- la vista consolidada será útil y entendible para un franquiciado con varios restaurantes
-- no se mezclarán restaurantes de otros usuarios en el dashboard

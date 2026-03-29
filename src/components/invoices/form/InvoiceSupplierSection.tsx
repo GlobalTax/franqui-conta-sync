@@ -32,11 +32,15 @@ interface InvoiceSupplierSectionProps {
   ocrSupplierEmail?: string;
 }
 
-export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName }: InvoiceSupplierSectionProps) {
+export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName, ocrSupplierAddress, ocrSupplierCity, ocrSupplierPostalCode, ocrSupplierEmail }: InvoiceSupplierSectionProps) {
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const [validatingNIF, setValidatingNIF] = useState(false);
   const [pendingNIF, setPendingNIF] = useState<string>('');
   const [pendingName, setPendingName] = useState<string>('');
+  const [pendingAddress, setPendingAddress] = useState<string>('');
+  const [pendingCity, setPendingCity] = useState<string>('');
+  const [pendingPostalCode, setPendingPostalCode] = useState<string>('');
+  const [pendingEmail, setPendingEmail] = useState<string>('');
   const { data: suppliers } = useSuppliers({ active: true });
 
   const supplierId = watch('supplier_id');

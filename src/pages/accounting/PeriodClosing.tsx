@@ -211,7 +211,7 @@ export default function PeriodClosing() {
                           size="sm"
                           className="gap-2"
                           onClick={() => {
-                            // TODO: Navigate to entry detail
+                            window.open(`/contabilidad/apuntes?entry=${closing.regularization_entry_id}`, '_blank');
                           }}
                         >
                           <FileText className="h-4 w-4" />

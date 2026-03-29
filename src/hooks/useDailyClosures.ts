@@ -118,13 +118,18 @@ export function useValidateClosure() {
 
   return useMutation({
     mutationFn: async (closureId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
       const { data, error } = await supabase
         .from('daily_closures')
         .update({
           status: 'validated_manager',
+          validated_by: user.id,
           validated_at: new Date().toISOString(),
         })
         .eq('id', closureId)
+        .eq('status', 'draft')
         .select()
         .single();
 

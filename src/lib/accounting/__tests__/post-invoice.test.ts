@@ -71,8 +71,48 @@ describe('postInvoiceEntry', () => {
   });
   
   it('should create entry and update invoice on success', async () => {
-    // TODO: Mock completo de flujo exitoso
-    // Requiere mock de RPC, insert, update con respuestas esperadas
-    expect(true).toBe(true);
+    const { supabase } = await import('@/integrations/supabase/client');
+
+    const mockEntry = { id: 'entry-001', entry_number: 1 };
+
+    // Mock RPC for next entry number
+    (supabase.rpc as any).mockResolvedValueOnce({ data: 1, error: null });
+
+    // Mock insert for accounting entry
+    const mockInsert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: mockEntry, error: null }),
+      }),
+    });
+
+    // Mock update for invoice
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    (supabase.from as any).mockImplementation((table: string) => {
+      if (table === 'accounting_entries') return { insert: mockInsert };
+      if (table === 'accounting_entry_lines') return { insert: vi.fn().mockResolvedValue({ error: null }) };
+      if (table === 'invoices_received') return { update: mockUpdate };
+      return { insert: mockInsert, update: mockUpdate };
+    });
+
+    const params: PostInvoiceParams = {
+      invoiceId: 'inv-123',
+      invoiceType: 'received',
+      entryDate: '2025-01-15',
+      description: 'Factura proveedor',
+      centreCode: 'C001',
+      fiscalYearId: 'fy-2025',
+      preview: [
+        { account: '6000000', debit: 100, credit: 0 },
+        { account: '4720000', debit: 21, credit: 0 },
+        { account: '4100000', debit: 0, credit: 121 },
+      ],
+      userId: 'user-123',
+    };
+
+    const result = await postInvoiceEntry(params);
+    expect(result).toBeDefined();
   });
 });

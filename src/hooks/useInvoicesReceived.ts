@@ -158,7 +158,7 @@ export const useInvoicesReceived = (filters?: {
         
         // 🔴 Sprint 3: Nuevos campos (derivados en frontend)
         invoice_type: 'received' as const,
-        file_size_kb: undefined, // TODO: agregar si existe en dominio
+        file_size_kb: (inv as any).fileSizeKb || undefined,
         page_count: inv.ocrPages, // Usar ocr_pages como page_count
         
         supplier: inv.supplier ? {

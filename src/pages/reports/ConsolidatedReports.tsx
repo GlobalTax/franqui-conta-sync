@@ -12,6 +12,7 @@ import { KPISummaryTable } from "@/components/reports/KPISummaryTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent, getPeriodOptions, getPeriodDates } from "@/lib/reports-utils";
 import { logger } from "@/lib/logger";
+import * as XLSX from 'xlsx';
 
 export default function ConsolidatedReports() {
   const { selectedView } = useView();
@@ -29,8 +30,22 @@ export default function ConsolidatedReports() {
   };
 
   const handleExport = () => {
-    // TODO: Implement Excel export
+    if (!data?.centres || data.centres.length === 0) return;
+
     logger.info('ConsolidatedReports', 'Exporting to Excel...');
+
+    const rows = data.centres.map((centre: any) => ({
+      Centro: centre.name || centre.code,
+      Ventas: centre.sales || 0,
+      Gastos: centre.expenses || 0,
+      Resultado: (centre.sales || 0) - (centre.expenses || 0),
+      '% Margen': centre.sales ? (((centre.sales - (centre.expenses || 0)) / centre.sales) * 100).toFixed(1) : '0',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Consolidado');
+    XLSX.writeFile(wb, `consolidado_${selectedPeriod}.xlsx`);
   };
 
   if (!selectedView) {

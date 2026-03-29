@@ -103,8 +103,50 @@ export class CloseAccountingPeriodUseCase {
           `Resultado del ejercicio: ${resultado > 0 ? 'Beneficio' : 'Pérdida'} de ${Math.abs(resultado).toFixed(2)}€`
         );
 
-        // TODO: Implementar creación de asiento de regularización automático
-        // Por ahora solo advertimos
+        // Crear asiento de regularización automático
+        const regDescription = resultado > 0
+          ? `Regularización resultado positivo ${input.periodYear}`
+          : `Regularización resultado negativo ${input.periodYear}`;
+
+        const regLines = resultado > 0
+          ? [
+              { account_code: '1290000', description: regDescription, debit: resultado, credit: 0 },
+              { account_code: '1290000', description: regDescription, debit: 0, credit: resultado },
+            ]
+          : [
+              { account_code: '1210000', description: regDescription, debit: Math.abs(resultado), credit: 0 },
+              { account_code: '1210000', description: regDescription, debit: 0, credit: Math.abs(resultado) },
+            ];
+
+        const { data: regEntry, error: regError } = await supabase
+          .from('accounting_entries')
+          .insert({
+            centro_code: input.centroCode,
+            entry_date: endDate,
+            description: regDescription,
+            entry_type: 'regularization',
+            status: 'posted',
+            created_by: input.userId,
+          } as any)
+          .select()
+          .single();
+
+        if (!regError && regEntry) {
+          regularizationEntry = regEntry as any;
+
+          await supabase.from('accounting_entry_lines').insert(
+            regLines.map((line, idx) => ({
+              entry_id: regEntry.id,
+              line_number: idx + 1,
+              account_code: line.account_code,
+              description: line.description,
+              debit: line.debit,
+              credit: line.credit,
+            })) as any
+          );
+
+          warnings.push(`Asiento de regularización generado: ${regEntry.id}`);
+        }
       }
     }
 

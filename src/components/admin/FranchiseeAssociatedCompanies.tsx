@@ -35,7 +35,7 @@ export function FranchiseeAssociatedCompanies({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Query available companies (without franchisee)
-  const { data: availableCompanies } = useQuery({
+  const { data: availableCompanies, error: availableCompaniesError } = useQuery({
     queryKey: ["available-companies"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -170,6 +170,12 @@ export function FranchiseeAssociatedCompanies({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+
+            {availableCompaniesError && (
+              <div className="p-4 text-center text-destructive">
+                <p>Error al cargar datos</p>
+              </div>
+            )}
 
             <div className="max-h-96 overflow-y-auto">
               {filteredAvailableCompanies?.length === 0 ? (

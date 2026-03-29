@@ -57,6 +57,12 @@ export function AccountSelector({ value, onChange, organizationId }: AccountSele
     },
   });
 
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
+
   const selectedAccount = accounts.find((acc) => acc.code === value);
 
   return (

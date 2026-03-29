@@ -45,6 +45,9 @@ export default function APMappingRules() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ap-mapping-rules'] });
       toast.success('Regla actualizada');
+    },
+    onError: (error: Error) => {
+      toast.error('Error al actualizar regla: ' + error.message);
     }
   });
 

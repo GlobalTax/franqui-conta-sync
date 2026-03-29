@@ -36,7 +36,7 @@ export default function OCRMetrics() {
   const dateRange = getDateRange();
 
   // Query a vista materializada mv_ocr_metrics
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['ocr-metrics'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,7 +51,7 @@ export default function OCRMetrics() {
   });
 
   // Query de distribución de páginas
-  const { data: pageDistribution } = useQuery({
+  const { data: pageDistribution, error: pageDistError } = useQuery({
     queryKey: ['ocr-page-distribution'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_page_distribution');
@@ -61,7 +61,7 @@ export default function OCRMetrics() {
   });
 
   // Query de evolución de costes
-  const { data: costTrend } = useQuery({
+  const { data: costTrend, error: costTrendError } = useQuery({
     queryKey: ['ocr-cost-trend'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_cost_trend_30d');
@@ -71,7 +71,7 @@ export default function OCRMetrics() {
   });
 
   // Query facturas con filtros
-  const { data: invoicesData } = useQuery({
+  const { data: invoicesData, error: invoicesError } = useQuery({
     queryKey: ['ocr-invoices', selectedPeriod, selectedCentro, selectedEngine, selectedStatus],
     queryFn: async () => {
       let query = supabase
@@ -106,7 +106,7 @@ export default function OCRMetrics() {
   });
 
   // Query centros para filtro
-  const { data: centros } = useQuery({
+  const { data: centros, error: centrosError } = useQuery({
     queryKey: ['centres-list'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -137,6 +137,12 @@ export default function OCRMetrics() {
       </div>
     );
   }
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   // Calcular totales desde métricas
   const totalInvoices = metrics?.reduce((sum, m) => sum + (m.total_invocations as number), 0) || 0;

@@ -11,7 +11,7 @@ interface FranchiseeAuditLogProps {
 }
 
 export function FranchiseeAuditLog({ franchiseeId }: FranchiseeAuditLogProps) {
-  const { data: auditLogs, isLoading } = useQuery({
+  const { data: auditLogs, isLoading, error } = useQuery({
     queryKey: ["franchisee-audit-logs", franchiseeId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,6 +46,12 @@ export function FranchiseeAuditLog({ franchiseeId }: FranchiseeAuditLogProps) {
       </Card>
     );
   }
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   return (
     <Card>

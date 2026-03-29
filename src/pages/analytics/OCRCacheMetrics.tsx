@@ -13,7 +13,7 @@ export default function OCRCacheMetrics() {
   const { toast } = useToast();
 
   // Query cache metrics
-  const { data: cacheMetrics, isLoading } = useQuery({
+  const { data: cacheMetrics, isLoading, error } = useQuery({
     queryKey: ['ocr-cache-metrics'],
     queryFn: async () => {
       const thirtyDaysAgo = new Date();
@@ -64,6 +64,12 @@ export default function OCRCacheMetrics() {
       </div>
     );
   }
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   // Aggregate metrics by level
   const aggregatedByLevel = cacheMetrics?.reduce((acc, metric) => {

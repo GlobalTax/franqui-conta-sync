@@ -92,6 +92,9 @@ export default function APLearningDashboard() {
       queryClient.invalidateQueries({ queryKey: ['ap-learning-corrections'] });
       queryClient.invalidateQueries({ queryKey: ['ap-mapping-rules'] });
       toast.success("Estado actualizado");
+    },
+    onError: (error: Error) => {
+      toast.error("Error al actualizar estado: " + error.message);
     }
   });
 

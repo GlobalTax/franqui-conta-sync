@@ -164,7 +164,7 @@ const AcceptInvite = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Card className="p-8 max-w-md text-center">
-          <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Email no coincide</h2>
           <p className="text-muted-foreground mb-2">
             Esta invitación fue enviada a <strong>{inviteData?.email}</strong>

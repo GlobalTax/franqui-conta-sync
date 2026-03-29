@@ -1,12 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/lib/logger';
 
+/**
+ * Hook principal de notificaciones.
+ * Devuelve notifications, unreadCount, isLoading y mutations.
+ * Una sola suscripción Realtime por instancia — no duplica canales.
+ */
 export const useNotifications = () => {
   const queryClient = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Query inicial - solo 1 vez al cargar
   const query = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
@@ -22,22 +27,29 @@ export const useNotifications = () => {
       if (error) throw error;
       return data;
     },
-    refetchOnWindowFocus: true,  // Solo refetch al volver a la pestaña
-    refetchInterval: false,       // ✅ NO polling automático (eliminamos 120 queries/hora)
+    refetchOnWindowFocus: true,
+    refetchInterval: false,
   });
 
-  // ✅ REALTIME: Suscripción a cambios en tiempo real
+  // Suscripción Realtime — una sola vez, limpieza correcta
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
+    let cancelled = false;
 
-    const setupRealtimeSubscription = async () => {
+    const setup = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
 
-      logger.info('useNotifications', 'Iniciando suscripcion Realtime para notificaciones...');
+      // Limpiar canal anterior si existe
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      const channelName = `notif-${user.id}`;
+      logger.info('useNotifications', `Suscribiendo canal ${channelName}`);
 
       const channel = supabase
-        .channel('notifications-realtime')
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -47,9 +59,7 @@ export const useNotifications = () => {
             filter: `destinatario_user_id=eq.${user.id}`,
           },
           (payload) => {
-            logger.debug('useNotifications', 'Nueva notificacion recibida:', payload.new);
-
-            // Añadir notificación nueva al inicio del cache sin refetch
+            logger.debug('useNotifications', 'Nueva notificacion:', payload.new);
             queryClient.setQueryData(['notifications'], (old: any) => {
               return [payload.new, ...(old || [])];
             });
@@ -65,8 +75,6 @@ export const useNotifications = () => {
           },
           (payload) => {
             logger.debug('useNotifications', 'Notificacion actualizada:', payload.new);
-
-            // Actualizar notificación en el cache
             queryClient.setQueryData(['notifications'], (old: any) => {
               return old?.map((n: any) =>
                 n.id === payload.new.id ? payload.new : n
@@ -74,35 +82,48 @@ export const useNotifications = () => {
             });
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            logger.info('useNotifications', 'Suscripcion Realtime establecida');
-          } else if (status === 'CLOSED') {
-            logger.info('useNotifications', 'Suscripcion Realtime cerrada');
+            logger.info('useNotifications', `Canal ${channelName} activo`);
           } else if (status === 'CHANNEL_ERROR') {
-            logger.error('useNotifications', 'Error en canal Realtime');
+            logger.error('useNotifications', `Error canal ${channelName}`, err);
+          } else if (status === 'CLOSED') {
+            logger.debug('useNotifications', `Canal ${channelName} cerrado`);
           }
         });
 
-      cleanup = () => {
-        logger.debug('useNotifications', 'Limpiando suscripcion Realtime...');
-        supabase.removeChannel(channel);
-      };
+      channelRef.current = channel;
     };
 
-    setupRealtimeSubscription();
+    setup();
 
     return () => {
-      cleanup?.();
+      cancelled = true;
+      if (channelRef.current) {
+        logger.debug('useNotifications', 'Cleanup: removiendo canal');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient]);
 
-  return query;
+  // Derivar unreadCount del cache sin crear otra suscripción
+  const unreadCount = useMemo(() => {
+    return query.data?.filter((n) => !n.leida).length || 0;
+  }, [query.data]);
+
+  return {
+    ...query,
+    unreadCount,
+  };
 };
 
+/**
+ * @deprecated Usar useNotifications().unreadCount en su lugar
+ */
 export const useUnreadCount = () => {
-  const { data: notifications } = useNotifications();
-  return notifications?.filter(n => !n.leida).length || 0;
+  const { unreadCount } = useNotifications();
+  return unreadCount;
 };
 
 export const useMarkAsRead = () => {

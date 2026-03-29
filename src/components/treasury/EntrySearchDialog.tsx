@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useAccountingEntries } from '@/hooks/useAccountingEntries';
 import { useCreateReconciliation } from '@/hooks/useBankReconciliation';
-import { format } from 'date-fns';
+import { format, subDays, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Search, FileText, CheckCircle2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,10 +37,8 @@ export const EntrySearchDialog = ({
 
   // Calcular rango de fechas
   const txDate = new Date(transactionDate);
-  const startDate = new Date(txDate);
-  startDate.setDate(startDate.getDate() - dateTolerance);
-  const endDate = new Date(txDate);
-  endDate.setDate(endDate.getDate() + dateTolerance);
+  const startDate = subDays(txDate, dateTolerance);
+  const endDate = addDays(txDate, dateTolerance);
 
   const { data: entries = [], isLoading } = useAccountingEntries(centroCode, {
     startDate: format(startDate, 'yyyy-MM-dd'),

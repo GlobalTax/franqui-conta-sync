@@ -96,7 +96,7 @@ function addOfficialHeader(
 
 // Añadir pie de página oficial
 function addOfficialFooter(
-  doc: jsPDF,
+  doc: any,
   pageNumber: number,
   documentHash: string
 ) {

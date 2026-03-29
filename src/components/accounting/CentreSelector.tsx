@@ -21,27 +21,22 @@ export const CentreSelector = ({ value, onChange }: CentreSelectorProps) => {
   const isError = centresIsError;
   const error = centresError;
 
-  // Auto-select centre 1050 - Islazul when data loads and no view is selected (temporary for testing)
+  // Auto-select first available centre when data loads and no view is selected
   useEffect(() => {
     if (!isLoading && !value && franchiseesWithCentres?.length) {
-      // Search for centre with code "1050" (Islazul)
-      let found1050 = null;
-      for (const franchisee of franchiseesWithCentres) {
-        found1050 = franchisee.centres.find(c => c.codigo === '1050');
-        if (found1050) break;
-      }
-      
-      if (found1050) {
+      // If only one franchisee with one centre, auto-select it
+      const allCentres = franchiseesWithCentres.flatMap(f => f.centres);
+      if (allCentres.length === 1) {
+        const centre = allCentres[0];
         onChange({
           type: 'centre',
-          id: found1050.id,
-          code: found1050.codigo,
-          name: `${found1050.codigo} - ${found1050.nombre}`
+          id: centre.id,
+          code: centre.codigo,
+          name: `${centre.codigo} - ${centre.nombre}`
         });
-      } else {
-        // Fallback: select first company if 1050 not found
-        const firstFranchisee = franchiseesWithCompanies?.[0];
-        const firstCompany = firstFranchisee?.companies[0];
+      } else if (franchiseesWithCompanies?.length) {
+        // Multiple centres: default to first company (consolidated view)
+        const firstCompany = franchiseesWithCompanies[0]?.companies[0];
         if (firstCompany) {
           onChange({
             type: 'company',

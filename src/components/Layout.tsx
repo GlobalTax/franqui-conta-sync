@@ -64,6 +64,7 @@ import { useState } from "react";
 import { logger } from "@/lib/logger";
 import CompactOrgSelector from "@/components/filters/CompactOrgSelector";
 import { CommandPaletteButton } from "@/components/layout/CommandPaletteButton";
+import { useSyncViewAndFilters } from "@/hooks/useSyncViewAndFilters";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -76,6 +77,9 @@ const Layout = () => {
   
   // Ensure a default view is selected when data loads
   useEnsureDefaultView();
+  
+  // Keep sidebar CentreSelector and top bar CompactOrgSelector in sync
+  useSyncViewAndFilters();
 
   logger.debug('Layout', '🔐 isAdmin:', isAdmin);
 

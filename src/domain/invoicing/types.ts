@@ -10,6 +10,7 @@ export interface InvoiceReceived {
   id: string;
   supplierId: string | null;
   centroCode: string;
+  documentType: DocumentType;
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
@@ -53,6 +54,7 @@ export interface InvoiceReceived {
 export interface InvoiceIssued {
   id: string;
   centroCode: string;
+  documentType: DocumentType;
   customerName: string;
   customerTaxId: string | null;
   customerEmail: string | null;
@@ -120,6 +122,11 @@ export interface SupplierInfo {
   name: string;
   taxId: string;
 }
+
+/**
+ * Tipo de documento fiscal
+ */
+export type DocumentType = 'invoice' | 'credit_note' | 'ticket';
 
 /**
  * Estados de factura

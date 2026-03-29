@@ -142,9 +142,19 @@ export class InvoiceEntryValidator {
       confidenceScore -= 20;
     }
     
-    if (input.normalized_invoice.totals.total <= 0) {
-      blockingIssues.push('El total de la factura debe ser mayor a 0');
-      confidenceScore -= 25;
+    const isCreditNote = input.normalized_invoice.document_type === 'credit_note';
+    if (isCreditNote) {
+      // Abonos: total debe ser negativo
+      if (input.normalized_invoice.totals.total >= 0) {
+        blockingIssues.push('El total de un abono/rectificativa debe ser negativo');
+        confidenceScore -= 25;
+      }
+    } else {
+      // Facturas normales: total debe ser positivo
+      if (input.normalized_invoice.totals.total <= 0) {
+        blockingIssues.push('El total de la factura debe ser mayor a 0');
+        confidenceScore -= 25;
+      }
     }
     
     // ========================================================================
@@ -210,7 +220,10 @@ export class InvoiceEntryValidator {
         .reduce((sum, t) => sum + t.quota, 0);
     
     // Validar coherencia fiscal con validateVATCoherence
-    const vatCheck = validateVATCoherence(subtotal, taxTotal, totals.total);
+    // Para abonos, usar valores absolutos ya que los signos están invertidos uniformemente
+    const vatCheck = isCreditNote
+      ? validateVATCoherence(Math.abs(subtotal), Math.abs(taxTotal), Math.abs(totals.total))
+      : validateVATCoherence(subtotal, taxTotal, totals.total);
     
     if (!vatCheck.valid) {
       blockingIssues.push(`IVA_INCOHERENTE: ${vatCheck.reason}`);
@@ -218,18 +231,23 @@ export class InvoiceEntryValidator {
     }
     
     // Validar cálculos individuales de IVA con validateVATCalculation
+    // Para abonos, usar valores absolutos
     if (totals.base_21 !== null && totals.vat_21 !== null) {
-      const vat21Check = validateVATCalculation(totals.base_21, totals.vat_21, 0.21);
-      
+      const b21 = isCreditNote ? Math.abs(totals.base_21) : totals.base_21;
+      const v21 = isCreditNote ? Math.abs(totals.vat_21) : totals.vat_21;
+      const vat21Check = validateVATCalculation(b21, v21, 0.21);
+
       if (!vat21Check.valid) {
         warnings.push(`IVA 21%: ${vat21Check.reason}`);
         confidenceScore -= 5;
       }
     }
-    
+
     if (totals.base_10 !== null && totals.vat_10 !== null) {
-      const vat10Check = validateVATCalculation(totals.base_10, totals.vat_10, 0.10);
-      
+      const b10 = isCreditNote ? Math.abs(totals.base_10) : totals.base_10;
+      const v10 = isCreditNote ? Math.abs(totals.vat_10) : totals.vat_10;
+      const vat10Check = validateVATCalculation(b10, v10, 0.10);
+
       if (!vat10Check.valid) {
         warnings.push(`IVA 10%: ${vat10Check.reason}`);
         confidenceScore -= 5;

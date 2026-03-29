@@ -43,8 +43,12 @@ export const ExportButton = ({
   const handleExportCSV = async () => {
     const { utils } = await import("xlsx");
     const ws = utils.json_to_sheet(data);
-    const csv = utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    // Usar punto y coma como separador (estándar español) para evitar
+    // conflictos con la coma decimal usada en formato es-ES
+    const csv = utils.sheet_to_csv(ws, { FS: ";" });
+    // BOM para que Excel reconozca UTF-8
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}.csv`;

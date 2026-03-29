@@ -434,27 +434,79 @@ serve(async (req) => {
       processingTimeMs,
     });
 
-    // 13. Build AP mapping stub
-    const apMappingStub = {
+    // 13. Build AP mapping with intelligent rules lookup
+    let apMapping: any = null;
+
+    // Try to find matching AP rules from the database
+    const supplierTaxId = supplierMatch?.tax_id || normalized.issuer?.vat_id || null;
+    let matchedRule: any = null;
+
+    if (supplierTaxId) {
+      // First try exact supplier match
+      const { data: supplierRule } = await supabase
+        .from('ap_mapping_rules')
+        .select('*')
+        .eq('supplier_tax_id', supplierTaxId)
+        .eq('active', true)
+        .order('priority', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (supplierRule) {
+        matchedRule = supplierRule;
+      }
+    }
+
+    // If no supplier rule, try keyword-based rules
+    if (!matchedRule && normalized.lines?.length > 0) {
+      const firstLineDesc = (normalized.lines[0]?.description || '').toLowerCase();
+      const { data: keywordRules } = await supabase
+        .from('ap_mapping_rules')
+        .select('*')
+        .eq('active', true)
+        .eq('match_type', 'keyword')
+        .order('priority', { ascending: false })
+        .limit(10);
+
+      if (keywordRules) {
+        matchedRule = keywordRules.find((rule: any) => {
+          if (!rule.text_keywords?.length) return false;
+          return rule.text_keywords.some((kw: string) => firstLineDesc.includes(kw.toLowerCase()));
+        }) || null;
+      }
+    }
+
+    // Use supplier's default account if available and no rule found
+    const defaultExpenseAccount = matchedRule?.suggested_expense_account 
+      || supplierMatch?.default_account_code 
+      || '6290000';
+    const defaultTaxAccount = matchedRule?.suggested_tax_account || '4720001';
+    const defaultApAccount = matchedRule?.suggested_ap_account || '4000000';
+    const ruleConfidence = matchedRule ? (matchedRule.confidence_score || 0.8) : (supplierMatch?.default_account_code ? 0.7 : 0.5);
+    const ruleRationale = matchedRule 
+      ? `Regla: ${matchedRule.rule_name}` 
+      : (supplierMatch?.default_account_code ? `Cuenta por defecto del proveedor: ${supplierMatch.name}` : 'Default mapping - pendiente de revisión');
+
+    apMapping = {
       invoice_level: {
-        account_suggestion: '6290000',
-        tax_account: '4720001',
-        ap_account: '4000000',
+        account_suggestion: defaultExpenseAccount,
+        tax_account: defaultTaxAccount,
+        ap_account: defaultApAccount,
         centre_id: centroCode !== 'temp' ? centroCode : null,
-        confidence_score: 0.5,
-        rationale: 'Default mapping - pendiente de revisión',
-        matched_rule_id: null,
-        matched_rule_name: null,
+        confidence_score: ruleConfidence,
+        rationale: ruleRationale,
+        matched_rule_id: matchedRule?.id || null,
+        matched_rule_name: matchedRule?.rule_name || null,
       },
       line_level: (normalized.lines || []).map((line: any) => ({
-        account_suggestion: '6290000',
-        tax_account: '4720001',
-        ap_account: '4000000',
+        account_suggestion: defaultExpenseAccount,
+        tax_account: defaultTaxAccount,
+        ap_account: defaultApAccount,
         centre_id: centroCode !== 'temp' ? centroCode : null,
-        confidence_score: 0.5,
-        rationale: `Línea: ${(line.description || '').substring(0, 50)}`,
-        matched_rule_id: null,
-        matched_rule_name: null,
+        confidence_score: ruleConfidence,
+        rationale: `${ruleRationale} | Línea: ${(line.description || '').substring(0, 50)}`,
+        matched_rule_id: matchedRule?.id || null,
+        matched_rule_name: matchedRule?.rule_name || null,
       })),
     };
 

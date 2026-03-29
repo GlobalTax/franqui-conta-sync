@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { MigrationStep, LogSeverity } from "@/lib/migration/migrationLogger";
+import { logger } from "@/lib/logger";
 
 interface LogEntry {
   id: string;
@@ -89,7 +90,7 @@ export function LogsViewer({
         setTotalLogs(data[0].total_count || 0);
       }
     } catch (error: any) {
-      console.error('Error fetching logs:', error);
+      logger.error('LogsViewer', 'Error fetching logs', error);
       toast.error(`Error al cargar logs: ${error.message}`);
     } finally {
       setLoading(false);

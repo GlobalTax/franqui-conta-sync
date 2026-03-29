@@ -36,6 +36,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface CommandItem {
   id: string;
@@ -362,7 +363,7 @@ export function CommandPalette() {
         searchCache.set(search, items);
         setDynamicItems(items);
       } catch (error) {
-        console.error('[CommandPalette] Search error:', error);
+        logger.error('CommandPalette', 'Search error', error);
       } finally {
         setIsLoading(false);
       }

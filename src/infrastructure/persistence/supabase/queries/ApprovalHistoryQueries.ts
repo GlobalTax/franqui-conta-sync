@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 import type { InvoiceApproval } from "@/domain/invoicing/types";
 
 export interface CreateApprovalRecord {
@@ -28,7 +29,7 @@ export class ApprovalHistoryQueries {
     } as any);
 
     if (error) {
-      console.error('Error recording approval history:', error);
+      logger.error('ApprovalHistoryQueries', 'Error recording approval history', error);
       throw new Error(`Error registrando historial de aprobación: ${error.message}`);
     }
   }

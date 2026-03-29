@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Eye, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface JournalAdvancedImporterProps {
   open: boolean;
@@ -111,7 +112,7 @@ export function JournalAdvancedImporter({
 
     } catch (error: any) {
       toast.error(error.message || 'Error en preview');
-      console.error(error);
+      logger.error('JournalAdvancedImporter', 'Error en preview', error);
     } finally {
       setUploadProgress(0);
     }
@@ -145,7 +146,7 @@ export function JournalAdvancedImporter({
 
     } catch (error: any) {
       toast.error(error.message || 'Error en importación');
-      console.error(error);
+      logger.error('JournalAdvancedImporter', 'Error en importación', error);
     } finally {
       setImporting(false);
     }

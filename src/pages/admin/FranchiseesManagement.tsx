@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from '@/lib/logger';
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -90,7 +91,7 @@ const FranchiseesManagement = () => {
 
       setFranchisees(enrichedData);
     } catch (err: any) {
-      console.error("Error loading franchisees:", err);
+      logger.error("FranchiseesManagement", "Error loading franchisees", err);
       toast({
         title: "Error",
         description: "No se pudieron cargar los franchisees",

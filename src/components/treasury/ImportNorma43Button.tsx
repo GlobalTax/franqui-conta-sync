@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useParseNorma43 } from '@/hooks/useNorma43';
+import { logger } from '@/lib/logger';
 
 interface ImportNorma43ButtonProps {
   centroCode: string;
@@ -29,7 +30,7 @@ export function ImportNorma43Button({ centroCode, bankAccountId, onImportSuccess
       
       onImportSuccess?.();
     } catch (error) {
-      console.error('Norma43 import error:', error);
+      logger.error('ImportNorma43Button', 'Norma43 import error', error);
     } finally {
       event.target.value = '';
     }

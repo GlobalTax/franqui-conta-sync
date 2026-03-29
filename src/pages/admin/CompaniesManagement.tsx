@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from '@/lib/logger';
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -112,7 +113,7 @@ const CompaniesManagement = () => {
 
       setCompanies(companiesWithCounts);
     } catch (err: any) {
-      console.error("Error loading companies:", err);
+      logger.error("CompaniesManagement", "Error loading companies", err);
       toast({
         title: "Error",
         description: "No se pudieron cargar las sociedades mercantiles",
@@ -189,7 +190,7 @@ const CompaniesManagement = () => {
       setDialogOpen(false);
       loadCompanies();
     } catch (err: any) {
-      console.error("Error saving company:", err);
+      logger.error("CompaniesManagement", "Error saving company", err);
       toast({
         title: "Error",
         description: err.message || "No se pudo guardar la sociedad mercantil",
@@ -244,7 +245,7 @@ const CompaniesManagement = () => {
       setDeleteDialogOpen(false);
       loadCompanies();
     } catch (err: any) {
-      console.error("Error deleting companies:", err);
+      logger.error("CompaniesManagement", "Error deleting companies", err);
       toast({
         title: "Error",
         description: err.message || "No se pudieron eliminar las sociedades",

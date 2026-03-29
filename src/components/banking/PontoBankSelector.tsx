@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Loader2 } from "lucide-react";
 import { usePontoInstitutions } from "@/hooks/usePontoInstitutions";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface PontoBankSelectorProps {
   centroCode: string;
@@ -38,7 +39,7 @@ export function PontoBankSelector({ centroCode, onConnectionStart }: PontoBankSe
       // Redirect to Ponto OAuth
       window.location.href = authUrl.toString();
     } catch (error) {
-      console.error("Connection error:", error);
+      logger.error('PontoBankSelector', 'Connection error', error);
     }
   };
 

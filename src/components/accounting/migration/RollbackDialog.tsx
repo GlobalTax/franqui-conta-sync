@@ -17,6 +17,7 @@ import { AlertTriangle, Loader2, Trash2, CheckCircle2, XCircle } from "lucide-re
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger";
 
 interface MigrationRun {
   id: string;
@@ -103,7 +104,7 @@ export function RollbackDialog({ open, onOpenChange, migrationRun }: RollbackDia
       }, 3000);
 
     } catch (error: any) {
-      console.error('Error en rollback:', error);
+      logger.error('RollbackDialog', 'Error en rollback', error);
       toast.error(`Error: ${error.message}`);
       setResult({ success: false, error: error.message });
     } finally {

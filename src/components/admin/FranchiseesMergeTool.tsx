@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, AlertTriangle, ArrowRight, Building2, Users } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface FranchiseesMergeToolProps {
   duplicate: {
@@ -54,7 +55,7 @@ export const FranchiseesMergeTool = ({
         companies: companiesResult.data?.length || 0,
       });
     } catch (error) {
-      console.error("Error loading relations preview:", error);
+      logger.error("FranchiseesMergeTool", "Error loading relations preview", error);
     }
   };
 
@@ -105,7 +106,7 @@ export const FranchiseesMergeTool = ({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error merging franchisees:", error);
+      logger.error("FranchiseesMergeTool", "Error merging franchisees", error);
       toast({
         title: "Error en la fusión",
         description: error.message || "No se pudieron fusionar los franquiciados",

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Building2, Search } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { useBulkInvoiceActions } from '@/hooks/useBulkInvoiceActions';
 import { useOrganization } from '@/hooks/useOrganization';
 
@@ -73,7 +74,7 @@ export function AssignCentreDialog({
       onOpenChange(false);
       onComplete?.();
     } catch (error) {
-      console.error('Assign centre error:', error);
+      logger.error('AssignCentreDialog', 'Assign centre error', error);
     }
   };
 

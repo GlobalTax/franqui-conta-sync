@@ -7,6 +7,7 @@ import { generateMigrationSummary } from "@/lib/migration/migrationSummaryServic
 import { generateMigrationPDF } from "@/lib/migration/generateMigrationPDF";
 import { generateMigrationExcel } from "@/lib/migration/generateMigrationExcel";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface MigrationSummaryExportProps {
   fiscalYearId: string;
@@ -31,7 +32,7 @@ export function MigrationSummaryExport({
       });
       toast.success("PDF generado correctamente");
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      logger.error('MigrationSummaryExport', 'Error generating PDF', error);
       toast.error("Error al generar el PDF");
     } finally {
       setLoading(false);
@@ -45,7 +46,7 @@ export function MigrationSummaryExport({
       generateMigrationExcel(summary);
       toast.success("Excel generado correctamente");
     } catch (error) {
-      console.error("Error generating Excel:", error);
+      logger.error('MigrationSummaryExport', 'Error generating Excel', error);
       toast.error("Error al generar el Excel");
     } finally {
       setLoading(false);
@@ -63,7 +64,7 @@ export function MigrationSummaryExport({
       generateMigrationExcel(summary);
       toast.success("PDF y Excel generados correctamente");
     } catch (error) {
-      console.error("Error generating files:", error);
+      logger.error('MigrationSummaryExport', 'Error generating files', error);
       toast.error("Error al generar los archivos");
     } finally {
       setLoading(false);

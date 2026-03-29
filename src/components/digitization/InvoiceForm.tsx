@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface InvoiceFormProps {
   data: any;
@@ -37,7 +38,7 @@ export function InvoiceForm({ data, invoiceId }: InvoiceFormProps) {
       if (error) throw error;
       toast.success('Cambios guardados');
     } catch (error) {
-      console.error('Error saving invoice:', error);
+      logger.error('InvoiceForm', 'Error saving invoice', error);
       toast.error('Error al guardar cambios');
     } finally {
       setIsSaving(false);

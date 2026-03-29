@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ export default function Imports() {
         await stageNominasRows.mutateAsync({ importRunId, rows: parsedData });
       }
     } catch (error) {
-      console.error('Staging error:', error);
+      logger.error('Imports', 'Staging error', error);
     }
   };
 
@@ -130,7 +131,7 @@ export default function Imports() {
       setParsedData([]);
       setCurrentImportRunId(null);
     } catch (error) {
-      console.error('Posting error:', error);
+      logger.error('Imports', 'Posting error', error);
     }
   };
 

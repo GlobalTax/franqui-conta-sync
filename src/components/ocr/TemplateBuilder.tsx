@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Save, Trash2, Plus, Eye, Download, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -253,7 +254,7 @@ export function TemplateBuilder({
       toast.success(existingTemplate ? 'Template actualizado' : 'Template creado');
       onSave?.();
     } catch (error: any) {
-      console.error('Error saving template:', error);
+      logger.error('TemplateBuilder', 'Error saving template', error);
       toast.error('Error al guardar template: ' + error.message);
     }
   };

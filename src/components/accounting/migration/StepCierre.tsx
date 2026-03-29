@@ -21,6 +21,7 @@ import { AdvancedValidationsPanel } from "./AdvancedValidationsPanel";
 import { useAdvancedValidations } from "@/hooks/useAdvancedValidations";
 import { createMigrationLogger } from "@/lib/migration/migrationLogger";
 import { MigrationSummaryExport } from "./MigrationSummaryExport";
+import { logger } from "@/lib/logger";
 
 interface StepCierreProps {
   state: MigrationState;
@@ -89,7 +90,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         toast.success("✅ Validación exitosa - No hay errores");
       }
     } catch (error: any) {
-      console.error('Validation error:', error);
+      logger.error('StepCierre', 'Validation error', error);
       await logger?.error('Error crítico en validación', error);
       toast.error("Error al validar");
       setValidationResult({ valid: false, errors: [], warnings: [] });
@@ -171,7 +172,7 @@ export function StepCierre({ state, onComplete, onPrev, onReset }: StepCierrePro
         throw new Error(data.error || 'Error al cerrar el ejercicio');
       }
     } catch (error: any) {
-      console.error('Closing error:', error);
+      logger.error('StepCierre', 'Closing error', error);
       await logger?.error('Error crítico en cierre de ejercicio', error);
       toast.error(error.message || "Error al cerrar el ejercicio");
     } finally {

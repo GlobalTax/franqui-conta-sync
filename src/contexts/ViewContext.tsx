@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface ViewSelection {
   type: 'all' | 'company' | 'centre';
@@ -34,7 +35,7 @@ export const ViewProvider = ({ children }: { children: ReactNode }) => {
       try {
         setSelectedView(JSON.parse(saved));
       } catch (e) {
-        console.error('Error loading saved view:', e);
+        logger.error('ViewContext', 'Error loading saved view', e);
       }
     }
   }, []);

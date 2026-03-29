@@ -29,7 +29,7 @@ export function FranchiseeAssociatedCentres({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Query available centres (without franchisee)
-  const { data: availableCentres } = useQuery({
+  const { data: availableCentres, error: availableCentresError } = useQuery({
     queryKey: ["available-centres"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -145,6 +145,12 @@ export function FranchiseeAssociatedCentres({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+
+            {availableCentresError && (
+              <div className="p-4 text-center text-destructive">
+                <p>Error al cargar datos</p>
+              </div>
+            )}
 
             <div className="max-h-96 overflow-y-auto">
               {filteredAvailableCentres?.length === 0 ? (

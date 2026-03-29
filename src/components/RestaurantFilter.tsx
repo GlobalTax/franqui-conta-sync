@@ -11,7 +11,7 @@ interface RestaurantFilterProps {
 export function RestaurantFilter({ value, onChange }: RestaurantFilterProps) {
   const { currentMembership, loading } = useOrganization();
 
-  const { data: centres = [] } = useQuery({
+  const { data: centres = [], error } = useQuery({
     queryKey: ['centres-filter', currentMembership?.organization_id],
     queryFn: async () => {
       if (!currentMembership?.organization_id) return [];
@@ -26,6 +26,12 @@ export function RestaurantFilter({ value, onChange }: RestaurantFilterProps) {
   });
 
   if (loading) return null;
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   const canViewAll = currentMembership?.role === "admin" ||
     (currentMembership?.role === "contable" && !currentMembership?.restaurant_id);

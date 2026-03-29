@@ -60,7 +60,7 @@ export default function SimplePLMapping() {
   });
 
   // Fetch P&L lines
-  const { data: plLines } = useQuery({
+  const { data: plLines, error: plLinesError } = useQuery({
     queryKey: ["pl-lines"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -75,7 +75,7 @@ export default function SimplePLMapping() {
   });
 
   // Fetch current mappings
-  const { data: mappings, isLoading } = useQuery({
+  const { data: mappings, isLoading, error: mappingsError } = useQuery({
     queryKey: ["account-pl-mappings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -304,7 +304,11 @@ export default function SimplePLMapping() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {(plLinesError || mappingsError) ? (
+            <div className="p-4 text-center text-destructive">
+              <p>Error al cargar datos</p>
+            </div>
+          ) : isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Cargando mapeos...
             </div>

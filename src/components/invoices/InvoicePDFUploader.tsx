@@ -5,6 +5,7 @@ import { Upload, FileText, X, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { buildInvoicePath } from "@/lib/storage-utils";
+import { logger } from "@/lib/logger";
 
 interface InvoicePDFUploaderProps {
   invoiceId?: string;
@@ -75,7 +76,7 @@ export const InvoicePDFUploader = ({
       toast.success("PDF subido correctamente");
       onUploadComplete?.(path);
     } catch (error: any) {
-      console.error("Error uploading file:", error);
+      logger.error("InvoicePDFUploader", "Error uploading file", error);
       toast.error(`Error al subir el archivo: ${error.message}`);
     } finally {
       setUploading(false);
@@ -118,7 +119,7 @@ export const InvoicePDFUploader = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error("Error downloading file:", error);
+      logger.error("InvoicePDFUploader", "Error downloading file", error);
       toast.error(`Error al descargar el archivo: ${error.message}`);
     }
   };
@@ -151,7 +152,7 @@ export const InvoicePDFUploader = ({
       toast.success("PDF eliminado correctamente");
       onUploadComplete?.(null as any);
     } catch (error: any) {
-      console.error("Error deleting file:", error);
+      logger.error("InvoicePDFUploader", "Error deleting file", error);
       toast.error(`Error al eliminar el archivo: ${error.message}`);
     }
   };

@@ -8,6 +8,7 @@ import { ReprocessOCRDialog } from './ReprocessOCRDialog';
 import { RejectInvoiceDialog } from './RejectInvoiceDialog';
 import { AssignCentreDialog } from './AssignCentreDialog';
 import type { InvoiceReceived } from '@/domain/invoicing/types';
+import { logger } from '@/lib/logger';
 
 interface InvoiceQuickActionsProps {
   invoice: InvoiceReceived;
@@ -34,7 +35,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
   // ========== HANDLER: Aprobar factura ==========
   const handleApprove = async () => {
     if (!currentMembership?.user_id) {
-      console.error('No user ID available');
+      logger.error('InvoiceQuickActions', 'No user ID available');
       return;
     }
     
@@ -47,7 +48,7 @@ export function InvoiceQuickActions({ invoice, onActionComplete }: InvoiceQuickA
       });
       onActionComplete?.();
     } catch (error) {
-      console.error('Approve error:', error);
+      logger.error('InvoiceQuickActions', 'Approve error', error);
     }
   };
 

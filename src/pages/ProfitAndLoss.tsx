@@ -13,6 +13,7 @@ import { useView } from "@/contexts/ViewContext";
 import { usePLTemplates } from "@/hooks/usePLTemplates";
 import { usePLReport } from "@/hooks/usePLReport";
 import { usePLAdjustments } from "@/hooks/usePLAdjustments";
+import { logger } from '@/lib/logger';
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -67,9 +68,9 @@ const ProfitAndLoss = () => {
     if (!isPreloaded) {
       setIsPreloaded(true);
       import("@/components/pl/PLTableMultiYear").then(() => {
-        console.log("✅ PLTableMultiYear precargado");
+        logger.debug("ProfitAndLoss", "PLTableMultiYear precargado");
       }).catch((err) => {
-        console.warn("⚠️ Error al precargar PLTableMultiYear:", err);
+        logger.warn("ProfitAndLoss", "Error al precargar PLTableMultiYear:", err);
         setIsPreloaded(false);
       });
     }
@@ -309,7 +310,7 @@ const ProfitAndLoss = () => {
         break;
         
       default:
-        console.warn(`Preset desconocido: ${preset}`);
+        logger.warn("ProfitAndLoss", `Preset desconocido: ${preset}`);
     }
   }, [dateRange.year]);
 

@@ -29,6 +29,7 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { EUROPEAN_COUNTRIES, getCountryISOCode } from '@/lib/constants/countries';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface SupplierFormDialogProps {
   open: boolean;
@@ -113,7 +114,7 @@ export function SupplierFormDialog({
     }
 
     setIsValidating(true);
-    console.log(`[Validation] Calling VIES for ${countryCode}${cleanValue}`);
+    logger.debug('SupplierFormDialog', `Calling VIES for ${countryCode}${cleanValue}`);
 
     try {
       const { data, error } = await supabase.functions.invoke('validate-eu-vat', {
@@ -121,7 +122,7 @@ export function SupplierFormDialog({
       });
 
       if (error) {
-        console.error('[Validation] Supabase error:', error);
+        logger.error('SupplierFormDialog', 'VIES Supabase error', error);
         throw error;
       }
 
@@ -130,7 +131,7 @@ export function SupplierFormDialog({
       setTaxIdValid(valid);
       setTaxIdError(valid ? '' : (viesError || 'CIF/VAT no válido en sistema VIES'));
 
-      console.log(`[Validation] VIES result: valid=${valid}, name=${name}`);
+      logger.debug('SupplierFormDialog', `VIES result: valid=${valid}, name=${name}`);
 
       // Opcional: auto-rellenar nombre si VIES lo devuelve y el campo está vacío
       if (valid && name && !formData.name) {
@@ -140,7 +141,7 @@ export function SupplierFormDialog({
         });
       }
     } catch (err) {
-      console.error('[Validation] Error calling VIES:', err);
+      logger.error('SupplierFormDialog', 'Error calling VIES', err);
       setTaxIdError('⚠️ Error al conectar con VIES. Verifica el formato e intenta de nuevo.');
       setTaxIdValid(false);
     } finally {
@@ -238,7 +239,7 @@ export function SupplierFormDialog({
       }
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving supplier:', error);
+      logger.error('SupplierFormDialog', 'Error saving supplier', error);
     }
   };
 

@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useBankTransactions, BankTransaction } from "@/hooks/useBankTransactions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { logger } from "@/lib/logger";
 
 interface BankTransactionImporterProps {
   accountId: string;
@@ -33,7 +34,7 @@ export const BankTransactionImporter = ({ accountId, onImportComplete }: BankTra
         saldo: null,
       }));
     } catch (error) {
-      console.error('Error parsing Norma43:', error);
+      logger.error('BankTransactionImporter', 'Error parsing Norma43', error);
       return [];
     }
   };

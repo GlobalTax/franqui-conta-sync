@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Cpu, TrendingUp, DollarSign } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export function OCREngineMetrics() {
   const queryClient = useQueryClient();
 
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['ocr-engine-metrics'],
     queryFn: async () => {
       // Get last 100 OCR processing logs
@@ -58,7 +59,7 @@ export function OCREngineMetrics() {
           table: 'ocr_processing_log',
         },
         (payload) => {
-          console.log('📊 Nuevo procesamiento OCR:', payload.new);
+          logger.debug('OCREngineMetrics', 'Nuevo procesamiento OCR', payload.new);
           // Invalidar métricas para recalcular
           queryClient.invalidateQueries({ queryKey: ['ocr-engine-metrics'] });
         }
@@ -69,6 +70,12 @@ export function OCREngineMetrics() {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   if (isLoading || !metrics) {
     return null;

@@ -34,7 +34,7 @@ interface AccountSelectorProps {
 export function AccountSelector({ value, onChange, organizationId }: AccountSelectorProps) {
   const [open, setOpen] = useState(false);
 
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], error } = useQuery({
     queryKey: ["accounts-selector", organizationId],
     queryFn: async () => {
       // Using centres table as temp placeholder for accounts
@@ -56,6 +56,12 @@ export function AccountSelector({ value, onChange, organizationId }: AccountSele
       }));
     },
   });
+
+  if (error) return (
+    <div className="p-4 text-center text-destructive">
+      <p>Error al cargar datos</p>
+    </div>
+  );
 
   const selectedAccount = accounts.find((acc) => acc.code === value);
 

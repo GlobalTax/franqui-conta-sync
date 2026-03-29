@@ -10,6 +10,7 @@ import { useView } from "@/contexts/ViewContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { FiscalYearConfig } from "@/hooks/useHistoricalMigration";
 import { createMigrationRun } from "@/lib/migration/migrationTracking";
+import { logger } from "@/lib/logger";
 
 interface StepConfigProps {
   config: FiscalYearConfig;
@@ -115,7 +116,7 @@ export function StepConfig({ config, onConfigChange, onMigrationRunCreated, onNe
 
       setValidation({ valid: true, message: "Validación exitosa. Puedes continuar." });
     } catch (error) {
-      console.error('Validation error:', error);
+      logger.error('StepConfig', 'Validation error', error);
       setValidation({ valid: false, message: "Error al validar. Intenta de nuevo." });
     } finally {
       setChecking(false);

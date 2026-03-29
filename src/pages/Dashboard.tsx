@@ -8,6 +8,7 @@ import { TreasuryCard } from "@/components/dashboard/TreasuryCard";
 import { IncidentsCard } from "@/components/dashboard/IncidentsCard";
 import { IVASummaryChart } from "@/components/dashboard/IVASummaryChart";
 import { OCRQuickAccessCard } from "@/components/invoices/OCRQuickAccessCard";
+import { MyRestaurantsCard } from "@/components/dashboard/MyRestaurantsCard";
 
 const Dashboard = () => {
   const { selectedView } = useView();
@@ -59,6 +60,9 @@ const Dashboard = () => {
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Mis Restaurantes */}
+        <MyRestaurantsCard />
+
         {/* Acceso Rápido OCR */}
         <OCRQuickAccessCard />
 

@@ -47,19 +47,35 @@ export function useDashboardMain(selectedView: { type: 'all' | 'company' | 'cent
       
       let centroCodes: string[] = [];
 
-      if (selectedView.type === 'all') {
-        const { data: centres } = await supabase
-          .from('centres')
-          .select('codigo');
-        centroCodes = centres?.map(c => c.codigo) || [];
-      } else if (selectedView.type === 'company' && selectedView.id) {
-        const { data: centres } = await supabase
-          .from('centres')
-          .select('codigo')
-          .eq('company_id', selectedView.id);
-        centroCodes = centres?.map(c => c.codigo) || [];
-      } else if (selectedView.code) {
+      if (selectedView.type === 'centre' && selectedView.code) {
         centroCodes = [selectedView.code];
+      } else {
+        // For 'all' or 'company' views, get user-accessible centres only
+        const { data: userCentres } = await supabase
+          .from('v_user_centres')
+          .select('centro_code');
+        
+        let allUserCodes = userCentres?.map(c => c.centro_code) || [];
+
+        if (selectedView.type === 'company' && selectedView.id) {
+          // Filter to centres belonging to this company
+          const { data: companyCentres } = await supabase
+            .from('centres')
+            .select('codigo')
+            .eq('company_id', selectedView.id)
+            .in('codigo', allUserCodes);
+          centroCodes = companyCentres?.map(c => c.codigo) || [];
+        } else if (selectedView.type === 'all' && selectedView.id) {
+          // Filter to centres belonging to this franchisee
+          const { data: franchiseeCentres } = await supabase
+            .from('centres')
+            .select('codigo')
+            .eq('franchisee_id', selectedView.id)
+            .in('codigo', allUserCodes);
+          centroCodes = franchiseeCentres?.map(c => c.codigo) || [];
+        } else {
+          centroCodes = allUserCodes;
+        }
       }
 
       if (centroCodes.length === 0) {

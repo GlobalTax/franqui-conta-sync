@@ -10,14 +10,12 @@ interface GlobalFiltersState {
   setCompanyId: (id: string | null) => void;
   setCentreCode: (code: string | null) => void;
   
-  // Helper to set all at once
   setFilters: (filters: {
     franchiseeId?: string | null;
     companyId?: string | null;
     centreCode?: string | null;
   }) => void;
   
-  // Reset filters
   reset: () => void;
 }
 
@@ -29,15 +27,12 @@ export const useGlobalFilters = create<GlobalFiltersState>()(
       selectedCentreCode: null,
       
       setFranchiseeId: (id) => {
+        // Only change franchiseeId — sync hook handles the rest
         set({ selectedFranchiseeId: id });
       },
       
       setCompanyId: (id) => {
-        set({ 
-          selectedCompanyId: id,
-          // Reset dependent filter
-          selectedCentreCode: null,
-        });
+        set({ selectedCompanyId: id });
       },
       
       setCentreCode: (code) => {
@@ -45,11 +40,11 @@ export const useGlobalFilters = create<GlobalFiltersState>()(
       },
       
       setFilters: (filters) => {
-        set({
-          selectedFranchiseeId: filters.franchiseeId !== undefined ? filters.franchiseeId : undefined,
-          selectedCompanyId: filters.companyId !== undefined ? filters.companyId : undefined,
-          selectedCentreCode: filters.centreCode !== undefined ? filters.centreCode : undefined,
-        });
+        set((state) => ({
+          selectedFranchiseeId: filters.franchiseeId !== undefined ? filters.franchiseeId : state.selectedFranchiseeId,
+          selectedCompanyId: filters.companyId !== undefined ? filters.companyId : state.selectedCompanyId,
+          selectedCentreCode: filters.centreCode !== undefined ? filters.centreCode : state.selectedCentreCode,
+        }));
       },
       
       reset: () => {

@@ -46,7 +46,7 @@ export function useLaborCostKPIs(centroCode?: string, startDate?: string, endDat
       if (payrollError) throw payrollError;
 
       // Obtener horas de Orquest (si hay datos)
-      const { data: scheduleData } = await supabase
+      const { data: scheduleData } = await (supabase as any)
         .from('orquest_schedules')
         .select('total_hours, employee_id')
         .eq('centro_code', centroCode)

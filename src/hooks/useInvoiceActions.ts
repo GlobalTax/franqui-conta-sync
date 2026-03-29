@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { InvoiceCommands } from '@/infrastructure/persistence/supabase/commands/InvoiceCommands';
 import { validateInvoiceForPosting } from '@/lib/invoice-validation';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // INTERFACES
@@ -69,7 +70,7 @@ export function useInvoiceActions() {
       toast.success('Factura aprobada correctamente');
     },
     onError: (error: any) => {
-      console.error('Error approving invoice:', error);
+      logger.error('useInvoiceActions', 'Error approving invoice:', error);
       toast.error(`Error al aprobar: ${error.message}`);
     }
   });
@@ -91,7 +92,7 @@ export function useInvoiceActions() {
       toast.success('Factura rechazada');
     },
     onError: (error: any) => {
-      console.error('Error rejecting invoice:', error);
+      logger.error('useInvoiceActions', 'Error rejecting invoice:', error);
       toast.error(`Error al rechazar: ${error.message}`);
     }
   });
@@ -128,7 +129,7 @@ export function useInvoiceActions() {
       toast.success('Factura reprocesada con Claude correctamente');
     },
     onError: (error: any) => {
-      console.error('Error reprocessing OCR:', error);
+      logger.error('useInvoiceActions', 'Error reprocessing OCR:', error);
       toast.error(`Error al reprocesar: ${error.message}`);
     }
   });

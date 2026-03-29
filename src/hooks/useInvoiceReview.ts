@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 interface AssignCentreParams {
   invoiceId: string;
@@ -25,7 +26,7 @@ export function useInvoiceReview(invoiceId: string | null) {
       toast.success("Centro asignado correctamente");
     },
     onError: (error: any) => {
-      console.error("Error assigning centre:", error);
+      logger.error('useInvoiceReview', 'Error assigning centre:', error);
       toast.error(`Error al asignar centro: ${error.message}`);
     },
   });
@@ -50,7 +51,7 @@ export function useInvoiceReview(invoiceId: string | null) {
       toast.success("Asiento contable generado correctamente");
     },
     onError: (error: any) => {
-      console.error("Error generating entry:", error);
+      logger.error('useInvoiceReview', 'Error generating entry:', error);
       toast.error(
         `Error al generar asiento: ${error.message || "Error desconocido"}`
       );

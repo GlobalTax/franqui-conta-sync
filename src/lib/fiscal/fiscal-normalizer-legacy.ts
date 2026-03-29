@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { normalizeFull } from './composers/normalize-full';
+import { logger } from '@/lib/logger';
 import type { NormalizationChange, NormalizeFullResult } from './types';
 
 export type { NormalizationChange };
@@ -18,6 +19,6 @@ export interface NormalizationResult {
  * @deprecated Use normalizeFull instead
  */
 export function stripAndNormalize(invoice: any): NormalizationResult {
-  console.warn('[DEPRECATED] stripAndNormalize is deprecated. Use normalizeFull from @/lib/fiscal instead.');
+  logger.warn('fiscal-normalizer-legacy', 'stripAndNormalize is deprecated. Use normalizeFull from @/lib/fiscal instead.');
   return normalizeFull(invoice);
 }

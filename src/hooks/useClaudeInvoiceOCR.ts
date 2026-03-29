@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export interface ClaudeOCRParams {
   invoiceId: string;
@@ -38,7 +39,7 @@ export const useClaudeInvoiceOCR = () => {
 
   return useMutation({
     mutationFn: async (params: ClaudeOCRParams): Promise<ClaudeOCRResult> => {
-      console.log('[useClaudeInvoiceOCR] Iniciando procesamiento:', params);
+      logger.info('useClaudeInvoiceOCR', 'Iniciando procesamiento:', params);
 
       const { data, error } = await supabase.functions.invoke('claude-invoice-ocr', {
         body: {
@@ -49,7 +50,7 @@ export const useClaudeInvoiceOCR = () => {
       });
 
       if (error) {
-        console.error('[useClaudeInvoiceOCR] Error:', error);
+        logger.error('useClaudeInvoiceOCR', 'Error:', error);
         throw new Error(error.message || 'Error procesando factura con Claude');
       }
 
@@ -57,7 +58,7 @@ export const useClaudeInvoiceOCR = () => {
         throw new Error(data?.error || 'Error desconocido en procesamiento Claude');
       }
 
-      console.log('[useClaudeInvoiceOCR] ✓ Completado:', {
+      logger.info('useClaudeInvoiceOCR', 'Completado:', {
         invoiceId: data.invoice_id,
         confidence: data.ocr_confidence,
         cost: data.ocr_cost_euros,
@@ -82,11 +83,11 @@ export const useClaudeInvoiceOCR = () => {
       }
 
       if (result.validation && result.validation.errors.length > 0) {
-        console.warn('[useClaudeInvoiceOCR] Errores de validación:', result.validation.errors);
+        logger.warn('useClaudeInvoiceOCR', 'Errores de validacion:', result.validation.errors);
       }
     },
     onError: (error: Error) => {
-      console.error('[useClaudeInvoiceOCR] Error en mutation:', error);
+      logger.error('useClaudeInvoiceOCR', 'Error en mutation:', error);
       toast.error('Error procesando factura', { description: error.message });
     },
   });
@@ -97,7 +98,7 @@ export const useReprocessClaudeOCR = () => {
 
   return useMutation({
     mutationFn: async (invoiceId: string): Promise<ClaudeOCRResult> => {
-      console.log('[useReprocessClaudeOCR] Reprocesando:', invoiceId);
+      logger.info('useReprocessClaudeOCR', 'Reprocesando:', invoiceId);
 
       const { data: invoice, error: fetchError } = await supabase
         .from('invoices_received')

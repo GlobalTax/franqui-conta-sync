@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 
 export const useNotifications = () => {
   const queryClient = useQueryClient();
@@ -31,7 +32,7 @@ export const useNotifications = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log('🔔 Iniciando suscripción Realtime para notificaciones...');
+      logger.info('useNotifications', 'Iniciando suscripcion Realtime para notificaciones...');
 
       const channel = supabase
         .channel('notifications-realtime')
@@ -44,7 +45,7 @@ export const useNotifications = () => {
             filter: `destinatario_user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('🔔 Nueva notificación recibida:', payload.new);
+            logger.debug('useNotifications', 'Nueva notificacion recibida:', payload.new);
             
             // Añadir notificación nueva al inicio del cache sin refetch
             queryClient.setQueryData(['notifications'], (old: any) => {
@@ -61,7 +62,7 @@ export const useNotifications = () => {
             filter: `destinatario_user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('✏️ Notificación actualizada:', payload.new);
+            logger.debug('useNotifications', 'Notificacion actualizada:', payload.new);
             
             // Actualizar notificación en el cache
             queryClient.setQueryData(['notifications'], (old: any) => {
@@ -73,16 +74,16 @@ export const useNotifications = () => {
         )
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Suscripción Realtime establecida');
+            logger.info('useNotifications', 'Suscripcion Realtime establecida');
           } else if (status === 'CLOSED') {
-            console.log('🔌 Suscripción Realtime cerrada');
+            logger.info('useNotifications', 'Suscripcion Realtime cerrada');
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Error en canal Realtime');
+            logger.error('useNotifications', 'Error en canal Realtime');
           }
         });
 
       return () => {
-        console.log('🗑️ Limpiando suscripción Realtime...');
+        logger.debug('useNotifications', 'Limpiando suscripcion Realtime...');
         supabase.removeChannel(channel);
       };
     };

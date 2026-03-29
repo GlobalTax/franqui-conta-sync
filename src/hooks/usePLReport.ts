@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 import type { PLReportLine, PLReportLineAccumulated, PLReportLineWithAdjustments, PLReportSummary, PLReportParams } from "@/types/profit-loss";
 
 /**
@@ -79,7 +80,7 @@ export const usePLReport = ({
         } catch (err: any) {
           // Fallback: si el RPC acumulado no existe o falla, hacer dos llamadas separadas
           if (err.code === '404' || err.code === '400' || err.code === '42883') {
-            console.warn('calculate_pl_report_accumulated no disponible, usando fallback dual');
+            logger.warn('usePLReport', 'calculate_pl_report_accumulated no disponible, usando fallback dual');
             
             const periodDateObj = new Date(periodDate);
             const year = periodDateObj.getFullYear();

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/integrations/supabase/types';
 
 export type OCRProcessingLog = Database['public']['Tables']['ocr_processing_log']['Row'];
@@ -17,7 +18,7 @@ export const useOCRProcessingLogs = (invoiceId: string | null) => {
         .order('created_at', { ascending: true });
       
       if (error) {
-        console.error('Error fetching OCR logs:', error);
+        logger.error('useOCRProcessingLogs', 'Error fetching OCR logs:', error);
         throw error;
       }
       

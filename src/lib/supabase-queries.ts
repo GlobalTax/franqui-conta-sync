@@ -1,5 +1,6 @@
 // Type-safe Supabase query helpers for accounting tables
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 import type {
   Membership,
   Organization,
@@ -69,7 +70,7 @@ export async function getMemberships(userId: string) {
     
     return { data: memberships, error: null };
   } catch (err) {
-    console.error("Error in getMemberships:", err);
+    logger.error('supabase-queries', 'Error in getMemberships:', err);
     return { data: null, error: err };
   }
 }
@@ -609,7 +610,7 @@ export async function getAllUsersWithRoles() {
       .in("user_id", userIds);
     
     if (rolesError) {
-      console.warn("Error loading user_roles, continuing without roles:", rolesError);
+      logger.warn('supabase-queries', 'Error loading user_roles, continuing without roles:', rolesError);
     }
 
     // Paso 3: Cargar centres y franchisees por separado
@@ -643,7 +644,7 @@ export async function getAllUsersWithRoles() {
 
     return { data: enrichedProfiles, error: null };
   } catch (err) {
-    console.error("Error in getAllUsersWithRoles:", err);
+    logger.error('supabase-queries', 'Error in getAllUsersWithRoles:', err);
     return { data: null, error: err as any };
   }
 }

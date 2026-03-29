@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 interface SyncOptions {
   connection_id: string;
@@ -33,7 +34,7 @@ export const usePontoSync = () => {
     },
     onError: (error) => {
       toast.error("Error en sincronización Ponto");
-      console.error(error);
+      logger.error('usePontoSync', 'Error:', error);
     },
   });
 };

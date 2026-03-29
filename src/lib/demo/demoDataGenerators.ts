@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 import {
   generateRandomIBAN,
   randomDateInYear,
@@ -25,7 +26,7 @@ export async function generateBankData(
   year: number,
   volume: 'light' | 'medium' | 'heavy'
 ) {
-  console.log('📊 [FASE 1] Generando datos bancarios...');
+  logger.info('demoDataGenerators', '[FASE 1] Generando datos bancarios...');
   
   const accounts = [];
   const transactions = [];
@@ -110,7 +111,7 @@ export async function generateBankData(
     if (error) throw error;
   }
   
-  console.log(`✅ Creadas ${accounts.length} cuentas bancarias con ${transactions.length} transacciones`);
+  logger.info('demoDataGenerators', `Creadas ${accounts.length} cuentas bancarias con ${transactions.length} transacciones`);
   
   return { accounts, transactions };
 }
@@ -124,7 +125,7 @@ export async function generateInvoices(
   year: number,
   volume: 'light' | 'medium' | 'heavy'
 ) {
-  console.log('📄 [FASE 2] Generando facturas...');
+  logger.info('demoDataGenerators', '[FASE 2] Generando facturas...');
   
   // Volume determines invoice count per supplier
   const invoiceCounts = {
@@ -239,7 +240,7 @@ export async function generateInvoices(
     }
   }
   
-  console.log(`✅ Generadas ${invoicesReceived.length} facturas recibidas y ${invoicesIssued.length} facturas emitidas`);
+  logger.info('demoDataGenerators', `Generadas ${invoicesReceived.length} facturas recibidas y ${invoicesIssued.length} facturas emitidas`);
   
   return { invoicesReceived, invoicesIssued };
 }
@@ -254,7 +255,7 @@ export async function generateAccountingEntries(
   year: number,
   volume: 'light' | 'medium' | 'heavy'
 ) {
-  console.log('📝 [FASE 3] Generando asientos contables...');
+  logger.info('demoDataGenerators', '[FASE 3] Generando asientos contables...');
   
   const entries = [];
   
@@ -292,7 +293,7 @@ export async function generateAccountingEntries(
         entries.push(entry);
       }
     } catch (error) {
-      console.warn(`Could not generate entry for invoice ${invoice.id}:`, error);
+      logger.warn('demoDataGenerators', `Could not generate entry for invoice ${invoice.id}:`, error);
     }
   }
   
@@ -350,12 +351,12 @@ export async function generateAccountingEntries(
         
         entries.push(entry);
       } catch (error) {
-        console.warn(`Could not generate entry ${i}:`, error);
+        logger.warn('demoDataGenerators', `Could not generate entry ${i}:`, error);
       }
     }
   }
   
-  console.log(`✅ Generados ${entries.length} asientos contables`);
+  logger.info('demoDataGenerators', `Generados ${entries.length} asientos contables`);
   
   return entries;
 }
@@ -368,7 +369,7 @@ export async function autoReconcileTransactions(
   invoicesReceived: Array<{ id: string; total: number; invoice_number: string; status: string }>,
   bankTransactions: Array<{ id: string; amount: number; description: string; bank_account_id: string }>
 ) {
-  console.log('🔗 [FASE 4] Ejecutando conciliación automática...');
+  logger.info('demoDataGenerators', '[FASE 4] Ejecutando conciliacion automatica...');
   
   let reconciledCount = 0;
   
@@ -402,7 +403,7 @@ export async function autoReconcileTransactions(
         
         reconciledCount++;
       } catch (error) {
-        console.warn(`Could not reconcile transaction:`, error);
+        logger.warn('demoDataGenerators', 'Could not reconcile transaction:', error);
       }
     }
   }
@@ -415,11 +416,11 @@ export async function autoReconcileTransactions(
         p_limit: 100,
       });
     } catch (error) {
-      console.warn(`Auto-match failed for account ${account.id}:`, error);
+      logger.warn('demoDataGenerators', `Auto-match failed for account ${account.id}:`, error);
     }
   }
   
-  console.log(`✅ Conciliadas ${reconciledCount} transacciones automáticamente`);
+  logger.info('demoDataGenerators', `Conciliadas ${reconciledCount} transacciones automaticamente`);
   
   return reconciledCount;
 }

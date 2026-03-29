@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import type { JournalLine } from '@/lib/accounting/core/validators';
 
 interface PostInvoiceParams {
@@ -37,7 +38,7 @@ export function usePostInvoice() {
       queryClient.invalidateQueries({ queryKey: ['accounting-entries'] });
     },
     onError: (error) => {
-      console.error('Error posting invoice:', error);
+      logger.error('usePostInvoice', 'Error posting invoice:', error);
       toast.error('Error al contabilizar la factura');
     },
   });

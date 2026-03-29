@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = "https://srwnjnrhxzcpftmbbyib.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyd25qbnJoeHpjcGZ0bWJieWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMzY1NjMsImV4cCI6MjA2ODkxMjU2M30.JCQDhjjtXKrPCDV8QRYJmmJ6n9YxMtBPfUm8E52UbI4";
@@ -63,7 +64,7 @@ export async function createMigrationRun(params: CreateMigrationRunParams): Prom
     const data = await response.json();
     return data[0].id;
   } catch (error) {
-    console.error('Error in createMigrationRun:', error);
+    logger.error('migrationTracking', 'Error in createMigrationRun:', error);
     throw error;
   }
 }
@@ -80,7 +81,7 @@ export async function trackEntries(migrationRunId: string, entryIds: string[]) {
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error tracking entries:', error);
+    logger.error('migrationTracking', 'Error tracking entries:', error);
     // Don't throw, just log - tracking is not critical
   }
 }
@@ -97,7 +98,7 @@ export async function trackIVARuns(migrationRunId: string, ivaRunIds: string[]) 
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error tracking IVA runs:', error);
+    logger.error('migrationTracking', 'Error tracking IVA runs:', error);
   }
 }
 
@@ -113,7 +114,7 @@ export async function trackBankTransactions(migrationRunId: string, transactionI
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error tracking bank transactions:', error);
+    logger.error('migrationTracking', 'Error tracking bank transactions:', error);
   }
 }
 
@@ -129,7 +130,7 @@ export async function trackClosingPeriods(migrationRunId: string, periodIds: str
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error tracking closing periods:', error);
+    logger.error('migrationTracking', 'Error tracking closing periods:', error);
   }
 }
 
@@ -155,7 +156,7 @@ export async function completeMigration(migrationRunId: string) {
       throw new Error(`Error completing migration: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Error completing migration:', error);
+    logger.error('migrationTracking', 'Error completing migration:', error);
   }
 }
 
@@ -178,9 +179,9 @@ export async function failMigration(migrationRunId: string, reason: string) {
     });
 
     if (!response.ok) {
-      console.error('Error marking migration as failed');
+      logger.error('migrationTracking', 'Error marking migration as failed');
     }
   } catch (error) {
-    console.error('Error marking migration as failed:', error);
+    logger.error('migrationTracking', 'Error marking migration as failed:', error);
   }
 }

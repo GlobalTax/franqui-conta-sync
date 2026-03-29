@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 
 export interface CentreData {
   id: string;
@@ -94,7 +95,7 @@ export function useAllUserCompanies() {
             .eq("activo", true);
 
           if (centresError) {
-            console.error("Error fetching centres for company:", centresError);
+            logger.error('useAllUserCompanies', 'Error fetching centres for company:', centresError);
             return company;
           }
 

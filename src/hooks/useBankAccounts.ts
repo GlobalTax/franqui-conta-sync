@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 
 export interface BankAccount {
   id: string;
@@ -54,7 +55,7 @@ export const useBankAccounts = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al crear cuenta bancaria");
-      console.error(error);
+      logger.error('useBankAccounts', 'Error creating account:', error);
     },
   });
 
@@ -75,7 +76,7 @@ export const useBankAccounts = (centroCode?: string) => {
     },
     onError: (error) => {
       toast.error("Error al actualizar cuenta bancaria");
-      console.error(error);
+      logger.error('useBankAccounts', 'Error updating account:', error);
     },
   });
 

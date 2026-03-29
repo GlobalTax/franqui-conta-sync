@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +98,7 @@ const NewInvoiceIssued = () => {
 
       navigate("/facturas/emitidas");
     } catch (error) {
-      console.error("Error creating invoice:", error);
+      logger.error("NewInvoiceIssued", "Error creating invoice:", error);
     }
   };
 

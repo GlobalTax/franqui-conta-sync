@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface BulkPostParams {
   invoiceIds: string[];
@@ -76,7 +77,7 @@ export function useBulkPost() {
 
           results.success++;
         } catch (error: any) {
-          console.error(`Error posting invoice ${invoiceId}:`, error);
+          logger.error('useBulkPost', `Error posting invoice ${invoiceId}:`, error);
           results.failed++;
           results.errors.push({
             invoiceId,
@@ -107,7 +108,7 @@ export function useBulkPost() {
       setProgress({ current: 0, total: 0 });
     },
     onError: (error: Error) => {
-      console.error('Error in bulk post:', error);
+      logger.error('useBulkPost', 'Error in bulk post:', error);
       toast.error(`Error: ${error.message}`);
       setProgress({ current: 0, total: 0 });
     },

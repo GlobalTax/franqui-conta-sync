@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { EnrichedCompanyData } from './useCompanyEnrichment';
 
 export interface CIFSuggestion {
@@ -64,7 +65,7 @@ export function useCIFAutocomplete(searchPattern: string) {
           .limit(5);
 
         if (error) {
-          console.error('Error searching CIF cache:', error);
+          logger.error('useCIFAutocomplete', 'Error searching CIF cache:', error);
           setSuggestions([]);
           setIsSearching(false);
           return;
@@ -101,7 +102,7 @@ export function useCIFAutocomplete(searchPattern: string) {
         setSuggestions(results);
         setIsSearching(false);
       } catch (error) {
-        console.error('Error in useCIFAutocomplete:', error);
+        logger.error('useCIFAutocomplete', 'Error:', error);
         setSuggestions([]);
         setIsSearching(false);
       }

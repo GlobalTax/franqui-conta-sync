@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Circle, RefreshCw, Download, AlertTriangle, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface ChecklistItem { id: string; label: string; description?: string; critical?: boolean; }
 interface ChecklistCategory { id: string; name: string; icon: string; items: ChecklistItem[]; }
@@ -63,7 +64,7 @@ export default function MigrationValidationChecklist() {
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) { try { setCompletedItems(new Set(JSON.parse(saved))); } catch {} }
+    if (saved) { try { setCompletedItems(new Set(JSON.parse(saved))); } catch (e) { logger.warn('MigrationChecklist', 'Failed to parse saved checklist', e); } }
     setIsLoading(false);
   }, []);
 

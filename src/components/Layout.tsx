@@ -30,6 +30,9 @@ import {
   Trash2,
   Sparkles,
   Upload,
+  Calendar,
+  DollarSign,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -85,26 +88,37 @@ const Layout = () => {
     navigate("/login");
   };
 
-  const navItems = [
+  const principalItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Building2, label: "Mi Empresa", path: "/mi-empresa/mis-datos" },
     { icon: Sparkles, label: "Digitalización", path: "/digitalizacion", highlight: true },
     { icon: FileText, label: "Fact. Recibidas", path: "/invoices" },
     { icon: FileText, label: "Fact. Emitidas", path: "/facturas/emitidas" },
     { icon: Building2, label: "Proveedores", path: "/proveedores" },
+  ];
+
+  const tesoreriaItems = [
     { icon: CreditCard, label: "Bancos", path: "/banks" },
     { icon: GitCompare, label: "Conciliación", path: "/treasury/reconciliation" },
     { icon: Landmark, label: "Conexiones Bancarias", path: "/treasury/salt-edge-connections" },
+  ];
+
+  const contabilidadItems = [
     { icon: FileSpreadsheet, label: "Asientos Contables", path: "/contabilidad/apuntes" },
     { icon: BookOpen, label: "Plan Cuentas", path: "/accounts" },
+    { icon: Calendar, label: "Cierre Diario", path: "/contabilidad/cierre-diario" },
+    { icon: DollarSign, label: "Costes Laborales", path: "/contabilidad/costes-laborales" },
     { icon: FolderOpen, label: "Cierre Ejercicio", path: "/contabilidad/cierre-ejercicio" },
     { icon: Upload, label: "Ejercicios Históricos", path: "/contabilidad/ejercicios-historicos" },
     { icon: Layers, label: "Activos Fijos", path: "/contabilidad/activos-fijos" },
     { icon: Zap, label: "Periodificaciones", path: "/contabilidad/periodificaciones" },
     { icon: Receipt, label: "Provisiones", path: "/contabilidad/provisiones" },
     { icon: Database, label: "Asiento Existencias", path: "/contabilidad/existencias" },
+  ];
+
+  const complianceItems = [
     { icon: Shield, label: "Auditoría & Compliance", path: "/auditoria" },
-    ...(isAdmin ? [{ icon: Shield, label: "Administración", path: "/admin" }] : []),
+    { icon: ClipboardList, label: "Modelos Fiscales", path: "/cumplimiento/modelos-fiscales" },
   ];
 
   const ivaItems = [
@@ -120,6 +134,8 @@ const Layout = () => {
     { icon: BarChart3, label: "Balance de Situación", path: "/reportes/balance" },
     { icon: BookOpen, label: "Libro Mayor", path: "/reportes/mayor" },
     { icon: FileSpreadsheet, label: "Libro Diario", path: "/reportes/diario" },
+    { icon: BarChart3, label: "Consolidado Multi-Centro", path: "/reportes/consolidado" },
+    { icon: Layers, label: "Libro de Bienes", path: "/reportes/libro-bienes" },
   ];
 
   const analyticsItems = [
@@ -203,7 +219,7 @@ const Layout = () => {
               Principal
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(0, 4).map((item) => (
+              {principalItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -225,10 +241,30 @@ const Layout = () => {
 
           <div>
             <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Tesorería
+            </h3>
+            <div className="space-y-0.5">
+              {tesoreriaItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
               Contabilidad
             </h3>
             <div className="space-y-0.5">
-              {navItems.slice(4, 17).map((item) => (
+              {contabilidadItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -267,6 +303,27 @@ const Layout = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+
+          {/* Cumplimiento */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">
+              Cumplimiento
+            </h3>
+            <div className="space-y-0.5">
+              {complianceItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-150 group"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-sm">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
 
           {/* Informes Dropdown */}

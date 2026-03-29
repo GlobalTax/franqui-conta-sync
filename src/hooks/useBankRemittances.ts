@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/lib/logger';
 import { BankRemittance } from "@/types/advanced-accounting";
 
 interface RemittanceFilters {
@@ -60,7 +61,7 @@ export const useBankRemittances = (filters: RemittanceFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al crear remesa");
-      console.error(error);
+      logger.error('useBankRemittances', 'Error creating remittance:', error);
     },
   });
 
@@ -81,7 +82,7 @@ export const useBankRemittances = (filters: RemittanceFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al actualizar remesa");
-      console.error(error);
+      logger.error('useBankRemittances', 'Error updating remittance:', error);
     },
   });
 
@@ -99,7 +100,7 @@ export const useBankRemittances = (filters: RemittanceFilters = {}) => {
     },
     onError: (error) => {
       toast.error("Error al eliminar remesa");
-      console.error(error);
+      logger.error('useBankRemittances', 'Error deleting remittance:', error);
     },
   });
 

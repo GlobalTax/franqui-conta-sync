@@ -4,15 +4,16 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
+import { logger } from '@/lib/logger';
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 
 // Configure worker using real Worker instance
 try {
   const pdfWorkerInstance = new PdfWorker();
   pdfjsLib.GlobalWorkerOptions.workerPort = pdfWorkerInstance;
-  console.log('[PDF→PNG Client] Worker configured successfully');
+  logger.info('pdf-converter', 'Worker configured successfully');
 } catch (err) {
-  console.warn('[PDF→PNG Client] Worker initialization failed, will use fallback', err);
+  logger.warn('pdf-converter', 'Worker initialization failed, will use fallback', err);
 }
 
 const DEFAULT_SCALE = 2.0; // 2x for good quality OCR
@@ -28,7 +29,7 @@ async function getPdfDocument(arrayBuffer: ArrayBuffer) {
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     if (errMsg.includes('worker') || errMsg.includes('Worker')) {
-      console.warn('[PDF→PNG Client] Worker failed, clearing workerPort and retrying', err);
+      logger.warn('pdf-converter', 'Worker failed, clearing workerPort and retrying', err);
       pdfjsLib.GlobalWorkerOptions.workerPort = null;
       pdfjsLib.GlobalWorkerOptions.workerSrc = '';
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -44,7 +45,7 @@ async function getPdfDocument(arrayBuffer: ArrayBuffer) {
  * @returns PNG data URL (data:image/png;base64,...)
  */
 export async function convertPdfToPngClient(file: File): Promise<string> {
-  console.log('[PDF→PNG Client] Starting conversion...');
+  logger.info('pdf-converter', 'Starting conversion...');
   const startTime = Date.now();
 
   try {
@@ -52,7 +53,7 @@ export async function convertPdfToPngClient(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await getPdfDocument(arrayBuffer);
     
-    console.log(`[PDF→PNG Client] Loaded PDF with ${pdf.numPages} page(s)`);
+    logger.info('pdf-converter', `Loaded PDF with ${pdf.numPages} page(s)`);
 
     // Get first page
     const page = await pdf.getPage(1);
@@ -66,7 +67,7 @@ export async function convertPdfToPngClient(file: File): Promise<string> {
       height *= scale;
     }
 
-    console.log(`[PDF→PNG Client] Rendering at ${Math.round(width)}x${Math.round(height)}`);
+    logger.debug('pdf-converter', `Rendering at ${Math.round(width)}x${Math.round(height)}`);
 
     // Create canvas
     const canvas = document.createElement('canvas');
@@ -91,14 +92,14 @@ export async function convertPdfToPngClient(file: File): Promise<string> {
     const dataUrl = canvas.toDataURL('image/png', 0.92);
     const elapsed = Date.now() - startTime;
 
-    console.log(`[PDF→PNG Client] ✓ Conversion complete in ${elapsed}ms`);
-    console.log(`[PDF→PNG Client] Output size: ${Math.round(dataUrl.length / 1024)}KB`);
+    logger.info('pdf-converter', `Conversion complete in ${elapsed}ms`);
+    logger.debug('pdf-converter', `Output size: ${Math.round(dataUrl.length / 1024)}KB`);
 
     return dataUrl;
 
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`[PDF→PNG Client] ✗ Conversion failed after ${elapsed}ms:`, error);
+    logger.error('pdf-converter', `Conversion failed after ${elapsed}ms:`, error);
     throw new Error(`Failed to convert PDF to image: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -110,7 +111,7 @@ export async function convertPdfToPngClient(file: File): Promise<string> {
  * @returns Array of PNG data URLs
  */
 export async function convertPdfPagesToPng(file: File, maxPages: number = 1): Promise<string[]> {
-  console.log('[PDF→PNG Client] Starting multi-page conversion...');
+  logger.info('pdf-converter', 'Starting multi-page conversion...');
   const startTime = Date.now();
 
   try {
@@ -118,7 +119,7 @@ export async function convertPdfPagesToPng(file: File, maxPages: number = 1): Pr
     const pdf = await getPdfDocument(arrayBuffer);
     
     const pagesToConvert = Math.min(maxPages, pdf.numPages);
-    console.log(`[PDF→PNG Client] Converting ${pagesToConvert} of ${pdf.numPages} page(s)`);
+    logger.info('pdf-converter', `Converting ${pagesToConvert} of ${pdf.numPages} page(s)`);
 
     const dataUrls: string[] = [];
 
@@ -152,17 +153,17 @@ export async function convertPdfPagesToPng(file: File, maxPages: number = 1): Pr
       const dataUrl = canvas.toDataURL('image/png', 0.92);
       dataUrls.push(dataUrl);
 
-      console.log(`[PDF→PNG Client] ✓ Page ${pageNum} converted (${Math.round(dataUrl.length / 1024)}KB)`);
+      logger.debug('pdf-converter', `Page ${pageNum} converted (${Math.round(dataUrl.length / 1024)}KB)`);
     }
 
     const elapsed = Date.now() - startTime;
-    console.log(`[PDF→PNG Client] ✓ Multi-page conversion complete in ${elapsed}ms`);
+    logger.info('pdf-converter', `Multi-page conversion complete in ${elapsed}ms`);
 
     return dataUrls;
 
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`[PDF→PNG Client] ✗ Multi-page conversion failed after ${elapsed}ms:`, error);
+    logger.error('pdf-converter', `Multi-page conversion failed after ${elapsed}ms:`, error);
     throw new Error(`Failed to convert PDF pages: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

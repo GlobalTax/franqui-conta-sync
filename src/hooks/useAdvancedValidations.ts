@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/lib/logger';
 
 export interface GlobalBalanceValidation {
   valid: boolean;
@@ -69,7 +70,7 @@ export function useAdvancedValidations(fiscalYearId: string, centroCode: string)
   return useQuery({
     queryKey: ["advanced-validations", fiscalYearId, centroCode],
     queryFn: async (): Promise<AdvancedValidationResults> => {
-      console.log('[useAdvancedValidations] Starting validations...', { fiscalYearId, centroCode });
+      logger.info('useAdvancedValidations', 'Starting validations...', { fiscalYearId, centroCode });
 
       // Execute all 4 validations in parallel (with type casting until migration is applied)
       const [
@@ -203,7 +204,7 @@ export function useAdvancedValidations(fiscalYearId: string, centroCode: string)
       // Overall valid = no critical errors
       const overallValid = criticalErrors === 0;
 
-      console.log('[useAdvancedValidations] Results:', {
+      logger.debug('useAdvancedValidations', 'Results:', {
         overallValid,
         criticalErrors,
         warnings,

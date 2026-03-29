@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from '@/lib/logger';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -57,7 +58,7 @@ const Banks = () => {
     transactions,
     selectedIndex,
     setSelectedIndex,
-    (txn) => console.log('Opening transaction:', txn)
+    (txn) => logger.debug('Banks', 'Opening transaction:', txn)
   );
 
   const handleSuggestMatches = () => {

@@ -7,10 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import Layout from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { registerServiceWorker } from "@/lib/register-sw";
 import { ShortcutHelpDialog } from "@/components/shortcuts/ShortcutHelpDialog";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { GlobalShortcutsWrapper } from "@/components/shortcuts/GlobalShortcutsWrapper";
+import { logger } from "@/lib/logger";
 
 // Lazy load all page components
 const Login = lazy(() => import("@/pages/Login"));
@@ -120,10 +122,10 @@ const App = () => {
   useEffect(() => {
     // Solo en producción (build final, no en dev)
     if (import.meta.env.PROD) {
-      console.log('🚀 Registrando Service Worker...');
+      logger.info('App', 'Registrando Service Worker...');
       registerServiceWorker();
     } else {
-      console.log('ℹ️ Service Worker deshabilitado en desarrollo');
+      logger.debug('App', 'Service Worker deshabilitado en desarrollo');
     }
   }, []);
 
@@ -146,6 +148,7 @@ const App = () => {
         {/* 🔥 Activar shortcuts globales dentro del Router */}
         <GlobalShortcutsWrapper />
         
+        <ErrorBoundary context="App">
         <Suspense fallback={
           <div className="flex min-h-screen items-center justify-center">
             <div className="text-center">
@@ -242,7 +245,8 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        
+        </ErrorBoundary>
+
         {/* 🔥 Sprint 3: Keyboard Shortcuts & Command Palette */}
         <ShortcutHelpDialog />
         <CommandPalette />

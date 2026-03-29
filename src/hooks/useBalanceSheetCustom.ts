@@ -55,7 +55,7 @@ export const useBalanceSheetCustom = (
     queryFn: async (): Promise<BalanceSheetCustomRow[] | null> => {
       if (!viewSelection || !templateCode) return null;
 
-      if (viewSelection.type === "company") {
+      if (viewSelection.type === "all") {
         // Vista consolidada: obtener todos los centros de la sociedad
         const { data: centres } = await supabase
           .from("centres")

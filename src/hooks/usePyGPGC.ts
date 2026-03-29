@@ -85,7 +85,7 @@ export const usePyGPGC = (
 
       let items: PyGPGCLine[] = [];
 
-      if (viewSelection.type === 'company') {
+      if (viewSelection.type === 'all') {
         // Vista consolidada: obtener todos los centros de la sociedad
         const { data: centres } = await supabase
           .from("centres")

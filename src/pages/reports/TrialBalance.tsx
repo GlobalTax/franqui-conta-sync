@@ -30,7 +30,7 @@ const TrialBalance = () => {
 
   const { data: trialBalance, isLoading } = useTrialBalance(
     centroCode,
-    selectedView?.type === "company" ? selectedView.id : undefined,
+    selectedView?.type === "all" ? selectedView.id : undefined,
     startDate?.toISOString().split("T")[0],
     endDate?.toISOString().split("T")[0]
   );

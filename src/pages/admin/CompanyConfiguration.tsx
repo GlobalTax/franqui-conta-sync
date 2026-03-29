@@ -22,7 +22,7 @@ export default function CompanyConfiguration() {
 
   // Derivar companyId: primero company_id, luego principal, luego primera asociada
   const targetCompanyId =
-    selectedView?.type === 'company'
+    selectedView?.type === 'all'
       ? selectedView.id
       : isCentreView
         ? (centre?.company_id ||

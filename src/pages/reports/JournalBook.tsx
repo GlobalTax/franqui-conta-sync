@@ -143,7 +143,7 @@ export default function JournalBook() {
           ]}
           title="Libro Diario"
           subtitle={
-            selectedView.type === 'company'
+            selectedView.type === 'all'
               ? `Vista consolidada: ${selectedView.name}`
               : `Centro: ${selectedView.name}`
           }

@@ -137,7 +137,7 @@ export default function GeneralLedger() {
           ]}
           title="Libro Mayor"
           subtitle={
-            selectedView.type === 'company'
+            selectedView.type === 'all'
               ? `Vista consolidada: ${selectedView.name}`
               : `Centro: ${selectedView.name}`
           }

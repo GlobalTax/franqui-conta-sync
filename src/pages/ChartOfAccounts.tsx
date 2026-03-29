@@ -57,7 +57,7 @@ const ChartOfAccounts = () => {
   const centroCode = selectedView?.type === 'centre' 
     ? (selectedView.id.includes(' - ') ? selectedView.id.split(' - ')[0] : selectedView.id)
     : undefined;
-  const companyId = selectedView?.type === 'company' ? selectedView.id : undefined;
+  const companyId = selectedView?.type === 'all' ? selectedView.id : undefined;
 
   // Cargar cuentas
   useEffect(() => {
@@ -240,7 +240,7 @@ const ChartOfAccounts = () => {
                     return;
                   }
                   const centroCode = selectedView.type === 'centre' ? selectedView.id : undefined;
-                  const companyId = selectedView.type === 'company' ? selectedView.id : undefined;
+                  const companyId = selectedView.type === 'all' ? selectedView.id : undefined;
                   
                   if (!centroCode) {
                     toast.error("Debe seleccionar un centro para cargar la plantilla");

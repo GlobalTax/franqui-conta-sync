@@ -244,7 +244,7 @@ export const useDashboardOperativo = (viewSelection: ViewSelection | null) => {
       };
 
       // Si es vista consolidada, añadir ranking
-      if (viewSelection.type === 'company') {
+      if (viewSelection.type === 'all') {
         kpis.ranking = await getRanking(centroCodes);
       }
 

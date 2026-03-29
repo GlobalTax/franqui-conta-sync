@@ -37,7 +37,7 @@ const ProfitAndLossConsolidated = () => {
   useEffect(() => {
     if (!selectedView || !centres || !franchiseesWithCompanies) return;
 
-    if (selectedView.type === 'company') {
+    if (selectedView.type === 'all') {
       // Buscar la empresa seleccionada en todas las franquicias
       let targetCompany = null;
       for (const franchisee of franchiseesWithCompanies) {
@@ -201,7 +201,7 @@ const ProfitAndLossConsolidated = () => {
               </div>
               
               {/* Indicador de auto-selección */}
-              {selectedView?.type === 'company' && selectedCentres.length > 0 && (
+              {selectedView?.type === 'all' && selectedCentres.length > 0 && (
                 <div className="px-3 py-2 mb-3 bg-primary/10 border border-primary/20 rounded-md text-xs">
                   <span className="font-medium">Vista: {selectedView.name}</span>
                   <span className="text-muted-foreground ml-2">

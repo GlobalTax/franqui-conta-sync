@@ -44,7 +44,7 @@ export function useConsolidatedReports(
       // 1. Get centro codes
       let centroCodes: { code: string; name: string }[] = [];
 
-      if (viewSelection.type === "company") {
+      if (viewSelection.type === "all") {
         const { data: centres } = await supabase
           .from("centres")
           .select("codigo, nombre")

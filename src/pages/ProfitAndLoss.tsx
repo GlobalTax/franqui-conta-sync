@@ -92,7 +92,7 @@ const ProfitAndLoss = () => {
   const yearQueriesConfig = useMemo(() => 
     compareYears.map(y => ({
       templateCode: selectedTemplate,
-      companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+      companyId: selectedView?.type === 'all' ? selectedView.id : undefined,
       centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
       startDate: `${y}-01-01`,
       endDate: `${y}-12-31`,
@@ -115,7 +115,7 @@ const ProfitAndLoss = () => {
       
       return {
         templateCode: selectedTemplate,
-        companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+        companyId: selectedView?.type === 'all' ? selectedView.id : undefined,
         centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
         startDate,
         endDate,
@@ -139,7 +139,7 @@ const ProfitAndLoss = () => {
       
       return {
         templateCode: selectedTemplate,
-        companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+        companyId: selectedView?.type === 'all' ? selectedView.id : undefined,
         centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
         startDate,
         endDate,
@@ -154,7 +154,7 @@ const ProfitAndLoss = () => {
     upsertAdjustment,
     getAdjustmentAmount,
   } = usePLAdjustments(
-    selectedView?.type === 'company' ? selectedView.id : undefined,
+    selectedView?.type === 'all' ? selectedView.id : undefined,
     selectedView?.type === 'centre' ? selectedView.id : undefined,
     selectedTemplate,
     dateRange.startDate
@@ -163,7 +163,7 @@ const ProfitAndLoss = () => {
   // Vista single (mensual, dual o con ajustes)
   const { data, isLoading, isError } = usePLReport({
     templateCode: selectedTemplate,
-    companyId: selectedView?.type === 'company' ? selectedView.id : undefined,
+    companyId: selectedView?.type === 'all' ? selectedView.id : undefined,
     centroCode: selectedView?.type === 'centre' ? selectedView.id : undefined,
     startDate: showAccumulated ? undefined : dateRange.startDate,
     endDate: showAccumulated ? undefined : dateRange.endDate,
@@ -379,7 +379,7 @@ const ProfitAndLoss = () => {
         ]}
         title="Cuenta de Pérdidas y Ganancias"
         subtitle={
-          selectedView.type === 'company'
+          selectedView.type === 'all'
             ? `Vista consolidada: ${selectedView.name}`
             : `Centro: ${selectedView.name}`
         }
@@ -855,7 +855,7 @@ const ProfitAndLoss = () => {
           templateCode={selectedTemplate}
           rubricCode={drilldownConfig.rubricCode}
           rubricName={drilldownConfig.rubricName}
-          companyId={selectedView?.type === 'company' ? selectedView.id : undefined}
+          companyId={selectedView?.type === 'all' ? selectedView.id : undefined}
           centroCode={selectedView?.type === 'centre' ? selectedView.id : undefined}
           startDate={drilldownConfig.startDate}
           endDate={drilldownConfig.endDate}

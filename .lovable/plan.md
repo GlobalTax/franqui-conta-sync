@@ -1,96 +1,102 @@
 
-Problema identificado: en la pantalla donde estás (`/treasury/reconciliation`) sí cambia la selección en el selector, pero la vista no responde porque esa página está leyendo mal el centro activo.
+Plan: arreglar la selección para que sí cambie y hacer visible “mis restaurantes” en el dashboard
 
-## Causa raíz
+## Lo que está fallando ahora
 
-En `src/pages/treasury/BankReconciliation.tsx` hay este código:
+He revisado el código y hay 4 causas reales:
 
-```tsx
-const centroCode = typeof selectedView === 'string' ? selectedView : '';
-```
+1. `useSyncViewAndFilters.ts` hace el primer sync demasiado pronto.  
+   Si `selectedView` se carga antes de que lleguen `useAllUserCentres/useAllUserCompanies`, guarda `franchiseeId/companyId` como `null` y luego ya no recalcula porque el guard de `prevViewRef` lo bloquea.
 
-Pero `selectedView` no es un string: siempre es un objeto tipo:
+2. El sync inverso ignora el estado “solo franquiciado”.  
+   Si en la top bar eliges franquiciado pero no sociedad/centro, `selectedView` no cambia nunca.
 
-```ts
-{ type: 'centre' | 'company' | 'all', id: string, code?: string, name: string }
-```
+3. `CompactOrgSelector.tsx` ya no resetea bien la jerarquía.  
+   Tras el fix anterior, cambiar franquiciado puede dejar `companyId/centreCode` antiguos, creando combinaciones inválidas y una UI que “parece no cambiar”.
 
-Así que `centroCode` queda siempre en `''` y toda la pantalla de conciliación se rompe funcionalmente:
+4. El dashboard no muestra los restaurantes accesibles del franquiciado y, además, `useDashboardMain.ts` en vista `all` consulta centros globales en vez de limitarse a los del usuario.
 
-- `BankAccountSelector` no filtra por centro
-- `ImportNorma43Button` no recibe centro válido
-- `Auto-Conciliar` no funciona con el centro seleccionado
-- `ReconciliationRulesManager` y `ReconciliationAssistant` reciben un centro vacío
-- da la sensación de que “lo selecciono pero no cambia”
+## Enfoque que voy a implementar
 
-## Qué corregir
+Voy a tratar la selección de franquiciado como una vista consolidada válida de “mis restaurantes”, manteniendo sincronizados sidebar + top bar.
 
-### 1. Arreglar `centroCode` en `BankReconciliation`
-En `src/pages/treasury/BankReconciliation.tsx`:
+## Cambios
 
-- usar `selectedView.code` cuando el tipo sea `centre`
-- permitir estado consolidado cuando el tipo sea `company` o `all`
-- mostrar un mensaje claro si conciliación requiere centro individual
+### 1. Rehacer la sincronización para soportar bien los 3 niveles
+Archivo: `src/hooks/useSyncViewAndFilters.ts`
 
-Cambio esperado:
+- Esperar a que exista la data necesaria antes de cerrar el primer sync View → Filters.
+- Sincronizar por jerarquía completa:
+  - centro seleccionado → `centreCode + companyId + franchiseeId`
+  - sociedad seleccionada → `companyId + franchiseeId`
+  - franquiciado seleccionado → vista consolidada
+- Añadir soporte explícito al caso “solo franquiciado” en Filters → View.
+- Evitar loops comparando el estado jerárquico completo, no solo refs parciales.
 
-```tsx
-const centroCode = selectedView?.type === 'centre' ? selectedView.code : undefined;
-```
+Resultado esperado:
+- si cambias en la top bar, cambia el sidebar
+- si cambias en el sidebar, cambia la top bar
+- ya no se quedará un franquiciado arriba y otro centro distinto abajo
 
-## 2. Ajustar la UX según la jerarquía real
-Como la conciliación bancaria es por restaurante/cuenta bancaria, la página no debería intentar operar con una vista consolidada.
+### 2. Restaurar resets jerárquicos correctos en el selector superior
+Archivo: `src/components/filters/CompactOrgSelector.tsx`
 
-Propuesta en la misma pantalla:
+- Cambiar handlers para usar `setFilters(...)` por nivel:
+  - al cambiar franquiciado → limpiar sociedad y centro
+  - al cambiar sociedad → limpiar centro
+  - al cambiar centro → mantener franquiciado/sociedad coherentes
+- Mantener “Limpiar” como reset total.
 
-- si `selectedView.type !== 'centre'`, mostrar alerta:
-  - “Selecciona un restaurante para conciliar movimientos bancarios”
-- desactivar tabs/acciones dependientes de centro hasta elegir uno
+Esto corrige el estado roto actual donde puedes tener franquiciado nuevo con sociedad/centro viejos.
 
-Esto hará que el comportamiento sea consistente para franquiciados:
-- vista consolidada para reporting
-- vista centro individual para operativa bancaria
+### 3. Hacer que el sidebar también soporte la vista consolidada del franquiciado
+Archivo: `src/components/accounting/CentreSelector.tsx`
 
-## 3. Revisar usos incorrectos similares de `selectedView.id`
-He encontrado un patrón repetido en otras pantallas: varias usan `selectedView.id` como si fuera `centro_code`, pero en realidad para centros el `id` es UUID y el código operativo está en `selectedView.code`.
+- Añadir opción seleccionable de vista consolidada por franquiciado (por ejemplo: “Todos los restaurantes de X”).
+- Mantener sociedad y centro como opciones hijas.
+- Cambiar el autoselect actual:
+  - si solo hay 1 restaurante → seleccionar ese centro
+  - si hay varios → seleccionar por defecto la vista consolidada del franquiciado, no la primera sociedad arbitraria
 
-Conviene revisar después estos archivos porque pueden tener el mismo fallo de “selecciono pero no cambia” o filtros vacíos:
+Esto hace que la experiencia tenga sentido para franquiciados con varios restaurantes.
 
-- `src/pages/ProfitAndLoss.tsx`
-- `src/pages/accounting/FiscalYearClosing.tsx`
-- `src/pages/accounting/BankRemittances.tsx`
-- `src/pages/accounting/PaymentTerms.tsx`
-- otros hooks/páginas que pasen `selectedView.id` a `centroCode`
+### 4. Mostrar en el dashboard los restaurantes que tiene el usuario
+Archivos:
+- `src/pages/Dashboard.tsx`
+- probablemente un componente nuevo tipo `src/components/dashboard/...`
 
-## Resultado esperado tras el fix
-En conciliación bancaria:
+- Añadir un bloque “Mis restaurantes” / “Restaurantes de esta vista”.
+- Mostrar:
+  - total de restaurantes accesibles
+  - lista/chips de restaurantes
+  - restaurante activo resaltado
+- Si la vista es consolidada, mostrar todos los restaurantes de ese franquiciado.
+- Si la vista es una sociedad, mostrar los restaurantes de esa sociedad.
+- Si la vista es un centro, seguir mostrando la lista contextual para que el usuario vea claramente qué restaurantes tiene.
 
-- al elegir restaurante en sidebar o top bar, la cuenta bancaria se actualizará correctamente
-- aparecerán las transacciones del restaurante correcto
-- las reglas y el asistente trabajarán con el centro seleccionado
-- dejará de parecer que el selector “no hace nada”
+### 5. Limitar el dashboard solo a restaurantes accesibles del usuario
+Archivo: `src/hooks/useDashboardMain.ts`
 
-## Detalle técnico
-Resumen del bug:
+- Dejar de usar “todos los centros” de la tabla `centres` para la vista `all`.
+- Resolver `centroCodes` desde los centros accesibles del usuario (`v_user_centres` / hooks derivados), filtrados por franquiciado/sociedad según la vista activa.
+- Mantener para centro individual el uso de `selectedView.code`.
 
-```text
-Selector cambia selectedView -> selectedView = { type:'centre', id:'uuid', code:'129' }
-
-BankReconciliation:
-  typeof selectedView === 'string' ? ... : ''
-=> centroCode = ''
-
-Todos los componentes hijos reciben centro vacío
-=> la UI no cambia aunque el selector sí cambió
-```
+Esto evita que la vista consolidada del dashboard mezcle centros que no corresponden al franquiciado.
 
 ## Archivos a tocar
-- `src/pages/treasury/BankReconciliation.tsx` — fix principal
-- opcional en segunda pasada: páginas que usan `selectedView.id` como `centroCode`
 
-## Alcance recomendado
-Haría primero un fix mínimo y seguro:
+- `src/hooks/useSyncViewAndFilters.ts`
+- `src/components/filters/CompactOrgSelector.tsx`
+- `src/components/accounting/CentreSelector.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/hooks/useDashboardMain.ts`
 
-1. corregir `BankReconciliation.tsx`
-2. bloquear vista consolidada en conciliación bancaria
-3. luego revisar el resto de pantallas con el mismo anti-patrón
+## Resultado esperado
+
+Después del cambio:
+
+- seleccionar franquiciado/sociedad/centro sí cambiará la vista real
+- sidebar y top bar mostrarán siempre la misma selección
+- el dashboard enseñará los restaurantes que tiene ese franquiciado
+- la vista consolidada será útil y entendible para un franquiciado con varios restaurantes
+- no se mezclarán restaurantes de otros usuarios en el dashboard

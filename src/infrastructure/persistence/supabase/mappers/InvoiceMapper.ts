@@ -148,6 +148,7 @@ export class InvoiceMapper {
     return {
       supplier_id: invoice.supplierId,
       centro_code: invoice.centroCode,
+      document_type: invoice.documentType,
       invoice_number: invoice.invoiceNumber,
       invoice_date: invoice.invoiceDate,
       due_date: invoice.dueDate,

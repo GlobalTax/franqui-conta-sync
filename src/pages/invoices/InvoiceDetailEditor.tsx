@@ -128,6 +128,10 @@ export default function InvoiceDetailEditor() {
   const [ocrProcessed, setOcrProcessed] = useState(false);
   const [ocrSupplierTaxId, setOcrSupplierTaxId] = useState<string>('');
   const [ocrSupplierName, setOcrSupplierName] = useState<string>('');
+  const [ocrSupplierAddress, setOcrSupplierAddress] = useState<string>('');
+  const [ocrSupplierCity, setOcrSupplierCity] = useState<string>('');
+  const [ocrSupplierPostalCode, setOcrSupplierPostalCode] = useState<string>('');
+  const [ocrSupplierEmail, setOcrSupplierEmail] = useState<string>('');
   // Claude is the only engine now
   const [orchestratorLogs, setOrchestratorLogs] = useState<any[]>([]);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
@@ -527,6 +531,10 @@ export default function InvoiceDetailEditor() {
             console.log('[Supplier Match] ⚠️ Proveedor no encontrado en BD');
             setOcrSupplierTaxId(vatId);
             setOcrSupplierName(legalName || '');
+            setOcrSupplierAddress(normalized.issuer?.address || '');
+            setOcrSupplierCity(normalized.issuer?.city || '');
+            setOcrSupplierPostalCode(normalized.issuer?.postal_code || '');
+            setOcrSupplierEmail(normalized.issuer?.email || '');
           }
         } catch (e: any) {
           console.error('[Supplier Match] Error al buscar proveedor:', e);
@@ -1233,6 +1241,10 @@ export default function InvoiceDetailEditor() {
                     watch={form.watch}
                     ocrTaxId={ocrSupplierTaxId}
                     ocrSupplierName={ocrSupplierName}
+                    ocrSupplierAddress={ocrSupplierAddress}
+                    ocrSupplierCity={ocrSupplierCity}
+                    ocrSupplierPostalCode={ocrSupplierPostalCode}
+                    ocrSupplierEmail={ocrSupplierEmail}
                   />
                   
                   <InvoiceDataSection
@@ -1501,6 +1513,10 @@ export default function InvoiceDetailEditor() {
                       watch={form.watch}
                       ocrTaxId={ocrSupplierTaxId}
                       ocrSupplierName={ocrSupplierName}
+                      ocrSupplierAddress={ocrSupplierAddress}
+                      ocrSupplierCity={ocrSupplierCity}
+                      ocrSupplierPostalCode={ocrSupplierPostalCode}
+                      ocrSupplierEmail={ocrSupplierEmail}
                     />
                     
                     <InvoiceDataSection

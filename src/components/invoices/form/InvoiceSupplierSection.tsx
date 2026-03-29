@@ -26,13 +26,21 @@ interface InvoiceSupplierSectionProps {
   watch: any;
   ocrTaxId?: string;
   ocrSupplierName?: string;
+  ocrSupplierAddress?: string;
+  ocrSupplierCity?: string;
+  ocrSupplierPostalCode?: string;
+  ocrSupplierEmail?: string;
 }
 
-export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName }: InvoiceSupplierSectionProps) {
+export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocrSupplierName, ocrSupplierAddress, ocrSupplierCity, ocrSupplierPostalCode, ocrSupplierEmail }: InvoiceSupplierSectionProps) {
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const [validatingNIF, setValidatingNIF] = useState(false);
   const [pendingNIF, setPendingNIF] = useState<string>('');
   const [pendingName, setPendingName] = useState<string>('');
+  const [pendingAddress, setPendingAddress] = useState<string>('');
+  const [pendingCity, setPendingCity] = useState<string>('');
+  const [pendingPostalCode, setPendingPostalCode] = useState<string>('');
+  const [pendingEmail, setPendingEmail] = useState<string>('');
   const { data: suppliers } = useSuppliers({ active: true });
 
   const supplierId = watch('supplier_id');
@@ -43,6 +51,12 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
     if (ocrTaxId && !supplierId) {
       setPendingNIF(ocrTaxId);
       setPendingName(ocrSupplierName || '');
+      setPendingAddress(ocrSupplierAddress || '');
+      setPendingCity(ocrSupplierCity || '');
+      setPendingPostalCode(ocrSupplierPostalCode || '');
+      setPendingEmail(ocrSupplierEmail || '');
+      // Auto-abrir diálogo de creación
+      setShowSupplierDialog(true);
     }
   }, [ocrTaxId, ocrSupplierName, supplierId]);
 
@@ -88,6 +102,10 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
   const handleCreateFromOCR = () => {
     setPendingNIF(ocrTaxId || '');
     setPendingName(ocrSupplierName || '');
+    setPendingAddress(ocrSupplierAddress || '');
+    setPendingCity(ocrSupplierCity || '');
+    setPendingPostalCode(ocrSupplierPostalCode || '');
+    setPendingEmail(ocrSupplierEmail || '');
     setShowSupplierDialog(true);
   };
 
@@ -232,10 +250,18 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
           if (!open) {
             setPendingNIF('');
             setPendingName('');
+            setPendingAddress('');
+            setPendingCity('');
+            setPendingPostalCode('');
+            setPendingEmail('');
           }
         }}
         initialTaxId={pendingNIF}
         initialName={pendingName}
+        initialAddress={pendingAddress}
+        initialCity={pendingCity}
+        initialPostalCode={pendingPostalCode}
+        initialEmail={pendingEmail}
         onSuccess={(newSupplier) => {
           setValue('supplier_id', newSupplier.id);
           setValue('supplier_tax_id', newSupplier.tax_id);
@@ -243,6 +269,10 @@ export function InvoiceSupplierSection({ control, setValue, watch, ocrTaxId, ocr
           toast.success(`✅ Proveedor "${newSupplier.name}" creado y seleccionado`);
           setPendingNIF('');
           setPendingName('');
+          setPendingAddress('');
+          setPendingCity('');
+          setPendingPostalCode('');
+          setPendingEmail('');
         }}
       />
     </Card>

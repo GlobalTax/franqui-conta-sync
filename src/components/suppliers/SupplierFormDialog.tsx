@@ -37,6 +37,10 @@ interface SupplierFormDialogProps {
   editingSupplier?: Supplier | null;
   initialTaxId?: string;
   initialName?: string;
+  initialAddress?: string;
+  initialCity?: string;
+  initialPostalCode?: string;
+  initialEmail?: string;
 }
 
 export function SupplierFormDialog({ 
@@ -45,7 +49,11 @@ export function SupplierFormDialog({
   onSuccess,
   editingSupplier,
   initialTaxId,
-  initialName 
+  initialName,
+  initialAddress,
+  initialCity,
+  initialPostalCode,
+  initialEmail,
 }: SupplierFormDialogProps) {
   const [formData, setFormData] = useState<SupplierFormData>({
     tax_id: '',
@@ -165,11 +173,11 @@ export function SupplierFormDialog({
           tax_id: initialTaxId || '',
           name: initialName || '',
           commercial_name: '',
-          email: '',
+          email: initialEmail || '',
           phone: '',
-          address: '',
-          city: '',
-          postal_code: '',
+          address: initialAddress || '',
+          city: initialCity || '',
+          postal_code: initialPostalCode || '',
           country: 'España',
           payment_terms: 30,
           default_account_code: '',

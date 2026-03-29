@@ -16,6 +16,11 @@ export function MyRestaurantsCard() {
   if (selectedView?.type === 'all' && selectedView.id) {
     const f = franchiseesWithCentres.find(f => f.id === selectedView.id);
     visibleCentres = f?.centres || [];
+  } else if (selectedView?.type === 'centre') {
+    const f = franchiseesWithCentres.find(f => 
+      f.centres.some(c => c.id === selectedView.id)
+    );
+    visibleCentres = f?.centres || [];
   } else {
     visibleCentres = franchiseesWithCentres.flatMap(f => f.centres);
   }

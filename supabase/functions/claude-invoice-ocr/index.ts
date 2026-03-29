@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { logger } from '../_shared/logger.ts';
 import { normalizeBackend } from "../_shared/fiscal/normalize-backend.ts";
 import type { EnhancedInvoiceData } from "../_shared/ocr/types.ts";
 
@@ -138,7 +139,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Download PDF from Storage
-    console.log(`[claude-ocr] Descargando PDF: ${documentPath}`);
+    logger.info('claude-ocr', `Descargando PDF`, { documentPath });
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('invoice-documents')
       .download(documentPath);
@@ -167,9 +168,11 @@ serve(async (req) => {
     const totalPages = pdfPayload?.totalPages ?? 1;
     const base64 = encodeBase64Chunked(bytesForClaude);
 
-    console.log(
-      `[claude-ocr] Archivo preparado para Claude: ${Math.round(bytesForClaude.byteLength / 1024)}KB | páginas enviadas ${pagesSent}/${totalPages}`,
-    );
+    logger.info('claude-ocr', 'Archivo preparado para Claude', {
+      sizeKB: Math.round(bytesForClaude.byteLength / 1024),
+      pagesSent,
+      totalPages,
+    });
 
     if (pdfPayload?.truncated) {
       console.warn(

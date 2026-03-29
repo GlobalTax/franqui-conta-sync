@@ -169,7 +169,7 @@ serve(async (req) => {
         .eq('id', invoiceId);
 
       deletedInvoices.push(invoiceId);
-      console.log(`[merge-pdf] Deleted invoice ${invoiceId}`);
+      logger.info('merge-pdf', 'Deleted secondary invoice', { invoiceId });
     }
 
     const processingTime = Date.now() - startTime;
@@ -200,7 +200,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[merge-pdf] Error:', error);
+    logger.error('merge-pdf', 'Error during PDF merge', { error: error?.message || error });
     return new Response(
       JSON.stringify({
         success: false,

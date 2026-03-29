@@ -8003,6 +8003,27 @@ export type Database = {
           line_name: string
         }[]
       }
+      get_pl_rubric_breakdown: {
+        Args: {
+          p_centro_code?: string
+          p_company_id?: string
+          p_compare_yoy?: boolean
+          p_end_date?: string
+          p_rubric_code: string
+          p_start_date?: string
+          p_template_code: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          amount_current: number
+          amount_yoy: number
+          match_kind: string
+          match_rule: string
+          variance_amount: number
+          variance_percent: number
+        }[]
+      }
       get_planned_vs_actual_costs: {
         Args: { p_centro?: string; p_end_date: string; p_start_date: string }
         Returns: {

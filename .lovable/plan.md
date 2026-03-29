@@ -1,38 +1,25 @@
 
 
-# Plan: Fix CORS error on `v_user_centres`
+# Plan: Fix error 400 en `pl-rubric-breakdown`
 
 ## Root Cause
 
-The view `v_user_centres` has `security_invoker = true`, which means it runs with the calling user's permissions. When an authenticated user queries it:
+La función RPC `get_pl_rubric_breakdown` **no existe en la base de datos**. El archivo SQL en `supabase/APPLY_PL_RUBRIC_BREAKDOWN_RPC.sql` nunca se ejecutó como migración — es solo un archivo suelto.
 
-1. The view accesses `centres` table → RLS kicks in
-2. `centres` SELECT policy calls `has_permission()` → queries `user_roles`
-3. This creates a circular/expensive chain that causes the query to fail
-4. Supabase returns an error without CORS headers → browser shows CORS error
+Cuando la edge function llama a `supabase.rpc('get_pl_rubric_breakdown', ...)`, Supabase devuelve un error porque la función no existe, y la edge function lo re-lanza como 400.
 
-The "CORS error" is actually a **failed query** — Supabase doesn't always include CORS headers on 500 error responses.
+## Solución
 
-## Solution
+Crear una migración que aplique el RPC. Las dependencias ya existen:
+- ✅ `v_pl_rule_winner` (vista) — columnas: `template_id, company_id, centro_code, period_month, account_code, rubric_code, priority`
+- ✅ `mv_gl_ledger_month` (materialized view) — columnas: `company_id, centro_code, period_month, account_code, amount`
+- ✅ `pl_templates`, `pl_rubrics`, `pl_rules`, `accounts` — tablas existentes
 
-Run a migration to change `v_user_centres` from `security_invoker = true` to `security_invoker = false` (default). This makes the view run as the owner (postgres), bypassing RLS on the underlying `centres` and `user_roles` tables.
+## Cambio
 
-This is correct because `v_user_centres` **IS** the security boundary — it already filters by `user_id` in each tier. It doesn't need RLS on its underlying tables.
+| Archivo | Acción |
+|---------|--------|
+| Migración (nueva) | Crear la función RPC `get_pl_rubric_breakdown` usando el SQL ya definido en `APPLY_PL_RUBRIC_BREAKDOWN_RPC.sql` |
 
-## Migration SQL
-
-```sql
--- Remove security_invoker from v_user_centres
--- The view itself IS the security boundary (filters by user_id per tier)
--- security_invoker causes circular RLS dependency with centres table
-ALTER VIEW public.v_user_centres SET (security_invoker = false);
-```
-
-## Files Changed
-
-| File | Change |
-|------|--------|
-| Migration (new) | `ALTER VIEW` to disable `security_invoker` |
-
-No frontend changes needed — the query in `useAllUserCentres.ts` is already correct.
+El SQL es el mismo del archivo existente: `CREATE OR REPLACE FUNCTION get_pl_rubric_breakdown(...)` con los grants correspondientes.
 

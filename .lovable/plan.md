@@ -1,61 +1,51 @@
 
 
-# Plan: Redefinir roles — la asesoría es el Admin
+# Plan: Añadir rol "Empleado" (personal del franquiciado) con permisos configurables
 
-## Modelo correcto
+## Concepto
 
-| Rol | Quién es | Acceso |
-|-----|----------|--------|
-| **admin** | Personal de la asesoría (despacho contable) | Acceso total, gestión de todo |
-| **gestor** | Empleado de la asesoría asignado a ciertos franquiciados | CRUD en sus centros asignados |
-| **franquiciado** | Cliente (dueño de restaurantes) | Solo lectura de sus datos |
+Nuevo rol `empleado` — personal del franquiciado (gerente de restaurante, encargado, etc.) que puede acceder al sistema con permisos granulares configurados por el admin. A diferencia del `franquiciado` (solo lectura fija), el empleado tiene permisos selectivos.
 
-El rol `asesoria` se elimina — es redundante con `admin`.
+## Modelo de roles actualizado
+
+| Rol | Quién | Acceso |
+|-----|-------|--------|
+| `admin` | Asesoría | Total |
+| `gestor` | Empleado asesoría | Centros asignados |
+| `franquiciado` | Propietario | Solo lectura sus restaurantes |
+| **`empleado`** | **Personal del franquiciado** | **Configurable por el admin** |
 
 ## Cambios
 
-### 1. Migración SQL: eliminar `asesoria` del enum y datos
+### 1. Migración SQL
+- Añadir `'empleado'` al enum `app_role` (`ALTER TYPE app_role ADD VALUE 'empleado'`)
+- Insertar permisos base para `empleado` en `role_permissions` (por defecto solo vista básica)
 
-```sql
--- Reasignar user_roles con role='asesoria' → 'admin' (o 'gestor' según contexto)
-UPDATE user_roles SET role = 'admin' WHERE role = 'asesoria';
--- Eliminar permisos de asesoria en role_permissions
-DELETE FROM role_permissions WHERE role = 'asesoria';
--- Recrear el enum sin 'asesoria'
--- (ALTER TYPE ... DROP VALUE no existe en Postgres, hay que recrear)
-```
-
-Nota: Postgres no permite `DROP VALUE` de un enum directamente. Se necesita recrear el tipo con las columnas dependientes, o simplemente dejar el valor en el enum y no usarlo en la UI (enfoque más seguro y sin downtime).
-
-**Enfoque recomendado**: no tocar el enum (evita riesgo), solo limpiar datos y ocultar en la UI.
-
-### 2. Frontend: eliminar `asesoria` de todos los selectores y labels
+### 2. Frontend — 5 archivos
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/admin/RolesManagement.tsx` | Eliminar entrada `asesoria`, actualizar descripciones (admin = "Asesoría — acceso total") |
-| `src/pages/admin/UsersManagement.tsx` | Quitar `asesoria` del filtro y de `getRoleBadgeVariant`/`getRoleIcon` |
-| `src/components/admin/InviteUserDialog.tsx` | Quitar `asesoria` del select y de `needsFranchisee` |
-| `src/components/admin/EditUserDialog.tsx` | Quitar `asesoria` del select |
-| `src/components/admin/RolePermissionsEditor.tsx` | Quitar `asesoria` del select |
-| `src/components/admin/PermissionsMatrix.tsx` | Quitar `asesoria` del array `ROLES` |
-| `src/pages/AcceptInvite.tsx` | Quitar `asesoria` del map de labels |
-| `supabase/functions/send-invite/index.ts` | Quitar `asesoria` del map de labels |
+| `src/pages/admin/RolesManagement.tsx` | Añadir entrada `empleado` con icono 👤 y descripción |
+| `src/components/admin/InviteUserDialog.tsx` | Añadir `empleado` al select de roles + marcar como `needsFranchisee` |
+| `src/components/admin/EditUserDialog.tsx` | Añadir `empleado` al select |
+| `src/components/admin/RolePermissionsEditor.tsx` | Añadir `empleado` al select (permisos editables con checkboxes) |
+| `src/components/admin/PermissionsMatrix.tsx` | Añadir `empleado` al array `ROLES` |
+| `src/pages/admin/UsersManagement.tsx` | Añadir badge/icono para `empleado` |
+| `src/pages/AcceptInvite.tsx` | Añadir label para `empleado` |
+| `supabase/functions/send-invite/index.ts` | Añadir label para `empleado` en el email |
 
-### 3. Actualizar descripciones de roles
+### 3. Permisos configurables
 
-```
-admin  → 🛡️ "Asesoría (Admin)" — Acceso total al sistema, gestión de todos los franquiciados
-gestor → 👔 "Gestor" — Empleado de la asesoría con acceso a franquiciados asignados
-franquiciado → 🍔 "Franquiciado" — Propietario, ve sus restaurantes en solo lectura
-```
+El admin usa el `RolePermissionsEditor` existente para marcar qué puede ver/hacer el rol `empleado`. Por ejemplo:
+- ✅ Ver nóminas, ver horarios, ver ausencias
+- ❌ Crear/editar/eliminar, importar, exportar, administración
 
-### 4. Migración: reasignar roles existentes
+Esto ya funciona con la tabla `role_permissions` y el RPC `has_permission` — solo hay que añadir el rol nuevo al selector.
 
-```sql
-UPDATE user_roles SET role = 'admin' WHERE role = 'asesoria';
-DELETE FROM role_permissions WHERE role = 'asesoria';
-```
+## Resultado
 
-## Archivos totales: 8 frontend + 1 edge function + 1 migración
+Al invitar un empleado del franquiciado, el admin:
+1. Elige rol "Empleado"
+2. Asigna franquiciado + centro(s)
+3. Los permisos granulares se configuran desde "Permisos por Rol"
 

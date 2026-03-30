@@ -1,16 +1,87 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/lib/logger';
 
+// ── Singleton Realtime channel management ──
+const activeChannels = new Map<string, { channel: ReturnType<typeof supabase.channel>; refCount: number }>();
+
+function ensureRealtimeChannel(userId: string, queryClient: ReturnType<typeof useQueryClient>) {
+  const existing = activeChannels.get(userId);
+  if (existing) {
+    existing.refCount++;
+    logger.debug('useNotifications', `Canal reutilizado para ${userId}, refCount=${existing.refCount}`);
+    return;
+  }
+
+  const channelName = `notif-${userId}-${Date.now()}`;
+  logger.info('useNotifications', `Creando canal singleton ${channelName}`);
+
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'alert_notifications',
+        filter: `destinatario_user_id=eq.${userId}`,
+      },
+      (payload) => {
+        logger.debug('useNotifications', 'Nueva notificacion:', payload.new);
+        queryClient.setQueryData(['notifications'], (old: any) => {
+          return [payload.new, ...(old || [])];
+        });
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'alert_notifications',
+        filter: `destinatario_user_id=eq.${userId}`,
+      },
+      (payload) => {
+        logger.debug('useNotifications', 'Notificacion actualizada:', payload.new);
+        queryClient.setQueryData(['notifications'], (old: any) => {
+          return old?.map((n: any) =>
+            n.id === payload.new.id ? payload.new : n
+          ) || [];
+        });
+      }
+    )
+    .subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') {
+        logger.info('useNotifications', `Canal ${channelName} activo`);
+      } else if (status === 'CHANNEL_ERROR') {
+        logger.error('useNotifications', `Error canal ${channelName}`, err);
+      }
+    });
+
+  activeChannels.set(userId, { channel, refCount: 1 });
+}
+
+function releaseRealtimeChannel(userId: string) {
+  const entry = activeChannels.get(userId);
+  if (!entry) return;
+
+  entry.refCount--;
+  if (entry.refCount <= 0) {
+    logger.debug('useNotifications', `Eliminando canal singleton para ${userId}`);
+    supabase.removeChannel(entry.channel);
+    activeChannels.delete(userId);
+  } else {
+    logger.debug('useNotifications', `Release canal ${userId}, refCount=${entry.refCount}`);
+  }
+}
+
 /**
- * Hook principal de notificaciones.
- * Devuelve notifications, unreadCount, isLoading y mutations.
- * Una sola suscripción Realtime por instancia — no duplica canales.
+ * Hook principal de notificaciones — singleton Realtime.
+ * Seguro para llamar desde múltiples componentes simultáneamente.
  */
 export const useNotifications = () => {
   const queryClient = useQueryClient();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const query = useQuery({
     queryKey: ["notifications"],
@@ -31,83 +102,25 @@ export const useNotifications = () => {
     refetchInterval: false,
   });
 
-  // Suscripción Realtime — una sola vez, limpieza correcta
   useEffect(() => {
-    let cancelled = false;
+    let userId: string | null = null;
 
     const setup = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-
-      // Limpiar canal anterior si existe
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-
-      const channelName = `notif-${user.id}`;
-      logger.info('useNotifications', `Suscribiendo canal ${channelName}`);
-
-      const channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'alert_notifications',
-            filter: `destinatario_user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            logger.debug('useNotifications', 'Nueva notificacion:', payload.new);
-            queryClient.setQueryData(['notifications'], (old: any) => {
-              return [payload.new, ...(old || [])];
-            });
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'alert_notifications',
-            filter: `destinatario_user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            logger.debug('useNotifications', 'Notificacion actualizada:', payload.new);
-            queryClient.setQueryData(['notifications'], (old: any) => {
-              return old?.map((n: any) =>
-                n.id === payload.new.id ? payload.new : n
-              ) || [];
-            });
-          }
-        )
-        .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            logger.info('useNotifications', `Canal ${channelName} activo`);
-          } else if (status === 'CHANNEL_ERROR') {
-            logger.error('useNotifications', `Error canal ${channelName}`, err);
-          } else if (status === 'CLOSED') {
-            logger.debug('useNotifications', `Canal ${channelName} cerrado`);
-          }
-        });
-
-      channelRef.current = channel;
+      if (!user) return;
+      userId = user.id;
+      ensureRealtimeChannel(userId, queryClient);
     };
 
     setup();
 
     return () => {
-      cancelled = true;
-      if (channelRef.current) {
-        logger.debug('useNotifications', 'Cleanup: removiendo canal');
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      if (userId) {
+        releaseRealtimeChannel(userId);
       }
     };
   }, [queryClient]);
 
-  // Derivar unreadCount del cache sin crear otra suscripción
   const unreadCount = useMemo(() => {
     return query.data?.filter((n) => !n.leida).length || 0;
   }, [query.data]);
@@ -116,14 +129,6 @@ export const useNotifications = () => {
     ...query,
     unreadCount,
   };
-};
-
-/**
- * @deprecated Usar useNotifications().unreadCount en su lugar
- */
-export const useUnreadCount = () => {
-  const { unreadCount } = useNotifications();
-  return unreadCount;
 };
 
 export const useMarkAsRead = () => {

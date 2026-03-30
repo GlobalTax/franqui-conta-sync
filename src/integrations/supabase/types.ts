@@ -2696,6 +2696,50 @@ export type Database = {
           },
         ]
       }
+      embargos: {
+        Row: {
+          activo: boolean | null
+          codigo_a3: string | null
+          created_at: string | null
+          fecha_recepcion: string | null
+          finalizacion: string | null
+          id: string
+          importe: number | null
+          nombre: string | null
+          trabajador_id: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_recepcion?: string | null
+          finalizacion?: string | null
+          id?: string
+          importe?: number | null
+          nombre?: string | null
+          trabajador_id?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_recepcion?: string | null
+          finalizacion?: string | null
+          id?: string
+          importe?: number | null
+          nombre?: string | null
+          trabajador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embargos_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           apellidos: string
@@ -2814,6 +2858,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      excedencias: {
+        Row: {
+          activa: boolean | null
+          codigo_a3: string | null
+          created_at: string | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          id: string
+          nombre: string
+          restaurante: string | null
+          tipo: string | null
+          trabajador_id: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          nombre: string
+          restaurante?: string | null
+          tipo?: string | null
+          trabajador_id?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          nombre?: string
+          restaurante?: string | null
+          tipo?: string | null
+          trabajador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "excedencias_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       face_configuration: {
         Row: {
@@ -2964,6 +3055,51 @@ export type Database = {
           updated_at?: string | null
           xml_content?: string
           xml_version?: string
+        }
+        Relationships: []
+      }
+      finalizaciones: {
+        Row: {
+          anio: number | null
+          antiguedad_dias: number | null
+          causa: string | null
+          codigo: string | null
+          created_at: string | null
+          empleado: string
+          empresa: string | null
+          fecha_alta: string | null
+          fecha_baja: string
+          id: string
+          mes: number | null
+          restaurante: string
+        }
+        Insert: {
+          anio?: number | null
+          antiguedad_dias?: number | null
+          causa?: string | null
+          codigo?: string | null
+          created_at?: string | null
+          empleado: string
+          empresa?: string | null
+          fecha_alta?: string | null
+          fecha_baja: string
+          id?: string
+          mes?: number | null
+          restaurante: string
+        }
+        Update: {
+          anio?: number | null
+          antiguedad_dias?: number | null
+          causa?: string | null
+          codigo?: string | null
+          created_at?: string | null
+          empleado?: string
+          empresa?: string | null
+          fecha_alta?: string | null
+          fecha_baja?: string
+          id?: string
+          mes?: number | null
+          restaurante?: string
         }
         Relationships: []
       }
@@ -3136,6 +3272,143 @@ export type Database = {
         }
         Relationships: []
       }
+      genero_categoria: {
+        Row: {
+          anio: number | null
+          categoria: string | null
+          created_at: string | null
+          hombres: number | null
+          id: string
+          mes: number | null
+          mujeres: number | null
+          restaurante: string | null
+          total: number | null
+          upload_id: string | null
+        }
+        Insert: {
+          anio?: number | null
+          categoria?: string | null
+          created_at?: string | null
+          hombres?: number | null
+          id?: string
+          mes?: number | null
+          mujeres?: number | null
+          restaurante?: string | null
+          total?: number | null
+          upload_id?: string | null
+        }
+        Update: {
+          anio?: number | null
+          categoria?: string | null
+          created_at?: string | null
+          hombres?: number | null
+          id?: string
+          mes?: number | null
+          mujeres?: number | null
+          restaurante?: string | null
+          total?: number | null
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genero_cat_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      headcount: {
+        Row: {
+          anio: number
+          created_at: string | null
+          id: string
+          mes: number
+          num_trabajadores: number | null
+          restaurante: string
+        }
+        Insert: {
+          anio: number
+          created_at?: string | null
+          id?: string
+          mes: number
+          num_trabajadores?: number | null
+          restaurante: string
+        }
+        Update: {
+          anio?: number
+          created_at?: string | null
+          id?: string
+          mes?: number
+          num_trabajadores?: number | null
+          restaurante?: string
+        }
+        Relationships: []
+      }
+      horas_complementarias: {
+        Row: {
+          anio: number | null
+          categoria: string | null
+          codigo_a3: string | null
+          created_at: string | null
+          horas_complementarias: number | null
+          horas_ordinarias: number | null
+          id: string
+          mes: number | null
+          nombre: string | null
+          pct_complementarias: number | null
+          restaurante: string | null
+          trabajador_id: string | null
+          upload_id: string | null
+        }
+        Insert: {
+          anio?: number | null
+          categoria?: string | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          horas_complementarias?: number | null
+          horas_ordinarias?: number | null
+          id?: string
+          mes?: number | null
+          nombre?: string | null
+          pct_complementarias?: number | null
+          restaurante?: string | null
+          trabajador_id?: string | null
+          upload_id?: string | null
+        }
+        Update: {
+          anio?: number | null
+          categoria?: string | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          horas_complementarias?: number | null
+          horas_ordinarias?: number | null
+          id?: string
+          mes?: number | null
+          nombre?: string | null
+          pct_complementarias?: number | null
+          restaurante?: string | null
+          trabajador_id?: string | null
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "horas_comp_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horas_complementarias_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_logs: {
         Row: {
           created_at: string | null
@@ -3268,6 +3541,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_user_memberships"
             referencedColumns: ["restaurant_code"]
+          },
+        ]
+      }
+      incapacidades_permanentes: {
+        Row: {
+          activa: boolean | null
+          codigo_a3: string | null
+          created_at: string | null
+          fecha_resolucion: string | null
+          id: string
+          nombre: string
+          restaurante: string | null
+          tipo: string | null
+          trabajador_id: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_resolucion?: string | null
+          id?: string
+          nombre: string
+          restaurante?: string | null
+          tipo?: string | null
+          trabajador_id?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          codigo_a3?: string | null
+          created_at?: string | null
+          fecha_resolucion?: string | null
+          id?: string
+          nombre?: string
+          restaurante?: string | null
+          tipo?: string | null
+          trabajador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incapacidades_permanentes_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -4258,6 +4575,111 @@ export type Database = {
           },
         ]
       }
+      its: {
+        Row: {
+          activa: boolean | null
+          anio: number | null
+          base_reg_acc: number | null
+          base_reg_cc: number | null
+          base_reg_dia_3207: number | null
+          codigo_a3: string | null
+          complemento_it: number | null
+          coste_60_pct: number | null
+          coste_cotizacion: number | null
+          coste_total: number | null
+          created_at: string | null
+          dias_it: number | null
+          duracion_estimada: string | null
+          fecha_estimada_fin: string | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          fecha_siguiente_revision: string | null
+          id: string
+          mes: number | null
+          nombre: string | null
+          num_ultimo_parte: string | null
+          observaciones: string | null
+          restaurante: string | null
+          tasa_cotizacion: number | null
+          tipo_contingencia: string | null
+          trabajador_id: string | null
+          upload_id: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          anio?: number | null
+          base_reg_acc?: number | null
+          base_reg_cc?: number | null
+          base_reg_dia_3207?: number | null
+          codigo_a3?: string | null
+          complemento_it?: number | null
+          coste_60_pct?: number | null
+          coste_cotizacion?: number | null
+          coste_total?: number | null
+          created_at?: string | null
+          dias_it?: number | null
+          duracion_estimada?: string | null
+          fecha_estimada_fin?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_siguiente_revision?: string | null
+          id?: string
+          mes?: number | null
+          nombre?: string | null
+          num_ultimo_parte?: string | null
+          observaciones?: string | null
+          restaurante?: string | null
+          tasa_cotizacion?: number | null
+          tipo_contingencia?: string | null
+          trabajador_id?: string | null
+          upload_id?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          anio?: number | null
+          base_reg_acc?: number | null
+          base_reg_cc?: number | null
+          base_reg_dia_3207?: number | null
+          codigo_a3?: string | null
+          complemento_it?: number | null
+          coste_60_pct?: number | null
+          coste_cotizacion?: number | null
+          coste_total?: number | null
+          created_at?: string | null
+          dias_it?: number | null
+          duracion_estimada?: string | null
+          fecha_estimada_fin?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_siguiente_revision?: string | null
+          id?: string
+          mes?: number | null
+          nombre?: string | null
+          num_ultimo_parte?: string | null
+          observaciones?: string | null
+          restaurante?: string | null
+          tasa_cotizacion?: number | null
+          tipo_contingencia?: string | null
+          trabajador_id?: string | null
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "its_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "its_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_source: {
         Row: {
           created_at: string
@@ -4302,6 +4724,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      labour: {
+        Row: {
+          anio: number
+          coste_it: number | null
+          coste_it_60pct: number | null
+          coste_it_complemento: number | null
+          coste_it_cotizacion: number | null
+          coste_total_mdo: number | null
+          created_at: string | null
+          devengos_mdo: number | null
+          id: string
+          labour_pct: number | null
+          manutencion: number | null
+          mes: number
+          prorrata_pagas: number | null
+          restaurante: string
+          ss_empresa: number | null
+          ventas: number | null
+        }
+        Insert: {
+          anio: number
+          coste_it?: number | null
+          coste_it_60pct?: number | null
+          coste_it_complemento?: number | null
+          coste_it_cotizacion?: number | null
+          coste_total_mdo?: number | null
+          created_at?: string | null
+          devengos_mdo?: number | null
+          id?: string
+          labour_pct?: number | null
+          manutencion?: number | null
+          mes: number
+          prorrata_pagas?: number | null
+          restaurante: string
+          ss_empresa?: number | null
+          ventas?: number | null
+        }
+        Update: {
+          anio?: number
+          coste_it?: number | null
+          coste_it_60pct?: number | null
+          coste_it_complemento?: number | null
+          coste_it_cotizacion?: number | null
+          coste_total_mdo?: number | null
+          created_at?: string | null
+          devengos_mdo?: number | null
+          id?: string
+          labour_pct?: number | null
+          manutencion?: number | null
+          mes?: number
+          prorrata_pagas?: number | null
+          restaurante?: string
+          ss_empresa?: number | null
+          ventas?: number | null
+        }
+        Relationships: []
       }
       memberships: {
         Row: {
@@ -6730,6 +7209,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trabajadores: {
+        Row: {
+          activo: boolean | null
+          afiliacion: string | null
+          categoria: string | null
+          codigo_a3: string | null
+          computo: number | null
+          created_at: string | null
+          ctp: string | null
+          dias_alta: number | null
+          discapacidad: boolean | null
+          dni: string | null
+          email: string | null
+          fecha_alta: string | null
+          fecha_baja: string | null
+          fecha_nacimiento: string | null
+          horas_anuales: number | null
+          id: string
+          nombre: string
+          porcentaje_jornada: number | null
+          restaurante: string | null
+          tipo_contrato: string | null
+          tipo_contrato_discapacidad: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          afiliacion?: string | null
+          categoria?: string | null
+          codigo_a3?: string | null
+          computo?: number | null
+          created_at?: string | null
+          ctp?: string | null
+          dias_alta?: number | null
+          discapacidad?: boolean | null
+          dni?: string | null
+          email?: string | null
+          fecha_alta?: string | null
+          fecha_baja?: string | null
+          fecha_nacimiento?: string | null
+          horas_anuales?: number | null
+          id?: string
+          nombre: string
+          porcentaje_jornada?: number | null
+          restaurante?: string | null
+          tipo_contrato?: string | null
+          tipo_contrato_discapacidad?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          afiliacion?: string | null
+          categoria?: string | null
+          codigo_a3?: string | null
+          computo?: number | null
+          created_at?: string | null
+          ctp?: string | null
+          dias_alta?: number | null
+          discapacidad?: boolean | null
+          dni?: string | null
+          email?: string | null
+          fecha_alta?: string | null
+          fecha_baja?: string | null
+          fecha_nacimiento?: string | null
+          horas_anuales?: number | null
+          id?: string
+          nombre?: string
+          porcentaje_jornada?: number | null
+          restaurante?: string | null
+          tipo_contrato?: string | null
+          tipo_contrato_discapacidad?: string | null
+        }
+        Relationships: []
+      }
+      uploads: {
+        Row: {
+          created_at: string | null
+          errores: number | null
+          filas_procesadas: number | null
+          id: string
+          nombre_fichero: string | null
+          periodo_anio: number | null
+          periodo_mes: number | null
+          tipo: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          errores?: number | null
+          filas_procesadas?: number | null
+          id?: string
+          nombre_fichero?: string | null
+          periodo_anio?: number | null
+          periodo_mes?: number | null
+          tipo: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          errores?: number | null
+          filas_procesadas?: number | null
+          id?: string
+          nombre_fichero?: string | null
+          periodo_anio?: number | null
+          periodo_mes?: number | null
+          tipo?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       user_centre_permissions: {
         Row: {

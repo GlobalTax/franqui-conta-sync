@@ -1,126 +1,44 @@
 
-Plan: arreglar Realtime de notificaciones de raíz
 
-## Diagnóstico real
+# Fix: Realtime notifications — canal duplicado causa errores
 
-Hay 2 causas probables y ambas están presentes:
+## Problema raíz
 
-1. **El hook se está montando varias veces con el mismo canal**
-   - `NotificationBell` llama a `useNotifications()`
-   - y además `useUnreadCount()`, que internamente vuelve a llamar a `useNotifications()`
-   - en `/notificaciones` pasa otra vez: `useNotifications()` + `useUnreadCount()`
-   - eso crea **suscripciones duplicadas** usando siempre el mismo nombre de canal: `notifications-realtime`
+`useNotifications()` se llama desde **dos sitios simultáneamente**:
+1. `NotificationBell` (siempre montado en `Layout.tsx`)
+2. `Notifications` página (cuando el usuario navega a `/notificaciones`)
 
-   Resultado: un canal pisa/cierra al otro y aparecen logs como:
-   - “Suscripcion Realtime cerrada”
-   - “Error en canal Realtime”
+Cada instancia del hook crea un canal Realtime con el **mismo nombre** (`notif-${userId}`). Supabase rechaza el duplicado → cierra uno → errores en consola → ninguno funciona.
 
-2. **La tabla `alert_notifications` no está publicada en `supabase_realtime`**
-   - he consultado `pg_publication_tables` y `alert_notifications` **no aparece**
-   - así que aunque el frontend se suscriba bien, Postgres Realtime no va a emitir cambios de esa tabla
+Además, `useUnreadCount()` sigue existiendo y llama internamente a `useNotifications()`, pudiendo crear una tercera instancia.
 
-## Lo que sí está bien
+## Solución
 
-- La tabla `alert_notifications` existe
-- Las políticas RLS de lectura/actualización para el destinatario existen
-- El problema no parece ser de permisos de lectura
+Convertir la suscripción Realtime en un **singleton a nivel de módulo** que no dependa del ciclo de vida de React.
 
-## Cambios propuestos
+### Cambios en `src/hooks/useNotifications.ts`
 
-### 1. Rehacer `useNotifications` para que no cree canales duplicados
-Archivo:
-- `src/hooks/useNotifications.ts`
-
-Cambio:
-- convertirlo en un hook que exponga todo lo necesario desde **una sola fuente**
-- devolver:
-  - `notifications`
-  - `unreadCount`
-  - `isLoading`
-- eliminar el patrón actual donde `useUnreadCount()` vuelve a llamar al hook principal
-
-Además:
-- usar un **nombre de canal único por usuario/instancia** o asegurar una sola suscripción activa
-- limpiar correctamente el canal anterior antes de volver a suscribirse
-- evitar suscribirse si no hay usuario autenticado
-
-### 2. Simplificar consumidores para usar una sola instancia del hook
-Archivos:
-- `src/components/notifications/NotificationBell.tsx`
-- `src/pages/Notifications.tsx`
-
-Cambio:
-- en cada componente, llamar **una sola vez** al hook
-- leer `unreadCount` desde el mismo resultado del hook
-- no volver a disparar otra suscripción indirectamente
-
-Impacto esperado:
-- en `/admin`, la campana dejará de abrir 2 canales
-- en `/notificaciones`, la página dejará de abrir 2-3 canales superpuestos
-
-### 3. Activar Realtime para `alert_notifications`
-Archivo:
-- nueva migración SQL en `supabase/migrations/`
-
-Cambio:
-- añadir `public.alert_notifications` a la publicación `supabase_realtime`
-
-Esto es imprescindible para que `INSERT/UPDATE` lleguen al cliente en tiempo real.
-
-### 4. Endurecer el manejo de estados del canal
-Archivo:
-- `src/hooks/useNotifications.ts`
-
-Cambio:
-- manejar mejor `SUBSCRIBED`, `CLOSED`, `CHANNEL_ERROR`, y opcionalmente `TIMED_OUT`
-- registrar contexto útil en logs para distinguir:
-  - cierre por cleanup normal
-  - cierre por colisión de canal
-  - error real del backend Realtime
-
-## Diseño recomendado
-
-La forma más limpia aquí es:
+1. **Extraer la suscripción a una función singleton** con un `Map` a nivel de módulo que guarde el canal activo por userId
+2. Cuando el hook se monta, llama a `ensureRealtimeChannel(userId)` — si ya existe un canal para ese usuario, no crea otro
+3. Solo el último cleanup (cuando todos los consumidores se desmontan) elimina el canal
+4. Usar un **contador de referencias** para saber cuántas instancias del hook están activas
 
 ```text
-useNotifications()
-  -> query inicial
-  -> 1 sola suscripción realtime
-  -> devuelve:
-     notifications
-     unreadCount
-     isLoading
+Módulo level:
+  activeChannels: Map<userId, { channel, refCount }>
+
+useNotifications():
+  mount  → refCount++ → si refCount === 1: crear canal
+  unmount → refCount-- → si refCount === 0: eliminar canal
 ```
 
-Y quitar:
-```text
-useUnreadCount() -> useNotifications() -> suscripción duplicada
-```
+5. **Eliminar `useUnreadCount`** por completo — ya no tiene sentido y solo causa duplicaciones
 
-## Archivos a tocar
+### Archivos
 
-- `src/hooks/useNotifications.ts`
-- `src/components/notifications/NotificationBell.tsx`
-- `src/pages/Notifications.tsx`
-- `supabase/migrations/...sql` para `supabase_realtime`
+| Archivo | Cambio |
+|---------|--------|
+| `src/hooks/useNotifications.ts` | Singleton de canal + eliminar useUnreadCount |
 
-## Resultado esperado
+No se necesitan cambios en los consumidores (`NotificationBell`, `Notifications`) porque ya usan `useNotifications()` correctamente.
 
-Después del cambio:
-
-- desaparecerán los cierres/errores repetidos del canal
-- la campana de notificaciones no creará suscripciones duplicadas
-- la página de notificaciones tampoco duplicará queries/canales
-- los `INSERT/UPDATE` sobre `alert_notifications` llegarán de verdad por Realtime
-- el contador de no leídas y la lista se actualizarán sin refrescar
-
-## Nota técnica importante
-
-He visto otros componentes con Realtime (`ocr_circuit_breaker`, `invoices_received`, `ocr_processing_log`) y la consulta a `pg_publication_tables` tampoco devuelve esas tablas. O sea, el problema puede ser más amplio que notificaciones. Para este fix me centraría primero en `alert_notifications`, y después revisaría si queréis estandarizar Realtime en el resto de módulos.
-
-## Orden de implementación
-
-1. refactor de `useNotifications`
-2. simplificar `NotificationBell` y `Notifications`
-3. migración para publicar `alert_notifications` en Realtime
-4. prueba en `/admin` y `/notificaciones` verificando que ya no aparecen `CLOSED` / `CHANNEL_ERROR`

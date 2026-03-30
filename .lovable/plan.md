@@ -1,44 +1,33 @@
 
 
-# Fix: Realtime notifications — canal duplicado causa errores
+# Fix: Pantalla en blanco — archivo `.env` eliminado
 
-## Problema raíz
+## Causa raíz
 
-`useNotifications()` se llama desde **dos sitios simultáneamente**:
-1. `NotificationBell` (siempre montado en `Layout.tsx`)
-2. `Notifications` página (cuando el usuario navega a `/notificaciones`)
+El error en consola es:
+```
+Error: supabaseUrl is required.
+```
 
-Cada instancia del hook crea un canal Realtime con el **mismo nombre** (`notif-${userId}`). Supabase rechaza el duplicado → cierra uno → errores en consola → ninguno funciona.
-
-Además, `useUnreadCount()` sigue existiendo y llama internamente a `useNotifications()`, pudiendo crear una tercera instancia.
+El archivo `.env` **ya no existe** en el proyecto. Sin él, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` son `undefined`, y el cliente Supabase no puede inicializarse. Esto rompe toda la aplicación antes de que renderice nada.
 
 ## Solución
 
-Convertir la suscripción Realtime en un **singleton a nivel de módulo** que no dependa del ciclo de vida de React.
+Recrear el archivo `.env` con los valores correctos del proyecto (que ya conocemos del historial):
 
-### Cambios en `src/hooks/useNotifications.ts`
-
-1. **Extraer la suscripción a una función singleton** con un `Map` a nivel de módulo que guarde el canal activo por userId
-2. Cuando el hook se monta, llama a `ensureRealtimeChannel(userId)` — si ya existe un canal para ese usuario, no crea otro
-3. Solo el último cleanup (cuando todos los consumidores se desmontan) elimina el canal
-4. Usar un **contador de referencias** para saber cuántas instancias del hook están activas
-
-```text
-Módulo level:
-  activeChannels: Map<userId, { channel, refCount }>
-
-useNotifications():
-  mount  → refCount++ → si refCount === 1: crear canal
-  unmount → refCount-- → si refCount === 0: eliminar canal
+```env
+VITE_SUPABASE_PROJECT_ID="srwnjnrhxzcpftmbbyib"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyd25qbnJoeHpjcGZ0bWJieWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMzY1NjMsImV4cCI6MjA2ODkxMjU2M30.JCQDhjjtXKrPCDV8QRYJmmJ6n9YxMtBPfUm8E52UbI4"
+VITE_SUPABASE_URL="https://srwnjnrhxzcpftmbbyib.supabase.co"
 ```
 
-5. **Eliminar `useUnreadCount`** por completo — ya no tiene sentido y solo causa duplicaciones
-
-### Archivos
+## Archivo
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/hooks/useNotifications.ts` | Singleton de canal + eliminar useUnreadCount |
+| `.env` | Recrear con las 3 variables de Supabase |
 
-No se necesitan cambios en los consumidores (`NotificationBell`, `Notifications`) porque ya usan `useNotifications()` correctamente.
+## Resultado
+
+La app volverá a funcionar inmediatamente tras restaurar el archivo.
 

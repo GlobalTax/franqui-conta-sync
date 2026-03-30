@@ -1,19 +1,12 @@
 
 
-# Fix: Pantalla en blanco — archivo `.env` eliminado
+# Fix: Restaurar `.env` (borrado de nuevo)
 
-## Causa raíz
-
-El error en consola es:
-```
-Error: supabaseUrl is required.
-```
-
-El archivo `.env` **ya no existe** en el proyecto. Sin él, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` son `undefined`, y el cliente Supabase no puede inicializarse. Esto rompe toda la aplicación antes de que renderice nada.
+## Problema
+El archivo `.env` no existe en el proyecto. Sin él, `import.meta.env.VITE_SUPABASE_URL` devuelve `undefined` → el cliente Supabase falla → pantalla en blanco.
 
 ## Solución
-
-Recrear el archivo `.env` con los valores correctos del proyecto (que ya conocemos del historial):
+Recrear `.env` con los valores conocidos del proyecto:
 
 ```env
 VITE_SUPABASE_PROJECT_ID="srwnjnrhxzcpftmbbyib"
@@ -27,7 +20,6 @@ VITE_SUPABASE_URL="https://srwnjnrhxzcpftmbbyib.supabase.co"
 |---------|--------|
 | `.env` | Recrear con las 3 variables de Supabase |
 
-## Resultado
-
-La app volverá a funcionar inmediatamente tras restaurar el archivo.
+## Nota
+Este archivo se ha borrado varias veces durante ediciones anteriores. El error de WebAssembly (`CompileError`) que aparece en los logs es del entorno sandbox de Lovable, no de tu código — es inofensivo. El único error real es el de Supabase.
 

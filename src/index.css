@@ -219,9 +219,9 @@ All colors MUST be HSL.
     letter-spacing: -0.022em;
   }
   
-  h1 { @apply text-3xl; font-weight: 500; }
-  h2 { @apply text-2xl; font-weight: 500; }
-  h3 { @apply text-xl; font-weight: 500; }
+  h1 { @apply text-3xl; font-weight: 400; }
+  h2 { @apply text-2xl; font-weight: 400; }
+  h3 { @apply text-xl; font-weight: 400; }
 
   /* Global: cap all font weights to 500 (medium) max — no bold anywhere */
   * {

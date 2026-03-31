@@ -285,7 +285,7 @@ All colors MUST be HSL.
   .holded-value {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-3xl tabular-nums;
-    font-weight: 500;
+    font-weight: 400;
   }
   
   .holded-value-sm {

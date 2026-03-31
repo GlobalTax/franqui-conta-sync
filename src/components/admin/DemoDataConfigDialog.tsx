@@ -271,8 +271,19 @@ export function DemoDataConfigDialog({
       ],
     };
 
+    newConfig.advanced = advancedConfig;
     onGenerate(newConfig);
   };
+
+  const [advancedConfig, setAdvancedConfig] = useState(config.advanced || {
+    dataVolume: 'medium' as const,
+    generateBankData: true,
+    generateInvoices: true,
+    generateEntries: true,
+    autoReconcile: true,
+    yearRange: { from: 2025, to: 2025 },
+    testingMode: 'full' as const,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -290,7 +301,7 @@ export function DemoDataConfigDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="franchisee" className="gap-2">
                   <Users className="h-3.5 w-3.5" />
                   Grupo
@@ -306,6 +317,10 @@ export function DemoDataConfigDialog({
                 <TabsTrigger value="suppliers" className="gap-2">
                   <Package className="h-3.5 w-3.5" />
                   Proveedores
+                </TabsTrigger>
+                <TabsTrigger value="advanced" className="gap-2">
+                  <Settings2 className="h-3.5 w-3.5" />
+                  Avanzado
                 </TabsTrigger>
               </TabsList>
 

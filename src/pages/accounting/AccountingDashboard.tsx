@@ -39,7 +39,7 @@ export default function AccountingDashboard() {
   const { selectedView } = useView();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
 
   const startDate = `${selectedYear}-01-01`;
   const endDate = `${selectedYear}-12-31`;

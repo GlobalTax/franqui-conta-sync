@@ -16,7 +16,7 @@ import { formatCurrency } from "@/lib/utils";
 export default function AssetsRegister() {
   const { selectedView } = useView();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
 
   const { data: assets, isLoading } = useFixedAssets();
 

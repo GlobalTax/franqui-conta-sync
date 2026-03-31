@@ -60,6 +60,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NavLink } from "./NavLink";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 import { useState } from "react";
 import { useGlobalFiscalYear } from "@/hooks/useGlobalFiscalYear";
 import { logger } from "@/lib/logger";

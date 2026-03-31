@@ -7987,6 +7987,30 @@ export type Database = {
         }
         Returns: Json
       }
+      biloop_find_company: {
+        Args: { p_search: string }
+        Returns: {
+          cif: string
+          company_id: string
+          company_name: string
+          titular_name: string
+          titular_nif: string
+        }[]
+      }
+      biloop_get_companies: {
+        Args: never
+        Returns: {
+          activity_description: string
+          cif: string
+          cnae09: number
+          company_id: string
+          company_name: string
+          is_active: boolean
+          province: string
+          titular_name: string
+          titular_nif: string
+        }[]
+      }
       biloop_get_config: { Args: never; Returns: Json }
       biloop_insert_sync_log: {
         Args: {
@@ -7997,6 +8021,7 @@ export type Database = {
         }
         Returns: string
       }
+      biloop_refresh_companies: { Args: never; Returns: number }
       biloop_update_sync_log: {
         Args: {
           p_duration_ms?: number

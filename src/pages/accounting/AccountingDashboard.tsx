@@ -34,6 +34,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 
 export default function AccountingDashboard() {
   const { selectedView } = useView();

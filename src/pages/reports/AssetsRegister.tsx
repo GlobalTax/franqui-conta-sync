@@ -11,6 +11,7 @@ import { useFixedAssets } from "@/hooks/useFixedAssets";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
 import { formatCurrency } from "@/lib/utils";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 
 
 export default function AssetsRegister() {

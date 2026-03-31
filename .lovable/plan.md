@@ -1,25 +1,47 @@
 
+Objetivo: dejar de depender de un `.env` ausente para que la app vuelva a arrancar de forma estable en Lovable.
 
-# Fix: Restaurar `.env` (borrado de nuevo)
+Qué he encontrado:
+- El error real sigue siendo `supabaseUrl is required`.
+- En el estado actual del repo hay `.env.example`, pero no aparece `.env` en la raíz.
+- `src/integrations/supabase/client.ts` sigue usando:
+  - `import.meta.env.VITE_SUPABASE_URL`
+  - `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY`
+- Eso encaja exactamente con la pantalla en blanco: el cliente Supabase explota al importar `App.tsx`, antes de renderizar nada.
+- Los warnings de `react-hotkeys-hook` no bloquean la carga; son ruido secundario.
 
-## Problema
-El archivo `.env` no existe en el proyecto. Sin él, `import.meta.env.VITE_SUPABASE_URL` devuelve `undefined` → el cliente Supabase falla → pantalla en blanco.
+Solución propuesta:
+1. Corregir la inicialización de Supabase en frontend
+   - Cambiar `src/integrations/supabase/client.ts` para usar valores fijos del proyecto:
+     - URL: `https://srwnjnrhxzcpftmbbyib.supabase.co`
+     - Publishable key: la anon key pública ya conocida del proyecto
+   - Añadir una guardia explícita con mensaje claro por si faltara algo en el futuro.
 
-## Solución
-Recrear `.env` con los valores conocidos del proyecto:
+2. Eliminar la segunda dependencia crítica de `import.meta.env`
+   - Actualizar `src/lib/migration/migrationTracking.ts` para reutilizar el cliente/base de Supabase sin depender de `VITE_SUPABASE_URL` ni `VITE_SUPABASE_PUBLISHABLE_KEY`.
+   - Así evitamos otro crash silencioso en módulos que usan fetch directo al REST API.
 
-```env
-VITE_SUPABASE_PROJECT_ID="srwnjnrhxzcpftmbbyib"
-VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyd25qbnJoeHpjcGZ0bWJieWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMzY1NjMsImV4cCI6MjA2ODkxMjU2M30.JCQDhjjtXKrPCDV8QRYJmmJ6n9YxMtBPfUm8E52UbI4"
-VITE_SUPABASE_URL="https://srwnjnrhxzcpftmbbyib.supabase.co"
+3. Alinear la documentación interna
+   - `docs/SUPABASE_CONFIG.md` ya dice que en Lovable este proyecto debe usar valores hardcodeados en `client.ts`.
+   - Lo dejaría coherente con la implementación real para que no vuelva a romperse en futuras ediciones.
+
+4. Revisión rápida de arranque
+   - Verificar que no quedan referencias críticas a `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` fuera de casos opcionales como Ponto.
+   - Confirmar que el flujo queda así:
+
+```text
+App arranca
+→ se crea cliente Supabase
+→ getSession() responde
+→ renderiza login o dashboard
 ```
 
-## Archivo
+Archivos a tocar:
+- `src/integrations/supabase/client.ts`
+- `src/lib/migration/migrationTracking.ts`
+- opcional: `docs/SUPABASE_CONFIG.md`
 
-| Archivo | Cambio |
-|---------|--------|
-| `.env` | Recrear con las 3 variables de Supabase |
-
-## Nota
-Este archivo se ha borrado varias veces durante ediciones anteriores. El error de WebAssembly (`CompileError`) que aparece en los logs es del entorno sandbox de Lovable, no de tu código — es inofensivo. El único error real es el de Supabase.
-
+Resultado esperado:
+- desaparece la pantalla en blanco
+- deja de aparecer `supabaseUrl is required`
+- la app vuelve a cargar aunque `.env` no exista o se regenere mal

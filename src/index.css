@@ -205,7 +205,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'GeneralSans', system-ui, -apple-system, sans-serif;
     font-size: 15px;
     line-height: 1.6;
     font-weight: 400;
@@ -213,14 +213,23 @@ All colors MUST be HSL.
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    @apply font-semibold tracking-tight;
+    font-family: 'GeneralSans', system-ui, -apple-system, sans-serif;
+    @apply tracking-tight;
+    font-weight: 500;
     letter-spacing: -0.022em;
   }
   
-  h1 { @apply text-3xl font-bold; }
-  h2 { @apply text-2xl font-semibold; }
-  h3 { @apply text-xl font-semibold; }
+  h1 { @apply text-3xl; font-weight: 500; }
+  h2 { @apply text-2xl; font-weight: 500; }
+  h3 { @apply text-xl; font-weight: 500; }
+
+  /* Global: cap all font weights to 500 (medium) max — no bold anywhere */
+  * {
+    font-weight: inherit;
+  }
+  .font-bold, .font-extrabold, .font-black, .font-semibold {
+    font-weight: 500 !important;
+  }
   
   html {
     scroll-behavior: smooth;

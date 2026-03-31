@@ -1,47 +1,83 @@
 
-Objetivo: dejar de depender de un `.env` ausente para que la app vuelva a arrancar de forma estable en Lovable.
 
-Qué he encontrado:
-- El error real sigue siendo `supabaseUrl is required`.
-- En el estado actual del repo hay `.env.example`, pero no aparece `.env` en la raíz.
-- `src/integrations/supabase/client.ts` sigue usando:
-  - `import.meta.env.VITE_SUPABASE_URL`
-  - `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY`
-- Eso encaja exactamente con la pantalla en blanco: el cliente Supabase explota al importar `App.tsx`, antes de renderizar nada.
-- Los warnings de `react-hotkeys-hook` no bloquean la carga; son ruido secundario.
+# Plan: Generador de Demo Completo con Todos los Datos
 
-Solución propuesta:
-1. Corregir la inicialización de Supabase en frontend
-   - Cambiar `src/integrations/supabase/client.ts` para usar valores fijos del proyecto:
-     - URL: `https://srwnjnrhxzcpftmbbyib.supabase.co`
-     - Publishable key: la anon key pública ya conocida del proyecto
-   - Añadir una guardia explícita con mensaje claro por si faltara algo en el futuro.
+## Situacion actual
 
-2. Eliminar la segunda dependencia crítica de `import.meta.env`
-   - Actualizar `src/lib/migration/migrationTracking.ts` para reutilizar el cliente/base de Supabase sin depender de `VITE_SUPABASE_URL` ni `VITE_SUPABASE_PUBLISHABLE_KEY`.
-   - Así evitamos otro crash silencioso en módulos que usan fetch directo al REST API.
+El generador actual solo crea la **estructura base**: franchisee, 2 sociedades, 4 centros, 1 año fiscal y 3 proveedores. No genera datos transaccionales.
 
-3. Alinear la documentación interna
-   - `docs/SUPABASE_CONFIG.md` ya dice que en Lovable este proyecto debe usar valores hardcodeados en `client.ts`.
-   - Lo dejaría coherente con la implementación real para que no vuelva a romperse en futuras ediciones.
+## Que se añadira
 
-4. Revisión rápida de arranque
-   - Verificar que no quedan referencias críticas a `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` fuera de casos opcionales como Ponto.
-   - Confirmar que el flujo queda así:
+Expandir `DemoDataGenerator` para crear un grupo demo completo con datos en **todos los módulos**:
+
+### Datos a generar (por cada centro)
+
+| Paso | Tabla(s) | Volumen |
+|------|----------|---------|
+| 1. Estructura base | franchisees, companies, centres, suppliers | 1 + 2 + 4 + 3 |
+| 2. Plan contable | accounts | ~50 cuentas PGC esenciales por centro (60x, 62x, 64x, 70x, 57x, 47x, 40x) |
+| 3. Años fiscales | fiscal_years | 2025 para los 4 centros |
+| 4. Cuentas bancarias | bank_accounts | 1 por centro (4 total) |
+| 5. Facturas recibidas | invoices_received | 3-5 por centro/mes x 3 meses = ~48 facturas |
+| 6. Asientos contables | accounting_entries + accounting_transactions | 1 por factura + asientos de nómina = ~60 asientos |
+| 7. Movimientos bancarios | bank_transactions | 1 por factura pagada + ingresos ventas = ~80 transacciones |
+| 8. Facturas emitidas | invoices_issued | 2 por centro/mes = ~24 |
+
+### Datos realistas McDonald's
+
+- **Proveedores**: HAVI Logistics (materia prima), McCormick (condimentos), Coca-Cola European Partners, Ecolab (limpieza), Endesa (electricidad)
+- **Cuentas PGC**: 6000000 (Compras mercaderías), 6210000 (Arrendamientos), 6260000 (Royalties), 6280000 (Marketing), 6400000 (Sueldos), 7000000 (Ventas)
+- **Facturas**: importes realistas (HAVI ~8.000-15.000€/mes, Electricidad ~2.000-4.000€, Royalties 5% ventas)
+- **Ventas**: ingresos 150.000-250.000€/mes por centro
+
+## Cambios tecnicos
+
+### 1. `src/lib/demo/demoDataGenerators.ts` (NUEVO)
+Funciones puras que generan los arrays de datos:
+- `generateDemoAccounts(centreCodes)` — plan contable PGC
+- `generateDemoBankAccounts(centres)` — cuentas bancarias con IBAN ficticio
+- `generateDemoInvoicesReceived(centres, suppliers, months)` — facturas proveedor
+- `generateDemoAccountingEntries(invoices, centres)` — asientos por factura
+- `generateDemoBankTransactions(bankAccounts, invoices, months)` — movimientos
+- `generateDemoInvoicesIssued(centres, months)` — facturas emitidas (ventas)
+
+### 2. `src/components/admin/DemoDataGenerator.tsx` (MODIFICAR)
+Añadir los pasos 2-8 al flujo de generación, cada uno con su updateStep y manejo de errores. Añadir checkboxes para elegir qué datos generar.
+
+### 3. `src/types/demo-config.ts` (MODIFICAR)
+Ampliar `AdvancedDemoConfig` para que los toggles `generateBankData`, `generateInvoices`, `generateEntries` controlen qué pasos se ejecutan.
+
+### 4. `src/components/admin/DemoDataConfigDialog.tsx` (MODIFICAR)
+Añadir pestaña "Datos Avanzados" con switches para: plan contable, facturas recibidas, facturas emitidas, asientos, banco, y selector de meses (ene-mar 2025).
+
+### 5. Limpieza (`cleanDemoData`)
+Ampliar para borrar en orden inverso: bank_transactions → bank_accounts → accounting_transactions → accounting_entries → invoices_received → invoices_issued → accounts → (lo existente).
+
+## Orden de insercion (respeta foreign keys)
 
 ```text
-App arranca
-→ se crea cliente Supabase
-→ getSession() responde
-→ renderiza login o dashboard
+1. franchisee
+2. companies (→ franchisee_id)
+3. centres (→ company_id, franchisee_id)
+4. fiscal_years (→ centro_code)
+5. accounts (→ centro_code)
+6. suppliers
+7. bank_accounts (→ centro_code)
+8. invoices_received (→ centro_code, supplier_id)
+9. accounting_entries (→ centro_code, fiscal_year_id)
+10. accounting_transactions (→ entry_id)
+11. bank_transactions (→ bank_account_id)
+12. invoices_issued (→ centro_code)
 ```
 
-Archivos a tocar:
-- `src/integrations/supabase/client.ts`
-- `src/lib/migration/migrationTracking.ts`
-- opcional: `docs/SUPABASE_CONFIG.md`
+## Archivos
 
-Resultado esperado:
-- desaparece la pantalla en blanco
-- deja de aparecer `supabaseUrl is required`
-- la app vuelve a cargar aunque `.env` no exista o se regenere mal
+| Archivo | Accion |
+|---------|--------|
+| `src/lib/demo/demoDataGenerators.ts` | Crear |
+| `src/components/admin/DemoDataGenerator.tsx` | Modificar |
+| `src/types/demo-config.ts` | Modificar |
+| `src/components/admin/DemoDataConfigDialog.tsx` | Modificar |
+
+No se necesitan migraciones — todas las tablas ya existen.
+

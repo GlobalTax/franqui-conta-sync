@@ -332,7 +332,7 @@ All colors MUST be HSL.
   }
   
   .holded-badge-destructive {
-    @apply inline-flex items-center rounded-full bg-destructive/10 text-destructive px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-destructive/10 text-destructive px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-neutral {

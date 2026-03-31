@@ -8442,6 +8442,20 @@ export type Database = {
           total_invoices: number
         }[]
       }
+      get_biloop_payslips: {
+        Args: { p_company_id: string }
+        Returns: {
+          company_id: string
+          raw_data: Json
+        }[]
+      }
+      get_biloop_workers: {
+        Args: { p_company_id: string }
+        Returns: {
+          company_id: string
+          raw_data: Json
+        }[]
+      }
       get_centros: {
         Args: never
         Returns: {
@@ -8923,6 +8937,7 @@ export type Database = {
         Args: { p_centro_code: string; p_transaction_id: string }
         Returns: Json
       }
+      unaccent: { Args: { "": string }; Returns: string }
       undo_reconciliation: {
         Args: { p_transaction_id: string; p_user_id: string }
         Returns: Json

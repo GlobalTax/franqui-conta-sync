@@ -8033,15 +8033,26 @@ export type Database = {
         }
         Returns: undefined
       }
-      biloop_upsert_batch: {
-        Args: {
-          p_company_id?: string
-          p_conflict_column?: string
-          p_data: Json
-          p_table: string
-        }
-        Returns: number
-      }
+      biloop_upsert_batch:
+        | {
+            Args: {
+              p_company_id?: string
+              p_conflict_column?: string
+              p_data: Json
+              p_table: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_company_id?: string
+              p_conflict_column?: string
+              p_data: Json
+              p_delete_first?: boolean
+              p_table: string
+            }
+            Returns: number
+          }
       calculate_balance_sheet: {
         Args: { p_centro_code: string; p_fecha_corte: string }
         Returns: {

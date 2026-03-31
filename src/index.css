@@ -296,7 +296,7 @@ All colors MUST be HSL.
 
   /* Trend indicator */
   .holded-trend-positive {
-    @apply text-success flex items-center gap-1 text-sm font-medium;
+    @apply text-success flex items-center gap-1 text-sm font-normal;
   }
   
   .holded-trend-negative {

@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/select";
 import { NavLink } from "./NavLink";
 import { useState } from "react";
+import { useGlobalFiscalYear } from "@/hooks/useGlobalFiscalYear";
 import { logger } from "@/lib/logger";
 import CompactOrgSelector from "@/components/filters/CompactOrgSelector";
 import { CommandPaletteButton } from "@/components/layout/CommandPaletteButton";

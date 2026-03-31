@@ -35,8 +35,7 @@ const MONTH_NAMES = [
 export default function PeriodClosing() {
   const { selectedView } = useView();
   const currentYear = new Date().getFullYear();
-  const { selectedYear, setSelectedYear: setSelectedYear } = useGlobalFiscalYear();
-  const selectedYearLocal = selectedYear;
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
   const { data: closings, isLoading } = useClosingPeriods(parseInt(selectedYear));
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 

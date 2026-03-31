@@ -2333,6 +2333,83 @@ export type Database = {
           },
         ]
       }
+      costes_nomina: {
+        Row: {
+          anio: number
+          apellidos: string
+          base_cc: number | null
+          coste_empresa: number | null
+          created_at: string | null
+          dias_cotizados: number | null
+          horas_presencia: number | null
+          id: string
+          mes: number
+          nombre: string
+          numero_empleado: string | null
+          restaurante: string
+          salario_base: number | null
+          seccion: string
+          ss_empresa: number | null
+          ss_trabajador: number | null
+          total_bruto: number | null
+          total_deducciones: number | null
+          total_liquido: number | null
+          upload_id: string | null
+        }
+        Insert: {
+          anio: number
+          apellidos: string
+          base_cc?: number | null
+          coste_empresa?: number | null
+          created_at?: string | null
+          dias_cotizados?: number | null
+          horas_presencia?: number | null
+          id?: string
+          mes: number
+          nombre: string
+          numero_empleado?: string | null
+          restaurante: string
+          salario_base?: number | null
+          seccion: string
+          ss_empresa?: number | null
+          ss_trabajador?: number | null
+          total_bruto?: number | null
+          total_deducciones?: number | null
+          total_liquido?: number | null
+          upload_id?: string | null
+        }
+        Update: {
+          anio?: number
+          apellidos?: string
+          base_cc?: number | null
+          coste_empresa?: number | null
+          created_at?: string | null
+          dias_cotizados?: number | null
+          horas_presencia?: number | null
+          id?: string
+          mes?: number
+          nombre?: string
+          numero_empleado?: string | null
+          restaurante?: string
+          salario_base?: number | null
+          seccion?: string
+          ss_empresa?: number | null
+          ss_trabajador?: number | null
+          total_bruto?: number | null
+          total_deducciones?: number | null
+          total_liquido?: number | null
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costes_nomina_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_closures: {
         Row: {
           accounting_entry_id: string | null
@@ -7909,6 +7986,36 @@ export type Database = {
           p_limit?: number
         }
         Returns: Json
+      }
+      biloop_get_config: { Args: never; Returns: Json }
+      biloop_insert_sync_log: {
+        Args: {
+          p_company_id?: string
+          p_endpoint: string
+          p_status?: string
+          p_sync_type: string
+        }
+        Returns: string
+      }
+      biloop_update_sync_log: {
+        Args: {
+          p_duration_ms?: number
+          p_error_message?: string
+          p_id: string
+          p_records_fetched?: number
+          p_records_upserted?: number
+          p_status: string
+        }
+        Returns: undefined
+      }
+      biloop_upsert_batch: {
+        Args: {
+          p_company_id?: string
+          p_conflict_column?: string
+          p_data: Json
+          p_table: string
+        }
+        Returns: number
       }
       calculate_balance_sheet: {
         Args: { p_centro_code: string; p_fecha_corte: string }

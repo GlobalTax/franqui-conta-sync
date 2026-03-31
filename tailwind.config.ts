@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        heading: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['GeneralSans', 'system-ui', '-apple-system', 'sans-serif'],
+        heading: ['GeneralSans', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['GeneralSans', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

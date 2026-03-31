@@ -157,7 +157,7 @@ export async function generateInvoices(
         else if (statusRand < 0.7) status = 'approved';
         else status = 'paid';
         
-        const { data: invoice, error } = await supabase
+          const { data: invoice, error } = await supabase
           .from('invoices_received')
           .insert({
             centro_code: centre.codigo,
@@ -165,11 +165,10 @@ export async function generateInvoices(
             invoice_number: `FR-${supplier.tax_id.slice(-4)}-${year}-${i + 1}`,
             invoice_date: invoiceDate.toISOString().split('T')[0],
             due_date: dueDate.toISOString().split('T')[0],
-            total_base: totals.base,
-            total_iva: totals.vat,
+            subtotal: totals.base,
+            tax_total: totals.vat,
             total: totals.total,
             status,
-            ocr_processed: true,
             ocr_confidence: generateOCRConfidence(),
             ocr_engine: 'claude',
           })

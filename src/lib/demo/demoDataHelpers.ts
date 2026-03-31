@@ -270,7 +270,7 @@ export function formatDemoCurrency(amount: number): string {
  * Generate a batch ID for imports
  */
 export function generateBatchId(): string {
-  return `DEMO-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+  return crypto.randomUUID();
 }
 
 /**

@@ -324,7 +324,7 @@ All colors MUST be HSL.
 
   /* Badge variants */
   .holded-badge-success {
-    @apply inline-flex items-center rounded-full bg-success-light text-success px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-success-light text-success px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-warning {

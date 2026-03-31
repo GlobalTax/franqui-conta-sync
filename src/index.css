@@ -328,7 +328,7 @@ All colors MUST be HSL.
   }
   
   .holded-badge-warning {
-    @apply inline-flex items-center rounded-full bg-warning-light text-warning px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-warning-light text-warning px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-destructive {

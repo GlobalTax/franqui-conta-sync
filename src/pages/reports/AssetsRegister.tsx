@@ -117,18 +117,11 @@ export default function AssetsRegister() {
               <Label className="text-xs font-medium text-muted-foreground">
                 Ejercicio
               </Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-28 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+                triggerClassName="w-28 h-9"
+              />
             </div>
 
             <Button

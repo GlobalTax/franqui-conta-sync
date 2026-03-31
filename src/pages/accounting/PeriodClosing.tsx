@@ -138,18 +138,10 @@ export default function PeriodClosing() {
             </div>
             <div className="w-32">
               <Label className="sr-only">Año</Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+              />
             </div>
           </div>
         </CardHeader>

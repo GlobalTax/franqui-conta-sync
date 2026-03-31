@@ -132,18 +132,11 @@ export default function AccountingDashboard() {
               <Label className="text-xs font-medium text-muted-foreground">
                 Ejercicio
               </Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-28 h-8 border-0 bg-transparent font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+                triggerClassName="w-28 h-8 border-0 bg-transparent font-normal"
+              />
             </div>
           </div>
         </div>

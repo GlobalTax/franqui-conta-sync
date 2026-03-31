@@ -348,7 +348,7 @@ All colors MUST be HSL.
   
   /* Sidebar item active state */
   .holded-nav-active {
-    @apply bg-primary/10 text-primary font-semibold;
+    @apply bg-primary/10 text-primary font-normal;
   }
   
   /* Card divider */

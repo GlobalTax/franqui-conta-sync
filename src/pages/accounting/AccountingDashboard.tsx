@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useGlobalFiscalYear } from "@/hooks/useGlobalFiscalYear";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
@@ -33,12 +34,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 
 export default function AccountingDashboard() {
   const { selectedView } = useView();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
 
   const startDate = `${selectedYear}-01-01`;
   const endDate = `${selectedYear}-12-31`;
@@ -131,18 +133,11 @@ export default function AccountingDashboard() {
               <Label className="text-xs font-medium text-muted-foreground">
                 Ejercicio
               </Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-28 h-8 border-0 bg-transparent font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+                triggerClassName="w-28 h-8 border-0 bg-transparent font-normal"
+              />
             </div>
           </div>
         </div>

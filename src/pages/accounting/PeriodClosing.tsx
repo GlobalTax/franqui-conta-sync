@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useGlobalFiscalYear } from "@/hooks/useGlobalFiscalYear";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 
 const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -34,7 +36,7 @@ const MONTH_NAMES = [
 export default function PeriodClosing() {
   const { selectedView } = useView();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
   const { data: closings, isLoading } = useClosingPeriods(parseInt(selectedYear));
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
@@ -137,18 +139,10 @@ export default function PeriodClosing() {
             </div>
             <div className="w-32">
               <Label className="sr-only">Año</Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+              />
             </div>
           </div>
         </CardHeader>

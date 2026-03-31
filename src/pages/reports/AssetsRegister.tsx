@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useGlobalFiscalYear } from "@/hooks/useGlobalFiscalYear";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,13 @@ import { useFixedAssets } from "@/hooks/useFixedAssets";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
 import { formatCurrency } from "@/lib/utils";
+import { FiscalYearSelector } from "@/components/accounting/FiscalYearSelector";
 
 
 export default function AssetsRegister() {
   const { selectedView } = useView();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const { selectedYear, setSelectedYear } = useGlobalFiscalYear();
 
   const { data: assets, isLoading } = useFixedAssets();
 
@@ -116,18 +118,11 @@ export default function AssetsRegister() {
               <Label className="text-xs font-medium text-muted-foreground">
                 Ejercicio
               </Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-28 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+                triggerClassName="w-28 h-9"
+              />
             </div>
 
             <Button

@@ -1,83 +1,41 @@
 
 
-# Plan: Generador de Demo Completo con Todos los Datos
+# Plan: Arreglar errores del generador de datos demo
 
-## Situacion actual
+## Problemas encontrados
 
-El generador actual solo crea la **estructura base**: franchisee, 2 sociedades, 4 centros, 1 año fiscal y 3 proveedores. No genera datos transaccionales.
+Hay **3 bugs** que causan fallos en la generación y datos incompletos:
 
-## Que se añadira
+### Bug 1: `import_batch_id` es UUID pero se genera como string
+- `bank_transactions.import_batch_id` es tipo `uuid` en la DB
+- `generateBatchId()` devuelve `"DEMO-1774966847735-C7S81FB"` (no es UUID)
+- Error: `invalid input syntax for type uuid`
 
-Expandir `DemoDataGenerator` para crear un grupo demo completo con datos en **todos los módulos**:
+### Bug 2: Columnas inexistentes en `invoices_received`
+- El código inserta `ocr_processed`, `total_base`, `total_iva` — ninguna existe
+- Las columnas reales son: `subtotal`, `tax_total` (y no hay `ocr_processed`)
+- Error: `Could not find the 'ocr_processed' column`
 
-### Datos a generar (por cada centro)
+### Bug 3: Columnas de `invoices_issued` incorrectas
+- El código usa `subtotal`, `tax_total` para `invoices_issued` — hay que verificar que coincidan con el schema real
 
-| Paso | Tabla(s) | Volumen |
-|------|----------|---------|
-| 1. Estructura base | franchisees, companies, centres, suppliers | 1 + 2 + 4 + 3 |
-| 2. Plan contable | accounts | ~50 cuentas PGC esenciales por centro (60x, 62x, 64x, 70x, 57x, 47x, 40x) |
-| 3. Años fiscales | fiscal_years | 2025 para los 4 centros |
-| 4. Cuentas bancarias | bank_accounts | 1 por centro (4 total) |
-| 5. Facturas recibidas | invoices_received | 3-5 por centro/mes x 3 meses = ~48 facturas |
-| 6. Asientos contables | accounting_entries + accounting_transactions | 1 por factura + asientos de nómina = ~60 asientos |
-| 7. Movimientos bancarios | bank_transactions | 1 por factura pagada + ingresos ventas = ~80 transacciones |
-| 8. Facturas emitidas | invoices_issued | 2 por centro/mes = ~24 |
+## Solución
 
-### Datos realistas McDonald's
+### 1. `src/lib/demo/demoDataHelpers.ts`
+- Cambiar `generateBatchId()` para que devuelva un UUID real (`crypto.randomUUID()`)
 
-- **Proveedores**: HAVI Logistics (materia prima), McCormick (condimentos), Coca-Cola European Partners, Ecolab (limpieza), Endesa (electricidad)
-- **Cuentas PGC**: 6000000 (Compras mercaderías), 6210000 (Arrendamientos), 6260000 (Royalties), 6280000 (Marketing), 6400000 (Sueldos), 7000000 (Ventas)
-- **Facturas**: importes realistas (HAVI ~8.000-15.000€/mes, Electricidad ~2.000-4.000€, Royalties 5% ventas)
-- **Ventas**: ingresos 150.000-250.000€/mes por centro
+### 2. `src/lib/demo/demoDataGenerators.ts` — Función `generateInvoices`
+- **Facturas recibidas**: cambiar `total_base` → `subtotal`, `total_iva` → `tax_total`, eliminar `ocr_processed`
+- **Facturas emitidas**: verificar y alinear columnas con el schema real
+- Quitar `import_batch_id` de bank_transactions o usar UUID
 
-## Cambios tecnicos
+### 3. `src/components/admin/DemoDataGenerator.tsx`
+- Quitar `import_batch_id` del insert de bank_transactions (o usar UUID)
 
-### 1. `src/lib/demo/demoDataGenerators.ts` (NUEVO)
-Funciones puras que generan los arrays de datos:
-- `generateDemoAccounts(centreCodes)` — plan contable PGC
-- `generateDemoBankAccounts(centres)` — cuentas bancarias con IBAN ficticio
-- `generateDemoInvoicesReceived(centres, suppliers, months)` — facturas proveedor
-- `generateDemoAccountingEntries(invoices, centres)` — asientos por factura
-- `generateDemoBankTransactions(bankAccounts, invoices, months)` — movimientos
-- `generateDemoInvoicesIssued(centres, months)` — facturas emitidas (ventas)
+## Archivos a modificar
 
-### 2. `src/components/admin/DemoDataGenerator.tsx` (MODIFICAR)
-Añadir los pasos 2-8 al flujo de generación, cada uno con su updateStep y manejo de errores. Añadir checkboxes para elegir qué datos generar.
-
-### 3. `src/types/demo-config.ts` (MODIFICAR)
-Ampliar `AdvancedDemoConfig` para que los toggles `generateBankData`, `generateInvoices`, `generateEntries` controlen qué pasos se ejecutan.
-
-### 4. `src/components/admin/DemoDataConfigDialog.tsx` (MODIFICAR)
-Añadir pestaña "Datos Avanzados" con switches para: plan contable, facturas recibidas, facturas emitidas, asientos, banco, y selector de meses (ene-mar 2025).
-
-### 5. Limpieza (`cleanDemoData`)
-Ampliar para borrar en orden inverso: bank_transactions → bank_accounts → accounting_transactions → accounting_entries → invoices_received → invoices_issued → accounts → (lo existente).
-
-## Orden de insercion (respeta foreign keys)
-
-```text
-1. franchisee
-2. companies (→ franchisee_id)
-3. centres (→ company_id, franchisee_id)
-4. fiscal_years (→ centro_code)
-5. accounts (→ centro_code)
-6. suppliers
-7. bank_accounts (→ centro_code)
-8. invoices_received (→ centro_code, supplier_id)
-9. accounting_entries (→ centro_code, fiscal_year_id)
-10. accounting_transactions (→ entry_id)
-11. bank_transactions (→ bank_account_id)
-12. invoices_issued (→ centro_code)
-```
-
-## Archivos
-
-| Archivo | Accion |
+| Archivo | Cambio |
 |---------|--------|
-| `src/lib/demo/demoDataGenerators.ts` | Crear |
-| `src/components/admin/DemoDataGenerator.tsx` | Modificar |
-| `src/types/demo-config.ts` | Modificar |
-| `src/components/admin/DemoDataConfigDialog.tsx` | Modificar |
-
-No se necesitan migraciones — todas las tablas ya existen.
+| `src/lib/demo/demoDataHelpers.ts` | `generateBatchId` devuelve UUID |
+| `src/lib/demo/demoDataGenerators.ts` | Corregir nombres de columnas en invoices_received e invoices_issued |
 

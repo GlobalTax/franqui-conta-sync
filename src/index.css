@@ -291,7 +291,7 @@ All colors MUST be HSL.
   .holded-value-sm {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-xl tabular-nums;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* Trend indicator */

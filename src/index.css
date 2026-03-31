@@ -215,20 +215,21 @@ All colors MUST be HSL.
   h1, h2, h3, h4, h5, h6 {
     font-family: 'GeneralSans', system-ui, -apple-system, sans-serif;
     @apply tracking-tight;
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: -0.022em;
   }
   
-  h1 { @apply text-3xl; font-weight: 500; }
-  h2 { @apply text-2xl; font-weight: 500; }
-  h3 { @apply text-xl; font-weight: 500; }
+  h1 { @apply text-3xl; font-weight: 400; }
+  h2 { @apply text-2xl; font-weight: 400; }
+  h3 { @apply text-xl; font-weight: 400; }
 
   /* Global: cap all font weights to 500 (medium) max — no bold anywhere */
   * {
     font-weight: inherit;
   }
-  .font-bold, .font-extrabold, .font-black, .font-semibold {
-    font-weight: 500 !important;
+  .font-bold, .font-extrabold, .font-black, .font-semibold, .font-medium {
+    font-weight: 400 !important;
+  }
   }
   
   html {
@@ -277,29 +278,29 @@ All colors MUST be HSL.
   .holded-header {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-xs text-muted-foreground uppercase tracking-wider;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* Value display - GeneralSans with tabular nums */
   .holded-value {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-3xl tabular-nums;
-    font-weight: 500;
+    font-weight: 400;
   }
   
   .holded-value-sm {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-xl tabular-nums;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* Trend indicator */
   .holded-trend-positive {
-    @apply text-success flex items-center gap-1 text-sm font-medium;
+    @apply text-success flex items-center gap-1 text-sm font-normal;
   }
   
   .holded-trend-negative {
-    @apply text-destructive flex items-center gap-1 text-sm font-medium;
+    @apply text-destructive flex items-center gap-1 text-sm font-normal;
   }
 
   /* Focus states for accessibility */
@@ -309,7 +310,7 @@ All colors MUST be HSL.
 
   /* Button primary with yellow accent */
   .holded-button-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium rounded-xl px-4 py-2 transition-all;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-normal rounded-xl px-4 py-2 transition-all;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
@@ -323,19 +324,19 @@ All colors MUST be HSL.
 
   /* Badge variants */
   .holded-badge-success {
-    @apply inline-flex items-center rounded-full bg-success-light text-success px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-success-light text-success px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-warning {
-    @apply inline-flex items-center rounded-full bg-warning-light text-warning px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-warning-light text-warning px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-destructive {
-    @apply inline-flex items-center rounded-full bg-destructive/10 text-destructive px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-destructive/10 text-destructive px-3 py-1 text-xs font-normal;
   }
   
   .holded-badge-neutral {
-    @apply inline-flex items-center rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-normal;
   }
 
   /* Chart grid styling */
@@ -347,7 +348,7 @@ All colors MUST be HSL.
   
   /* Sidebar item active state */
   .holded-nav-active {
-    @apply bg-primary/10 text-primary font-semibold;
+    @apply bg-primary/10 text-primary font-normal;
   }
   
   /* Card divider */

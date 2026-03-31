@@ -11,14 +11,10 @@ import { logger } from "@/lib/logger";
 import { DemoDataConfig, getDefaultDemoConfig } from "@/types/demo-config";
 import { DemoDataConfigDialog } from "./DemoDataConfigDialog";
 import {
-  generateDemoAccounts,
-  generateDemoBankAccounts,
-  generateDemoInvoicesReceived,
-  generateDemoAccountingEntries,
-  generateDemoBankTransactions,
-  generateDemoInvoicesIssued,
-  getMonthsForRange,
-  DEMO_SUPPLIERS,
+  generateBankData,
+  generateInvoices,
+  generateAccountingEntries,
+  autoReconcileTransactions,
 } from "@/lib/demo/demoDataGenerators";
 
 interface GenerationStep {
@@ -28,7 +24,14 @@ interface GenerationStep {
 }
 
 const DEMO_CENTRE_CODES = ['DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004'];
-const DEMO_SUPPLIER_TAX_IDS = DEMO_SUPPLIERS.map(s => s.tax_id);
+const DEMO_SUPPLIER_TAX_IDS = ['A11111111', 'B22222222', 'A33333333', 'B44444444', 'A55555555'];
+const DEMO_SUPPLIERS_DATA = [
+  { name: 'HAVI Logistics España SA', tax_id: 'A11111111' },
+  { name: 'McCormick España SL', tax_id: 'B22222222' },
+  { name: 'Coca-Cola European Partners SA', tax_id: 'A33333333' },
+  { name: 'Ecolab Hispanoamericana SL', tax_id: 'B44444444' },
+  { name: 'Endesa Energía SA', tax_id: 'A55555555' },
+];
 
 export default function DemoDataGenerator() {
   const { toast } = useToast();
@@ -57,59 +60,69 @@ export default function DemoDataGenerator() {
     setSteps([]);
 
     try {
-      // Orden inverso de dependencias
-      const cleanSteps: { name: string; table: string; filter: { col: string; values: string[] } }[] = [
-        { name: "Bank Transactions", table: "bank_transactions", filter: { col: "bank_account_id", values: [] } }, // special
-        { name: "Accounting Transactions", table: "accounting_transactions", filter: { col: "entry_id", values: [] } }, // special
-        { name: "Accounting Entries", table: "accounting_entries", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "Invoices Issued", table: "invoices_issued", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "Invoices Received", table: "invoices_received", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "Bank Accounts", table: "bank_accounts", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "Accounts", table: "accounts", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "Fiscal Years", table: "fiscal_years", filter: { col: "centro_code", values: DEMO_CENTRE_CODES } },
-        { name: "User Roles", table: "user_roles", filter: { col: "centro", values: DEMO_CENTRE_CODES } },
-        { name: "Centres", table: "centres", filter: { col: "codigo", values: DEMO_CENTRE_CODES } },
-        { name: "Companies", table: "companies", filter: { col: "cif", values: ['B88888888', 'B77777777'] } },
-        { name: "Suppliers", table: "suppliers", filter: { col: "tax_id", values: DEMO_SUPPLIER_TAX_IDS } },
-        { name: "Franchisee", table: "franchisees", filter: { col: "email", values: ['demo@mcdonalds-group.es'] } },
-      ];
-
-      // Get bank_account_ids and entry_ids first for cascading deletes
+      // Get IDs for cascading deletes
       const { data: bankAccounts } = await supabase.from('bank_accounts').select('id').in('centro_code', DEMO_CENTRE_CODES);
       const bankAccountIds = bankAccounts?.map(b => b.id) || [];
-
       const { data: entries } = await supabase.from('accounting_entries').select('id').in('centro_code', DEMO_CENTRE_CODES);
       const entryIds = entries?.map(e => e.id) || [];
 
-      // Bank transactions by bank_account_id
+      // Bank reconciliations first
       if (bankAccountIds.length > 0) {
-        updateStep("Bank Transactions", "loading");
-        await supabase.from('bank_transactions').delete().in('bank_account_id', bankAccountIds);
-        updateStep("Bank Transactions", "success", "Movimientos bancarios eliminados");
-      }
-
-      // Accounting transactions by entry_id
-      if (entryIds.length > 0) {
-        updateStep("Accounting Transactions", "loading");
-        await supabase.from('accounting_transactions').delete().in('entry_id', entryIds);
-        updateStep("Accounting Transactions", "success", "Transacciones contables eliminadas");
-      }
-
-      // Rest of cleanup
-      for (const step of cleanSteps) {
-        if (step.table === 'bank_transactions' || step.table === 'accounting_transactions') continue;
-        updateStep(step.name, "loading");
-        const { error } = await supabase.from(step.table as any).delete().in(step.filter.col, step.filter.values);
-        if (error) {
-          logger.warn('DemoClean', `⚠️ Error limpiando ${step.table}:`, error.message);
+        updateStep("Reconciliaciones", "loading");
+        const { data: btIds } = await supabase.from('bank_transactions').select('id').in('bank_account_id', bankAccountIds);
+        if (btIds && btIds.length > 0) {
+          await supabase.from('bank_reconciliations').delete().in('bank_transaction_id', btIds.map(t => t.id));
         }
-        updateStep(step.name, "success", `${step.name} eliminados`);
+        updateStep("Reconciliaciones", "success", "Eliminadas");
       }
 
-      toast({ title: "🗑️ Datos Demo Eliminados", description: "Todos los datos demo han sido eliminados correctamente." });
+      // Bank transactions
+      if (bankAccountIds.length > 0) {
+        updateStep("Movimientos Bancarios", "loading");
+        await supabase.from('bank_transactions').delete().in('bank_account_id', bankAccountIds);
+        updateStep("Movimientos Bancarios", "success", "Eliminados");
+      }
+
+      // Accounting transactions
+      if (entryIds.length > 0) {
+        updateStep("Transacciones Contables", "loading");
+        await supabase.from('accounting_transactions').delete().in('entry_id', entryIds);
+        updateStep("Transacciones Contables", "success", "Eliminadas");
+      }
+
+      // Invoice lines for received invoices
+      updateStep("Líneas de Factura", "loading");
+      const { data: invIds } = await supabase.from('invoices_received').select('id').in('centro_code', DEMO_CENTRE_CODES);
+      if (invIds && invIds.length > 0) {
+        await supabase.from('invoice_lines').delete().in('invoice_id', invIds.map(i => i.id));
+      }
+      updateStep("Líneas de Factura", "success", "Eliminadas");
+
+      // Sequential cleanup of remaining tables
+      const cleanups = [
+        { name: "Asientos Contables", table: "accounting_entries", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Facturas Emitidas", table: "invoices_issued", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Facturas Recibidas", table: "invoices_received", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Cuentas Bancarias", table: "bank_accounts", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Plan Contable", table: "accounts", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Años Fiscales", table: "fiscal_years", col: "centro_code", values: DEMO_CENTRE_CODES },
+        { name: "Roles Usuario", table: "user_roles", col: "centro", values: DEMO_CENTRE_CODES },
+        { name: "Centros", table: "centres", col: "codigo", values: DEMO_CENTRE_CODES },
+        { name: "Sociedades", table: "companies", col: "cif", values: ['B88888888', 'B77777777'] },
+        { name: "Proveedores", table: "suppliers", col: "tax_id", values: DEMO_SUPPLIER_TAX_IDS },
+        { name: "Franchisee", table: "franchisees", col: "email", values: ['demo@mcdonalds-group.es'] },
+      ];
+
+      for (const step of cleanups) {
+        updateStep(step.name, "loading");
+        await supabase.from(step.table as any).delete().in(step.col, step.values);
+        updateStep(step.name, "success", "Eliminado");
+      }
+
+      toast({ title: "🗑️ Datos Demo Eliminados", description: "Todos los datos demo han sido eliminados." });
     } catch (error: unknown) {
-      logger.error('DemoDataGenerator', '❌ Error al eliminar datos:', error);
-      toast({ title: "Error al eliminar", description: error instanceof Error ? error.message : 'Error desconocido', variant: "destructive" });
+      logger.error('DemoClean', '❌ Error:', error);
+      toast({ title: "Error al eliminar", description: error instanceof Error ? error.message : 'Error', variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -120,7 +133,8 @@ export default function DemoDataGenerator() {
     setIsGenerating(true);
     setSteps([]);
     const advanced = config.advanced || getDefaultDemoConfig().advanced!;
-    const months = getMonthsForRange(advanced.yearRange.from, advanced.yearRange.to);
+    const year = advanced.yearRange.from;
+    const volume = advanced.dataVolume;
 
     try {
       // ── 1. Franchisee ──
@@ -133,7 +147,7 @@ export default function DemoDataGenerator() {
       updateStep("Franchisee", "success", franchisee.name);
 
       // ── 2. Companies ──
-      updateStep("Companies", "loading");
+      updateStep("Sociedades", "loading");
       const companies = await Promise.all(
         config.companies.map(async (c) => {
           const { data: existing } = await supabase.from('companies').select('*').eq('cif', c.cif).maybeSingle();
@@ -141,10 +155,10 @@ export default function DemoDataGenerator() {
           return createCompany.mutateAsync({ razon_social: c.razon_social, cif: c.cif, tipo_sociedad: c.tipo_sociedad, franchisee_id: franchisee!.id });
         })
       );
-      updateStep("Companies", "success", `${companies.length} sociedades`);
+      updateStep("Sociedades", "success", `${companies.length} sociedades`);
 
       // ── 3. Centres ──
-      updateStep("Centres", "loading");
+      updateStep("Centros", "loading");
       const centres = await Promise.all(
         config.centres.map(async (c) => {
           const { data: existing } = await supabase.from('centres').select('*').eq('codigo', c.codigo).maybeSingle();
@@ -157,140 +171,167 @@ export default function DemoDataGenerator() {
           });
         })
       );
-      const centreCodes = centres.map(c => c.codigo);
-      updateStep("Centres", "success", `${centres.length} centros`);
+      updateStep("Centros", "success", `${centres.length} centros`);
 
       // ── 4. Fiscal Years ──
-      updateStep("Fiscal Years", "loading");
-      const fiscalYearMap: Record<string, string> = {};
+      updateStep("Años Fiscales", "loading");
+      let fiscalYearId: string | null = null;
       for (const centre of centres) {
-        for (let year = advanced.yearRange.from; year <= advanced.yearRange.to; year++) {
-          const { data: existing } = await supabase.from('fiscal_years').select('*').eq('centro_code', centre.codigo).eq('year', year).maybeSingle();
-          if (existing) {
-            fiscalYearMap[centre.codigo] = existing.id;
-          } else {
-            const { data: fy, error } = await supabase.from('fiscal_years').insert({
-              centro_code: centre.codigo, year, start_date: `${year}-01-01`, end_date: `${year}-12-31`, is_closed: false,
-            }).select().single();
-            if (error) throw error;
-            fiscalYearMap[centre.codigo] = fy.id;
-          }
+        const { data: existing } = await supabase.from('fiscal_years').select('*').eq('centro_code', centre.codigo).eq('year', year).maybeSingle();
+        if (existing) {
+          if (!fiscalYearId) fiscalYearId = existing.id;
+        } else {
+          const { data: fy, error } = await supabase.from('fiscal_years').insert({
+            centro_code: centre.codigo, year, start_date: `${year}-01-01`, end_date: `${year}-12-31`, is_closed: false,
+          }).select().single();
+          if (error) throw error;
+          if (!fiscalYearId) fiscalYearId = fy.id;
         }
       }
-      updateStep("Fiscal Years", "success", `Años fiscales creados`);
+      updateStep("Años Fiscales", "success", `Año ${year}`);
 
-      // ── 5. Plan Contable ──
+      // ── 5. Plan Contable (cuentas PGC) ──
       if (advanced.generateEntries) {
         updateStep("Plan Contable", "loading");
-        const accounts = generateDemoAccounts(centreCodes, companies.map(c => c.id));
-        // Insert in batches, skip conflicts
-        for (let i = 0; i < accounts.length; i += 50) {
-          const batch = accounts.slice(i, i + 50);
-          const { error } = await supabase.from('accounts').upsert(batch, { onConflict: 'code,centro_code', ignoreDuplicates: true });
-          if (error) logger.warn('DemoAccounts', `Batch ${i} error:`, error.message);
+        const pgcAccounts = [
+          { code: '4000000', name: 'Proveedores', account_type: 'liability', level: 3 },
+          { code: '4100000', name: 'Acreedores por prestaciones', account_type: 'liability', level: 3 },
+          { code: '4300000', name: 'Clientes', account_type: 'asset', level: 3 },
+          { code: '4650000', name: 'Remuneraciones pendientes de pago', account_type: 'liability', level: 3 },
+          { code: '4720000', name: 'H.P. IVA soportado', account_type: 'asset', level: 4 },
+          { code: '4750000', name: 'H.P. acreedora por IVA', account_type: 'liability', level: 4 },
+          { code: '5720000', name: 'Bancos c/c', account_type: 'asset', level: 3 },
+          { code: '6000000', name: 'Compras de mercaderías', account_type: 'expense', level: 3 },
+          { code: '6060000', name: 'Envases y embalajes (Paper)', account_type: 'expense', level: 3 },
+          { code: '6210000', name: 'Arrendamientos y cánones', account_type: 'expense', level: 3 },
+          { code: '6220000', name: 'Reparaciones y conservación', account_type: 'expense', level: 3 },
+          { code: '6260000', name: 'Royalties McDonald\'s', account_type: 'expense', level: 3 },
+          { code: '6270000', name: 'Publicidad y propaganda', account_type: 'expense', level: 3 },
+          { code: '6280000', name: 'Suministros', account_type: 'expense', level: 3 },
+          { code: '6290000', name: 'Otros servicios', account_type: 'expense', level: 3 },
+          { code: '6400000', name: 'Sueldos y salarios', account_type: 'expense', level: 3 },
+          { code: '6420000', name: 'Seguridad Social empresa', account_type: 'expense', level: 3 },
+          { code: '6810000', name: 'Amortización inmovilizado', account_type: 'expense', level: 3 },
+          { code: '7000000', name: 'Ventas de mercaderías', account_type: 'income', level: 3 },
+          { code: '7520000', name: 'Ingresos por arrendamientos', account_type: 'income', level: 3 },
+        ];
+
+        const accountInserts: any[] = [];
+        for (const centre of centres) {
+          for (const acct of pgcAccounts) {
+            accountInserts.push({
+              code: acct.code,
+              name: acct.name,
+              account_type: acct.account_type,
+              level: acct.level,
+              centro_code: centre.codigo,
+              company_id: centre.company_id,
+              active: true,
+              is_detail: acct.level >= 4,
+              parent_code: null,
+            });
+          }
         }
-        updateStep("Plan Contable", "success", `${accounts.length} cuentas PGC`);
+        // Upsert to avoid conflicts
+        for (let i = 0; i < accountInserts.length; i += 50) {
+          await supabase.from('accounts').upsert(accountInserts.slice(i, i + 50), { onConflict: 'code,centro_code', ignoreDuplicates: true });
+        }
+        updateStep("Plan Contable", "success", `${accountInserts.length} cuentas PGC`);
       }
 
       // ── 6. Suppliers ──
-      updateStep("Suppliers", "loading");
-      const suppliersToInsert = DEMO_SUPPLIERS;
+      updateStep("Proveedores", "loading");
       const { data: existingSuppliers } = await supabase.from('suppliers').select('*').in('tax_id', DEMO_SUPPLIER_TAX_IDS);
       const existingTaxIds = new Set(existingSuppliers?.map(s => s.tax_id) || []);
-      const newSuppliers = suppliersToInsert.filter(s => !existingTaxIds.has(s.tax_id));
+      const newSuppliers = DEMO_SUPPLIERS_DATA.filter(s => !existingTaxIds.has(s.tax_id));
       if (newSuppliers.length > 0) {
         await supabase.from('suppliers').insert(newSuppliers);
       }
-      // Fetch all supplier IDs
       const { data: allSuppliers } = await supabase.from('suppliers').select('*').in('tax_id', DEMO_SUPPLIER_TAX_IDS);
-      const supplierIds = DEMO_SUPPLIERS.map(s => allSuppliers?.find(as => as.tax_id === s.tax_id)?.id || '');
-      const supplierNames = DEMO_SUPPLIERS.map(s => s.name);
-      updateStep("Suppliers", "success", `${DEMO_SUPPLIERS.length} proveedores`);
+      updateStep("Proveedores", "success", `${DEMO_SUPPLIERS_DATA.length} proveedores`);
 
-      // ── 7. Bank Accounts ──
+      // ── 7. Bank Data ──
+      let bankResult: Awaited<ReturnType<typeof generateBankData>> | null = null;
       if (advanced.generateBankData) {
-        updateStep("Bank Accounts", "loading");
-        const bankAccounts = generateDemoBankAccounts(centreCodes);
-        for (const ba of bankAccounts) {
-          const { data: existing } = await supabase.from('bank_accounts').select('id').eq('centro_code', ba.centro_code).eq('iban', ba.iban).maybeSingle();
-          if (!existing) {
-            await supabase.from('bank_accounts').insert(ba);
-          }
+        updateStep("Datos Bancarios", "loading");
+        try {
+          bankResult = await generateBankData(
+            centres.map(c => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, seating_capacity: c.seating_capacity || 100 })),
+            year,
+            volume
+          );
+          updateStep("Datos Bancarios", "success", `${bankResult.accounts.length} cuentas, ${bankResult.transactions.length} movimientos`);
+        } catch (e: any) {
+          updateStep("Datos Bancarios", "error", e.message);
+          logger.error('DemoBank', e);
         }
-        updateStep("Bank Accounts", "success", `${bankAccounts.length} cuentas bancarias`);
       }
 
-      // ── 8. Facturas Recibidas ──
-      let insertedInvoices: any[] = [];
-      if (advanced.generateInvoices) {
-        updateStep("Facturas Recibidas", "loading");
-        const invoices = generateDemoInvoicesReceived(centreCodes, supplierIds, DEMO_SUPPLIER_TAX_IDS, supplierNames, months);
-        // Batch insert
-        for (let i = 0; i < invoices.length; i += 20) {
-          const batch = invoices.slice(i, i + 20);
-          const { data, error } = await supabase.from('invoices_received').insert(batch).select('id,centro_code,invoice_number,invoice_date,subtotal,tax_total,total,supplier_name,notes,base_imponible_21,base_imponible_10,cuota_iva_21,cuota_iva_10,due_date');
-          if (error) { logger.warn('DemoInvoices', `Batch error:`, error.message); }
-          else if (data) insertedInvoices.push(...data);
+      // ── 8. Invoices ──
+      let invoiceResult: Awaited<ReturnType<typeof generateInvoices>> | null = null;
+      if (advanced.generateInvoices && allSuppliers && allSuppliers.length > 0) {
+        updateStep("Facturas", "loading");
+        try {
+          invoiceResult = await generateInvoices(
+            centres.map(c => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, seating_capacity: c.seating_capacity || 100 })),
+            allSuppliers.map(s => ({ id: s.id, name: s.name, tax_id: s.tax_id })),
+            year,
+            volume
+          );
+          updateStep("Facturas", "success", `${invoiceResult.invoicesReceived.length} recibidas, ${invoiceResult.invoicesIssued.length} emitidas`);
+        } catch (e: any) {
+          updateStep("Facturas", "error", e.message);
+          logger.error('DemoInvoices', e);
         }
-        updateStep("Facturas Recibidas", "success", `${insertedInvoices.length} facturas`);
       }
 
-      // ── 9. Asientos Contables ──
-      if (advanced.generateEntries && insertedInvoices.length > 0) {
+      // ── 9. Accounting Entries ──
+      if (advanced.generateEntries && fiscalYearId && invoiceResult) {
         updateStep("Asientos Contables", "loading");
-        const { entries, transactions } = generateDemoAccountingEntries(insertedInvoices, fiscalYearMap);
-        // Insert entries
-        for (let i = 0; i < entries.length; i += 20) {
-          const batch = entries.slice(i, i + 20);
-          const { error } = await supabase.from('accounting_entries').insert(batch);
-          if (error) logger.warn('DemoEntries', `Batch error:`, error.message);
+        try {
+          const entries = await generateAccountingEntries(
+            centres.map(c => ({ id: c.id, codigo: c.codigo })),
+            fiscalYearId,
+            invoiceResult.invoicesReceived,
+            year,
+            volume
+          );
+          updateStep("Asientos Contables", "success", `${entries.length} asientos`);
+        } catch (e: any) {
+          updateStep("Asientos Contables", "error", e.message);
+          logger.error('DemoEntries', e);
         }
-        // Insert transactions
-        for (let i = 0; i < transactions.length; i += 50) {
-          const batch = transactions.slice(i, i + 50);
-          const { error } = await supabase.from('accounting_transactions').insert(batch);
-          if (error) logger.warn('DemoTransactions', `Batch error:`, error.message);
-        }
-        updateStep("Asientos Contables", "success", `${entries.length} asientos, ${transactions.length} apuntes`);
       }
 
-      // ── 10. Movimientos Bancarios ──
-      if (advanced.generateBankData && insertedInvoices.length > 0) {
-        updateStep("Movimientos Bancarios", "loading");
-        const { data: bankAccts } = await supabase.from('bank_accounts').select('id,centro_code').in('centro_code', centreCodes);
-        const bankAccountMap: Record<string, string> = {};
-        bankAccts?.forEach(ba => { bankAccountMap[ba.centro_code] = ba.id; });
+      // ── 10. Auto Reconciliation ──
+      if (advanced.autoReconcile && bankResult && invoiceResult) {
+        updateStep("Conciliación", "loading");
+        try {
+          const { data: bankTxns } = await supabase
+            .from('bank_transactions')
+            .select('id,amount,description,bank_account_id')
+            .in('bank_account_id', bankResult.accounts.map(a => a.id));
 
-        const bankTxns = generateDemoBankTransactions(bankAccountMap, insertedInvoices, months);
-        for (let i = 0; i < bankTxns.length; i += 30) {
-          const batch = bankTxns.slice(i, i + 30);
-          const { error } = await supabase.from('bank_transactions').insert(batch);
-          if (error) logger.warn('DemoBankTxns', `Batch error:`, error.message);
+          const count = await autoReconcileTransactions(
+            bankResult.accounts,
+            invoiceResult.invoicesReceived,
+            bankTxns || []
+          );
+          updateStep("Conciliación", "success", `${count} conciliadas`);
+        } catch (e: any) {
+          updateStep("Conciliación", "error", e.message);
+          logger.error('DemoReconcile', e);
         }
-        updateStep("Movimientos Bancarios", "success", `${bankTxns.length} movimientos`);
-      }
-
-      // ── 11. Facturas Emitidas ──
-      if (advanced.generateInvoices) {
-        updateStep("Facturas Emitidas", "loading");
-        const issuedInvoices = generateDemoInvoicesIssued(centreCodes, months);
-        for (let i = 0; i < issuedInvoices.length; i += 20) {
-          const batch = issuedInvoices.slice(i, i + 20);
-          const { error } = await supabase.from('invoices_issued').insert(batch);
-          if (error) logger.warn('DemoIssuedInv', `Batch error:`, error.message);
-        }
-        updateStep("Facturas Emitidas", "success", `${issuedInvoices.length} facturas emitidas`);
       }
 
       toast({
         title: "✅ Datos Demo Generados",
-        description: `Demo completo con ${insertedInvoices.length} facturas, asientos, banco y más.`,
+        description: "Demo completo con estructura, facturas, asientos, banco y conciliación.",
       });
 
     } catch (error: unknown) {
-      logger.error('DemoDataGenerator', '❌ Error al generar datos:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({ title: "Error al generar datos demo", description: errorMessage, variant: "destructive" });
+      logger.error('DemoDataGenerator', '❌ Error:', error);
+      toast({ title: "Error al generar datos demo", description: error instanceof Error ? error.message : 'Error', variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -322,12 +363,11 @@ export default function DemoDataGenerator() {
             <h4 className="font-medium text-sm">Se crearán:</h4>
             <ul className="text-sm text-muted-foreground space-y-1 ml-4">
               <li>• 1 Franchisee · 2 Sociedades · 4 Centros</li>
-              <li>• ~40 cuentas PGC por centro (60x, 62x, 64x, 70x…)</li>
+              <li>• ~20 cuentas PGC por centro (60x, 62x, 64x, 70x…)</li>
               <li>• 5 Proveedores realistas (HAVI, McCormick, Coca-Cola, Ecolab, Endesa)</li>
-              <li>• ~60 Facturas recibidas con IVA (Ene-Mar 2025)</li>
-              <li>• ~60 Asientos contables con apuntes al debe/haber</li>
-              <li>• ~36 Facturas emitidas (ventas mostrador + delivery)</li>
-              <li>• 4 Cuentas bancarias con ~80 movimientos</li>
+              <li>• Facturas recibidas y emitidas según volumen</li>
+              <li>• Asientos contables con apuntes al debe/haber</li>
+              <li>• Cuentas bancarias con movimientos y conciliación automática</li>
             </ul>
           </div>
 

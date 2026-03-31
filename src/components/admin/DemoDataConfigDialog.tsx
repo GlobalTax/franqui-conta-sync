@@ -30,8 +30,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DemoDataConfig } from "@/types/demo-config";
-import { Building2, Store, Users, Package, Sparkles } from "lucide-react";
+import { Building2, Store, Users, Package, Sparkles, Settings2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const demoConfigSchema = z.object({
   // Franchisee

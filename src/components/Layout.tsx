@@ -200,19 +200,14 @@ const Layout = () => {
             )}
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
+              <label className="text-xs font-normal text-muted-foreground mb-2 block">
                 Ejercicio fiscal
               </label>
-              <Select value={fiscalYear} onValueChange={setFiscalYear}>
-                <SelectTrigger className="w-full bg-card border border-input hover:border-primary/30 transition-all rounded-lg h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2025">2025</SelectItem>
-                  <SelectItem value="2024">2024</SelectItem>
-                  <SelectItem value="2023">2023</SelectItem>
-                </SelectContent>
-              </Select>
+              <FiscalYearSelector
+                value={fiscalYear}
+                onValueChange={setFiscalYear}
+                centroCode={selectedView?.type === 'centre' ? selectedView.code : undefined}
+              />
             </div>
           </div>
         )}

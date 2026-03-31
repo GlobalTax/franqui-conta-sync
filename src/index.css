@@ -227,8 +227,9 @@ All colors MUST be HSL.
   * {
     font-weight: inherit;
   }
-  .font-bold, .font-extrabold, .font-black, .font-semibold {
-    font-weight: 500 !important;
+  .font-bold, .font-extrabold, .font-black, .font-semibold, .font-medium {
+    font-weight: 400 !important;
+  }
   }
   
   html {

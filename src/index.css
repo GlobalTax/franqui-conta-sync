@@ -278,7 +278,7 @@ All colors MUST be HSL.
   .holded-header {
     font-family: 'GeneralSans', system-ui, sans-serif;
     @apply text-xs text-muted-foreground uppercase tracking-wider;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* Value display - GeneralSans with tabular nums */

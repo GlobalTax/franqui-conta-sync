@@ -73,7 +73,7 @@ const Layout = () => {
   const { isAdmin } = useAdminCheck();
   const { currentMembership } = useOrganization();
   const { selectedView, setSelectedView } = useView();
-  const [fiscalYear, setFiscalYear] = useState("2025");
+  const { selectedYear: fiscalYear, setSelectedYear: setFiscalYear } = useGlobalFiscalYear();
   
   // Ensure a default view is selected when data loads
   useEnsureDefaultView();

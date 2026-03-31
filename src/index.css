@@ -310,7 +310,7 @@ All colors MUST be HSL.
 
   /* Button primary with yellow accent */
   .holded-button-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium rounded-xl px-4 py-2 transition-all;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-normal rounded-xl px-4 py-2 transition-all;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   

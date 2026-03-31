@@ -273,21 +273,24 @@ All colors MUST be HSL.
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
-  /* Header label - Plus Jakarta Sans */
+  /* Header label - GeneralSans */
   .holded-header {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+    font-family: 'GeneralSans', system-ui, sans-serif;
+    @apply text-xs text-muted-foreground uppercase tracking-wider;
+    font-weight: 500;
   }
 
-  /* Value display - Inter with tabular nums */
+  /* Value display - GeneralSans with tabular nums */
   .holded-value {
-    font-family: 'Inter', system-ui, sans-serif;
-    @apply text-3xl font-bold tabular-nums;
+    font-family: 'GeneralSans', system-ui, sans-serif;
+    @apply text-3xl tabular-nums;
+    font-weight: 500;
   }
   
   .holded-value-sm {
-    font-family: 'Inter', system-ui, sans-serif;
-    @apply text-xl font-semibold tabular-nums;
+    font-family: 'GeneralSans', system-ui, sans-serif;
+    @apply text-xl tabular-nums;
+    font-weight: 500;
   }
 
   /* Trend indicator */

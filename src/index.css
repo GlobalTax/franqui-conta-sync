@@ -300,7 +300,7 @@ All colors MUST be HSL.
   }
   
   .holded-trend-negative {
-    @apply text-destructive flex items-center gap-1 text-sm font-medium;
+    @apply text-destructive flex items-center gap-1 text-sm font-normal;
   }
 
   /* Focus states for accessibility */

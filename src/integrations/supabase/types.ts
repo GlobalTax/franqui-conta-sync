@@ -1480,6 +1480,27 @@ export type Database = {
           },
         ]
       }
+      audit_logins: {
+        Row: {
+          email: string | null
+          id: string
+          logged_in_at: string | null
+          user_id: string
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          logged_in_at?: string | null
+          user_id: string
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          logged_in_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -3664,6 +3685,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      informes: {
+        Row: {
+          created_at: string | null
+          id: string
+          markdown: string
+          month: number
+          restaurant: string
+          title: string
+          user_id: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          markdown: string
+          month: number
+          restaurant: string
+          title: string
+          user_id?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          markdown?: string
+          month?: number
+          restaurant?: string
+          title?: string
+          user_id?: string | null
+          year?: number
+        }
+        Relationships: []
       }
       inventory_closure_lines: {
         Row: {

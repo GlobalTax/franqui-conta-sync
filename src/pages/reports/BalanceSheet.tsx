@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { exportBalanceSheetExcel } from "@/lib/report-exports/balanceSheetExport";
 
 export default function BalanceSheet() {
   const { selectedView } = useView();

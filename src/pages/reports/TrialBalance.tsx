@@ -101,6 +101,12 @@ const TrialBalance = () => {
                 printRef={printRef}
                 data={exportData}
                 filename="sumas-y-saldos"
+                onExportFormattedExcel={() => {
+                  if (trialBalance) {
+                    const periodo = `${startDate?.toLocaleDateString("es-ES")} - ${endDate?.toLocaleDateString("es-ES")}`;
+                    exportTrialBalanceExcel(trialBalance, selectedView?.name || "", periodo);
+                  }
+                }}
               />
             </div>
           </div>

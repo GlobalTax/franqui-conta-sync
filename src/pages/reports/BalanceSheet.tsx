@@ -107,6 +107,12 @@ export default function BalanceSheet() {
                   printRef={printRef}
                   data={exportData}
                   filename={`balance-${selectedTemplate}-${fechaCorteStr}`}
+                  onExportFormattedExcel={() => {
+                    if (balanceData) {
+                      const tplName = templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate;
+                      exportBalanceSheetExcel(balanceData, selectedView?.name || "", fechaCorteStr, tplName);
+                    }
+                  }}
                 />
               )}
             </div>

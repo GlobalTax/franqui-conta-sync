@@ -150,6 +150,11 @@ export default function GeneralLedger() {
                 filename={`mayor-${startDateStr}-${endDateStr}`}
                 showOfficialPDF={!!principalCompany}
                 onExportOfficialPDF={handleExportOfficialPDF}
+                onExportFormattedExcel={() => {
+                  if (data) {
+                    exportGeneralLedgerExcel(data, selectedView?.name || "", `${startDateStr} — ${endDateStr}`);
+                  }
+                }}
               />
             )
           }

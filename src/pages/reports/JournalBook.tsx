@@ -156,6 +156,11 @@ export default function JournalBook() {
                 filename={`diario-${startDateStr}-${endDateStr}`}
                 showOfficialPDF={!!principalCompany}
                 onExportOfficialPDF={handleExportOfficialPDF}
+                onExportFormattedExcel={() => {
+                  if (entries.length > 0) {
+                    exportJournalBookExcel(entries, selectedView?.name || "", `${startDateStr} — ${endDateStr}`);
+                  }
+                }}
               />
             )
           }

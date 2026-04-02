@@ -17,6 +17,7 @@ interface ExportButtonProps {
   headers?: string[];
   onExportOfficialPDF?: () => void;
   showOfficialPDF?: boolean;
+  onExportFormattedExcel?: () => void;
 }
 
 export const ExportButton = ({ 

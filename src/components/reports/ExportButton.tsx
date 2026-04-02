@@ -26,7 +26,8 @@ export const ExportButton = ({
   filename, 
   headers,
   onExportOfficialPDF,
-  showOfficialPDF = false
+  showOfficialPDF = false,
+  onExportFormattedExcel
 }: ExportButtonProps) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,

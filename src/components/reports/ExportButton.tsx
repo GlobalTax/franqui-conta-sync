@@ -76,7 +76,13 @@ export const ExportButton = ({
           </>
         )}
         <DropdownMenuItem onClick={handlePrint}>Exportar PDF Simple</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleExportExcel}>Exportar Excel</DropdownMenuItem>
+        {onExportFormattedExcel && (
+          <DropdownMenuItem onClick={onExportFormattedExcel}>
+            <FileText className="mr-2 h-4 w-4" />
+            Excel Profesional
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={handleExportExcel}>Exportar Excel (básico)</DropdownMenuItem>
         <DropdownMenuItem onClick={handleExportCSV}>Exportar CSV</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

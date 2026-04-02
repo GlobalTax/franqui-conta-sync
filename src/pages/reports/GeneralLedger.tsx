@@ -15,6 +15,7 @@ import { AlertCircle } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { exportGeneralLedgerPDF } from "@/lib/pdf-export";
 import { toast } from "sonner";
+import { exportGeneralLedgerExcel } from "@/lib/report-exports/generalLedgerExport";
 
 export default function GeneralLedger() {
   const { selectedView } = useView();

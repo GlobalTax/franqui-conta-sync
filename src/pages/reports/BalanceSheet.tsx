@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useBalanceSheetCustom, useBalanceSheetTemplates } from "@/hooks/useBalanceSheetCustom";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { exportBalanceSheetExcel } from "@/lib/report-exports/balanceSheetExport";
 
 export default function BalanceSheet() {
   const { selectedView } = useView();
@@ -106,6 +107,12 @@ export default function BalanceSheet() {
                   printRef={printRef}
                   data={exportData}
                   filename={`balance-${selectedTemplate}-${fechaCorteStr}`}
+                  onExportFormattedExcel={() => {
+                    if (balanceData) {
+                      const tplName = templates?.find(t => t.code === selectedTemplate)?.name || selectedTemplate;
+                      exportBalanceSheetExcel(balanceData, selectedView?.name || "", fechaCorteStr, tplName);
+                    }
+                  }}
                 />
               )}
             </div>

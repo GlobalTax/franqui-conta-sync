@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 import { exportJournalBookPDF } from "@/lib/pdf-export";
 import { toast } from "sonner";
+import { exportJournalBookExcel } from "@/lib/report-exports/journalBookExport";
 
 export default function JournalBook() {
   const { selectedView } = useView();
@@ -155,6 +156,11 @@ export default function JournalBook() {
                 filename={`diario-${startDateStr}-${endDateStr}`}
                 showOfficialPDF={!!principalCompany}
                 onExportOfficialPDF={handleExportOfficialPDF}
+                onExportFormattedExcel={() => {
+                  if (entries.length > 0) {
+                    exportJournalBookExcel(entries, selectedView?.name || "", `${startDateStr} — ${endDateStr}`);
+                  }
+                }}
               />
             )
           }

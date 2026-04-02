@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, FileSpreadsheet } from "lucide-react";
+import { exportAssetsRegisterExcel } from "@/lib/report-exports/assetsRegisterExport";
 import { useFixedAssets } from "@/hooks/useFixedAssets";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useView } from "@/contexts/ViewContext";
@@ -42,48 +43,12 @@ export default function AssetsRegister() {
   }), { acquisition: 0, accumulated: 0, current: 0 });
 
   const exportToExcel = async () => {
-    const XLSX = await import('xlsx');
-    // Crear workbook
-    const wb = XLSX.utils.book_new();
-
-    // Hoja 1: Resumen
-    const summaryData = [
-      ['Libro de Bienes de Inversión'],
-      ['Ejercicio:', selectedYear],
-      ['Centro:', selectedView?.name || ''],
-      ['Fecha generación:', new Date().toLocaleDateString('es-ES')],
-      [],
-      ['Código', 'Descripción', 'F. Adquisición', 'Valor Adq.', 'Amor. Acum.', 'VNC', 'Estado'],
-      ...filteredAssets.map(asset => [
-        asset.asset_code,
-        asset.description,
-        new Date(asset.acquisition_date).toLocaleDateString('es-ES'),
-        asset.acquisition_value,
-        asset.accumulated_depreciation || 0,
-        asset.current_value || asset.acquisition_value,
-        asset.status === 'active' ? 'Activo' : asset.status === 'fully_depreciated' ? 'Amortizado' : 'Baja',
-      ]),
-      [],
-      ['TOTALES', '', '', totals.acquisition, totals.accumulated, totals.current, ''],
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(summaryData);
-    
-    // Estilos de columnas
-    ws['!cols'] = [
-      { wch: 12 }, // Código
-      { wch: 40 }, // Descripción
-      { wch: 15 }, // Fecha
-      { wch: 15 }, // Valor Adq
-      { wch: 15 }, // Amor. Acum
-      { wch: 15 }, // VNC
-      { wch: 12 }, // Estado
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Libro de Bienes');
-
-    // Guardar archivo
-    XLSX.writeFile(wb, `libro-bienes-${selectedYear}.xlsx`);
+    await exportAssetsRegisterExcel(
+      filteredAssets,
+      selectedView?.name || "",
+      selectedYear,
+      totals
+    );
   };
 
   if (!selectedView || selectedView.type !== 'centre') {

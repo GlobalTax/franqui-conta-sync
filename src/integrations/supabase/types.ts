@@ -2259,6 +2259,131 @@ export type Database = {
         }
         Relationships: []
       }
+      company_restaurants: {
+        Row: {
+          center_code: string
+          company_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          master_id: string | null
+          restaurante: string
+          worker_prefix: string | null
+        }
+        Insert: {
+          center_code: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          master_id?: string | null
+          restaurante: string
+          worker_prefix?: string | null
+        }
+        Update: {
+          center_code?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          master_id?: string | null
+          restaurante?: string
+          worker_prefix?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_restaurants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "franquiciados"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_costes_restaurante"
+            referencedColumns: ["sociedad_code"]
+          },
+          {
+            foreignKeyName: "company_restaurants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_franquiciados_resumen"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_panel_franquiciados"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "franquiciados_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_costes_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_headcount_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_its_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpis_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_labour_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_panel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_quantum_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "company_restaurants_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_resumen_mensual"
+            referencedColumns: ["franquiciado_id"]
+          },
+        ]
+      }
       compliance_alerts: {
         Row: {
           alert_type: string
@@ -2357,7 +2482,7 @@ export type Database = {
       costes_nomina: {
         Row: {
           anio: number
-          apellidos: string
+          apellidos: string | null
           base_cc: number | null
           coste_empresa: number | null
           created_at: string | null
@@ -2369,7 +2494,7 @@ export type Database = {
           numero_empleado: string | null
           restaurante: string
           salario_base: number | null
-          seccion: string
+          seccion: string | null
           ss_empresa: number | null
           ss_trabajador: number | null
           total_bruto: number | null
@@ -2379,7 +2504,7 @@ export type Database = {
         }
         Insert: {
           anio: number
-          apellidos: string
+          apellidos?: string | null
           base_cc?: number | null
           coste_empresa?: number | null
           created_at?: string | null
@@ -2391,7 +2516,7 @@ export type Database = {
           numero_empleado?: string | null
           restaurante: string
           salario_base?: number | null
-          seccion: string
+          seccion?: string | null
           ss_empresa?: number | null
           ss_trabajador?: number | null
           total_bruto?: number | null
@@ -2401,7 +2526,7 @@ export type Database = {
         }
         Update: {
           anio?: number
-          apellidos?: string
+          apellidos?: string | null
           base_cc?: number | null
           coste_empresa?: number | null
           created_at?: string | null
@@ -2413,7 +2538,7 @@ export type Database = {
           numero_empleado?: string | null
           restaurante?: string
           salario_base?: number | null
-          seccion?: string
+          seccion?: string | null
           ss_empresa?: number | null
           ss_trabajador?: number | null
           total_bruto?: number | null
@@ -3366,6 +3491,175 @@ export type Database = {
           name?: string
           orquest_api_key?: string | null
           orquest_business_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      franquiciados: {
+        Row: {
+          biloop_company_id: string | null
+          biloop_synced: boolean | null
+          cif: string | null
+          company_id: string
+          company_name: string
+          created_at: string | null
+          display_order: number | null
+          franquiciado: string
+          franquiciado_grupo: string | null
+          id: string
+          is_active: boolean | null
+          master_id: string | null
+          notes: string | null
+          quantum_api_key: string | null
+          quantum_company_id: string | null
+          quantum_synced: boolean | null
+          slug: string | null
+          titular: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          biloop_company_id?: string | null
+          biloop_synced?: boolean | null
+          cif?: string | null
+          company_id: string
+          company_name: string
+          created_at?: string | null
+          display_order?: number | null
+          franquiciado: string
+          franquiciado_grupo?: string | null
+          id?: string
+          is_active?: boolean | null
+          master_id?: string | null
+          notes?: string | null
+          quantum_api_key?: string | null
+          quantum_company_id?: string | null
+          quantum_synced?: boolean | null
+          slug?: string | null
+          titular?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          biloop_company_id?: string | null
+          biloop_synced?: boolean | null
+          cif?: string | null
+          company_id?: string
+          company_name?: string
+          created_at?: string | null
+          display_order?: number | null
+          franquiciado?: string
+          franquiciado_grupo?: string | null
+          id?: string
+          is_active?: boolean | null
+          master_id?: string | null
+          notes?: string | null
+          quantum_api_key?: string | null
+          quantum_company_id?: string | null
+          quantum_synced?: boolean | null
+          slug?: string | null
+          titular?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "franquiciados_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_costes_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_headcount_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_its_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpis_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_labour_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_panel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_quantum_restaurante"
+            referencedColumns: ["franquiciado_id"]
+          },
+          {
+            foreignKeyName: "franquiciados_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "v_resumen_mensual"
+            referencedColumns: ["franquiciado_id"]
+          },
+        ]
+      }
+      franquiciados_master: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          nombre: string
+          notes: string | null
+          slug: string
+          telefono: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre: string
+          notes?: string | null
+          slug: string
+          telefono?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre?: string
+          notes?: string | null
+          slug?: string
+          telefono?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -7485,6 +7779,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_franquiciados: {
+        Row: {
+          created_at: string | null
+          franquiciado_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          franquiciado_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          franquiciado_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_franquiciados_franquiciado_id_fkey"
+            columns: ["franquiciado_id"]
+            isOneToOne: false
+            referencedRelation: "franquiciados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_franquiciados_franquiciado_id_fkey"
+            columns: ["franquiciado_id"]
+            isOneToOne: false
+            referencedRelation: "v_panel_franquiciados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           centro: string | null
@@ -7827,6 +8157,133 @@ export type Database = {
         }
         Relationships: []
       }
+      v_costes_restaurante: {
+        Row: {
+          anio: number | null
+          coste_empresa: number | null
+          coste_hora: number | null
+          coste_por_empleado: number | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          horas_presencia: number | null
+          mes: number | null
+          num_empleados: number | null
+          restaurante: string | null
+          salario_base: number | null
+          slug: string | null
+          sociedad: string | null
+          sociedad_code: string | null
+          ss_empresa: number | null
+          ss_trabajador: number | null
+          total_bruto: number | null
+          total_deducciones: number | null
+          total_liquido: number | null
+        }
+        Relationships: []
+      }
+      v_franquiciados_resumen: {
+        Row: {
+          biloop_synced: boolean | null
+          cif: string | null
+          company_id: string | null
+          company_name: string | null
+          franquiciado: string | null
+          is_active: boolean | null
+          num_centros: number | null
+          restaurantes: string[] | null
+          titular: string | null
+        }
+        Relationships: []
+      }
+      v_headcount_restaurante: {
+        Row: {
+          anio: number | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          mes: number | null
+          num_trabajadores: number | null
+          restaurante: string | null
+          slug: string | null
+          sociedad: string | null
+        }
+        Relationships: []
+      }
+      v_its_restaurante: {
+        Row: {
+          activa: boolean | null
+          anio: number | null
+          base_reg_cc: number | null
+          codigo_a3: string | null
+          complemento_it: number | null
+          coste_60_pct: number | null
+          coste_cotizacion: number | null
+          coste_total: number | null
+          dias_it: number | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          it_id: string | null
+          mes: number | null
+          observaciones: string | null
+          restaurante: string | null
+          slug: string | null
+          sociedad: string | null
+          tipo_contingencia: string | null
+          trabajador: string | null
+          trabajador_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "its_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kpis_restaurante: {
+        Row: {
+          anio: number | null
+          coste_empresa: number | null
+          coste_hora: number | null
+          coste_por_empleado: number | null
+          empleados: number | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          horas_presencia: number | null
+          mes: number | null
+          restaurante: string | null
+          slug: string | null
+          sociedad: string | null
+          total_bruto: number | null
+        }
+        Relationships: []
+      }
+      v_labour_restaurante: {
+        Row: {
+          anio: number | null
+          coste_it: number | null
+          coste_it_60pct: number | null
+          coste_it_complemento: number | null
+          coste_it_cotizacion: number | null
+          coste_total_mdo: number | null
+          devengos_mdo: number | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          labour_pct: number | null
+          manutencion: number | null
+          mes: number | null
+          prorrata_pagas: number | null
+          restaurante: string | null
+          slug: string | null
+          sociedad: string | null
+          ss_empresa: number | null
+          ventas: number | null
+        }
+        Relationships: []
+      }
       v_mindee_metrics: {
         Row: {
           avg_confidence: number | null
@@ -7851,6 +8308,40 @@ export type Database = {
           total_cost_eur: number | null
           total_invoices: number | null
           total_runs: number | null
+        }
+        Relationships: []
+      }
+      v_panel: {
+        Row: {
+          biloop_synced: boolean | null
+          display_order: number | null
+          id: string | null
+          is_active: boolean | null
+          nombre: string | null
+          num_restaurantes: number | null
+          num_sociedades: number | null
+          quantum_synced: boolean | null
+          restaurantes: string[] | null
+          slug: string | null
+          sociedades: string[] | null
+        }
+        Relationships: []
+      }
+      v_panel_franquiciados: {
+        Row: {
+          biloop_synced: boolean | null
+          cif: string | null
+          company_id: string | null
+          company_name: string | null
+          display_order: number | null
+          franquiciado_grupo: string | null
+          id: string | null
+          is_active: boolean | null
+          num_restaurantes: number | null
+          quantum_synced: boolean | null
+          restaurantes: string[] | null
+          slug: string | null
+          titular: string | null
         }
         Relationships: []
       }
@@ -7935,6 +8426,42 @@ export type Database = {
           },
         ]
       }
+      v_quantum_restaurante: {
+        Row: {
+          base_amount: number | null
+          customer_name: string | null
+          description: string | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          invoice_date: string | null
+          invoice_number: string | null
+          invoice_type: string | null
+          slug: string | null
+          sociedad: string | null
+          status: string | null
+          tax_amount: number | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
+      v_resumen_mensual: {
+        Row: {
+          anio: number | null
+          coste_empresa: number | null
+          coste_hora: number | null
+          franquiciado: string | null
+          franquiciado_id: string | null
+          horas_presencia: number | null
+          mes: number | null
+          num_empleados: number | null
+          num_restaurantes: number | null
+          slug: string | null
+          ss_empresa: number | null
+          total_bruto: number | null
+          total_liquido: number | null
+        }
+        Relationships: []
+      }
       v_suggested_ap_rules: {
         Row: {
           already_has_rule: number | null
@@ -8014,6 +8541,15 @@ export type Database = {
       }
     }
     Functions: {
+      add_franquiciado_quick: {
+        Args: {
+          p_company_id: string
+          p_franquiciado: string
+          p_restaurante: string
+          p_worker_prefix?: string
+        }
+        Returns: string
+      }
       analyze_reconciliation_patterns: {
         Args: {
           p_bank_account_id: string
@@ -8473,6 +9009,10 @@ export type Database = {
           balance: number
         }[]
       }
+      get_allowed_company_ids: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       get_audit_history: {
         Args: { p_limit?: number; p_row_id: string; p_table_name: string }
         Returns: {
@@ -8496,11 +9036,71 @@ export type Database = {
           total_invoices: number
         }[]
       }
+      get_biloop_indemnity: {
+        Args: { p_company_id: string }
+        Returns: {
+          annual_gross: number
+          antiquity: string
+          compensation_33: number
+          compensation_33_days: number
+          compensation_45: number
+          compensation_45_days: number
+          diary_gross: number
+          leave_work_date: string
+          worker_id: string
+          worker_name: string
+        }[]
+      }
+      get_biloop_indemnity_by_worker: {
+        Args: { p_worker_id: string }
+        Returns: {
+          annual_gross: number
+          antiquity: string
+          compensation_33: number
+          compensation_33_days: number
+          compensation_45: number
+          compensation_45_days: number
+          diary_gross: number
+          leave_work_date: string
+          worker_id: string
+          worker_name: string
+        }[]
+      }
       get_biloop_payslips: {
         Args: { p_company_id: string }
         Returns: {
           company_id: string
           raw_data: Json
+        }[]
+      }
+      get_biloop_ss_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          base_cc: number
+          cuota_at: number
+          cuota_cc: number
+          cuota_ims: number
+          cuota_it: number
+          month: number
+          total_tc1: number
+          worker_id: string
+          worker_name: string
+          year: number
+        }[]
+      }
+      get_biloop_ss_stats_by_worker: {
+        Args: { p_worker_id: string }
+        Returns: {
+          base_cc: number
+          cuota_at: number
+          cuota_cc: number
+          cuota_ims: number
+          cuota_it: number
+          month: number
+          total_tc1: number
+          worker_id: string
+          worker_name: string
+          year: number
         }[]
       }
       get_biloop_workers: {
@@ -8533,6 +9133,10 @@ export type Database = {
           status: string
           updated_at: string
         }[]
+      }
+      get_company_for_restaurant: {
+        Args: { p_restaurante: string }
+        Returns: string
       }
       get_cost_center_analysis: {
         Args: {
@@ -8854,6 +9458,10 @@ export type Database = {
           variance_percent: number
         }[]
       }
+      get_restaurants_for_company: {
+        Args: { p_company_id: string }
+        Returns: string[]
+      }
       get_restaurants_with_franchisees: {
         Args: never
         Returns: {
@@ -8885,6 +9493,7 @@ export type Database = {
           source: string
         }[]
       }
+      get_user_restaurants: { Args: { p_user_id: string }; Returns: string[] }
       has_permission: {
         Args: {
           _centro?: string
@@ -8913,6 +9522,19 @@ export type Database = {
           p_meta?: Json
         }
         Returns: string
+      }
+      onboard_franquiciado: {
+        Args: {
+          p_centros?: Json
+          p_company_id: string
+          p_franquiciado: string
+          p_worker_prefix?: string
+        }
+        Returns: {
+          detail: string
+          status: string
+          step: string
+        }[]
       }
       post_diario_import: { Args: { p_import_run_id: string }; Returns: Json }
       post_iva_emitidas_import: {
@@ -8990,6 +9612,27 @@ export type Database = {
       suggest_reconciliation_matches: {
         Args: { p_centro_code: string; p_transaction_id: string }
         Returns: Json
+      }
+      sync_all_companies: {
+        Args: { p_anio?: number; p_mes_desde?: number; p_mes_hasta?: number }
+        Returns: {
+          detail: string
+          status: string
+          step: string
+        }[]
+      }
+      sync_company_to_dashboard: {
+        Args: {
+          p_anio?: number
+          p_company_id: string
+          p_mes_desde?: number
+          p_mes_hasta?: number
+        }
+        Returns: {
+          detail: string
+          status: string
+          step: string
+        }[]
       }
       unaccent: { Args: { "": string }; Returns: string }
       undo_reconciliation: {
